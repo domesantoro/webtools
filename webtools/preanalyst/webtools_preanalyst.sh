@@ -1,0 +1,104 @@
+#!/usr/bin/env bash
+# Controllo del server webtools_preanalyst: --start | --stop
+#
+# - --start: avvia in background (nohup), slegato dal terminale.
+#            PID in webtools_preanalyst.pid, log in webtools_preanalyst.log (in append).
+# - --stop:  ferma il processo indicato dal file PID, solo dopo aver verificato
+#            che quel PID sia davvero il nostro server (mai per nome o per porta).
+#
+# Le variabili d'ambiente (HOST, PORT, ANAGRAPHICS_URL, ANAGRAPHICS_TIMEOUT_MS)
+# passate con --start arrivano al server.
+set -euo pipefail
+
+DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+NODE="$(command -v node || true)"
+ENTRY="$DIR/src/index.js"
+PID_FILE="$DIR/webtools_preanalyst.pid"
+LOG_FILE="$DIR/webtools_preanalyst.log"
+
+# Stampa il PID se il file PID punta a un processo vivo che è il nostro server.
+running_pid() {
+  [[ -f "$PID_FILE" ]] || return 1
+  local pid cmd
+  pid="$(cat "$PID_FILE")"
+  [[ "$pid" =~ ^[0-9]+$ ]] || return 1
+  cmd="$(ps -p "$pid" -o command= 2>/dev/null)" || return 1
+  # Deve essere node che esegue proprio il nostro src/index.js.
+  [[ "$cmd" == *"node"*" $ENTRY"* ]] || return 1
+  echo "$pid"
+}
+
+start() {
+  local pid
+  if pid="$(running_pid)"; then
+    echo "webtools_preanalyst è già in esecuzione (PID $pid)."
+    return 0
+  fi
+  if [[ -z "$NODE" ]]; then
+    echo "Node non trovato nel PATH." >&2
+    return 1
+  fi
+  if [[ ! -f "$ENTRY" ]]; then
+    echo "File di avvio mancante: $ENTRY" >&2
+    return 1
+  fi
+  rm -f "$PID_FILE"
+
+  local log_offset
+  log_offset=0
+  [[ -f "$LOG_FILE" ]] && log_offset=$(( $(wc -c < "$LOG_FILE") ))
+  echo "=== start $(date '+%Y-%m-%d %H:%M:%S') ===" >> "$LOG_FILE"
+
+  cd "$DIR"
+  nohup "$NODE" "$ENTRY" >> "$LOG_FILE" 2>&1 &
+  pid=$!
+  echo "$pid" > "$PID_FILE"
+
+  # Attende fino a 10 s la riga di conferma stampata da src/index.js,
+  # o che il processo muoia.
+  for _ in $(seq 1 50); do
+    if ! kill -0 "$pid" 2>/dev/null; then
+      rm -f "$PID_FILE"
+      echo "Avvio fallito. Ultime righe del log:" >&2
+      tail -c +"$((log_offset + 1))" "$LOG_FILE" | tail -n 20 >&2
+      return 1
+    fi
+    if tail -c +"$((log_offset + 1))" "$LOG_FILE" | grep -q "webtools_preanalyst in ascolto su"; then
+      echo "webtools_preanalyst avviato (PID $pid). Log: $LOG_FILE"
+      return 0
+    fi
+    sleep 0.2
+  done
+  echo "Il processo (PID $pid) è vivo ma non ha confermato l'avvio entro 10 s: controlla $LOG_FILE" >&2
+  return 1
+}
+
+stop() {
+  local pid
+  if ! pid="$(running_pid)"; then
+    rm -f "$PID_FILE"
+    echo "webtools_preanalyst non è in esecuzione."
+    return 0
+  fi
+  kill -TERM "$pid"
+  for _ in $(seq 1 50); do
+    if ! kill -0 "$pid" 2>/dev/null; then
+      rm -f "$PID_FILE"
+      echo "webtools_preanalyst fermato (PID $pid)."
+      return 0
+    fi
+    sleep 0.2
+  done
+  echo "Nessuna uscita entro 10 s dopo SIGTERM: invio SIGKILL a PID $pid." >&2
+  kill -KILL "$pid" 2>/dev/null || true
+  rm -f "$PID_FILE"
+}
+
+case "${1:-}" in
+  --start) start ;;
+  --stop)  stop ;;
+  *)
+    echo "Uso: $0 --start | --stop" >&2
+    exit 2
+    ;;
+esac

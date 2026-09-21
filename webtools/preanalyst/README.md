@@ -1,0 +1,105 @@
+# webtools_preanalyst
+
+Il **cancello della pre-analisi**: una sola pagina, resa dal server, da cui il cliente entra nel
+flusso. Node, con **nunjucks** per le pagine (unica dipendenza).
+
+Documentazione completa: `docs/subsystems/preanalyst/README.md` (nella root del workspace).
+
+## Avvio e arresto
+
+```sh
+webtools/preanalyst/webtools_preanalyst.sh --start   # avvia in background, slegato dal terminale
+webtools/preanalyst/webtools_preanalyst.sh --stop    # ferma
+```
+
+- PID: `webtools_preanalyst.pid`. Log: `webtools_preanalyst.log` (in append).
+- `--stop` ferma solo il processo del file PID, e solo dopo aver verificato che sia
+  `node …/webtools/preanalyst/src/index.js`.
+- Debug in primo piano, da questa cartella: `npm start` (Ctrl+C per fermarlo).
+- Dopo un `git clone` o un cambio di versione: `npm install` (una sola dipendenza, nunjucks).
+
+**Servono anche anagraphics e sso accesi**: il primo per driver e sconti, il secondo per
+l'accesso.
+```sh
+webtools/anagraphics/webtools_anagraphics.sh --start
+webtools/sso/webtools_sso.sh --start
+```
+
+## La pagina (`http://127.0.0.1:8200`)
+
+Il form della pre-analisi (le domande stanno in `src/questions.js`). Il box del driver, a destra,
+compare **solo** se nell'URL c'è `?discount=` o `?driver=`: chi arriva senza vede solo il form, e
+la pagina non chiama nemmeno anagraphics.
+
+**Il driver non si sceglie**: o lo porta il link, o lo assegniamo noi. Il box è informativo.
+
+Un driver può mandare qui un cliente in due modi: `?discount=<codice sconto>`, che porta con sé uno
+sconto, oppure `?driver=<uid>`, che **non ne porta nessuno**. In tutti e due i casi, se il driver
+si trova, la tendina è bloccata.
+
+| Caso | Cosa succede |
+|---|---|
+| `?discount=`, sconto valido e driver trovato | Nome del driver nel box, avviso verde con la percentuale |
+| `?discount=`, lettura fallita | "Non è applicabile: probabilmente è scaduto", e il driver lo assegniamo noi |
+| `?discount=`, driver dello sconto non trovato | "Non è applicabile: il driver non si trova, contattalo" |
+| `?driver=`, uid trovato | Nome del driver nel box, nessun avviso |
+| `?driver=`, uid non trovato | "Il driver di questo link non si trova, contattalo" |
+| Tutti e due i parametri | Vince `discount`; `driver` viene ignorato e la cosa finisce nel log |
+| Elenco dei driver irraggiungibile | `200`: il box dice che non riesce a identificarlo, e il form resta compilabile |
+
+Le letture verso anagraphics le fa **questo server**, mai il browser: anagraphics accetta solo
+chiamate dagli IP del suo pool.
+
+## L'accesso
+
+La pagina si compila **anche da sloggati**: il conto serve per proseguire, e lo si chiede lì. In
+testata c'è "Entra" oppure il nome di chi è entrato con "Esci"; sotto il bottone d'invio c'è il
+riquadro che chiede di entrare o registrarsi.
+
+Il login **si apre in una finestra a parte**, di proposito: quello che si è scritto nel form non è
+salvato da nessuna parte, e se il login sostituisse questa pagina andrebbe perso. Finito il login
+la finestra **si chiude da sola** e questa pagina **si aggiorna sul posto** — cambiano testata e
+riquadro, il form non viene toccato. Senza JavaScript funziona lo stesso, ma si torna a mano.
+
+"Esci" (`GET /logout`) toglie il nostro cookie e manda al sso, che chiude la sessione: si esce da
+tutti i sottosistemi, non solo da qui.
+
+Col sso spento la pagina resta usabile e lo dice: **niente ferma la pre-analisi**.
+
+Il dialogo col sso sta tutto in `src/commons/sso_client.js`, che è una copia generata.
+
+## Stile e parti comuni
+
+- `public/commons.css`, `public/fonts/`, `src/commons/sso_client.js`, `public/sso_popup.js` e
+  `templates/commons/base.njk` sono **copie generate** dal deployer: non modificarle qui. Si
+  modificano gli originali in `webtools/commons/` e si lancia `webtools/configurator/deploy.sh`.
+
+## Dov'è l'HTML
+
+In `templates/`, non nel codice: `page.njk` è la pagina, `macros/fields.njk` disegna i campi a
+partire dai dati di `src/questions.js`, `partials/driver_box.njk` è il box del driver.
+`templates/commons/base.njk` è il guscio comune, ed è una copia generata.
+
+`src/page.js` non contiene HTML: prepara i dati e basta. L'escape lo fa nunjucks da sé, e questo è
+il motivo principale della scelta: qui ogni valore arriva dall'URL o dal database.
+- `public/styles.css` è lo stile **locale** di questa pagina, e si modifica a mano.
+- `public/assets/mark.svg` è una copia a mano di quello del front-gate.
+
+## Variabili d'ambiente
+
+Si passano con `--start`, per esempio `PORT=8300 ./webtools_preanalyst.sh --start`.
+
+| Variabile | Default |
+|---|---|
+| `HOST` | `127.0.0.1` |
+| `PORT` | `8200` |
+| `ANAGRAPHICS_URL` | `http://127.0.0.1:8100` |
+| `ANAGRAPHICS_TIMEOUT_MS` | `5000` |
+| `PUBLIC_URL` | `http://127.0.0.1:8200` |
+| `SSO_URL` | `http://127.0.0.1:8300` |
+| `SSO_TIMEOUT_MS` | `5000` |
+| `COOKIE_NAME` | `webtools_preanalyst` |
+
+## Test
+
+Non ce ne sono ancora: è un buco noto, non una scelta. Il primo candidato è `src/referral.js`.

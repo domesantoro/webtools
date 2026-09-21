@@ -1,0 +1,296 @@
+/* Stile locale del preanalysis gate.
+   Qui sta solo ciò che è specifico di questa pagina: il resto — font, token,
+   header, marchio, schede, bottoni — arriva da commons.css, che è una copia
+   generata dal deployer (webtools/configurator/style_deployer/deploy.sh)
+   e non va modificata qui. */
+
+/* L'header del sito è sticky (commons.css): 72px di altezza minima più 1.5px di
+   bordo. Tutto ciò che si ferma sotto di lui deve tenerne conto, altrimenti ci
+   finisce sotto. */
+:root { --header-height: 74px; }
+
+.site-shell { display: flex; flex-direction: column; min-height: 100vh; }
+.page-main { flex: 1; }
+
+/* ------------------------------------------------------------ impaginazione */
+
+.gate { padding: 64px 0 96px; }
+.gate-intro { max-width: 62ch; margin-bottom: 40px; }
+.gate-intro h1 {
+  font-size: clamp(32px, 5vw, 46px);
+  line-height: 1.08;
+  letter-spacing: -.02em;
+  margin: 10px 0 14px;
+}
+.gate-lead { color: var(--muted); margin: 0; font-size: 17px; }
+
+/* Due colonne: il form a sinistra, il box del driver a destra.
+   Il box è più stretto e resta agganciato in alto mentre si scorre. */
+.gate-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 32px;
+  align-items: start;
+}
+/* Senza il box del driver la colonna è una sola: il form non deve allargarsi
+   per tutta la pagina, o le righe diventano illeggibili. */
+.gate-layout-single { grid-template-columns: minmax(0, 760px); }
+
+/* ------------------------------------------------------- box del driver */
+
+/* La colonna destra può contenere due blocchi: il box del driver e, per un
+   driver, il lavoro autonomo. È lei ad agganciarsi in alto, non i singoli box. */
+.gate-aside {
+  display: grid;
+  gap: 16px;
+  align-content: start;
+  position: sticky;
+  /* Si ferma sotto l'header, non sotto il bordo alto della finestra. */
+  top: calc(var(--header-height) + 20px);
+  /* Se i box fossero più alti della finestra resterebbero tagliati: in quel caso
+     scorre la colonna, invece di nascondere metà contenuto. */
+  max-height: calc(100vh - var(--header-height) - 40px);
+  overflow-y: auto;
+  /* Le schede hanno un'ombra piena che sporge in basso a destra: senza questo
+     spazio `overflow` la taglierebbe di netto. Il margine negativo restituisce
+     lo spazio alla griglia, così la colonna resta larga com'era. */
+  padding: 4px 10px 10px 4px;
+  margin: -4px -10px -10px -4px;
+}
+
+/* I blocchi del driver stanno in un contenitore che il browser rimpiazza dopo
+   il login. `contents` lo toglie di mezzo nel layout: i suoi figli diventano
+   figli della colonna e prendono la stessa spaziatura degli altri, invece di
+   restare appiccicati fra loro. Vuoto, non occupa niente. */
+[data-sso-driver] { display: contents; }
+
+.driver-box { background: var(--surface); }
+.aside-head {
+  padding: 13px 20px;
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+}
+.driver-box-body { padding: 20px; }
+.driver-box-lead { color: var(--muted); font-size: 14px; line-height: 1.5; margin: 0 0 18px; }
+/* Il nome del driver: è l'informazione del box, non una didascalia. */
+.driver-name {
+  font-family: var(--serif);
+  font-size: 26px;
+  line-height: 1.1;
+  letter-spacing: -.01em;
+  margin: 0 0 8px;
+}
+
+/* ------------------------------------------------------------- il form */
+
+.gate-form { display: grid; gap: 28px; }
+
+.form-section {
+  background: var(--surface);
+  border: 1.5px solid var(--ink);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-hard-md);
+  padding: 26px 24px 28px;
+  display: grid;
+  gap: 24px;
+}
+.form-legend {
+  font-size: 21px;
+  letter-spacing: -.01em;
+  margin: 0;
+  padding-bottom: 14px;
+  border-bottom: 1.5px solid var(--ink);
+}
+/* L'eventuale nota della sezione sta attaccata al titolo, non al primo campo. */
+.form-legend + .form-section-hint { margin-top: -14px; }
+.form-section-hint { color: var(--muted); font-size: 14px; margin: 0; }
+
+.field { display: grid; gap: 8px; border: 0; padding: 0; margin: 0; min-width: 0; }
+.field-label { font-weight: 600; font-size: 15px; padding: 0; }
+.field-hint { color: var(--muted); font-size: 14px; margin: -2px 0 0; line-height: 1.45; }
+.field-hint code, .field code { font-family: var(--mono); font-size: 13px; }
+.required { color: var(--accent); text-decoration: none; border: 0; }
+/* Campi di testo. */
+.input {
+  width: 100%;
+  padding: 12px 14px;
+  color: var(--ink);
+  background: var(--paper);
+  border: 1.5px solid var(--ink);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-hard-sm);
+  transition: border-color .15s ease;
+}
+.input::placeholder { color: var(--muted); opacity: .75; }
+.input:focus-visible {
+  /* Il campo attivo non si muove e l'ombra resta quella di prima: il bordo
+     diventa vermiglio, senza cambiare spessore. */
+  outline: none;
+  border-color: var(--accent);
+}
+
+textarea.input { resize: vertical; line-height: 1.55; min-height: 80px; }
+
+/* Scelte: ogni opzione è una riga cliccabile, non un pallino microscopico. */
+.choice-list { display: grid; gap: 2px; }
+/* Elenchi lunghi su due colonne: venti voci in fila sarebbero un muro. */
+.choice-list-2 { grid-template-columns: 1fr 1fr; gap: 2px 14px; }
+.choice {
+  display: flex;
+  align-items: flex-start;
+  gap: 11px;
+  padding: 9px 12px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: 15px;
+  line-height: 1.45;
+  transition: background .15s ease;
+}
+.choice:hover { background: var(--paper-2); }
+.choice input { margin: 2px 0 0; accent-color: var(--accent); width: 17px; height: 17px; flex: none; }
+.choice:has(input:checked) { background: var(--accent-soft); }
+
+/* Invio. */
+.form-actions { display: grid; gap: 10px; justify-items: start; }
+.form-actions .btn[disabled] {
+  opacity: .5;
+  cursor: not-allowed;
+  box-shadow: none;
+  transform: none;
+}
+
+/* ------------------------------------------------------------- avvisi */
+
+.notice {
+  margin: 0 0 18px;
+  padding: 13px 15px;
+  border: 1.5px solid var(--ink);
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  line-height: 1.5;
+}
+.notice code { font-family: var(--mono); font-size: 12px; word-break: break-all; }
+.notice-ok { background: var(--sage-soft); border-color: var(--sage); }
+.notice-warn { background: var(--note); }
+
+/* --------------------------------------------------------- schermi stretti */
+
+@media (max-width: 1000px) {
+  /* Una colonna sola: la colonna destra va in cima, perché se sei arrivato da
+     un link di un driver è la prima cosa che devi vedere. */
+  .gate-layout { grid-template-columns: 1fr; gap: 24px; }
+  .gate-aside { position: static; order: -1; max-height: none; overflow: visible; }
+}
+
+@media (max-width: 860px) {
+  /* Due colonne di caselle non stanno su uno schermo stretto. */
+  .choice-list-2 { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 760px) {
+  .gate { padding: 40px 0 72px; }
+  .gate-intro { margin-bottom: 28px; }
+  .form-section { padding: 20px 18px 22px; gap: 20px; }
+}
+
+/* ------------------------------------------------------------- l'accesso */
+
+/* Stato dell'accesso in testata: a destra, staccato dal marchio. */
+.header-inner { justify-content: space-between; }
+.header-access { display: flex; align-items: center; gap: 14px; font-size: 14px; }
+.header-user { font-weight: 600; }
+
+/* Il cancello del login, sotto il bottone d'invio: è l'unico punto della pagina
+   in cui si chiede un conto, e si chiede solo a chi non ce l'ha. */
+.gate-login { margin: 4px 0 0; width: 100%; box-sizing: border-box; }
+.gate-login-lead { margin: 0 0 12px; font-weight: 600; }
+.gate-login-actions { display: flex; align-items: center; gap: 16px; margin: 0; }
+.gate-login-hint { color: var(--muted); font-size: 13px; line-height: 1.45; margin: 12px 0 0; }
+
+/* --------------------------------------- la paginetta di fine login */
+
+/* Ci arriva la finestra del login, che di solito si chiude da sola: questa
+   pagina si vede solo quando non ci riesce. Poca roba, al centro. */
+.done { display: flex; align-items: center; min-height: 60vh; }
+.done-card { max-width: 420px; margin: 0 auto; background: var(--surface); }
+.done-card .card-head {
+  padding: 13px 20px;
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+}
+.done-body { padding: 22px; }
+.done-lead { color: var(--muted); font-size: 14px; line-height: 1.55; margin: 0 0 16px; }
+.done-alt { margin: 0; font-size: 14px; }
+
+/* Il cancello dell'accesso sta in un contenitore che il browser rimpiazza dopo
+   il login: senza questa riga, dentro la griglia delle azioni si stringerebbe
+   sul contenuto invece di occupare la riga. */
+.form-actions > [data-sso-gate] { width: 100%; }
+
+/* ------------------------------------------------- il blocco del driver */
+
+.driver-work { background: var(--surface); }
+.driver-work-body { padding: 16px 20px 18px; }
+.driver-work-body .choice { padding: 8px 10px; margin: 0 -10px; font-size: 15px; }
+.driver-work-hint { color: var(--muted); font-size: 13px; line-height: 1.45; margin: 10px 0 0; }
+
+/* Segnata la casella del lavoro autonomo, quello che c'è sopra non conta più:
+   si spegne e compare la riga che lo dice. Nessun JavaScript — `:has()` guarda
+   lo stato della casella da dentro il CSS. */
+.ignored-note { display: none; }
+.gate-aside:has(#autonomous-work:checked) .driver-box {
+  opacity: .45;
+  filter: grayscale(1);
+}
+.gate-aside:has(#autonomous-work:checked) .ignored-note {
+  display: block;
+  /* L'avviso è l'unica cosa che resta leggibile nel box spento. */
+  opacity: 1;
+  filter: none;
+}
+
+/* ------------------------------------------- caricare un'analisi già pronta */
+
+.upload-box { background: var(--surface); }
+.upload-box-body { padding: 16px 20px 18px; }
+.upload-lead { font-size: 14px; line-height: 1.5; margin: 0 0 14px; }
+
+/* L'area è una <label>: tutto il riquadro è cliccabile e apre la scelta del
+   file, anche senza JavaScript. Il trascinamento lo aggiunge upload.js. */
+.dropzone {
+  display: grid;
+  gap: 4px;
+  justify-items: center;
+  text-align: center;
+  padding: 20px 14px;
+  border: 1.5px dashed var(--line-strong);
+  border-radius: var(--radius-sm);
+  background: var(--paper);
+  cursor: pointer;
+  transition: border-color .15s ease, background .15s ease;
+}
+.dropzone:hover { border-color: var(--ink); }
+.dropzone-over { border-color: var(--accent); background: var(--accent-soft); }
+/* Il campo vero resta raggiungibile da tastiera, ma non si vede. */
+.dropzone-input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+.dropzone-input:focus-visible + .dropzone-text { text-decoration: underline; }
+.dropzone-text { font-size: 14px; font-weight: 600; word-break: break-all; }
+.dropzone-hint { color: var(--muted); font-size: 12px; }
+
+.upload-actions { display: flex; gap: 10px; margin-top: 14px; }
+.upload-actions .btn { flex: 1; }
+
+.upload-status { font-size: 13px; line-height: 1.45; margin: 12px 0 0; color: var(--muted); }
+.upload-status:empty { margin: 0; }
+.upload-status-ok { color: var(--sage); font-weight: 600; }
+.upload-status-errore { color: var(--accent-ink); font-weight: 600; }
+
+/* L'avviso che serve l'accesso, prima di aprire qualsiasi finestra. */
+.upload-login { margin: 14px 0 0; }
+.upload-login-lead { margin: 0 0 6px; font-weight: 600; }
+.upload-login-hint { margin: 0 0 12px; font-size: 13px; line-height: 1.45; }
+.upload-login .btn { width: 100%; }

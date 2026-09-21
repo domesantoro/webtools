@@ -1,0 +1,43 @@
+{% extends "commons/base.njk" %}
+
+{#
+  La paginetta che chiude il giro del login.
+
+  Ci arriva la **finestra del login**, non la pagina di partenza: qui si è già
+  scambiato il biglietto e messo il cookie. Lo script (`/sso_popup.js`, caricato
+  dal blocco in fondo) avvisa la finestra che l'ha aperta e chiude questa.
+
+  Il testo serve ai casi in cui la chiusura non avviene: JavaScript spento,
+  finestra aperta a mano, o qualcosa che è andato storto. Non deve restare una
+  finestra muta.
+#}
+
+{% block body_attributes %} data-sso-login-done{% endblock %}
+
+{% block main %}
+    <div class="container gate done">
+      <div class="done-card card">
+        <div class="card-head">{{ "Accesso eseguito" if ok else "Accesso non riuscito" }}</div>
+        <div class="done-body">
+          {%- if ok %}
+          <p class="done-lead">
+            Puoi chiudere questa finestra e tornare alla pre-analisi. Se non si chiude da
+            sola, torna alla finestra di prima e ricarica la pagina.
+          </p>
+          {%- else %}
+          <p class="notice notice-warn">
+            Il login non è andato a buon fine. Chiudi questa finestra e riprova dalla
+            pre-analisi.
+          </p>
+          {%- endif %}
+          <p class="done-alt">
+            <a class="text-link" href="/">Vai alla pre-analisi</a>
+          </p>
+        </div>
+      </div>
+    </div>
+{% endblock %}
+
+{% block scripts %}
+<script src="/sso_popup.js" defer></script>
+{% endblock %}

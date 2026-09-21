@@ -1,0 +1,33 @@
+{#
+  Il blocco del lavoro autonomo: lo vede **solo un driver**, sotto il box del
+  driver, perché governa quello che c'è lì sopra.
+
+  Un driver che compila la pre-analisi può star portando un lavoro suo. In quel
+  caso il sistema applica lo sconto sulla fee, e gli eventuali sconti o link di
+  **altri** driver non contano più: un progetto lo porta una persona sola.
+
+  La casella non fa nulla da sé: il CSS legge `#autonomous-work:checked` (regola
+  `:has()` in styles.css) e spegne il box qui sopra, facendo comparire l'avviso.
+  Nessun JavaScript, nessun giro sul server.
+#}
+
+{% macro render(work) %}
+      <aside class="card driver-work" aria-labelledby="driver-work-title">
+        <div class="card-head aside-head" id="driver-work-title">Lavoro autonomo</div>
+        <div class="driver-work-body">
+          {%- if work.own_link %}
+          <p class="notice notice-warn">
+            Il link che hai usato è tuo: non si applica.
+          </p>
+          {%- endif %}
+          <label class="choice" for="autonomous-work">
+            <input type="checkbox" id="autonomous-work" name="autonomous_work" value="yes"
+                   form="gate-form">
+            <span>È un lavoro autonomo.</span>
+          </label>
+          <p class="driver-work-hint">
+            Comporta uno sconto del <strong>20%</strong> sulla fee al sistema.
+          </p>
+        </div>
+      </aside>
+{%- endmacro %}

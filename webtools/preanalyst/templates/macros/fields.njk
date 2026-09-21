@@ -1,0 +1,66 @@
+{#
+  I campi del form, disegnati a partire dai dati di `src/questions.js`.
+  Qui non si sa che cosa chiedono le domande: si sa solo come si disegna un campo.
+
+  Tipi gestiti: textarea, text, email (campi di testo), radio e checkbox (scelte).
+#}
+
+{% macro field_hint(hint) %}
+{%- if hint %}<p class="field-hint">{{ hint }}</p>{% endif %}
+{%- endmacro %}
+
+{% macro required_mark(required) %}
+{%- if required %} <abbr class="required" title="obbligatorio">*</abbr>{% endif %}
+{%- endmacro %}
+
+{# radio e checkbox: stessa struttura, cambiano il tipo e il nome inviato. #}
+{% macro choice_field(field) %}
+          <fieldset class="field choices">
+            <legend class="field-label">{{ field.label }}{{ required_mark(field.required) }}</legend>
+            {{ field_hint(field.hint) }}
+            <div class="choice-list{% if field.columns == 2 %} choice-list-2{% endif %}">
+            {%- for option in field.options %}
+              <label class="choice" for="{{ field.name }}-{{ loop.index0 }}">
+                <input type="{{ "radio" if field.kind == "radio" else "checkbox" }}"
+                       id="{{ field.name }}-{{ loop.index0 }}"
+                       name="{{ field.name }}{{ "" if field.kind == "radio" else "[]" }}"
+                       value="{{ option[0] }}">
+                <span>{{ option[1] }}</span>
+              </label>
+            {%- endfor %}
+            </div>
+          </fieldset>
+{%- endmacro %}
+
+{% macro text_field(field) %}
+          <div class="field">
+            <label class="field-label" for="{{ field.name }}">{{ field.label }}{{ required_mark(field.required) }}</label>
+            {{ field_hint(field.hint) }}
+            {%- if field.kind == "textarea" %}
+            <textarea class="input" id="{{ field.name }}" name="{{ field.name }}"
+                      rows="{{ field.rows or 3 }}" placeholder="{{ field.placeholder or "" }}"
+                      {{- " required" if field.required }}></textarea>
+            {%- else %}
+            <input class="input" type="{{ field.kind }}" id="{{ field.name }}" name="{{ field.name }}"
+                   placeholder="{{ field.placeholder or "" }}"
+                   {%- if field.autocomplete %} autocomplete="{{ field.autocomplete }}"{% endif %}
+                   {{- " required" if field.required }}>
+            {%- endif %}
+          </div>
+{%- endmacro %}
+
+{% macro render_field(field) %}
+{%- if field.kind == "radio" or field.kind == "checkbox" %}{{ choice_field(field) }}{% else %}{{ text_field(field) }}{% endif %}
+{%- endmacro %}
+
+{% macro section(item) %}
+        <section class="form-section">
+          <h2 class="form-legend">{{ item.legend }}</h2>
+          {%- if item.hint %}
+          <p class="form-section-hint">{{ item.hint }}</p>
+          {%- endif %}
+          {%- for field in item.fields %}
+          {{ render_field(field) }}
+          {%- endfor %}
+        </section>
+{%- endmacro %}

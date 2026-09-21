@@ -1,0 +1,43 @@
+{#
+  Il blocco per caricare un'analisi già fatta. Sempre visibile, anche da sloggati:
+  il conto serve al momento di caricare, non per scegliere il file.
+
+  Senza JavaScript resta il campo file e basta: il bottone "Carica" lo fa comparire
+  `public/upload.js`, che è anche quello che manda il file a `POST /upload`.
+#}
+
+{% macro render(upload) %}
+      <aside class="card upload-box" aria-labelledby="upload-box-title">
+        <div class="card-head aside-head" id="upload-box-title">Analisi già pronta</div>
+        <div class="upload-box-body">
+          <p class="upload-lead">Hai già un'analisi? Caricala o trascinala qui.</p>
+
+          <label class="dropzone" for="analysis-file" data-upload-zone>
+            <input class="dropzone-input" type="file" id="analysis-file" name="analysis"
+                   accept="{{ upload.accept }}">
+            <span class="dropzone-text" data-upload-name>Scegli un file o trascinalo qui</span>
+            <span class="dropzone-hint">Fino a {{ upload.max_mb }} MB</span>
+          </label>
+
+          {#- Compare solo quando un file è stato scelto. #}
+          <div class="upload-actions" data-upload-actions hidden>
+            <button class="btn btn-primary" type="button" data-upload-send>Carica</button>
+            <button class="btn" type="button" data-upload-clear>Rimuovi</button>
+          </div>
+
+          {#- Da sloggati, "Carica" non apre niente: mostra questo, e la finestra
+              del login si apre solo se la si chiede qui. Una finestra che compare
+              senza averla chiesta è una finestra che l'utente non si aspetta. #}
+          <div class="notice notice-warn upload-login" data-upload-login hidden>
+            <p class="upload-login-lead">Per caricare un'analisi serve l'accesso.</p>
+            <p class="upload-login-hint">
+              Il login si apre in una finestra a parte. Il file che hai scelto resta qui e
+              parte da solo appena sei dentro.
+            </p>
+            <button class="btn" type="button" data-upload-login-go>Entra e carica</button>
+          </div>
+
+          <p class="upload-status" data-upload-status role="status"></p>
+        </div>
+      </aside>
+{%- endmacro %}

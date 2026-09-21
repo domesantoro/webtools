@@ -1,0 +1,76 @@
+/* Stile locale delle pagine del sso: entra e registrati.
+   Font, token, header, marchio, schede e bottoni arrivano da commons.css, che è
+   una copia generata dal deployer (webtools/configurator/style_deployer/deploy.sh)
+   e non va modificata qui.
+
+   I campi (.field, .input) e gli avvisi (.notice) sono ricopiati da preanalyst:
+   commons.css non li contiene. Finché le copie sono due si tengono d'occhio; al
+   terzo sottosistema con un form vanno spostati in commons. */
+
+.site-shell { display: flex; flex-direction: column; min-height: 100vh; }
+.page-main { flex: 1; display: flex; align-items: center; }
+
+/* Una scheda sola al centro: in queste pagine non c'è altro da guardare. */
+.access { padding: 56px 0 88px; width: 100%; }
+.access-card { max-width: 420px; margin: 0 auto; background: var(--surface); }
+.access-body { padding: 24px 22px 22px; }
+.access-lead { color: var(--muted); font-size: 14px; line-height: 1.55; margin: 0 0 18px; }
+
+.access-card .card-head {
+  padding: 13px 20px;
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+}
+
+/* ------------------------------------------------------------------ campi */
+
+.field { display: grid; gap: 8px; border: 0; padding: 0; margin: 0 0 16px; min-width: 0; }
+.field-label { font-weight: 600; font-size: 15px; padding: 0; }
+.input {
+  width: 100%;
+  padding: 12px 14px;
+  color: var(--ink);
+  background: var(--paper);
+  border: 1.5px solid var(--ink);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-hard-sm);
+  transition: border-color .15s ease;
+}
+.input:focus-visible {
+  /* Il campo attivo non si muove e l'ombra resta quella di prima: il bordo
+     diventa vermiglio, senza cambiare spessore. */
+  outline: none;
+  border-color: var(--accent);
+}
+
+
+.form-actions { margin-top: 20px; }
+.form-actions .btn { width: 100%; }
+
+/* ---------------------------------------------------------------- avvisi */
+
+.notice {
+  margin: 0 0 18px;
+  padding: 13px 15px;
+  border: 1.5px solid var(--ink);
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  line-height: 1.5;
+}
+.notice-warn { background: var(--note); }
+
+/* --------------------------------------------------------- schermi stretti */
+
+@media (max-width: 520px) {
+  .access { padding: 32px 0 56px; }
+}
+
+.access-alt {
+  margin: 18px 0 0;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+  font-size: 14px;
+  color: var(--muted);
+}

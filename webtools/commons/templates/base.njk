@@ -1,0 +1,71 @@
+{#
+  Layout comune dei siti webtool: guscio della pagina, testata e marchio.
+
+  NON MODIFICARE LA COPIA DENTRO UN SOTTOSISTEMA.
+  L'originale è `webtools/commons/templates/base.njk`; le copie le distribuisce
+  `webtools/configurator/template_deployer/deploy.sh`, come per commons.css.
+
+  Si usa così, da una pagina del sottosistema:
+
+      {% extends "commons/base.njk" %}
+      {% block main %}…{% endblock %}
+
+  Variabili attese:
+    title        obbligatoria: finisce nel <title>, seguita da " — webtool"
+    description   facoltativa: <meta name="description">
+    noindex       facoltativa: se vera, chiede ai motori di non indicizzare
+    home_link     facoltativa: se c'è, il marchio diventa un link a quell'indirizzo
+
+  Blocchi:
+    head             roba in più dentro <head>
+    body_attributes  attributi sul <body> (per esempio i marcatori del sso)
+    header_extra     la parte destra della testata (stato dell'accesso, menu…)
+    main             il contenuto della pagina
+    scripts          gli script, in fondo alla pagina
+
+  I fogli di stile si chiedono con percorsi **assoluti**: le pagine possono stare
+  sotto un percorso qualsiasi (per esempio /ui/login), e con un percorso relativo
+  il browser andrebbe a cercarli accanto alla pagina, dove non ci sono.
+#}<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ title }} — webtool</title>
+  {%- if description %}
+  <meta name="description" content="{{ description }}">
+  {%- endif %}
+  {%- if noindex %}
+  <meta name="robots" content="noindex">
+  {%- endif %}
+  <link rel="icon" href="/assets/mark.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/commons.css">
+  <link rel="stylesheet" href="/styles.css">
+  {%- block head %}{% endblock %}
+</head>
+<body{% block body_attributes %}{% endblock %}>
+<div class="site-shell">
+  <header class="site-header">
+    <div class="container header-inner">
+      {%- if home_link %}
+      <a class="brand" href="{{ home_link }}" aria-label="Home">
+        <span class="brand-mark">w</span>
+        <span class="brand-stack">webtool<small>strumenti su misura</small></span>
+      </a>
+      {%- else %}
+      <span class="brand" aria-label="webtool">
+        <span class="brand-mark">w</span>
+        <span class="brand-stack">webtool<small>strumenti su misura</small></span>
+      </span>
+      {%- endif %}
+      {%- block header_extra %}{% endblock %}
+    </div>
+  </header>
+
+  <main class="page-main">
+    {%- block main %}{% endblock %}
+  </main>
+</div>
+{%- block scripts %}{% endblock %}
+</body>
+</html>

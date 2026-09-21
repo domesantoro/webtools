@@ -1,0 +1,442 @@
+=== start 2026-09-19 16:35:17 ===
+INFO:     Started server process [65095]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:8100 (Press CTRL+C to quit)
+INFO:     127.0.0.1:62028 - "GET /docs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62028 - "GET /openapi.json HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62029 - "GET /configuration/front-gate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62029 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:62034 - "GET /anagraphics/demo-001 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62036 - "GET /anagraphics/demo-0012 HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:62038 - "GET /configuration/front-gatez HTTP/1.1" 404 Not Found
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [65095]
+=== start 2026-09-19 16:43:15 ===
+INFO:     Started server process [65558]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:8103 (Press CTRL+C to quit)
+MongoDB non raggiungibile: localhost:27999: [Errno 61] Connection refused (configured timeouts: socketTimeoutMS: 20000.0ms, connectTimeoutMS: 20000.0ms), Timeout: 1.5s, Topology Description: <TopologyDescription id: 6aae9f8314ad42d7f3d87e66, topology_type: Unknown, servers: [<ServerDescription ('localhost', 27999) server_type: Unknown, rtt: None, error=AutoReconnect('localhost:27999: [Errno 61] Connection refused (configured timeouts: socketTimeoutMS: 20000.0ms, connectTimeoutMS: 20000.0ms)')>]>
+INFO:     127.0.0.1:62062 - "GET /anagraphics/demo-001 HTTP/1.1" 503 Service Unavailable
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [65558]
+=== start 2026-09-19 16:43:32 ===
+INFO:     Started server process [65654]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:8100 (Press CTRL+C to quit)
+INFO:     127.0.0.1:62069 - "GET /configuration/front-gate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62071 - "GET /anagraphics/demo-001 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62072 - "GET /anagraphics/unknown HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:62073 - "GET /configuration/unknown HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:62074 - "GET /nope HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:62075 - "POST /anagraphics/demo-001 HTTP/1.1" 405 Method Not Allowed
+INFO:     127.0.0.1:62093 - "GET /anagraphics/1f251606-bdba-40c4-bbee-bfedc6e57f70 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62094 - "GET /anagraphics/demo-001 HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:62097 - "GET /configuration/front-gate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62097 - "GET /configuration/front-gatez HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:62098 - "GET /anagraphics/demo-001 HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:62098 - "GET /anagraphics/1f251606-bdba-40c4-bbee-bfedc6e57f70 HTTP/1.1" 200 OK
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [65654]
+=== start 2026-09-20 13:01:35 ===
+INFO:     Started server process [75932]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:8100 (Press CTRL+C to quit)
+INFO:     127.0.0.1:50669 - "GET /drivers/7633be3d-e701-42ca-9fea-6c6d1bb4b7d1 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50671 - "GET /drivers/7633be3d-e701-42ca-9fea-6c6d1bb4b7d1/discounts HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50672 - "GET /discounts/e8013cf2-34eb-4bc3-8a34-b08fb24a1bf3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50673 - "GET /drivers/inesistente HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:50674 - "GET /drivers/inesistente/discounts HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:50675 - "GET /discounts/inesistente HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:50676 - "GET /anagraphics/1f251606-bdba-40c4-bbee-bfedc6e57f70 HTTP/1.1" 200 OK
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [75932]
+=== start 2026-09-20 13:03:56 ===
+INFO:     Started server process [76129]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:8100 (Press CTRL+C to quit)
+INFO:     127.0.0.1:50713 - "GET /drivers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50715 - "GET /drivers/7633be3d-e701-42ca-9fea-6c6d1bb4b7d1 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50716 - "GET /drivers/639718a3-ea41-4533-bdb8-73ac58b3b1b2/discounts HTTP/1.1" 200 OK
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [76129]
+=== start 2026-09-20 13:07:15 ===
+INFO:     Started server process [76368]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:8100 (Press CTRL+C to quit)
+INFO:     127.0.0.1:50782 - "GET /drivers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50783 - "GET /drivers/7633be3d-e701-42ca-9fea-6c6d1bb4b7d HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:50785 - "GET /drivers/7633be3d-e701-42ca-9fea-6c6d1bb4b7d1 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50791 - "GET /drivers/7633be3d-e701-42ca-9fea-6c6d1bb4b7d1/discounts HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50792 - "GET /drivers/7633be3d-e701-42ca-9fea-6c6d1bb4b7d2/discounts HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:50792 - "GET /drivers/639718a3-ea41-4533-bdb8-73ac58b3b1b2/discounts HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50794 - "GET /discounts/e8013cf2-34eb-4bc3-8a34-b08fb24a1bf3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50897 - "GET /drivers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50897 - "GET /drivers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50899 - "GET /discounts/e8013cf2-34eb-4bc3-8a34-b08fb24a1bf3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50897 - "GET /drivers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50899 - "GET /discounts/non-esiste HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:50916 - "GET /drivers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50917 - "GET /discounts/tmp-driver-sparito HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50933 - "GET /drivers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51212 - "GET /drivers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51227 - "GET /drivers/639718a3-ea41-4533-bdb8-73ac58b3b1b2/discounts HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51228 - "GET /drivers/discounts HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:51229 - "GET /discounts HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:51230 - "GET /drivers/7633be3d-e701-42ca-9fea-6c6d1bb4b7d1/discounts HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51235 - "GET /drivers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51235 - "GET /drivers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51235 - "GET /drivers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51238 - "GET /discounts/e8013cf2-34eb-4bc3-8a34-b08fb24a1bf3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51235 - "GET /drivers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51242 - "GET /drivers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51243 - "GET /discounts/e8013cf2-34eb-4bc3-8a34-b08fb24a1bf3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51247 - "GET /drivers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51250 - "GET /drivers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51251 - "GET /discounts/e8013cf2-34eb-4bc3-8a34-b08fb24a1bf4 HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:51284 - "GET /drivers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51289 - "GET /drivers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51295 - "GET /drivers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51311 - "GET /drivers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51327 - "GET /drivers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51337 - "GET /drivers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51342 - "GET /drivers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51351 - "GET /drivers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51359 - "GET /drivers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51362 - "GET /drivers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51387 - "GET /drivers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51389 - "GET /drivers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51390 - "GET /discounts/e8013cf2-34eb-4bc3-8a34-b08fb24a1bf3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51395 - "GET /drivers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51401 - "GET /drivers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51401 - "GET /drivers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51403 - "GET /discounts/xxx HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:51406 - "GET /drivers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51407 - "GET /discounts/e8013cf2-34eb-4bc3-8a34-b08fb24a1bf3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51406 - "GET /drivers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51407 - "GET /discounts/e8013cf2-34eb-4bc3-8a34-b08fb24a1bf3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51435 - "GET /drivers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51458 - "GET /drivers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51494 - "GET /drivers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51497 - "GET /drivers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51513 - "GET /drivers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51519 - "GET /drivers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51524 - "GET /drivers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51533 - "GET /drivers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51538 - "GET /drivers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51543 - "GET /drivers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51729 - "GET /drivers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51729 - "GET /drivers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51729 - "GET /drivers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51734 - "GET /drivers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51741 - "GET /drivers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51773 - "GET /drivers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51792 - "GET /drivers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51795 - "GET /drivers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51799 - "GET /drivers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56462 - "GET /drivers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56462 - "GET /drivers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56462 - "GET /drivers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56465 - "GET /discounts/e8013cf2-34eb-4bc3-8a34-b08fb24a1bf3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56462 - "GET /drivers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56465 - "GET /discounts/e8013cf2-34eb-4bc3-8a34-b08fb24a1bf3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56462 - "GET /drivers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56462 - "GET /drivers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56797 - "GET /drivers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56820 - "GET /drivers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56820 - "GET /drivers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56822 - "GET /discounts/e8013cf2-34eb-4bc3-8a34-b08fb24a1bf3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56829 - "GET /drivers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56838 - "GET /drivers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56839 - "GET /discounts/e8013cf2-34eb-4bc3-8a34-b08fb24a1bf3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56888 - "GET /drivers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56888 - "GET /drivers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56890 - "GET /discounts/e8013cf2-34eb-4bc3-8a34-b08fb24a1bf3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56888 - "GET /drivers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56895 - "GET /drivers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56895 - "GET /drivers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56897 - "GET /discounts/e8013cf2-34eb-4bc3-8a34-b08fb24a1bf3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56895 - "GET /drivers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56897 - "GET /discounts/scaduto HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:56895 - "GET /drivers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56918 - "GET /drivers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56919 - "GET /discounts/e8013cf2-34eb-4bc3-8a34-b08fb24a1bf3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56925 - "GET /drivers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56931 - "GET /drivers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56931 - "GET /drivers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56933 - "GET /discounts/e8013cf2-34eb-4bc3-8a34-b08fb24a1bf3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56969 - "GET /drivers HTTP/1.1" 200 OK
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [76368]
+=== start 2026-09-21 10:45:23 ===
+INFO:     Started server process [97680]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:8100 (Press CTRL+C to quit)
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [97680]
+=== start 2026-09-21 11:37:48 ===
+INFO:     Started server process [5955]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:8100 (Press CTRL+C to quit)
+INFO:     127.0.0.1:59522 - "GET /openapi.json HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59523 - "GET /users/dome.santoro%40gmail.com HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59589 - "GET /drivers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59608 - "GET /drivers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59622 - "GET /users/dome.santoro%40gmail.com HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59623 - "GET /users/dome.santoro%40gmail.com/credential HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59622 - "POST /sessions HTTP/1.1" 201 Created
+INFO:     127.0.0.1:59623 - "POST /tickets HTTP/1.1" 201 Created
+INFO:     127.0.0.1:59622 - "DELETE /tickets/nHOkU9WO0bg6Dez2Qj7i6ULrqSmxJ_Q3tMEKzihH4iw HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59623 - "GET /sessions/0EhTe5UfAG0aW1adbzKXql-vqGlaY_AVejYfM7V7Bgc HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59622 - "GET /sessions/0EhTe5UfAG0aW1adbzKXql-vqGlaY_AVejYfM7V7Bgc HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59626 - "GET /drivers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59633 - "DELETE /sessions/0EhTe5UfAG0aW1adbzKXql-vqGlaY_AVejYfM7V7Bgc HTTP/1.1" 204 No Content
+INFO:     127.0.0.1:59643 - "GET /users/dome.santoro%40gmail.com HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59644 - "GET /users/dome.santoro%40gmail.com/credential HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59643 - "POST /sessions HTTP/1.1" 201 Created
+INFO:     127.0.0.1:59644 - "POST /tickets HTTP/1.1" 201 Created
+INFO:     127.0.0.1:59643 - "DELETE /tickets/onVQcZrO8lgzARnDRZX7iA1CMkJ_lz3vlWPcgOzSvGY HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59644 - "GET /sessions/p7Rg8JvKz5g2d6ID9LxFFzMEdIQjIv5idrUlbM8Wke0 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59643 - "GET /sessions/p7Rg8JvKz5g2d6ID9LxFFzMEdIQjIv5idrUlbM8Wke0 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59655 - "GET /sessions/p7Rg8JvKz5g2d6ID9LxFFzMEdIQjIv5idrUlbM8Wke0 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59656 - "GET /drivers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59768 - "GET /drivers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59769 - "GET /discounts/e8013cf2-34eb-4bc3-8a34-b08fb24a1bf3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59768 - "GET /drivers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59769 - "GET /discounts/e8013cf2-34eb-4bc3-8a34-b08fb24a1bf3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59768 - "GET /drivers HTTP/1.1" 200 OK
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [5955]
+=== start 2026-09-21 11:51:52 ===
+INFO:     Started server process [7237]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:8100 (Press CTRL+C to quit)
+INFO:     127.0.0.1:59858 - "GET /sessions/p7Rg8JvKz5g2d6ID9LxFFzMEdIQjIv5idrUlbM8Wke0 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59858 - "DELETE /sessions/p7Rg8JvKz5g2d6ID9LxFFzMEdIQjIv5idrUlbM8Wke0 HTTP/1.1" 204 No Content
+INFO:     127.0.0.1:59866 - "GET /users/dome.santoro%40gmail.com HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59867 - "GET /users/dome.santoro%40gmail.com/credential HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59866 - "POST /sessions HTTP/1.1" 201 Created
+INFO:     127.0.0.1:59867 - "POST /tickets HTTP/1.1" 201 Created
+INFO:     127.0.0.1:59866 - "DELETE /tickets/tLiszR5bFwRZ3TIjq0NtVSLFUOn90V06RkmjHI9sWKg HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59867 - "GET /sessions/gPqTkLbu5nZssIe03ZBPCtklFlBICF1DB3-xW2IGKUM HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59866 - "GET /sessions/gPqTkLbu5nZssIe03ZBPCtklFlBICF1DB3-xW2IGKUM HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59922 - "GET /users/dome.santoro%40gmail.com HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59923 - "GET /users/dome.santoro%40gmail.com/credential HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59922 - "POST /sessions HTTP/1.1" 201 Created
+INFO:     127.0.0.1:59923 - "POST /tickets HTTP/1.1" 201 Created
+INFO:     127.0.0.1:59922 - "DELETE /tickets/6gg0lU9fKzHxNuInfpgXBp4c7cAwrFQ-BaVN_fUGOHs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59923 - "GET /sessions/p_HzHswc0Jm32N3nKUfC4k6C_erUzazpo62npwF_YG0 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59922 - "GET /sessions/p_HzHswc0Jm32N3nKUfC4k6C_erUzazpo62npwF_YG0 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59998 - "GET /sessions/gPqTkLbu5nZssIe03ZBPCtklFlBICF1DB3-xW2IGKUM HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59998 - "GET /sessions/gPqTkLbu5nZssIe03ZBPCtklFlBICF1DB3-xW2IGKUM HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:60006 - "GET /users/dome.santoro%40gmail.com HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60007 - "GET /users/dome.santoro%40gmail.com/credential HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60006 - "POST /sessions HTTP/1.1" 201 Created
+INFO:     127.0.0.1:60007 - "POST /tickets HTTP/1.1" 201 Created
+INFO:     127.0.0.1:60006 - "DELETE /tickets/q-6B5q8kNIREZy6tbT1WQ2o7fTtOuIKOutZviRH9PqM HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60007 - "GET /sessions/RotL-37QnTq1460xcLrLECQ5uYcxxyn_Hy1WNIGJM4k HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60006 - "GET /sessions/RotL-37QnTq1460xcLrLECQ5uYcxxyn_Hy1WNIGJM4k HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60040 - "GET /users/dome.santoro%40gmail.com HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60041 - "GET /users/dome.santoro%40gmail.com/credential HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60040 - "POST /sessions HTTP/1.1" 201 Created
+INFO:     127.0.0.1:60041 - "POST /tickets HTTP/1.1" 201 Created
+INFO:     127.0.0.1:60040 - "DELETE /tickets/sWW0Rq7WCapnEgqM2TlwpiwnqtOpL4Q9X2KyRnFI888 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60041 - "GET /sessions/aAs-pNYiOS-20op1aHvOAZMqn2vf22eLignnB6RSCbg HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60045 - "GET /drivers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60046 - "GET /discounts/e8013cf2-34eb-4bc3-8a34-b08fb24a1bf3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60040 - "GET /sessions/aAs-pNYiOS-20op1aHvOAZMqn2vf22eLignnB6RSCbg HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60045 - "GET /drivers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60046 - "GET /discounts/e8013cf2-34eb-4bc3-8a34-b08fb24a1bf3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60040 - "GET /sessions/aAs-pNYiOS-20op1aHvOAZMqn2vf22eLignnB6RSCbg HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60045 - "GET /drivers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60052 - "GET /sessions/aAs-pNYiOS-20op1aHvOAZMqn2vf22eLignnB6RSCbg HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60052 - "GET /sessions/aAs-pNYiOS-20op1aHvOAZMqn2vf22eLignnB6RSCbg HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60055 - "GET /drivers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60056 - "GET /discounts/e8013cf2-34eb-4bc3-8a34-b08fb24a1bf3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60052 - "GET /sessions/aAs-pNYiOS-20op1aHvOAZMqn2vf22eLignnB6RSCbg HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60055 - "GET /drivers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60052 - "GET /sessions/aAs-pNYiOS-20op1aHvOAZMqn2vf22eLignnB6RSCbg HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60055 - "GET /drivers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60061 - "GET /sessions/aAs-pNYiOS-20op1aHvOAZMqn2vf22eLignnB6RSCbg HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60061 - "GET /sessions/aAs-pNYiOS-20op1aHvOAZMqn2vf22eLignnB6RSCbg HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60121 - "GET /drivers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60137 - "GET /drivers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60138 - "GET /discounts/e8013cf2-34eb-4bc3-8a34-b08fb24a1bf3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60137 - "GET /drivers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60137 - "GET /drivers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60138 - "GET /discounts/codice-inventato HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:60137 - "GET /drivers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60163 - "DELETE /sessions/RotL-37QnTq1460xcLrLECQ5uYcxxyn_Hy1WNIGJM4k HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:60166 - "GET /drivers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60167 - "GET /discounts/e8013cf2-34eb-4bc3-8a34-b08fb24a1bf3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60172 - "GET /users/dome.santoro%40gmail.com HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60173 - "GET /users/dome.santoro%40gmail.com/credential HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60172 - "POST /sessions HTTP/1.1" 201 Created
+INFO:     127.0.0.1:60173 - "POST /tickets HTTP/1.1" 201 Created
+INFO:     127.0.0.1:60172 - "DELETE /tickets/xNiEvlcKWc01PxKR-aHt0oXhT_P7rMlR28e_lW053N8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60173 - "GET /sessions/uKl_xLAb8Ob0-7WwSABpuxBvGHk_OZo7a-6q06uwfcs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60172 - "GET /sessions/uKl_xLAb8Ob0-7WwSABpuxBvGHk_OZo7a-6q06uwfcs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60177 - "GET /drivers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60178 - "GET /discounts/e8013cf2-34eb-4bc3-8a34-b08fb24a1bf3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60186 - "GET /sessions/aAs-pNYiOS-20op1aHvOAZMqn2vf22eLignnB6RSCbg HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:60187 - "GET /drivers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60188 - "GET /discounts/e8013cf2-34eb-4bc3-8a34-b08fb24a1bf3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60186 - "DELETE /sessions/uKl_xLAb8Ob0-7WwSABpuxBvGHk_OZo7a-6q06uwfcs HTTP/1.1" 204 No Content
+INFO:     127.0.0.1:60194 - "GET /drivers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60196 - "GET /users/dome.santoro%40gmail.com HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60197 - "GET /users/dome.santoro%40gmail.com/credential HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60196 - "POST /sessions HTTP/1.1" 201 Created
+INFO:     127.0.0.1:60197 - "POST /tickets HTTP/1.1" 201 Created
+INFO:     127.0.0.1:60196 - "DELETE /tickets/siWmF1WFnmA0aGFgdX3tdZuobKphkI0aZ1xpwKyAVxc HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60197 - "GET /sessions/GBGopSow-s_4WLl1ppHkwabRK-PcyGhzrHVKf58OzNY HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60196 - "GET /sessions/GBGopSow-s_4WLl1ppHkwabRK-PcyGhzrHVKf58OzNY HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60201 - "GET /drivers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60202 - "GET /discounts/e8013cf2-34eb-4bc3-8a34-b08fb24a1bf3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60196 - "GET /sessions/GBGopSow-s_4WLl1ppHkwabRK-PcyGhzrHVKf58OzNY HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60201 - "GET /drivers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60211 - "GET /users/dome.santoro%40gmail.com HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60212 - "GET /users/dome.santoro%40gmail.com/credential HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60211 - "POST /sessions HTTP/1.1" 201 Created
+INFO:     127.0.0.1:60212 - "POST /tickets HTTP/1.1" 201 Created
+INFO:     127.0.0.1:60211 - "DELETE /tickets/sbma71Hkwzf-MYL4w6MA4GlekiAH993RQVJ1-B1T6zc HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60212 - "GET /sessions/xodPjbfNf5SZfoL4rLJlLEk4VM3DtIZ3Ad1hYeW_ViQ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60211 - "GET /sessions/xodPjbfNf5SZfoL4rLJlLEk4VM3DtIZ3Ad1hYeW_ViQ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60217 - "GET /drivers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60224 - "GET /sessions/xodPjbfNf5SZfoL4rLJlLEk4VM3DtIZ3Ad1hYeW_ViQ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60225 - "GET /drivers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60226 - "GET /discounts/e8013cf2-34eb-4bc3-8a34-b08fb24a1bf3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60232 - "GET /sessions/xodPjbfNf5SZfoL4rLJlLEk4VM3DtIZ3Ad1hYeW_ViQ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60233 - "GET /drivers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60239 - "DELETE /sessions/xodPjbfNf5SZfoL4rLJlLEk4VM3DtIZ3Ad1hYeW_ViQ HTTP/1.1" 204 No Content
+INFO:     127.0.0.1:60242 - "GET /drivers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60245 - "GET /drivers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60246 - "GET /discounts/e8013cf2-34eb-4bc3-8a34-b08fb24a1bf3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60251 - "GET /drivers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60259 - "GET /users/dome.santoro%40gmail.com HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60260 - "GET /users/dome.santoro%40gmail.com/credential HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60259 - "POST /sessions HTTP/1.1" 201 Created
+INFO:     127.0.0.1:60260 - "POST /tickets HTTP/1.1" 201 Created
+INFO:     127.0.0.1:60259 - "DELETE /tickets/AmLr457af06gFvhovVDhcU5c72SwGGVSoopYeeiktpc HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60260 - "GET /sessions/JibdZKakjI3-ztOmU7mgRAucsl8Ej7KUUrCz_5ozR-8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60259 - "GET /sessions/JibdZKakjI3-ztOmU7mgRAucsl8Ej7KUUrCz_5ozR-8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60265 - "GET /drivers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60284 - "GET /sessions/GBGopSow-s_4WLl1ppHkwabRK-PcyGhzrHVKf58OzNY HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60285 - "GET /drivers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60286 - "GET /discounts/2629fcbd-9589-462e-a549-777b58f07aa7 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60284 - "GET /sessions/GBGopSow-s_4WLl1ppHkwabRK-PcyGhzrHVKf58OzNY HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60285 - "GET /drivers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60284 - "GET /sessions/GBGopSow-s_4WLl1ppHkwabRK-PcyGhzrHVKf58OzNY HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60285 - "GET /drivers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60286 - "GET /discounts/inventato HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:60294 - "DELETE /sessions/JibdZKakjI3-ztOmU7mgRAucsl8Ej7KUUrCz_5ozR-8 HTTP/1.1" 204 No Content
+INFO:     127.0.0.1:60297 - "GET /drivers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60298 - "GET /discounts/2629fcbd-9589-462e-a549-777b58f07aa7 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60302 - "GET /users/dome.santoro%40gmail.com HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60303 - "GET /users/dome.santoro%40gmail.com/credential HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60302 - "POST /sessions HTTP/1.1" 201 Created
+INFO:     127.0.0.1:60303 - "POST /tickets HTTP/1.1" 201 Created
+INFO:     127.0.0.1:60302 - "DELETE /tickets/RNlEU1RE6Jsju5qJr8W1fFT7ScoV7ZOcnPNVbGML3rM HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60303 - "GET /sessions/5ulY_4bU3L5OItEdQZybsQt1_Xp6AOOsfqaJlh-fFhE HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60302 - "GET /sessions/5ulY_4bU3L5OItEdQZybsQt1_Xp6AOOsfqaJlh-fFhE HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60308 - "GET /drivers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60309 - "GET /discounts/2629fcbd-9589-462e-a549-777b58f07aa7 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60319 - "GET /sessions/GBGopSow-s_4WLl1ppHkwabRK-PcyGhzrHVKf58OzNY HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60320 - "GET /drivers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60321 - "GET /discounts/2629fcbd-9589-462e-a549-777b58f07aa7 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60319 - "GET /sessions/5ulY_4bU3L5OItEdQZybsQt1_Xp6AOOsfqaJlh-fFhE HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60320 - "GET /drivers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60329 - "DELETE /sessions/5ulY_4bU3L5OItEdQZybsQt1_Xp6AOOsfqaJlh-fFhE HTTP/1.1" 204 No Content
+INFO:     127.0.0.1:60332 - "GET /drivers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60339 - "GET /users/dome.santoro%40gmail.com HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60340 - "GET /users/dome.santoro%40gmail.com/credential HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60339 - "POST /sessions HTTP/1.1" 201 Created
+INFO:     127.0.0.1:60340 - "POST /tickets HTTP/1.1" 201 Created
+INFO:     127.0.0.1:60339 - "DELETE /tickets/7slGVgUoi9duA4POUJ8y9_nvF4I1brlNBsOkgatUvAo HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60340 - "GET /sessions/brMKtsL9Tu2QKYaqpPwAODaEh4LEcxiU_E0IcVc4_cc HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60339 - "GET /sessions/brMKtsL9Tu2QKYaqpPwAODaEh4LEcxiU_E0IcVc4_cc HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60345 - "GET /drivers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60347 - "DELETE /sessions/brMKtsL9Tu2QKYaqpPwAODaEh4LEcxiU_E0IcVc4_cc HTTP/1.1" 204 No Content
+INFO:     127.0.0.1:60350 - "GET /drivers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60351 - "GET /discounts/2629fcbd-9589-462e-a549-777b58f07aa7 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60356 - "GET /users/dome.santoro%40gmail.com HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60357 - "GET /users/dome.santoro%40gmail.com/credential HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60356 - "POST /sessions HTTP/1.1" 201 Created
+INFO:     127.0.0.1:60357 - "POST /tickets HTTP/1.1" 201 Created
+INFO:     127.0.0.1:60356 - "DELETE /tickets/kgZa4SE288EiRxyLypE-uOAQ5LZmU_KBttst3lg2x4Y HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60357 - "GET /sessions/5sy5GBen67PJISb3cdwoLVKJf-RLzb-ULibHp9oilQE HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60356 - "GET /sessions/5sy5GBen67PJISb3cdwoLVKJf-RLzb-ULibHp9oilQE HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60361 - "GET /drivers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60362 - "GET /discounts/2629fcbd-9589-462e-a549-777b58f07aa7 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60369 - "DELETE /sessions/5sy5GBen67PJISb3cdwoLVKJf-RLzb-ULibHp9oilQE HTTP/1.1" 204 No Content
+INFO:     127.0.0.1:60373 - "GET /drivers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60374 - "GET /discounts/2629fcbd-9589-462e-a549-777b58f07aa7 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60381 - "GET /users/a HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:60407 - "GET /users/dome.santoro%40gmail.com HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60408 - "GET /users/dome.santoro%40gmail.com/credential HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60407 - "POST /sessions HTTP/1.1" 201 Created
+INFO:     127.0.0.1:60408 - "POST /tickets HTTP/1.1" 201 Created
+INFO:     127.0.0.1:60407 - "DELETE /tickets/5EXKttUoUC6hWrS_Cxp0tk2ZWRoKjDLVOSMabelQJu0 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60408 - "GET /sessions/KecTk8byzSnKF3ZYsNr4HL2esTdhLAXWb5shVRGB7AU HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60407 - "GET /sessions/KecTk8byzSnKF3ZYsNr4HL2esTdhLAXWb5shVRGB7AU HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60407 - "GET /sessions/KecTk8byzSnKF3ZYsNr4HL2esTdhLAXWb5shVRGB7AU HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60407 - "GET /sessions/KecTk8byzSnKF3ZYsNr4HL2esTdhLAXWb5shVRGB7AU HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60407 - "GET /sessions/KecTk8byzSnKF3ZYsNr4HL2esTdhLAXWb5shVRGB7AU HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60407 - "GET /sessions/KecTk8byzSnKF3ZYsNr4HL2esTdhLAXWb5shVRGB7AU HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60418 - "GET /sessions/KecTk8byzSnKF3ZYsNr4HL2esTdhLAXWb5shVRGB7AU HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60418 - "GET /sessions/KecTk8byzSnKF3ZYsNr4HL2esTdhLAXWb5shVRGB7AU HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60431 - "GET /drivers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60432 - "GET /discounts/2629fcbd-9589-462e-a549-777b58f07aa7 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60450 - "GET /drivers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60451 - "GET /discounts/2629fcbd-9589-462e-a549-777b58f07aa7 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60461 - "GET /users/dome.santoro%40gmail.com HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60462 - "GET /users/dome.santoro%40gmail.com/credential HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60461 - "POST /sessions HTTP/1.1" 201 Created
+INFO:     127.0.0.1:60462 - "POST /tickets HTTP/1.1" 201 Created
+INFO:     127.0.0.1:60461 - "DELETE /tickets/OBBan1NiwnWafNt65WU70Do4P3mPsq5ipGJtec8pnog HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60462 - "GET /sessions/zwriqfwiJ1k-jIrqkHwqJW7tTzCELDVA_TjJEoyQmRk HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60461 - "GET /sessions/zwriqfwiJ1k-jIrqkHwqJW7tTzCELDVA_TjJEoyQmRk HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60466 - "GET /drivers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60467 - "GET /discounts/2629fcbd-9589-462e-a549-777b58f07aa7 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60461 - "GET /sessions/zwriqfwiJ1k-jIrqkHwqJW7tTzCELDVA_TjJEoyQmRk HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60532 - "GET /sessions/zwriqfwiJ1k-jIrqkHwqJW7tTzCELDVA_TjJEoyQmRk HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60533 - "GET /drivers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60534 - "GET /discounts/2629fcbd-9589-462e-a549-777b58f07aa7 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60544 - "GET /sessions/zwriqfwiJ1k-jIrqkHwqJW7tTzCELDVA_TjJEoyQmRk HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60545 - "GET /drivers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60546 - "GET /discounts/2629fcbd-9589-462e-a549-777b58f07aa7 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60553 - "DELETE /sessions/zwriqfwiJ1k-jIrqkHwqJW7tTzCELDVA_TjJEoyQmRk HTTP/1.1" 204 No Content
+INFO:     127.0.0.1:60726 - "GET /users/dome.santoro%40gmail.com HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60727 - "GET /users/dome.santoro%40gmail.com/credential HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60726 - "POST /sessions HTTP/1.1" 201 Created
+INFO:     127.0.0.1:60727 - "POST /tickets HTTP/1.1" 201 Created
+INFO:     127.0.0.1:60726 - "DELETE /tickets/bEWaZhE3P7D-uprssTBI77ra1O6jUWIuYee5lRvDegs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60727 - "GET /sessions/MsvqIrWOcr1QmUJHO8AYZ7yy5GrL6pgKpy890W1yFSM HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60726 - "GET /sessions/MsvqIrWOcr1QmUJHO8AYZ7yy5GrL6pgKpy890W1yFSM HTTP/1.1" 200 OK
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [7237]

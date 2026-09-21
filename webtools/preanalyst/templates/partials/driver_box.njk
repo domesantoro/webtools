@@ -1,0 +1,82 @@
+{#
+  Il box del driver: compare solo se il link ne portava uno (`?discount=` o `?driver=`).
+
+  Il driver non si sceglie da qui: o lo porta il link, o lo assegniamo noi. Il box
+  dice chi è, oppure perché quel link non è servito a niente.
+
+  I sei stati vengono da `src/referral.js`. Quello che è arrivato nell'URL resta
+  agganciato al form come campo nascosto anche quando non si è potuto risolvere:
+  se il guasto è nostro, non deve pagarlo l'utente con lo sconto perduto.
+#}
+
+{% macro render(box) %}
+      <aside class="card driver-box" aria-labelledby="driver-box-title">
+        <div class="card-head aside-head" id="driver-box-title">Driver</div>
+        <div class="driver-box-body">
+          {%- if box.resolved %}
+          <p class="driver-name">{{ box.referral.driver.screen_name }}</p>
+          <p class="driver-box-lead">
+            È la persona che segue il tuo progetto: valida l'analisi e ti accompagna
+            fino alla demo.
+          </p>
+          {%- else %}
+          <p class="driver-box-lead">
+            Il driver è la persona che segue il tuo progetto: valida l'analisi e ti accompagna
+            fino alla demo.
+          </p>
+          {%- endif %}
+
+          {%- if not box.drivers_available %}
+          <p class="notice notice-warn">
+            In questo momento non riusciamo a dirti chi è il driver del tuo link.
+            Non va perso: lo controlliamo noi quando leggiamo la tua richiesta.
+          </p>
+          {%- elif box.referral.state == "discount_applied" %}
+          <p class="notice notice-ok">
+            Codice sconto valido: <strong>{{ box.referral.percentage }}%</strong>.
+          </p>
+          {%- elif box.referral.state == "discount_expired" %}
+          <p class="notice notice-warn">
+            Questo codice sconto non è applicabile: con ogni probabilità è scaduto.
+            Vai avanti lo stesso: al tuo progetto assegniamo noi un driver.
+          </p>
+          {%- elif box.referral.state == "discount_driver_missing" %}
+          <p class="notice notice-warn">
+            Questo codice sconto non è applicabile: il driver a cui è collegato,
+            {% if box.referral.driverName %}<strong>{{ box.referral.driverName }}</strong>
+            {%- elif box.referral.driverUid %}<code>{{ box.referral.driverUid }}</code>
+            {%- else %}quello del link{% endif %}, non si trova più.
+            Contattalo per farti dare un codice nuovo. Puoi anche andare avanti così:
+            al tuo progetto assegniamo noi un driver.
+          </p>
+          {%- elif box.referral.state == "driver_unknown" %}
+          <p class="notice notice-warn">
+            Il driver di questo link{% if box.referral.driverUid %} (<code>{{ box.referral.driverUid }}</code>){% endif %}
+            non si trova più.
+            Contattalo per farti dare un link nuovo. Puoi anche andare avanti così:
+            al tuo progetto assegniamo noi un driver.
+          </p>
+          {%- endif %}
+
+          {%- if box.can_be_ignored %}
+          {#- Compare solo quando il driver segna "lavoro autonomo": il CSS lo
+              accende con `:has()`, senza JavaScript e senza ricaricare.
+              Dice quale delle due cose non verrà applicata, non "quello che c'è
+              qui sopra": chi legge deve sapere che cosa perde. #}
+          <p class="notice notice-warn ignored-note">
+            {%- if box.referral.state == "discount_applied" %}
+            Con il lavoro autonomo il codice sconto di {{ box.referral.driver.screen_name }}
+            non viene applicato, e lo sconto resta quello del lavoro autonomo: 20% sulla fee.
+            {%- else %}
+            Con il lavoro autonomo il progetto non viene attribuito a
+            {{ box.referral.driver.screen_name }}.
+            {%- endif %}
+          </p>
+          {%- endif %}
+
+          {%- for campo in box.hidden %}
+          <input type="hidden" name="{{ campo.name }}" value="{{ campo.value }}" form="gate-form">
+          {%- endfor %}
+        </div>
+      </aside>
+{%- endmacro %}

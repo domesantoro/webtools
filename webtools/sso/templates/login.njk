@@ -1,0 +1,40 @@
+{% extends "commons/base.njk" %}
+
+{#
+  La pagina di login: l'unica del sistema in cui si digita una password.
+
+  I valori che arrivano da fuori (`next`, `username`) vengono scritti nell'HTML
+  da nunjucks, che fa l'escape da sé: non c'è niente da ricordarsi a mano.
+#}
+
+{% block main %}
+    <div class="container access">
+      <div class="access-card card">
+        <div class="card-head">Entra</div>
+        <div class="access-body">
+          {%- if error %}
+          <p class="notice notice-warn">{{ error_message }}</p>
+          {%- endif %}
+          <form class="access-form" method="post" action="/ui/login">
+            <input type="hidden" name="next" value="{{ next }}">
+            <div class="field">
+              <label class="field-label" for="username">Username</label>
+              <input class="input" type="text" id="username" name="username"
+                     value="{{ username }}" autocomplete="username" autofocus required>
+            </div>
+            <div class="field">
+              <label class="field-label" for="password">Password</label>
+              <input class="input" type="password" id="password" name="password"
+                     autocomplete="current-password" required>
+            </div>
+            <div class="form-actions">
+              <button class="btn btn-primary" type="submit">Entra</button>
+            </div>
+          </form>
+          <p class="access-alt">
+            Non hai un account? <a class="text-link" href="/ui/register?next={{ next | urlencode }}">Registrati</a>
+          </p>
+        </div>
+      </div>
+    </div>
+{% endblock %}

@@ -1,0 +1,81 @@
+{% extends "commons/base.njk" %}
+{% import "macros/fields.njk" as campi %}
+{% import "partials/driver_box.njk" as box %}
+{% import "partials/access.njk" as accesso %}
+{% import "partials/driver_work.njk" as lavoro %}
+{% import "partials/upload_box.njk" as caricamento %}
+
+{#
+  La pagina della pre-analisi.
+
+  Due blocchi affiancati: a sinistra il testo e il form (le domande vengono da
+  `src/questions.js`), a destra il box del driver, che compare solo se il link ne
+  portava uno. Senza box la colonna è una sola e il form si stringe, o le righe
+  diventano illeggibili.
+
+  La tendina del driver sta FUORI dal form e ci si aggancia con `form="gate-form"`:
+  così il box resta autonomo ma quello che porta viaggia insieme alle risposte.
+#}
+
+{#- Lo stato dell'accesso e l'indirizzo del login stanno sul <body>: li legge
+    sso_popup.js, e servono a chi deve aprire il login da codice (il caricamento
+    di un'analisi). #}
+{% block body_attributes %}{% if access.logged %} data-sso-logged{% endif %} data-sso-login-url="{{ access.login_url }}"{% endblock %}
+
+{% block header_extra %}
+      <div class="header-access" data-sso-header>
+      {{- accesso.header(access) }}
+      </div>
+{% endblock %}
+
+{% block main %}
+    <div class="container gate">
+      <div class="gate-intro reveal">
+        <div class="eyebrow">Primo passo</div>
+        <h1>Raccontaci che cosa ti serve.</h1>
+        <p class="gate-lead">
+          Da qui comincia la pre-analisi: ci racconti il tuo problema e noi capiamo se è
+          una cosa che possiamo risolvere, e come. Non serve sapere nulla di informatica:
+          rispondi con parole tue, e quello che non sai lascialo in bianco.
+        </p>
+      </div>
+
+      <div class="gate-layout">
+        <div class="gate-main reveal delay-1">
+          <form class="gate-form" id="gate-form" method="post" action="#" novalidate>
+            {%- for sezione in sections %}
+            {{ campi.section(sezione) }}
+            {%- endfor %}
+
+            <div class="form-actions">
+              <button class="btn btn-primary" type="submit" disabled>Manda la richiesta</button>
+
+              {#- Il cancello dell'accesso: la pre-analisi si compila anche da
+                  sloggati, il conto serve per proseguire. Il contenitore ha un
+                  marcatore perché il browser possa rimpiazzarlo dopo il login,
+                  senza ricaricare la pagina e senza toccare il form. #}
+              <div data-sso-gate>
+              {{- accesso.gate(access) }}
+              </div>
+            </div>
+          </form>
+        </div>
+
+        {#- La colonna destra. I blocchi del driver stanno in un contenitore a
+            parte perché il browser li rimpiazza dopo il login: il blocco del
+            caricamento resta fuori, o si porterebbe via il file già scelto. #}
+        <div class="gate-aside">
+          <div data-sso-driver>
+          {%- if aside.driver_box.show %}{{ box.render(aside.driver_box) }}{% endif %}
+          {%- if aside.driver_work.show %}{{ lavoro.render(aside.driver_work) }}{% endif %}
+          </div>
+          {{ caricamento.render(upload) }}
+        </div>
+      </div>
+    </div>
+{% endblock %}
+
+{% block scripts %}
+<script src="/sso_popup.js" defer></script>
+<script src="/upload.js" defer></script>
+{% endblock %}
