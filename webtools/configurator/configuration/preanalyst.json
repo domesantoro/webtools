@@ -1,0 +1,38 @@
+{
+  "listen": { "host": "127.0.0.1", "port": 8200 },
+  "public_url": "http://127.0.0.1:8200",
+  "subsystems_infos": {
+    "anagraphics": {
+      "timeout_ms": 5000
+    },
+    "sso": {
+      "url": "http://127.0.0.1:8300",
+      "timeout_ms": 5000
+    },
+    "workspaces": {
+      "url": "http://127.0.0.1:8400",
+      "timeout_ms": 5000
+    },
+    "front_gate": {
+      "url": "http://127.0.0.1:8000"
+    }
+  },
+  "session": {
+    "cookie_name": "webtools_preanalyst"
+  },
+  "form": {
+    "body_max_bytes": 524288,
+    "answer_max_chars": 20000
+  },
+  "upload": {
+    "max_bytes": 10485760,
+    "accept": ".md"
+  },
+  "i18n": {
+    "locales": ["en", "it"],
+    "fallback_locale": "en",
+    "cookie_name": "webtools_locale",
+    "cookie_max_age_seconds": 31536000,
+    "body_max_bytes": 1024
+  }
+}

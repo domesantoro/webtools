@@ -1,0 +1,17 @@
+{% extends "commons/base.njk" %}
+{% import "partials/access.njk" as accesso with context %}
+
+{#
+  La pagina dell'analisi: qui arriverà la chat. Per ora è vuota di proposito,
+  c'è solo il guscio con chi è entrato in testata.
+#}
+
+{% block header_extra %}
+      <div class="header-access">
+      {{- accesso.header(access) }}
+      </div>
+{% endblock %}
+
+{% block main %}
+    <div class="container gate"></div>
+{% endblock %}

@@ -1,0 +1,53 @@
+---
+project_id: {{ project_id }}
+kind: prespec
+template: {{ template }}
+language: {{ language }}
+answers:
+{% for item in answers %}
+  {{ item.name }}: {{ item.yaml }}
+{% endfor %}
+---
+# Pre-specification
+
+Answers to the pre-analysis form. Closed answers are shown in English; open
+answers are quoted verbatim, in the client's language ({{ language }}).
+{% for section in sections %}
+
+## {{ section.title }}
+{% for field in section.fields %}
+
+### {{ field.title }}
+
+{% if not field.answer %}
+Not provided.
+{% elif field.answer.quote %}
+{{ field.answer.quote | quote }}
+{% elif field.answer.list %}
+{% for item in field.answer.list %}
+- {{ item }}
+{% endfor %}
+{% else %}
+{{ field.answer.text }}
+{% endif %}
+{% endfor %}
+{% endfor %}
+
+## Open points
+
+{% if open_points.length %}
+{% for point in open_points %}
+- {{ point }}
+{% endfor %}
+{% else %}
+None.
+{% endif %}
+{#
+  (Questo commento sta in fondo perché il file deve cominciare con `---`:
+  qualunque cosa prima, anche una riga vuota, e il front matter non c'è più.)
+
+  La pre-specifica: le risposte del form come documento markdown.
+  Reso da `src/prespec.js` con un ambiente senza autoescape (è markdown, non
+  HTML): il testo del cliente entra **solo** attraverso il filtro `quote`.
+  Perché è fatta così: vedi il commento in cima a `src/prespec.js`.
+#}

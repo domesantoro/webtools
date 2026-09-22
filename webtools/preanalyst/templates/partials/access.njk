@@ -1,52 +1,51 @@
 {#
-  I due pezzi della pagina che dipendono da chi è entrato: lo stato in testata e
-  il cancello sotto il bottone d'invio.
+  Le parti della pagina che riguardano l'accesso.
 
-  Stanno qui, e non dentro page.njk, perché servono in due momenti diversi:
-  quando la pagina viene resa, e quando il browser li richiede aggiornati dopo
-  un login fatto nella finestra a parte (`GET /session-fragment`). Sono gli
-  **interni** dei rispettivi contenitori: chi li riceve rimpiazza l'innerHTML.
+  `header` è lo stato in testata. Serve in due momenti: quando la pagina viene
+  resa, e quando il browser lo richiede aggiornato dopo un login fatto nella
+  finestra a parte (`GET /session-fragment`). È l'**interno** del contenitore:
+  chi lo riceve rimpiazza l'innerHTML.
 
-  Un solo posto in cui sono scritti, quindi la pagina appena caricata e la pagina
-  aggiornata non possono divergere.
+  `dialog` è la finestra modale che si apre quando da sloggati si prova a fare
+  qualcosa che richiede un conto (mandare la richiesta, caricare un file). Non
+  compare da sola: la apre il clic su quell'azione.
 #}
 
 {% macro header(access) %}
 {%- if access.logged %}
         <span class="header-user">{{ access.name }}</span>
-        <a class="text-link" href="/logout">Esci</a>
+        <a class="text-link" href="/logout">{{ t("preanalyst.access.logout") }}</a>
 {%- elif not access.sso_available %}
-        <span class="header-user">Accesso non raggiungibile</span>
+        <span class="header-user">{{ t("preanalyst.access.unreachable") }}</span>
 {%- else %}
         <a class="text-link" href="{{ access.login_url }}"
-           data-sso-login="{{ access.login_url }}" target="_blank">Entra</a>
+           data-sso-login="{{ access.login_url }}" target="_blank">{{ t("preanalyst.access.login") }}</a>
 {%- endif %}
 {%- endmacro %}
 
-{% macro gate(access) %}
-{%- if access.logged %}
-              <p class="field-hint">
-                Sei <strong>{{ access.name }}</strong>.
-                L'invio non è ancora collegato: la richiesta non parte.
-              </p>
-{%- elif not access.sso_available %}
-              <p class="notice notice-warn">
-                L'accesso non è raggiungibile in questo momento, quindi non si può proseguire.
-                Le risposte scritte qui restano finché non chiudi la pagina.
-              </p>
+{#- `id` lo usa chi la apre; `lead` dice che cosa serve e perché; `hint` che cosa
+    succede dopo il login. Senza sso raggiungibile non c'è niente da proporre:
+    lo si dice e basta. #}
+{% macro dialog(access, id, lead, hint) %}
+      <dialog class="card login-dialog" id="{{ id }}" aria-labelledby="{{ id }}-title">
+        <div class="card-head login-dialog-head" id="{{ id }}-title">{{ t("preanalyst.dialogs.title") }}</div>
+        <div class="login-dialog-body">
+{%- if not access.sso_available %}
+          <p class="login-dialog-lead">{{ t("preanalyst.dialogs.unavailable_lead") }}</p>
+          <p class="login-dialog-hint">{{ t("preanalyst.dialogs.unavailable_hint") }}</p>
 {%- else %}
-              <div class="notice notice-warn gate-login">
-                <p class="gate-login-lead">Per proseguire serve un account.</p>
-                <p class="gate-login-actions">
-                  <a class="btn" href="{{ access.login_url }}"
-                     data-sso-login="{{ access.login_url }}" target="_blank">Entra</a>
-                  <a class="text-link" href="{{ access.register_url }}"
-                     data-sso-login="{{ access.register_url }}" target="_blank">Registrati</a>
-                </p>
-                <p class="gate-login-hint">
-                  Si apre in una finestra a parte: quello che hai scritto qui non si perde.
-                  Finito il login la finestra si chiude da sola e questa pagina si aggiorna.
-                </p>
-              </div>
+          <p class="login-dialog-lead">{{ lead }}</p>
+          <p class="login-dialog-actions">
+            <a class="btn btn-primary" href="{{ access.login_url }}"
+               data-sso-login="{{ access.login_url }}" target="_blank">{{ t("preanalyst.access.login") }}</a>
+            <a class="text-link" href="{{ access.register_url }}"
+               data-sso-login="{{ access.register_url }}" target="_blank">{{ t("preanalyst.access.register") }}</a>
+          </p>
+          <p class="login-dialog-hint">{{ hint }}</p>
 {%- endif %}
+          <form method="dialog" class="login-dialog-close">
+            <button class="btn" type="submit">{{ t("preanalyst.dialogs.close") }}</button>
+          </form>
+        </div>
+      </dialog>
 {%- endmacro %}

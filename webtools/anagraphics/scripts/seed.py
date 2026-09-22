@@ -1,21 +1,28 @@
-"""Crea gli indici e inserisce i dati iniziali. Idempotente: si può rilanciare."""
+"""Crea gli indici e inserisce i dati iniziali. Idempotente: si può rilanciare.
+
+La configurazione dei sottosistemi non passa di qui: sta in
+webtools/configurator/configuration/ e la carica
+webtools/configurator/load_configuration.sh.
+"""
+
+from pymongo import MongoClient
 
 from webtools_anagraphics import db
-from webtools_anagraphics.settings import load_settings
-
-CONFIGURATIONS = [
-    {"subsystem": "front-gate"},
-]
+from webtools_anagraphics.settings import mongo_target
 
 PROJECTS = [
     {"project_id": "1f251606-bdba-40c4-bbee-bfedc6e57f70"},
 ]
 
+# `enabled`: il driver è abilitato a seguire i progetti (dopo il colloquio).
+# Uno non abilitato è comunque un driver: può essere ambassador e fare lavoro
+# autonomo, ma nessun cliente può averlo come driver.
 DRIVERS = [
     {
         "uid": "7633be3d-e701-42ca-9fea-6c6d1bb4b7d1",
         "username": "dome.santoro@gmail.com",
         "screen_name": "Dome",
+        "enabled": True,
     },
     # Driver di prova: serve per vedere più di un driver nella lista
     # e per il caso "driver senza codici sconto".
@@ -23,6 +30,15 @@ DRIVERS = [
         "uid": "639718a3-ea41-4533-bdb8-73ac58b3b1b2",
         "username": "driver.prova@example.com",
         "screen_name": "Prova",
+        "enabled": True,
+    },
+    # Driver di prova non abilitato, con un codice sconto: serve per i casi
+    # "link di un driver non abilitato" e "sconto di un driver non abilitato".
+    {
+        "uid": "f234b930-e5d0-4e10-8a4f-1a8a13814370",
+        "username": "driver.nonabilitato@example.com",
+        "screen_name": "Non abilitato",
+        "enabled": False,
     },
 ]
 
@@ -57,20 +73,24 @@ DISCOUNTS = [
         },
         "percentage": 5,
     },
+    {
+        "discount_code": "91165eb1-65d6-43a9-ade8-681ec3ebef8d",
+        "driver": {
+            "uid": "f234b930-e5d0-4e10-8a4f-1a8a13814370",
+            "screen_name": "Non abilitato",
+        },
+        "percentage": 10,
+    },
 ]
 
 
 def main() -> None:
-    settings = load_settings()
-    database = db.connect(settings)
+    mongo_uri, mongo_db = mongo_target()
+    database = MongoClient(mongo_uri)[mongo_db]
     db.ensure_indexes(database)
 
-    for conf in CONFIGURATIONS:
-        database[db.CONFIGURATION].update_one(
-            {"subsystem": conf["subsystem"]}, {"$set": conf}, upsert=True
-        )
     for project in PROJECTS:
-        database[db.ANAGRAPHICS].update_one(
+        database[db.PROJECTS].update_one(
             {"project_id": project["project_id"]}, {"$set": project}, upsert=True
         )
     for driver in DRIVERS:
@@ -89,8 +109,8 @@ def main() -> None:
         )
 
     print(
-        f"Seed completato su '{settings.mongo_db}': "
-        f"{len(CONFIGURATIONS)} configurazioni, {len(PROJECTS)} progetti, "
+        f"Seed completato su '{mongo_db}': "
+        f"{len(PROJECTS)} progetti, "
         f"{len(DRIVERS)} driver, {len(DISCOUNTS)} sconti, {len(USERS)} utenti."
     )
 

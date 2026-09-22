@@ -1,0 +1,32 @@
+{% extends "layout.njk" %}
+{% set page = "lavora-con-noi" %}
+{% set title = t("front_gate.work_with_us.title") %}
+{% set description = t("front_gate.work_with_us.description") %}
+
+{% block main %}
+<main class="page-main">
+  <section class="container page-intro wide reveal"><div class="eyebrow">{{ t("front_gate.work_with_us.eyebrow") }}</div><h1>{{ t("front_gate.work_with_us.heading") }}</h1><p>{{ t("front_gate.work_with_us.lead") }}</p></section>
+
+  {#- Gli id delle sezioni servono ai link da fuori, per esempio dalla pre-analisi. #}
+  <section class="container flow-wrap">
+    <article class="flow-step" id="ambassador"><div class="flow-num">01</div><h2>{{ t("front_gate.work_with_us.ambassador.title") }}</h2><div>
+      <p>{{ t("front_gate.work_with_us.ambassador.text1") }}</p>
+      <p>{{ t("front_gate.work_with_us.ambassador.text2") }}</p>
+      <p>{{ t("front_gate.work_with_us.ambassador.text3") }}</p>
+    </div></article>
+
+    <article class="flow-step" id="driver"><div class="flow-num">02</div><h2>{{ t("front_gate.work_with_us.driver.title") }}</h2><div>
+      <p>{{ t("front_gate.work_with_us.driver.text1") }}</p>
+      <p>{{ t("front_gate.work_with_us.driver.text2") }}</p>
+      <p>{{ t("front_gate.work_with_us.driver.text3") }}</p>
+    </div></article>
+
+    <article class="flow-step" id="lavoro-autonomo"><div class="flow-num">03</div><h2>{{ t("front_gate.work_with_us.autonomous.title") }}</h2><div>
+      <p>{{ t("front_gate.work_with_us.autonomous.text1") }}</p>
+      <p>{{ t("front_gate.work_with_us.autonomous.text2") }}<sup class="footnote-ref"><a href="#nota-1" id="rif-1" aria-label="{{ t("front_gate.work_with_us.note_label") }}">1</a></sup></p>
+      <p>{{ t("front_gate.work_with_us.autonomous.text3") }}</p>
+      <p class="footnote" id="nota-1"><a href="#rif-1" aria-label="{{ t("front_gate.work_with_us.back_to_text") }}">1</a> {{ t("front_gate.work_with_us.autonomous.note") }}</p>
+    </div></article>
+  </section>
+</main>
+{% endblock %}

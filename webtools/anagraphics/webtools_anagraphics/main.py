@@ -1,12 +1,13 @@
-"""API interna: configurazioni dei sottosistemi, anagrafica dei progetti, driver e
-loro codici sconto, utenti e sessioni.
+"""API interna: configurazioni dei sottosistemi, progetti, driver e loro codici
+sconto, utenti e sessioni.
 
-Le sessioni sono l'unica parte che si scrive. Qui si conservano e si restituiscono:
+Si scrivono le sessioni, i biglietti, i progetti e la lingua di utenti e sessioni. Qui si conservano e si restituiscono:
 il token, la scadenza e la decisione su chi è autenticato appartengono al sso.
 Anagraphics non verifica password e non giudica se una sessione è ancora valida.
 """
 
-from datetime import datetime
+from datetime import datetime, timezone
+from uuid import uuid4
 
 from fastapi import FastAPI, Request, Response
 from pydantic import BaseModel, Field
@@ -18,7 +19,7 @@ from webtools_anagraphics.settings import load_settings
 settings = load_settings()
 database = db.connect(settings)
 
-app = FastAPI(title="anagraphics", version="0.4.0")
+app = FastAPI(title="anagraphics", version="0.8.0")
 errors.install_error_handlers(app)
 
 
@@ -41,12 +42,82 @@ def get_configuration(subsystem: str) -> dict:
     return document
 
 
-@app.get("/anagraphics/{project_id}")
+@app.get("/projects/{project_id}")
 def get_project(project_id: str) -> dict:
     document = db.find_project(database, project_id)
     if document is None:
         raise errors.ApiError(404, errors.PROJECT_NOT_FOUND, project_id=project_id)
     return document
+
+
+class Review(BaseModel):
+    """Chi supervisiona il progetto.
+
+    `preset` distingue il driver preimpostato (arrivato col link di un driver, o
+    il driver stesso in un lavoro autonomo) da quello assegnato dal sistema.
+    Alla creazione un driver c'è solo se è preimpostato.
+    """
+
+    driver_uid: str | None = None
+    preset: bool = False
+
+
+class Billing(BaseModel):
+    """I dati economici del progetto, così come li ha visti il form.
+
+    Si conservano soltanto: il calcolo del prezzo non si fa qui.
+    """
+
+    # Il codice sconto del link di un driver, se c'era.
+    discount_code: str | None = None
+    # Lavoro autonomo: il driver porta il progetto per sé.
+    autonomous_work: bool = False
+    # Il driver che ha invitato l'utente a lavorare con noi, se c'era.
+    ambassador_uid: str | None = None
+
+
+class ProjectToCreate(BaseModel):
+    owner_uid: str = Field(min_length=1)
+    # L'id dell'invio del form: se arriva due volte, il progetto resta uno.
+    submission_id: str = Field(min_length=16)
+    review: Review = Field(default_factory=Review)
+    billing: Billing = Field(default_factory=Billing)
+
+
+@app.post("/projects", status_code=201)
+def create_project(project: ProjectToCreate, response: Response) -> dict:
+    # L'id del progetto nasce qui, dove il progetto si conserva: chi chiama non
+    # può sceglierlo, quindi non può nemmeno scontrarsi con uno che esiste.
+    document = {
+        "project_id": str(uuid4()),
+        "owner_uid": project.owner_uid,
+        "submission_id": project.submission_id,
+        "created_at": datetime.now(timezone.utc),
+        "state": "PREANALYSIS",
+        "review": project.review.model_dump(),
+        "billing": project.billing.model_dump(),
+    }
+    try:
+        db.insert_project(database, document)
+    except DuplicateKeyError:
+        # Lo stesso invio, di nuovo: si restituisce il progetto già nato.
+        # 200 e non 201, perché questa volta non si è creato niente.
+        existing = db.find_project_by_submission(database, project.submission_id)
+        if existing is None or existing.get("owner_uid") != project.owner_uid:
+            # Un submission_id già usato da un altro: non si rivela il suo progetto.
+            raise errors.ApiError(409, errors.SUBMISSION_EXISTS)
+        response.status_code = 200
+        return existing
+    return document
+
+
+@app.delete("/projects/{project_id}", status_code=204)
+def remove_project(project_id: str) -> Response:
+    # Serve a chi ha creato un progetto e non è riuscito a completarlo (la
+    # pre-specifica non si è potuta scrivere): meglio nessun progetto che uno vuoto.
+    if not db.delete_project(database, project_id):
+        raise errors.ApiError(404, errors.PROJECT_NOT_FOUND, project_id=project_id)
+    return Response(status_code=204)
 
 
 @app.get("/drivers")
@@ -103,6 +174,21 @@ def get_user_credential(username: str) -> dict:
     return document
 
 
+class LocaleToStore(BaseModel):
+    """La lingua scelta. Quali lingue esistono lo sa chi chiama (il sso, dalla
+    sua configurazione): qui si controlla solo che sia un codice di lingua."""
+
+    locale: str = Field(pattern=r"^[a-z]{2,3}$")
+
+
+@app.put("/users/{username}/locale")
+def set_user_locale(username: str, body: LocaleToStore) -> dict:
+    document = db.set_user_locale(database, username, body.locale)
+    if document is None:
+        raise errors.ApiError(404, errors.USER_NOT_FOUND, username=username)
+    return document
+
+
 class SessionToStore(BaseModel):
     """Il documento di sessione, costruito dal sso.
 
@@ -137,6 +223,15 @@ def get_session(token: str) -> dict:
     # Restituisce anche una sessione scaduta, finché il TTL non l'ha rimossa:
     # decidere se vale ancora è compito del sso.
     document = db.find_session(database, token)
+    if document is None:
+        raise errors.ApiError(404, errors.SESSION_NOT_FOUND)
+    return document
+
+
+@app.put("/sessions/{token}/locale")
+def set_session_locale(token: str, body: LocaleToStore) -> dict:
+    # Va in `data.locale`, accanto agli altri dati di sessione.
+    document = db.set_session_locale(database, token, body.locale)
     if document is None:
         raise errors.ApiError(404, errors.SESSION_NOT_FOUND)
     return document

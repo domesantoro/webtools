@@ -1,0 +1,19 @@
+{#
+  Il box dell'ambassador: il driver che ha invitato l'utente a usare webtools.
+  Compare solo se l'ambassador è stato riconosciuto e nient'altro indica chi
+  porta il progetto (src/ambassador.js). Con il lavoro autonomo segnato lo
+  nasconde il CSS (regola `:has()` in styles.css).
+
+  Il campo nascosto porta l'uid all'invio, dove viene verificato di nuovo.
+#}
+
+{% macro render(ambassador) %}
+      <aside class="card ambassador-box" aria-labelledby="ambassador-box-title">
+        <div class="card-head aside-head" id="ambassador-box-title">{{ t("preanalyst.ambassador_box.title") }}</div>
+        <div class="driver-box-body">
+          <p class="driver-name">{{ ambassador.driver.screen_name }}</p>
+          <p class="driver-box-lead">{{ t("preanalyst.ambassador_box.lead") }}</p>
+          <input type="hidden" name="ambassador" value="{{ ambassador.driver.uid }}" form="gate-form">
+        </div>
+      </aside>
+{%- endmacro %}

@@ -1,0 +1,98 @@
+{% extends "layout.njk" %}
+{% set page = "index" %}
+{% set title = t("front_gate.index.title") %}
+{% set description = t("front_gate.index.description") %}
+
+{% block main %}
+<main class="page-main">
+  <section class="container hero">
+    <div class="hero-copy reveal">
+      <div class="eyebrow">{{ t("front_gate.index.hero.eyebrow") }}</div>
+      <h1>{{ t("front_gate.index.hero.heading") }}</h1>
+      <p>{{ t("front_gate.index.hero.text") }}</p>
+      <div class="price-inline"><strong>{{ standardPrice }}</strong><span>{{ t("front_gate.common.standard_price") }}</span></div>
+      <div class="hero-links">
+        <a class="text-link" href="che-cos-e.html">{{ t("front_gate.index.hero.link_what") }} <span>→</span></a>
+        <a class="text-link" href="esempi.html">{{ t("front_gate.index.hero.link_examples") }} <span>→</span></a>
+      </div>
+    </div>
+
+    <div class="software-stage reveal delay-1" aria-label="{{ t("front_gate.index.stage.label") }}">
+      <div class="card tool-window">
+        <div class="card-head window-top"><span class="window-dots"><i></i><i></i><i></i></span><span class="window-title">{{ t("front_gate.index.stage.window_title") }}</span></div>
+        <div class="window-body">
+          <aside class="tool-side">
+            <div class="tool-brand">{{ t("front_gate.index.stage.brand") }}</div>
+            <div class="tool-nav"><span class="active">{{ t("front_gate.index.stage.nav.bottles") }}</span><span>{{ t("front_gate.index.stage.nav.shelves") }}</span><span>{{ t("front_gate.index.stage.nav.vintages") }}</span><span>{{ t("front_gate.index.stage.nav.to_drink") }}</span></div>
+          </aside>
+          <div class="tool-main">
+            <div class="tool-head"><div><h3>{{ t("front_gate.index.stage.heading") }}</h3><p>{{ t("front_gate.index.stage.updated") }}</p></div><span class="tool-button">{{ t("front_gate.index.stage.add") }}</span></div>
+            <div class="metric-row"><div class="metric"><b>138</b><span>{{ t("front_gate.index.stage.metrics.stored") }}</span></div><div class="metric"><b>24</b><span>{{ t("front_gate.index.stage.metrics.ready") }}</span></div><div class="metric"><b>7</b><span>{{ t("front_gate.index.stage.metrics.low") }}</span></div></div>
+            <div class="data-list">
+              <div class="data-row"><span>Barbera d’Asti</span><span>2021</span><span>{{ t("front_gate.regions.piemonte") }}</span><i class="dot-status"></i></div>
+              <div class="data-row"><span>Etna Rosso</span><span>2020</span><span>{{ t("front_gate.regions.sicilia") }}</span><i class="dot-status"></i></div>
+              <div class="data-row"><span>Verdicchio</span><span>2022</span><span>{{ t("front_gate.regions.marche") }}</span><i class="dot-status"></i></div>
+              <div class="data-row"><span>Brunello</span><span>2018</span><span>{{ t("front_gate.regions.toscana") }}</span><i class="dot-status"></i></div>
+              <div class="data-row"><span>Roero Arneis</span><span>2023</span><span>{{ t("front_gate.regions.piemonte") }}</span><i class="dot-status"></i></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="float-panel">
+        <span class="label">{{ t("front_gate.index.stage.float.label") }}</span>
+        <strong>{{ t("front_gate.index.stage.float.text") }}</strong>
+        <div class="spark"></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section section-line">
+    <div class="container">
+      <div class="section-head reveal">
+        <h2>{{ t("front_gate.index.small.heading") }}</h2>
+        <p>{{ t("front_gate.index.small.text") }}</p>
+      </div>
+      <div class="example-strip">
+        <article class="example-preview">
+          <h3>{{ t("front_gate.index.league.title") }}</h3>
+          <p>{{ t("front_gate.index.league.text") }}</p>
+          <div class="card card-sm mini-ui">
+            <div class="league-row"><b>1</b><span>Atletico Dora</span><span>18</span></div>
+            <div class="league-row"><b>2</b><span>Real Balon</span><span>16</span></div>
+            <div class="league-row"><b>3</b><span>San Paolo</span><span>13</span></div>
+            <div class="league-row"><b>4</b><span>Officine FC</span><span>9</span></div>
+          </div>
+        </article>
+        <article class="example-preview">
+          <h3>{{ t("front_gate.index.tools.title") }}</h3>
+          <p>{{ t("front_gate.index.tools.text") }}</p>
+          <div class="card card-sm mini-ui tool-grid">
+            <span>{{ t("front_gate.index.tools.drills") }}<br><b>{{ t("front_gate.index.tools.shelf_a2") }}</b></span><span>{{ t("front_gate.index.tools.bits") }}<br><b>{{ t("front_gate.index.tools.drawer_4") }}</b></span><span>{{ t("front_gate.index.tools.wrenches") }}<br><b>{{ t("front_gate.index.tools.north_wall") }}</b></span><span>{{ t("front_gate.index.tools.discs") }}<br><b>{{ t("front_gate.index.tools.shelf_b1") }}</b></span><span>{{ t("front_gate.index.tools.gloves") }}<br><b>{{ t("front_gate.index.tools.pairs") }}</b></span><span>{{ t("front_gate.index.tools.silicone") }}<br><b>{{ t("front_gate.index.tools.tubes") }}</b></span>
+          </div>
+        </article>
+        <article class="example-preview">
+          <h3>{{ t("front_gate.index.docs.title") }}</h3>
+          <p>{{ t("front_gate.index.docs.text") }}</p>
+          <div class="card card-sm mini-ui doc-stack">
+            <div class="doc-line"><i></i><span>{{ t("front_gate.files.invoice") }}</span><b>{{ t("front_gate.files.administration") }}</b></div>
+            <div class="doc-line"><i></i><span>{{ t("front_gate.files.minutes") }}</span><b>{{ t("front_gate.files.minutes_category") }}</b></div>
+            <div class="doc-line"><i></i><span>{{ t("front_gate.files.quote") }}</span><b>{{ t("front_gate.files.suppliers") }}</b></div>
+            <div class="doc-line"><i></i><span>{{ t("front_gate.files.meter_photo") }}</span><b>{{ t("front_gate.files.property") }}</b></div>
+          </div>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section class="section section-line">
+    <div class="container value-band">
+      <div class="big-price"><small>{{ t("front_gate.common.standard_price") }}</small>{{ standardPrice }}</div>
+      <div>
+        <p>{{ t("front_gate.index.value.text") }}</p>
+        <div class="value-points"><span>{{ t("front_gate.index.value.sources") }}</span><span>{{ t("front_gate.index.value.no_subscription") }}</span><span>{{ t("front_gate.index.value.yours") }}</span></div>
+        <a class="text-link" href="quanto-costa.html">{{ t("front_gate.index.value.link") }} <span>→</span></a>
+      </div>
+    </div>
+  </section>
+</main>
+{% endblock %}

@@ -1,0 +1,41 @@
+{% extends "layout.njk" %}
+{% set page = "quanto-costa" %}
+{% set title = t("front_gate.pricing.title") %}
+{% set description = t("front_gate.pricing.description", { price: standardPrice }) %}
+
+{% block main %}
+<main class="page-main">
+  <section class="container price-hero reveal">
+    <div class="price-figure"><small>{{ t("front_gate.common.standard_price") }}</small><strong>{{ standardPrice }}</strong></div>
+    <div class="price-copy"><h1>{{ t("front_gate.pricing.heading") }}</h1><p>{{ t("front_gate.pricing.lead") }}</p></div>
+  </section>
+
+  <section class="section-line"><div class="container package-layout">
+    <div class="card file-browser" aria-label="{{ t("front_gate.pricing.package.label") }}">
+      <div class="card-head file-browser-head"><b>webtool.zip</b><span>{{ t("front_gate.pricing.package.delivery") }}</span></div>
+      <div class="file-entry"><span class="file-icon">↳</span><span>{{ t("front_gate.pricing.package.software") }}</span><span>{{ t("front_gate.pricing.package.included") }}</span></div>
+      <div class="file-entry"><span class="file-icon">&lt;/&gt;</span><span>{{ t("front_gate.pricing.package.source") }}</span><span>{{ t("front_gate.pricing.package.included") }}</span></div>
+      <div class="file-entry"><span class="file-icon">i</span><span>{{ t("front_gate.pricing.package.instructions") }}</span><span>{{ t("front_gate.pricing.package.included_plural") }}</span></div>
+      <div class="file-entry"><span class="file-icon">✓</span><span>{{ t("front_gate.pricing.package.fixes") }}</span><span>{{ t("front_gate.pricing.package.included_plural") }}</span></div>
+    </div>
+    <div class="package-notes">
+      <article class="package-note"><h3>{{ t("front_gate.pricing.package.yours.title") }}</h3><p>{{ t("front_gate.pricing.package.yours.text") }}</p></article>
+      <article class="package-note"><h3>{{ t("front_gate.pricing.package.no_fee.title") }}</h3><p>{{ t("front_gate.pricing.package.no_fee.text") }}</p></article>
+      <article class="package-note"><h3>{{ t("front_gate.pricing.package.not_exclusive.title") }}</h3><p>{{ t("front_gate.pricing.package.not_exclusive.text") }}</p></article>
+      <article class="package-note"><h3>{{ t("front_gate.pricing.package.external_costs.title") }}</h3><p>{{ t("front_gate.pricing.package.external_costs.text", { price: standardPrice }) }}</p></article>
+      <article class="package-note"><h3>{{ t("front_gate.pricing.package.installation.title") }}</h3><p>{{ t("front_gate.pricing.package.installation.text") }}</p></article>
+    </div>
+  </div></section>
+
+  <section class="section section-line"><div class="container value-band"><div class="big-price"><small>{{ t("front_gate.pricing.after_demo.label") }}</small>{{ t("front_gate.pricing.after_demo.question") }}</div><div><p>{{ t("front_gate.pricing.after_demo.text", { price: standardPrice }) }}</p><a class="text-link" href="come-funziona.html">{{ t("front_gate.pricing.after_demo.link") }} <span>→</span></a></div></div></section>
+
+  <section class="faq section-line" id="faq"><div class="container"><h2>{{ t("front_gate.pricing.faq.heading") }}</h2>
+    <details><summary>{{ t("front_gate.pricing.faq.recurring.question") }}</summary><p>{{ t("front_gate.pricing.faq.recurring.answer") }}</p></details>
+    <details><summary>{{ t("front_gate.pricing.faq.source.question") }}</summary><p>{{ t("front_gate.pricing.faq.source.answer") }}</p></details>
+    <details><summary>{{ t("front_gate.pricing.faq.others.question") }}</summary><p>{{ t("front_gate.pricing.faq.others.answer") }}</p></details>
+    <details><summary>{{ t("front_gate.pricing.faq.compliance.question") }}</summary><p>{{ t("front_gate.pricing.faq.compliance.answer") }}</p></details>
+    <details><summary>{{ t("front_gate.pricing.faq.new_feature.question") }}</summary><p>{{ t("front_gate.pricing.faq.new_feature.answer") }}</p></details>
+    <details><summary>{{ t("front_gate.pricing.faq.hosting.question") }}</summary><p>{{ t("front_gate.pricing.faq.hosting.answer") }}</p></details>
+  </div></section>
+</main>
+{% endblock %}

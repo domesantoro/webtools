@@ -10,7 +10,7 @@
 {% block main %}
     <div class="container access">
       <div class="access-card card">
-        <div class="card-head">Entra</div>
+        <div class="card-head">{{ t("sso.login.title") }}</div>
         <div class="access-body">
           {%- if error %}
           <p class="notice notice-warn">{{ error_message }}</p>
@@ -18,21 +18,21 @@
           <form class="access-form" method="post" action="/ui/login">
             <input type="hidden" name="next" value="{{ next }}">
             <div class="field">
-              <label class="field-label" for="username">Username</label>
+              <label class="field-label" for="username">{{ t("sso.login.username") }}</label>
               <input class="input" type="text" id="username" name="username"
                      value="{{ username }}" autocomplete="username" autofocus required>
             </div>
             <div class="field">
-              <label class="field-label" for="password">Password</label>
+              <label class="field-label" for="password">{{ t("sso.login.password") }}</label>
               <input class="input" type="password" id="password" name="password"
                      autocomplete="current-password" required>
             </div>
             <div class="form-actions">
-              <button class="btn btn-primary" type="submit">Entra</button>
+              <button class="btn btn-primary" type="submit">{{ t("sso.login.submit") }}</button>
             </div>
           </form>
           <p class="access-alt">
-            Non hai un account? <a class="text-link" href="/ui/register?next={{ next | urlencode }}">Registrati</a>
+            {{ t("sso.login.no_account") }} <a class="text-link" href="/ui/register?next={{ next | urlencode }}">{{ t("sso.login.register") }}</a>
           </p>
         </div>
       </div>

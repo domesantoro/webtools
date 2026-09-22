@@ -7,7 +7,8 @@
 # perché quei file non si modificano lì: si modifica commons/templates e si
 # rilancia questo deployer.
 #
-# front-gate non riceve niente: è un sito statico, non rende pagine.
+# front-gate ha un guscio suo (templates/layout.njk) e usa di qui solo
+# `locale_switch.njk`, il selettore della lingua del piè di pagina.
 set -euo pipefail
 
 WEBTOOLS="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
@@ -32,7 +33,15 @@ deploy_sso() {
   copia_in "$WEBTOOLS/sso/templates/commons"
 }
 
+# front-gate — il sito vetrina: solo il selettore della lingua.
+deploy_front_gate() {
+  echo "→ front-gate"
+  mkdir -p "$WEBTOOLS/front-gate/templates/commons"
+  cp "$SOURCE/locale_switch.njk" "$WEBTOOLS/front-gate/templates/commons/locale_switch.njk"
+}
+
 deploy_preanalyst
 deploy_sso
+deploy_front_gate
 
 echo "Template comuni distribuiti."

@@ -144,6 +144,22 @@ export async function claimTicket(settings, ticket) {
   return { ok: true, logged: Boolean(result.data.logged), session: result.data.session ?? null };
 }
 
+// La lingua scelta con il selettore delle pagine, per chi è entrato: il sso la
+// mette nella sessione e nel profilo, così il login successivo la ritrova.
+// Senza cookie di sessione non c'è niente da salvare: la lingua resta nel
+// cookie comune, che scrive chi chiama.
+//
+//   { ok: true, logged }                   fatto, oppure sessione non più valida
+//   { ok: false, reason: "unavailable" }   il sso non risponde
+export async function saveSessionLocale(settings, httpRequest, locale) {
+  const token = readCookie(httpRequest, settings.cookieName);
+  if (!token) return { ok: true, logged: false };
+
+  const result = await request(settings, "/session/locale", { method: "POST", body: { locale }, token });
+  if (!result.ok) return result;
+  return { ok: true, logged: Boolean(result.data.logged) };
+}
+
 /* -------------------------------------------------- il ritorno dal login */
 
 export function ticketFrom(url) {

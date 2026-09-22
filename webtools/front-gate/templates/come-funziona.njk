@@ -1,0 +1,21 @@
+{% extends "layout.njk" %}
+{% set page = "come-funziona" %}
+{% set title = t("front_gate.how.title") %}
+{% set description = t("front_gate.how.description") %}
+
+{% block main %}
+<main class="page-main">
+  <section class="container page-intro wide reveal"><div class="eyebrow">{{ t("front_gate.how.eyebrow") }}</div><h1>{{ t("front_gate.how.heading") }}</h1><p>{{ t("front_gate.how.lead") }}</p><div class="card process-map" aria-label="{{ t("front_gate.how.map.label") }}"><span>{{ t("front_gate.how.map.spec") }}</span><i></i><span>{{ t("front_gate.how.map.review") }}</span><i></i><span>{{ t("front_gate.how.map.develop") }}</span><i></i><span>{{ t("front_gate.how.map.demo") }}</span><i></i><span>{{ t("front_gate.how.map.payment") }}</span><i></i><span>{{ t("front_gate.how.map.zip") }}</span></div></section>
+
+  <section class="container flow-wrap">
+    <article class="flow-step"><div class="flow-num">01</div><h2>{{ t("front_gate.how.steps.spec.title") }}</h2><p>{{ t("front_gate.how.steps.spec.text") }}</p></article>
+    <article class="flow-step"><div class="flow-num">02</div><h2>{{ t("front_gate.how.steps.review.title") }}</h2><p>{{ t("front_gate.how.steps.review.text") }}</p></article>
+    <article class="flow-step"><div class="flow-num">03</div><h2>{{ t("front_gate.how.steps.accept.title") }}</h2><p>{{ t("front_gate.how.steps.accept.text") }}</p></article>
+    <article class="flow-step"><div class="flow-num">04</div><h2>{{ t("front_gate.how.steps.develop.title") }}</h2><p>{{ t("front_gate.how.steps.develop.text") }}</p></article>
+    <article class="flow-step"><div class="flow-num">05</div><h2>{{ t("front_gate.how.steps.demo.title") }}</h2><div><p>{{ t("front_gate.how.steps.demo.text") }}</p><div class="branch"><span class="yes">{{ t("front_gate.how.steps.demo.yes") }}</span><span class="no">{{ t("front_gate.how.steps.demo.no") }}</span></div></div></article>
+    <article class="flow-step"><div class="flow-num">06</div><h2>{{ t("front_gate.how.steps.pay.title") }}</h2><p>{{ t("front_gate.how.steps.pay.text", { price: standardPrice }) }}</p></article>
+    <article class="flow-step"><div class="flow-num">07</div><h2>{{ t("front_gate.how.steps.zip.title") }}</h2><p>{{ t("front_gate.how.steps.zip.text") }}</p></article>
+    <article class="flow-step"><div class="flow-num">08</div><h2>{{ t("front_gate.how.steps.after.title") }}</h2><p>{{ t("front_gate.how.steps.after.text") }}</p></article>
+  </section>
+</main>
+{% endblock %}

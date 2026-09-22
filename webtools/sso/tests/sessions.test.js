@@ -24,7 +24,7 @@ test("il token è lungo e non si ripete", () => {
 
 test("la sessione porta chi è entrato e fino a quando vale", () => {
   const now = new Date("2026-09-21T10:00:00.000Z");
-  const session = buildSession(USER, 3600, now);
+  const session = buildSession(USER, 3600, now, "it");
 
   assert.equal(session.uid, USER.uid);
   assert.equal(session.username, USER.username);
@@ -32,12 +32,12 @@ test("la sessione porta chi è entrato e fino a quando vale", () => {
   assert.equal(session.expires_at, "2026-09-21T11:00:00.000Z");
   // La fotografia dell'utente al login: evita una seconda lettura a ogni
   // `GET /session`, e invecchia (vedi il commento in sessions.js).
-  assert.deepEqual(session.data, { screen_name: "Dome", driver_uid: USER.driver_uid });
+  assert.deepEqual(session.data, { screen_name: "Dome", driver_uid: USER.driver_uid, locale: "it" });
 });
 
 test("un utente senza screen_name o driver non manda in errore la sessione", () => {
   const session = buildSession({ uid: "u", username: "u@example.com" }, 60);
-  assert.deepEqual(session.data, { screen_name: null, driver_uid: null });
+  assert.deepEqual(session.data, { screen_name: null, driver_uid: null, locale: null });
 });
 
 test("la scadenza", () => {

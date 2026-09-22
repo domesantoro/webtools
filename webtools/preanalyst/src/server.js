@@ -1,22 +1,43 @@
-// Server HTTP: una sola pagina più i file statici di public/.
+// Server HTTP della pre-analisi.
+//
+//   GET  /                     la pagina con il form
+//   POST /submit               il form: nasce il progetto con la sua pre-specifica
+//   GET  /analysis/{id}        la pagina dell'analisi (per ora vuota)
+//   POST /upload               una specifica già pronta, per un progetto esistente
+//   GET  /login-done, /session-fragment, /logout   il giro dell'accesso
+//   POST /locale               cambia la lingua (cookie comune) e torna alla pagina
+//   tutto il resto             i file statici di public/
 
+import { randomUUID } from "node:crypto";
 import { createReadStream } from "node:fs";
 import { stat } from "node:fs/promises";
 import http from "node:http";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { listDrivers } from "./anagraphics.js";
+import { ambassadorOf, resolveAmbassador } from "./ambassador.js";
+import { createProject, deleteProject, findProject, listDrivers } from "./anagraphics.js";
+import { FrontMatterError, isProjectId, parse } from "./commons/spec_front_matter.js";
 import {
   claimTicket,
   clearSessionCookie,
   currentSession,
   logoutUrl,
+  saveSessionLocale,
   sessionCookie,
   ticketFrom,
 } from "./commons/sso_client.js";
-import { NONE, resolveReferral, withoutOwnReferral } from "./referral.js";
-import { renderAccessFragments, renderLoginDone, renderPage } from "./page.js";
+import { NONE, resolveDriverLink, withoutOwnLink } from "./driver_link.js";
+import {
+  renderAccessFragments,
+  renderAnalysis,
+  renderLoginDone,
+  renderMessage,
+  renderPage,
+} from "./page.js";
+import { readAnswers, renderPrespec } from "./prespec.js";
+import { linkTermsOf } from "./project_driver.js";
+import { storeSpec } from "./workspaces.js";
 
 const PUBLIC_DIR = fileURLToPath(new URL("../public/", import.meta.url));
 
@@ -52,8 +73,8 @@ function secondsUntil(moment) {
 // Il ritorno non avviene sulla pagina della pre-analisi di proposito: ci
 // arriverebbe la finestra sbagliata, aprendo una seconda copia del form e
 // lasciando quella vera convinta che non sia entrato nessuno.
-async function finishLogin(url, settings, response, ticket) {
-  const html = (ok) => send(response, 200, "text/html; charset=utf-8", renderLoginDone({ ok }));
+async function finishLogin(url, settings, response, ui, ticket) {
+  const html = (ok) => send(response, 200, "text/html; charset=utf-8", renderLoginDone(ui, { ok }));
 
   if (!ticket) {
     // Qualcuno è arrivato qui a mano, senza passare dal login.
@@ -78,7 +99,7 @@ async function finishLogin(url, settings, response, ticket) {
     "cache-control": "no-store",
     "set-cookie": sessionCookie(settings, claimed.session.token, durata),
   });
-  return response.end(renderLoginDone({ ok: true }));
+  return response.end(renderLoginDone(ui, { ok: true }));
 }
 
 // I pezzi della pagina che dipendono da chi è entrato, già resi dai template.
@@ -88,9 +109,9 @@ async function finishLogin(url, settings, response, ticket) {
 // Il browser manda anche i parametri dell'indirizzo (`?discount=`, `?driver=`)
 // perché la colonna destra dipende da quelli: dopo il login può cambiare, per
 // esempio se chi è entrato è il driver del link.
-async function serveAccessFragments(request, url, settings, response) {
+async function serveAccessFragments(request, url, settings, response, ui) {
   const stato = await pageState(request, url, settings);
-  const body = JSON.stringify(renderAccessFragments(stato.access, settings, stato));
+  const body = JSON.stringify(renderAccessFragments(ui, stato.access, settings, stato));
   response.writeHead(200, {
     "content-type": "application/json; charset=utf-8",
     "content-length": Buffer.byteLength(body),
@@ -101,16 +122,36 @@ async function serveAccessFragments(request, url, settings, response) {
 
 /* ------------------------------------------------------- il caricamento */
 
-// `POST /upload` — un'analisi già pronta.
+// Il corpo intero, oppure `null` se supera il limite: in quel caso ha già
+// risposto `tooLarge`. Prima si risponde, poi si chiude: chiudendo subito il
+// client non leggerebbe mai il motivo, e si vedrebbe solo una connessione caduta.
+async function readBody(request, response, maxBytes, tooLarge) {
+  const pezzi = [];
+  let ricevuti = 0;
+  for await (const pezzo of request) {
+    ricevuti += pezzo.length;
+    if (ricevuti > maxBytes) {
+      // `connection: close` perché il resto, che sta ancora arrivando, non lo si
+      // vuole né leggere né aspettare.
+      response.once("finish", () => request.destroy());
+      tooLarge();
+      return null;
+    }
+    pezzi.push(pezzo);
+  }
+  return Buffer.concat(pezzi);
+}
+
+// `POST /upload` — una specifica già pronta, per un progetto che esiste già.
 //
 // Il file arriva **nel corpo così com'è**, con il nome in `X-File-Name`: per un
 // file solo non serve un form multipart, e senza multipart non serve niente per
-// smontarlo. Il tipo dichiarato non si guarda: non è un controllo di sicurezza,
-// e chi vuole mentire mente comunque.
+// smontarlo. Il tipo dichiarato non si guarda: si guarda il contenuto.
 //
-// Oggi il file **non si conserva**: si conta, si scrive nel log e si butta. Serve
-// a fissare il contratto — chi può caricare, con che limiti, che cosa risponde —
-// prima di decidere dove finiranno davvero questi file.
+// Il file deve essere testo UTF-8 con il `project_id` nel front matter, e il
+// progetto deve essere di chi carica. Un progetto di un altro risponde come uno
+// inesistente: così non si scopre quali id esistono. Se qualcosa non va, il
+// file non si conserva.
 //
 // Le risposte seguono il contratto delle API del progetto, stato HTTP più codice
 // stabile: qui non si parla a una persona ma al JavaScript della pagina.
@@ -125,35 +166,72 @@ async function receiveUpload(request, settings, response) {
     });
     response.end(body);
   };
+  const errore = (status, code) => rispondi(status, { error: code });
 
   // Caricare è un'azione, non una lettura: serve essere dentro.
   const accesso = await currentSession(settings, request);
-  if (!accesso.ok) return rispondi(503, { error: "SSO_UNAVAILABLE" });
-  if (!accesso.logged) return rispondi(401, { error: "NOT_LOGGED" });
+  if (!accesso.ok) return errore(503, "SSO_UNAVAILABLE");
+  if (!accesso.logged) return errore(401, "NOT_LOGGED");
 
   const nome = fileName(request);
-  if (!nome) return rispondi(400, { error: "MISSING_FILE_NAME" });
+  if (!nome) return errore(400, "MISSING_FILE_NAME");
 
-  let ricevuti = 0;
-  for await (const pezzo of request) {
-    ricevuti += pezzo.length;
-    if (ricevuti > settings.uploadMaxBytes) {
-      // Prima si risponde, poi si chiude: chiudendo subito il client non
-      // leggerebbe mai il motivo, e si vedrebbe solo una connessione caduta.
-      // `connection: close` perché il resto del file, che sta ancora arrivando,
-      // non lo si vuole né leggere né aspettare.
-      response.once("finish", () => request.destroy());
-      return rispondi(413, { error: "FILE_TOO_LARGE" }, { connection: "close" });
-    }
-    // Il contenuto non si tiene: non c'è ancora un posto dove metterlo.
+  const corpo = await readBody(request, response, settings.uploadMaxBytes, () =>
+    rispondi(413, { error: "FILE_TOO_LARGE" }, { connection: "close" })
+  );
+  if (corpo === null) return;
+  if (corpo.length === 0) return errore(400, "EMPTY_FILE");
+
+  let testo;
+  try {
+    // `fatal`: un byte non valido è un errore, non un carattere sostituito in
+    // silenzio. Un PDF o un Word finiscono qui.
+    testo = new TextDecoder("utf-8", { fatal: true }).decode(corpo);
+  } catch {
+    return errore(400, "NOT_UTF8");
   }
-  if (ricevuti === 0) return rispondi(400, { error: "EMPTY_FILE" });
+
+  let dati;
+  try {
+    dati = parse(testo).data;
+  } catch (error) {
+    if (error instanceof FrontMatterError) return errore(400, "INVALID_FRONT_MATTER");
+    throw error;
+  }
+  const projectId = dati?.project_id;
+  if (projectId === undefined || projectId === null) return errore(400, "MISSING_PROJECT_ID");
+  if (!isProjectId(projectId)) return errore(400, "INVALID_PROJECT_ID");
+
+  const progetto = await findProject(settings, projectId);
+  if (!progetto.ok && progetto.reason === "not_found") return errore(404, "PROJECT_NOT_FOUND");
+  if (!progetto.ok) return errore(503, "ANAGRAPHICS_UNAVAILABLE");
+  if (progetto.data.owner_uid !== accesso.session.uid) {
+    console.warn(
+      `[preanalyst] ${accesso.session.username} ha caricato una specifica per il progetto ` +
+        `di un altro (${projectId}): rifiutata`
+    );
+    return errore(404, "PROJECT_NOT_FOUND");
+  }
+
+  // L'origine la decide il canale: un file caricato è sempre di terzi, anche se
+  // nel suo front matter dichiara altro.
+  const salvato = await storeSpec(settings, projectId, testo, {
+    origin: "third_party",
+    uploadedBy: accesso.session.uid,
+  });
+  if (!salvato.ok && salvato.reason === "rejected") return errore(400, salvato.code);
+  if (!salvato.ok) return errore(503, "WORKSPACES_UNAVAILABLE");
 
   console.log(
-    `[preanalyst] analisi caricata da ${accesso.session.username}: ` +
-      `${nome} (${ricevuti} byte) — non conservata`
+    `[preanalyst] specifica caricata da ${accesso.session.username}: ${nome} ` +
+      `(${corpo.length} byte) → progetto ${projectId}, versione ${salvato.data.version}`
   );
-  return rispondi(201, { received: true, name: nome, bytes: ricevuti });
+  return rispondi(201, {
+    received: true,
+    name: nome,
+    project_id: projectId,
+    version: salvato.data.version,
+  });
 }
 
 // Il nome arriva codificato nell'header, perché un header porta solo ASCII e un
@@ -181,6 +259,137 @@ function leave(settings, response) {
   });
 }
 
+/* ------------------------------------------------------- l'invio del form */
+
+function sendMessage(response, ui, status, kind) {
+  send(response, status, "text/html; charset=utf-8", renderMessage(ui, kind));
+}
+
+// `POST /submit` — il form della pre-analisi.
+//
+// Nell'ordine: il progetto nasce in anagraphics, le risposte diventano la
+// pre-specifica, la pre-specifica va nel workspace del progetto, il browser va
+// alla pagina dell'analisi. Il `303` fa sì che ricaricare quella pagina non
+// rimandi il form.
+//
+// Due protezioni:
+// - `submission_id`, generato quando la pagina è stata resa: lo stesso form
+//   mandato due volte (doppio clic, ricarica) trova il progetto già nato;
+// - se la pre-specifica non si riesce a scrivere, il progetto si cancella: un
+//   progetto senza pre-specifica non ha niente da cui partire.
+async function receiveForm(request, settings, response, ui) {
+  const accesso = await currentSession(settings, request);
+  if (!accesso.ok) return sendMessage(response, ui, 503, "unavailable");
+  if (!accesso.logged) return sendMessage(response, ui, 401, "not_logged");
+
+  const corpo = await readBody(request, response, settings.formMaxBytes, () =>
+    send(response, 413, "text/html; charset=utf-8", renderMessage(ui, "too_large"))
+  );
+  if (corpo === null) return;
+  const form = new URLSearchParams(corpo.toString("utf8"));
+
+  const submissionId = form.get("submission_id") ?? "";
+  if (!isProjectId(submissionId)) return sendMessage(response, ui, 400, "invalid");
+
+  const { answers, missing } = readAnswers(form, settings.answerMaxChars);
+  if (missing.length > 0) return sendMessage(response, ui, 400, "missing");
+
+  // Tutto ciò che arriva dai campi nascosti si ricontrolla su anagraphics.
+  const ownDriverUid = accesso.session.data?.driver_uid ?? null;
+  const autonomous = Boolean(ownDriverUid) && form.get("autonomous_work") === "yes";
+  const link = await linkTermsOf(settings, form, ownDriverUid, autonomous);
+  if (!link.ok) return sendMessage(response, ui, 503, "unavailable");
+  const ambassador = await ambassadorOf(settings, form, ownDriverUid);
+  if (!ambassador.ok) return sendMessage(response, ui, 503, "unavailable");
+
+  const { review, billing } = projectTerms({ ownDriverUid, autonomous, link, ambassadorUid: ambassador.uid });
+  const creato = await createProject(settings, {
+    ownerUid: accesso.session.uid,
+    submissionId,
+    review,
+    billing,
+  });
+  if (!creato.ok && creato.reason === "rejected") return sendMessage(response, ui, 400, "invalid");
+  if (!creato.ok) return sendMessage(response, ui, 503, "unavailable");
+  const projectId = creato.data.project_id;
+
+  // 200 invece di 201: questo invio era già arrivato, e il progetto c'è già.
+  // La pre-specifica non si riscrive: si va dove si sarebbe andati la prima volta.
+  if (creato.status === 200) {
+    console.log(`[preanalyst] invio ripetuto da ${accesso.session.username}: progetto ${projectId}`);
+    return redirect(response, `/analysis/${projectId}`);
+  }
+
+  const salvato = await storeSpec(settings, projectId, renderPrespec(projectId, answers, ui.locale), {
+    origin: "system",
+    uploadedBy: accesso.session.uid,
+  });
+  if (!salvato.ok) {
+    const cancellato = await deleteProject(settings, projectId);
+    console.error(
+      `[preanalyst] pre-specifica non scritta per il progetto ${projectId}: ` +
+        (cancellato.ok ? "progetto cancellato" : "PROGETTO RIMASTO SENZA PRE-SPECIFICA")
+    );
+    return sendMessage(response, ui, 503, "unavailable");
+  }
+
+  console.log(
+    `[preanalyst] richiesta di ${accesso.session.username}: progetto ${projectId}, ` +
+      `pre-specifica v${salvato.data.version}`
+  );
+  return redirect(response, `/analysis/${projectId}`);
+}
+
+// Driver e sconti sono dati del **progetto**, non della pre-specifica: vanno in
+// `review` (chi lo supervisiona) e `billing` (i dati economici).
+//
+// - Lavoro autonomo: vale solo se chi manda il form è un driver. Il driver è lui
+//   (preimpostato) e il codice sconto di un altro driver non si applica: le due
+//   cose si escludono.
+// - Altrimenti il driver del link, se c'era ed è valido, è preimpostato; senza
+//   lo assegnerà il sistema (`driver_uid: null`, `preset: false`).
+//
+// Driver, sconto e ambassador arrivano già verificati: `linkTermsOf()` in
+// src/project_driver.js e `ambassadorOf()` in src/ambassador.js.
+function projectTerms({ ownDriverUid, autonomous, link, ambassadorUid }) {
+  if (autonomous) {
+    return {
+      review: { driver_uid: ownDriverUid, preset: true },
+      billing: {
+        discount_code: null,
+        autonomous_work: true,
+        ambassador_uid: null,
+      },
+    };
+  }
+  return {
+    review: { driver_uid: link.driverUid, preset: Boolean(link.driverUid) },
+    billing: {
+      discount_code: link.discountCode,
+      autonomous_work: false,
+      ambassador_uid: ambassadorUid,
+    },
+  };
+}
+
+// `GET /analysis/{id}` — la pagina dell'analisi, per ora vuota. La vede solo chi
+// possiede il progetto: per tutti gli altri il progetto non esiste.
+async function serveAnalysis(request, projectId, settings, response, ui) {
+  const accesso = await currentSession(settings, request);
+  if (!accesso.ok) return sendMessage(response, ui, 503, "unavailable");
+  if (!accesso.logged) return sendMessage(response, ui, 401, "not_logged");
+  if (!isProjectId(projectId)) return sendMessage(response, ui, 404, "not_found");
+
+  const progetto = await findProject(settings, projectId);
+  if (!progetto.ok && progetto.reason !== "not_found") return sendMessage(response, ui, 503, "unavailable");
+  if (!progetto.ok || progetto.data.owner_uid !== accesso.session.uid) {
+    return sendMessage(response, ui, 404, "not_found");
+  }
+
+  const access = { logged: true, session: accesso.session, ssoAvailable: true };
+  send(response, 200, "text/html; charset=utf-8", renderAnalysis(ui, { access, settings }));
+}
+
 // Tutto ciò che serve a disegnare la pagina: chi è entrato, da dove arriva.
 // Sta in un posto solo perché lo usano sia la pagina intera sia i frammenti che
 // il browser chiede dopo il login: le due strade devono vedere la stessa cosa.
@@ -202,16 +411,19 @@ async function pageState(request, url, settings) {
   const params = {
     discountCode: url.searchParams.get("discount"),
     driverUid: url.searchParams.get("driver"),
+    ambassadorUid: url.searchParams.get("ambassador"),
   };
 
   // Il box del driver si vede solo a chi è arrivato dal link di un driver.
   // Per tutti gli altri non c'è nessuna scelta da fare, quindi non c'è box e
   // non serve nemmeno chiedere l'elenco ad anagraphics.
   const showDriverBox = Boolean(params.discountCode || params.driverUid);
+  // L'ambassador conta solo senza link di un driver (src/ambassador.js).
+  const ambassadorAsked = Boolean(params.ambassadorUid) && !showDriverBox;
 
   let drivers = [];
   let driversAvailable = true;
-  let referral = { state: NONE };
+  let driverLink = { state: NONE };
 
   if (showDriverBox) {
     const driversResult = await listDrivers(settings);
@@ -219,25 +431,34 @@ async function pageState(request, url, settings) {
     drivers = driversResult.ok ? driversResult.data : [];
     // Senza elenco non si può risolvere niente: il box lo dice e la pre-analisi
     // continua lo stesso, perché scegliere il driver è facoltativo.
-    referral = driversResult.ok ? await resolveReferral(settings, params, drivers) : { state: NONE };
+    driverLink = driversResult.ok ? await resolveDriverLink(settings, params, drivers) : { state: NONE };
     // Un driver non si manda un cliente da solo: il proprio sconto e il proprio
     // link non valgono. Quelli di altri driver sì.
-    referral = withoutOwnReferral(referral, ownDriverUid);
+    driverLink = withoutOwnLink(driverLink, ownDriverUid);
+  }
+
+  // Senza elenco dei driver l'ambassador non si può verificare: il box non c'è.
+  let ambassador = null;
+  if (ambassadorAsked) {
+    const driversResult = await listDrivers(settings);
+    ambassador = driversResult.ok ? resolveAmbassador(params, driversResult.data, ownDriverUid) : null;
   }
 
   return {
     access,
     params,
-    referral,
+    driverLink,
     showDriverBox,
     driversAvailable,
+    ambassador,
     isDriver: Boolean(ownDriverUid),
   };
 }
 
-async function servePage(request, url, settings, response) {
+async function servePage(request, url, settings, response, ui) {
   const stato = await pageState(request, url, settings);
-  const html = renderPage({ ...stato, settings });
+  // Un id per questo form: se lo stesso invio arriva due volte, il progetto resta uno.
+  const html = renderPage(ui, { ...stato, settings, submissionId: randomUUID() });
   send(response, 200, "text/html; charset=utf-8", html);
 }
 
@@ -266,29 +487,62 @@ async function serveStatic(pathname, response) {
   createReadStream(file).pipe(response);
 }
 
+// Il selettore della lingua, in testata su ogni pagina. Scrive il cookie comune
+// e torna alla pagina da cui è partito: gli altri sottosistemi leggono lo stesso
+// cookie, quindi cambiano lingua anche loro alla prossima pagina.
+async function changeLocale(request, settings, response) {
+  const change = await settings.i18n.readChange(request);
+  if (!change.ok) {
+    const body = JSON.stringify({ error: change.code });
+    response.writeHead(change.status, {
+      "content-type": "application/json; charset=utf-8",
+      "content-length": Buffer.byteLength(body),
+    });
+    return response.end(body);
+  }
+  // Chi è entrato la ritrova al prossimo login. Se il sso non risponde la lingua
+  // cambia lo stesso: il cookie basta per le pagine.
+  const salvata = await saveSessionLocale(settings, request, change.locale);
+  if (!salvata.ok) console.error("[preanalyst] lingua non salvata nella sessione: il sso non risponde");
+  return redirect(response, change.location, { "set-cookie": change.cookie });
+}
+
 export function createServer(settings) {
   return http.createServer(async (request, response) => {
     const url = new URL(request.url, `http://${request.headers.host ?? "localhost"}`);
+    // Lingua e selettore per le pagine. Le pagine rese in risposta a un POST non
+    // si riaprono con un GET: il cambio di lingua da lì torna alla pre-analisi.
+    const ui = settings.i18n.pageContext(request, url, request.method === "GET" ? {} : { returnTo: "/" });
 
     try {
       if (request.method === "POST" && url.pathname === "/upload") {
         return await receiveUpload(request, settings, response);
+      }
+      if (request.method === "POST" && url.pathname === "/submit") {
+        return await receiveForm(request, settings, response, ui);
+      }
+      if (request.method === "POST" && url.pathname === "/locale") {
+        return await changeLocale(request, settings, response);
       }
       if (request.method !== "GET") {
         return send(response, 405, "text/plain; charset=utf-8", "Metodo non ammesso");
       }
 
       if (url.pathname === "/") {
-        return await servePage(request, url, settings, response);
+        return await servePage(request, url, settings, response, ui);
       }
       if (url.pathname === "/login-done") {
-        return await finishLogin(url, settings, response, ticketFrom(url));
+        return await finishLogin(url, settings, response, ui, ticketFrom(url));
       }
       if (url.pathname === "/session-fragment") {
-        return await serveAccessFragments(request, url, settings, response);
+        return await serveAccessFragments(request, url, settings, response, ui);
       }
       if (url.pathname === "/logout") {
         return leave(settings, response);
+      }
+      const analisi = /^\/analysis\/([^/]+)$/.exec(url.pathname);
+      if (analisi) {
+        return await serveAnalysis(request, analisi[1], settings, response, ui);
       }
       return await serveStatic(url.pathname, response);
     } catch (error) {

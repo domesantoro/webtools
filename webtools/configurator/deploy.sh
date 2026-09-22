@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # Deployer generale: lancia tutti i sotto-deployer, in ordine.
 #
-# Ogni sotto-deployer distribuisce una cosa sola (lo stile, il client del sso) e
-# sa da sé quali progetti la ricevono e dove va messa. Qui si dice soltanto
-# quali esistono e in che ordine girano.
+# Ogni sotto-deployer distribuisce una cosa sola (lo stile, il client del sso, il
+# client della configurazione, le lingue) e sa da sé quali progetti la ricevono e dove va
+# messa. Qui si dice soltanto quali esistono e in che ordine girano.
 #
 #   ./deploy.sh            lancia tutti i sotto-deployer
 #   ./deploy.sh style      lancia solo quello dello stile
@@ -16,7 +16,10 @@ DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 DEPLOYERS=(
   "style:$DIR/style_deployer/deploy.sh"
   "template:$DIR/template_deployer/deploy.sh"
+  "i18n:$DIR/i18n_deployer/deploy.sh"
   "sso:$DIR/sso_deployer/deploy.sh"
+  "specs:$DIR/specs_deployer/deploy.sh"
+  "configuration:$DIR/configuration_deployer/deploy.sh"
 )
 
 run() {

@@ -1,6 +1,6 @@
 /* Stile locale del preanalysis gate.
    Qui sta solo ciò che è specifico di questa pagina: il resto — font, token,
-   header, marchio, schede, bottoni — arriva da commons.css, che è una copia
+   header, marchio, schede, bottoni, campi, avvisi — arriva da commons.css, che è una copia
    generata dal deployer (webtools/configurator/style_deployer/deploy.sh)
    e non va modificata qui. */
 
@@ -64,7 +64,7 @@
    restare appiccicati fra loro. Vuoto, non occupa niente. */
 [data-sso-driver] { display: contents; }
 
-.driver-box { background: var(--surface); }
+.driver-box, .ambassador-box { background: var(--surface); }
 .aside-head {
   padding: 13px 20px;
   font-family: var(--mono);
@@ -107,32 +107,6 @@
 .form-legend + .form-section-hint { margin-top: -14px; }
 .form-section-hint { color: var(--muted); font-size: 14px; margin: 0; }
 
-.field { display: grid; gap: 8px; border: 0; padding: 0; margin: 0; min-width: 0; }
-.field-label { font-weight: 600; font-size: 15px; padding: 0; }
-.field-hint { color: var(--muted); font-size: 14px; margin: -2px 0 0; line-height: 1.45; }
-.field-hint code, .field code { font-family: var(--mono); font-size: 13px; }
-.required { color: var(--accent); text-decoration: none; border: 0; }
-/* Campi di testo. */
-.input {
-  width: 100%;
-  padding: 12px 14px;
-  color: var(--ink);
-  background: var(--paper);
-  border: 1.5px solid var(--ink);
-  border-radius: var(--radius-sm);
-  box-shadow: var(--shadow-hard-sm);
-  transition: border-color .15s ease;
-}
-.input::placeholder { color: var(--muted); opacity: .75; }
-.input:focus-visible {
-  /* Il campo attivo non si muove e l'ombra resta quella di prima: il bordo
-     diventa vermiglio, senza cambiare spessore. */
-  outline: none;
-  border-color: var(--accent);
-}
-
-textarea.input { resize: vertical; line-height: 1.55; min-height: 80px; }
-
 /* Scelte: ogni opzione è una riga cliccabile, non un pallino microscopico. */
 .choice-list { display: grid; gap: 2px; }
 /* Elenchi lunghi su due colonne: venti voci in fila sarebbero un muro. */
@@ -154,26 +128,6 @@ textarea.input { resize: vertical; line-height: 1.55; min-height: 80px; }
 
 /* Invio. */
 .form-actions { display: grid; gap: 10px; justify-items: start; }
-.form-actions .btn[disabled] {
-  opacity: .5;
-  cursor: not-allowed;
-  box-shadow: none;
-  transform: none;
-}
-
-/* ------------------------------------------------------------- avvisi */
-
-.notice {
-  margin: 0 0 18px;
-  padding: 13px 15px;
-  border: 1.5px solid var(--ink);
-  border-radius: var(--radius-sm);
-  font-size: 14px;
-  line-height: 1.5;
-}
-.notice code { font-family: var(--mono); font-size: 12px; word-break: break-all; }
-.notice-ok { background: var(--sage-soft); border-color: var(--sage); }
-.notice-warn { background: var(--note); }
 
 /* --------------------------------------------------------- schermi stretti */
 
@@ -202,12 +156,27 @@ textarea.input { resize: vertical; line-height: 1.55; min-height: 80px; }
 .header-access { display: flex; align-items: center; gap: 14px; font-size: 14px; }
 .header-user { font-weight: 600; }
 
-/* Il cancello del login, sotto il bottone d'invio: è l'unico punto della pagina
-   in cui si chiede un conto, e si chiede solo a chi non ce l'ha. */
-.gate-login { margin: 4px 0 0; width: 100%; box-sizing: border-box; }
-.gate-login-lead { margin: 0 0 12px; font-weight: 600; }
-.gate-login-actions { display: flex; align-items: center; gap: 16px; margin: 0; }
-.gate-login-hint { color: var(--muted); font-size: 13px; line-height: 1.45; margin: 12px 0 0; }
+/* La modale del login: si apre solo al clic su un'azione che richiede un conto. */
+.login-dialog {
+  width: min(440px, calc(100vw - 32px));
+  padding: 0;
+  color: var(--ink);
+  background: var(--surface);
+}
+.login-dialog::backdrop { background: rgba(28,27,24,.45); }
+.login-dialog-head {
+  padding: 13px 20px;
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+}
+.login-dialog-body { padding: 20px 22px 22px; }
+.login-dialog-lead { margin: 0 0 16px; font-weight: 600; }
+.login-dialog-actions { display: flex; align-items: center; gap: 16px; margin: 0; }
+.login-dialog-hint { color: var(--muted); font-size: 13px; line-height: 1.45; margin: 14px 0 0; }
+.login-dialog-close { display: flex; justify-content: flex-end; margin: 18px 0 0; }
+
 
 /* --------------------------------------- la paginetta di fine login */
 
@@ -226,10 +195,6 @@ textarea.input { resize: vertical; line-height: 1.55; min-height: 80px; }
 .done-lead { color: var(--muted); font-size: 14px; line-height: 1.55; margin: 0 0 16px; }
 .done-alt { margin: 0; font-size: 14px; }
 
-/* Il cancello dell'accesso sta in un contenitore che il browser rimpiazza dopo
-   il login: senza questa riga, dentro la griglia delle azioni si stringerebbe
-   sul contenuto invece di occupare la riga. */
-.form-actions > [data-sso-gate] { width: 100%; }
 
 /* ------------------------------------------------- il blocco del driver */
 
@@ -242,6 +207,8 @@ textarea.input { resize: vertical; line-height: 1.55; min-height: 80px; }
    si spegne e compare la riga che lo dice. Nessun JavaScript — `:has()` guarda
    lo stato della casella da dentro il CSS. */
 .ignored-note { display: none; }
+/* L'ambassador con il lavoro autonomo non vale: il box sparisce del tutto. */
+.gate-aside:has(#autonomous-work:checked) .ambassador-box { display: none; }
 .gate-aside:has(#autonomous-work:checked) .driver-box {
   opacity: .45;
   filter: grayscale(1);
@@ -288,9 +255,3 @@ textarea.input { resize: vertical; line-height: 1.55; min-height: 80px; }
 .upload-status:empty { margin: 0; }
 .upload-status-ok { color: var(--sage); font-weight: 600; }
 .upload-status-errore { color: var(--accent-ink); font-weight: 600; }
-
-/* L'avviso che serve l'accesso, prima di aprire qualsiasi finestra. */
-.upload-login { margin: 14px 0 0; }
-.upload-login-lead { margin: 0 0 6px; font-weight: 600; }
-.upload-login-hint { margin: 0 0 12px; font-size: 13px; line-height: 1.45; }
-.upload-login .btn { width: 100%; }

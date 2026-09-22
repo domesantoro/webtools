@@ -3,8 +3,12 @@
   driver, perché governa quello che c'è lì sopra.
 
   Un driver che compila la pre-analisi può star portando un lavoro suo. In quel
-  caso il sistema applica lo sconto sulla fee, e gli eventuali sconti o link di
-  **altri** driver non contano più: un progetto lo porta una persona sola.
+  caso al prezzo non si aggiunge la quota del driver, e gli eventuali sconti o
+  link di **altri** driver non contano più: un progetto lo porta una persona sola.
+
+  Il link porta alla pagina "Lavora con noi" del sito vetrina in una scheda
+  nuova: chi lo segue sta compilando un form, e nella stessa scheda perderebbe
+  le risposte.
 
   La casella non fa nulla da sé: il CSS legge `#autonomous-work:checked` (regola
   `:has()` in styles.css) e spegne il box qui sopra, facendo comparire l'avviso.
@@ -13,20 +17,19 @@
 
 {% macro render(work) %}
       <aside class="card driver-work" aria-labelledby="driver-work-title">
-        <div class="card-head aside-head" id="driver-work-title">Lavoro autonomo</div>
+        <div class="card-head aside-head" id="driver-work-title">{{ t("preanalyst.driver_work.title") }}</div>
         <div class="driver-work-body">
           {%- if work.own_link %}
-          <p class="notice notice-warn">
-            Il link che hai usato è tuo: non si applica.
-          </p>
+          <p class="notice notice-warn">{{ t("preanalyst.driver_work.own_link") }}</p>
           {%- endif %}
           <label class="choice" for="autonomous-work">
             <input type="checkbox" id="autonomous-work" name="autonomous_work" value="yes"
                    form="gate-form">
-            <span>È un lavoro autonomo.</span>
+            <span>{{ t("preanalyst.driver_work.checkbox") }}</span>
           </label>
+          <p class="driver-work-hint">{{ t("preanalyst.driver_work.hint") }}</p>
           <p class="driver-work-hint">
-            Comporta uno sconto del <strong>20%</strong> sulla fee al sistema.
+            <a href="{{ work.more_url }}" target="_blank" rel="noopener">{{ t("preanalyst.driver_work.more") }}</a>
           </p>
         </div>
       </aside>

@@ -1,10 +1,10 @@
 // Il caricamento di un'analisi già pronta.
 //
 // Il file si sceglie anche da sloggati: il conto serve al momento di caricare.
-// Se al "Carica" non si è dentro, **non si apre niente**: compare l'avviso che
-// serve l'accesso, e la finestra del login si apre solo premendo "Entra e
-// carica". Poi il caricamento riparte da solo quando il login è finito (evento
-// `webtools:sso-login`, da sso_popup.js).
+// Se al "Carica" non si è dentro, si apre la modale del login, e la finestra
+// del login si apre solo premendo "Entra" o "Registrati" lì dentro. Poi il
+// caricamento riparte da solo quando il login è finito (evento
+// `webtools:sso-login`, da sso_popup.js). Chiudere la modale annulla l'attesa.
 //
 // Il file resta qui, in memoria della pagina, finché non parte: non si perde
 // durante il login e non viene mandato a nessuno prima del momento giusto.
@@ -24,11 +24,13 @@
   var stato = document.querySelector("[data-upload-status]");
   var bottone = document.querySelector("[data-upload-send]");
   var togli = document.querySelector("[data-upload-clear]");
-  var avvisoLogin = document.querySelector("[data-upload-login]");
-  var entraECarica = document.querySelector("[data-upload-login-go]");
+  var modale = document.getElementById("login-dialog-upload");
+  // I testi, nella lingua della pagina: li scrive il server (upload_box.njk).
+  var contenitore = zona.closest("[data-upload-messages]");
+  var testi = JSON.parse(contenitore.getAttribute("data-upload-messages"));
 
   var scelto = null; // il file scelto
-  var inAttesaDelLogin = false; // "Carica" premuto da sloggati
+  var inAttesaDelLogin = false; // login chiesto dalla modale del caricamento
   var testoIniziale = nome.textContent;
 
   /* --------------------------------------------------------- la scelta */
@@ -43,7 +45,6 @@
       azioni.hidden = true;
       campo.value = "";
     }
-    avvisoLogin.hidden = true;
     scrivi("");
   }
 
@@ -97,37 +98,40 @@
     if (!scelto) return;
 
     // Il login non si chiede per scegliere un file, si chiede per mandarlo — e
-    // lo si chiede, non lo si fa partire: qui si mostra l'avviso e basta.
+    // lo si chiede, non lo si fa partire: qui si apre la modale e basta.
     if (window.webtoolsSso && !window.webtoolsSso.isLogged()) {
-      avvisoLogin.hidden = false;
       scrivi("");
+      modale.showModal();
       return;
     }
 
     manda();
   });
 
-  entraECarica.addEventListener("click", function () {
+  // I link della modale aprono il login da sé (sso_popup.js): qui si prende
+  // nota che il file, a login finito, va mandato.
+  modale.addEventListener("click", function (evento) {
+    if (!evento.target.closest("[data-sso-login]")) return;
     inAttesaDelLogin = true;
-    avvisoLogin.hidden = true;
-    scrivi("Finisci il login nella finestra che si è aperta.");
-    var finestra = window.webtoolsSso && window.webtoolsSso.openLogin();
-    if (!finestra) {
-      inAttesaDelLogin = false;
-      scrivi("Il browser ha bloccato la finestra del login. Sbloccala e riprova.", "errore");
-    }
+    scrivi(testi.finish_login);
+  });
+
+  modale.addEventListener("close", function () {
+    if (!inAttesaDelLogin) return;
+    inAttesaDelLogin = false;
+    scrivi("");
   });
 
   document.addEventListener("webtools:sso-login", function () {
-    avvisoLogin.hidden = true;
-    if (!inAttesaDelLogin) return;
+    var daMandare = inAttesaDelLogin && scelto;
     inAttesaDelLogin = false;
-    if (scelto) manda();
+    if (modale.open) modale.close();
+    if (daMandare) manda();
   });
 
   function manda() {
     bottone.disabled = true;
-    scrivi("Caricamento in corso…");
+    scrivi(testi.in_progress);
 
     // Il file va nel corpo così com'è, con il nome in un header: non serve un
     // form multipart per mandare un file solo, e il server non deve smontare
@@ -148,7 +152,7 @@
       .then(function (esito) {
         bottone.disabled = false;
         if (esito.ok) {
-          scrivi("Caricato: " + esito.corpo.name, "ok");
+          scrivi(testi.done.replace("{name}", esito.corpo.name), "ok");
           return;
         }
         scrivi(messaggioDiErrore(esito.corpo.error), "errore");
@@ -156,18 +160,11 @@
       .catch(function (errore) {
         bottone.disabled = false;
         console.error("[upload]", errore);
-        scrivi("Non è riuscito. Riprova.", "errore");
+        scrivi(testi.failed, "errore");
       });
   }
 
-  var ERRORI = {
-    NOT_LOGGED: "Serve l'accesso per caricare un file.",
-    FILE_TOO_LARGE: "Il file è troppo grande.",
-    EMPTY_FILE: "Il file è vuoto.",
-    MISSING_FILE_NAME: "Manca il nome del file.",
-  };
-
   function messaggioDiErrore(codice) {
-    return ERRORI[codice] || "Non è riuscito. Riprova.";
+    return testi.errors[codice] || testi.failed;
   }
 })();

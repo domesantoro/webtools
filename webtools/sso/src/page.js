@@ -32,26 +32,28 @@ const env = nunjucks.configure(TEMPLATES_DIR, {
 });
 
 // I messaggi d'errore del login non dicono mai quale dei due campi è sbagliato:
-// non si fa sapere a chi prova se un indirizzo è registrato.
-const MESSAGES = {
-  invalid_credentials: "Username o password non validi.",
-  unavailable: "Il servizio non è raggiungibile. Riprova tra poco.",
-};
+// non si fa sapere a chi prova se un indirizzo è registrato. I testi stanno nei
+// cataloghi, sotto `sso.login.errors.<errore>`.
+const ERRORS = ["invalid_credentials", "unavailable"];
 
-export function renderLoginPage({ next, username = "", error = null }) {
+// `ui` è quello che dà `settings.i18n.pageContext(…)`: lingua, `t` e selettore
+// della lingua, che il layout comune usa su ogni pagina.
+export function renderLoginPage(ui, { next, username = "", error = null }) {
   return env.render("login.njk", {
-    title: "Entra",
+    ...ui,
+    title: ui.t("sso.login.title"),
     noindex: true,
     next,
     username,
     error,
-    error_message: error ? (MESSAGES[error] ?? MESSAGES.unavailable) : null,
+    error_message: error ? ui.t(`sso.login.errors.${ERRORS.includes(error) ? error : "unavailable"}`) : null,
   });
 }
 
-export function renderRegisterPage({ next }) {
+export function renderRegisterPage(ui, { next }) {
   return env.render("register.njk", {
-    title: "Registrati",
+    ...ui,
+    title: ui.t("sso.register.title"),
     noindex: true,
     next,
   });

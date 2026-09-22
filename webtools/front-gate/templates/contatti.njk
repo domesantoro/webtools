@@ -1,0 +1,13 @@
+{% extends "layout.njk" %}
+{% set page = "contatti" %}
+{% set title = t("front_gate.contacts.title") %}
+{% set description = t("front_gate.contacts.description") %}
+
+{% block main %}
+<main class="page-main">
+  <section class="container contact-wrap reveal">
+    <div><div class="eyebrow">{{ t("front_gate.contacts.eyebrow") }}</div><h1>{{ t("front_gate.contacts.heading") }}</h1></div>
+    <div class="card contact-panel"><h2>{{ t("front_gate.contacts.panel.title") }}</h2><p>{{ t("front_gate.contacts.panel.text") }}</p><div class="contact-placeholder">{{ t("front_gate.contacts.panel.placeholder") }}<small>{{ t("front_gate.contacts.panel.placeholder_note") }}</small></div></div>
+  </section>
+</main>
+{% endblock %}

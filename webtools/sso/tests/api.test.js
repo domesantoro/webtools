@@ -4,6 +4,8 @@
 import assert from "node:assert/strict";
 import { after, test } from "node:test";
 
+import { Configuration } from "../src/commons/configuration_client.js";
+import { loadI18n } from "../src/commons/i18n/webtools_i18n.js";
 import { createServer } from "../src/server.js";
 
 const USER = {
@@ -28,6 +30,22 @@ const SETTINGS = {
   ticketTtlSeconds: 60,
   cookieName: "webtools_sso",
   allowedNext: ["http://127.0.0.1:8200"],
+  bodyMaxBytes: 4096,
+  i18n: loadI18n(
+    new Configuration(
+      "sso",
+      {
+        i18n: {
+          locales: ["en", "it"],
+          fallback_locale: "en",
+          cookie_name: "webtools_locale",
+          cookie_max_age_seconds: 31536000,
+          body_max_bytes: 1024,
+        },
+      },
+      "http://127.0.0.1:8100"
+    )
+  ),
 };
 
 const notFound = (code) => ({ ok: false, reason: "not_found", code });
@@ -35,14 +53,31 @@ const down = { ok: false, reason: "unavailable" };
 
 // Archivio finto: utenti in una mappa, sessioni in un'altra. `broken` spegne
 // tutto, come se anagraphics non rispondesse.
-function fakeAnagraphics({ users = [{ user: USER, credential: CREDENTIAL }], broken = false } = {}) {
+function fakeAnagraphics({ users: iniziali = [{ user: USER, credential: CREDENTIAL }], broken = false } = {}) {
+  // Copie: la lingua salvata nel profilo di una prova non deve finire nella successiva.
+  const users = iniziali.map((entry) => ({ ...entry, user: { ...entry.user } }));
   const sessions = new Map();
   const tickets = new Map();
   const find = (username) => users.find((entry) => entry.user.username === username);
 
   return {
+    users,
     sessions,
     tickets,
+    async setUserLocale(settings, username, locale) {
+      if (broken) return down;
+      const entry = find(username);
+      if (!entry) return notFound("USER_NOT_FOUND");
+      entry.user.locale = locale;
+      return { ok: true, data: entry.user };
+    },
+    async setSessionLocale(settings, token, locale) {
+      if (broken) return down;
+      const session = sessions.get(token);
+      if (!session) return notFound("SESSION_NOT_FOUND");
+      session.data = { ...session.data, locale };
+      return { ok: true, data: session };
+    },
     async findUser(settings, username) {
       if (broken) return down;
       const entry = find(username);
@@ -391,7 +426,7 @@ test("password sbagliata: si resta sulla pagina, senza cookie e senza biglietto"
     username: USER.username,
     password: "sbagliata",
     next: NEXT,
-  });
+  }, "webtools_locale=it");
   const html = await response.text();
 
   assert.equal(response.status, 401);
@@ -422,7 +457,7 @@ test("esci chiude la sessione condivisa e toglie il cookie", async () => {
 
 test("la registrazione dice che non è attiva", async () => {
   const sso = await start(fakeAnagraphics());
-  const response = await sso.page(`/ui/register?next=${encodeURIComponent(NEXT)}`);
+  const response = await sso.page(`/ui/register?next=${encodeURIComponent(NEXT)}`, "webtools_locale=it");
   const html = await response.text();
 
   assert.equal(response.status, 200);
@@ -450,4 +485,115 @@ test("fuori dal pool di IP non si vede niente", async () => {
     assert.equal(response.status, 403);
     assert.deepEqual(await response.json(), { error: "IP_NOT_ALLOWED" });
   }
+});
+
+/* ------------------------------------------------------------- la lingua */
+
+test("la pagina è nella lingua del cookie, e il selettore torna alla pagina", async () => {
+  const sso = await start(fakeAnagraphics());
+  const path = `/ui/login?next=${encodeURIComponent(NEXT)}`;
+
+  const italiano = await (await sso.page(path, "webtools_locale=it")).text();
+  assert.match(italiano, /<html lang="it">/);
+  assert.match(italiano, /strumenti su misura/);
+  assert.match(italiano, /name="return_to" value="\/ui\/login\?next=http%3A%2F%2F127\.0\.0\.1%3A8200%2F"/);
+
+  const inglese = await (await sso.page(path, "webtools_locale=en")).text();
+  assert.match(inglese, /<html lang="en">/);
+  assert.match(inglese, /tailor-made tools/);
+});
+
+test("POST /locale scrive il cookie comune e torna alla pagina", async () => {
+  const sso = await start(fakeAnagraphics());
+  const cambia = (body) =>
+    sso.raw("/locale", {
+      method: "POST",
+      redirect: "manual",
+      headers: { "content-type": "application/x-www-form-urlencoded" },
+      body,
+    });
+
+  const ok = await cambia("locale=it&return_to=%2Fui%2Flogin%3Fnext%3Dx");
+  assert.equal(ok.status, 303);
+  assert.equal(ok.headers.get("location"), "/ui/login?next=x");
+  assert.match(ok.headers.get("set-cookie"), /^webtools_locale=it; Path=\//);
+
+  // Il ritorno è solo un percorso di questo server.
+  const fuori = await cambia("locale=it&return_to=%2F%2Fsito-finto.example");
+  assert.equal(fuori.headers.get("location"), "/");
+
+  const sconosciuta = await cambia("locale=xx&return_to=%2F");
+  assert.equal(sconosciuta.status, 400);
+  assert.deepEqual(await sconosciuta.json(), { error: "INVALID_LOCALE" });
+});
+
+test("al primo login la lingua della pagina diventa quella del profilo", async () => {
+  const archive = fakeAnagraphics();
+  const sso = await start(archive);
+  const entrato = await sso.loginForm(
+    { username: USER.username, password: PASSWORD, next: NEXT },
+    "webtools_locale=it"
+  );
+
+  assert.equal(entrato.status, 303);
+  assert.equal(archive.users[0].user.locale, "it");
+  const [session] = archive.sessions.values();
+  assert.equal(session.data.locale, "it");
+  assert.ok(entrato.headers.getSetCookie().some((c) => c.startsWith("webtools_locale=it;")));
+});
+
+test("la lingua del profilo vince su quella della pagina, e riscrive il cookie", async () => {
+  const archive = fakeAnagraphics({ users: [{ user: { ...USER, locale: "en" }, credential: CREDENTIAL }] });
+  const sso = await start(archive);
+  const entrato = await sso.loginForm(
+    { username: USER.username, password: PASSWORD, next: NEXT },
+    "webtools_locale=it"
+  );
+
+  assert.equal(archive.users[0].user.locale, "en");
+  assert.ok(entrato.headers.getSetCookie().some((c) => c.startsWith("webtools_locale=en;")));
+});
+
+test("POST /session/locale: la lingua va nella sessione e nel profilo", async () => {
+  const archive = fakeAnagraphics();
+  const sso = await start(archive);
+  const token = (await (await sso.login({ username: USER.username, password: PASSWORD })).json()).session.token;
+  const cambia = (body, bearer = token) =>
+    sso.raw("/session/locale", {
+      method: "POST",
+      headers: { "content-type": "application/json", ...(bearer ? { authorization: `Bearer ${bearer}` } : {}) },
+      body: JSON.stringify(body),
+    });
+
+  const ok = await cambia({ locale: "it" });
+  assert.equal(ok.status, 200);
+  assert.equal((await ok.json()).session.data.locale, "it");
+  assert.equal(archive.users[0].user.locale, "it");
+
+  const sconosciuta = await cambia({ locale: "xx" });
+  assert.equal(sconosciuta.status, 400);
+  assert.deepEqual(await sconosciuta.json(), { error: "INVALID_LOCALE" });
+
+  const senzaToken = await cambia({ locale: "it" }, null);
+  assert.deepEqual(await senzaToken.json(), { error: "MISSING_TOKEN" });
+
+  const altroToken = await cambia({ locale: "it" }, "token-che-non-esiste");
+  assert.deepEqual(await altroToken.json(), { logged: false });
+});
+
+test("il selettore delle pagine del sso, per chi è entrato, salva la lingua", async () => {
+  const archive = fakeAnagraphics();
+  const sso = await start(archive);
+  const cookie = cookieFrom(await sso.loginForm({ username: USER.username, password: PASSWORD, next: NEXT }));
+
+  const cambiato = await sso.raw("/locale", {
+    method: "POST",
+    redirect: "manual",
+    headers: { "content-type": "application/x-www-form-urlencoded", cookie },
+    body: "locale=it&return_to=%2Fui%2Fregister",
+  });
+  assert.equal(cambiato.status, 303);
+  assert.equal(archive.users[0].user.locale, "it");
+  const [session] = archive.sessions.values();
+  assert.equal(session.data.locale, "it");
 });

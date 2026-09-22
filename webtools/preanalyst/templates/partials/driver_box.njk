@@ -4,57 +4,43 @@
   Il driver non si sceglie da qui: o lo porta il link, o lo assegniamo noi. Il box
   dice chi è, oppure perché quel link non è servito a niente.
 
-  I sei stati vengono da `src/referral.js`. Quello che è arrivato nell'URL resta
+  Gli stati vengono da `src/driver_link.js`. Quello che è arrivato nell'URL resta
   agganciato al form come campo nascosto anche quando non si è potuto risolvere:
   se il guasto è nostro, non deve pagarlo l'utente con lo sconto perduto.
 #}
 
 {% macro render(box) %}
       <aside class="card driver-box" aria-labelledby="driver-box-title">
-        <div class="card-head aside-head" id="driver-box-title">Driver</div>
+        <div class="card-head aside-head" id="driver-box-title">{{ t("preanalyst.driver_box.title") }}</div>
         <div class="driver-box-body">
           {%- if box.resolved %}
-          <p class="driver-name">{{ box.referral.driver.screen_name }}</p>
-          <p class="driver-box-lead">
-            È la persona che segue il tuo progetto: valida l'analisi e ti accompagna
-            fino alla demo.
-          </p>
+          <p class="driver-name">{{ box.link.driver.screen_name }}</p>
+          <p class="driver-box-lead">{{ t("preanalyst.driver_box.resolved_lead") }}</p>
           {%- else %}
-          <p class="driver-box-lead">
-            Il driver è la persona che segue il tuo progetto: valida l'analisi e ti accompagna
-            fino alla demo.
-          </p>
+          <p class="driver-box-lead">{{ t("preanalyst.driver_box.lead") }}</p>
           {%- endif %}
 
+          {#- Le frasi con un nome o un codice dentro usano `t_html`: il marcatore
+              sta nel catalogo, il valore lo ripulisce t_html. #}
           {%- if not box.drivers_available %}
+          <p class="notice notice-warn">{{ t("preanalyst.driver_box.drivers_unavailable") }}</p>
+          {%- elif box.link.state == "discount_applied" %}
+          <p class="notice notice-ok">{{ t_html("preanalyst.driver_box.discount_applied", { percentage: box.link.percentage }) }}</p>
+          {%- elif box.link.state == "discount_expired" %}
+          <p class="notice notice-warn">{{ t("preanalyst.driver_box.discount_expired") }}</p>
+          {%- elif box.link.state == "discount_driver_missing" %}
+          {%- set chi %}{% if box.link.driverName %}<strong>{{ box.link.driverName }}</strong>
+            {%- elif box.link.driverUid %}<code>{{ box.link.driverUid }}</code>
+            {%- else %}{{ t("preanalyst.driver_box.link_driver") }}{% endif %}{% endset %}
+          <p class="notice notice-warn">{{ t_html("preanalyst.driver_box.discount_driver_missing", { driver: chi | safe }) }}</p>
+          {%- elif box.link.state == "discount_driver_disabled" %}
+          <p class="notice notice-warn">{{ t_html("preanalyst.driver_box.discount_driver_disabled", { name: box.link.driver.screen_name }) }}</p>
+          {%- elif box.link.state == "driver_disabled" %}
+          <p class="notice notice-warn">{{ t_html("preanalyst.driver_box.driver_disabled", { name: box.link.driver.screen_name }) }}</p>
+          {%- elif box.link.state == "driver_unknown" %}
           <p class="notice notice-warn">
-            In questo momento non riusciamo a dirti chi è il driver del tuo link.
-            Non va perso: lo controlliamo noi quando leggiamo la tua richiesta.
-          </p>
-          {%- elif box.referral.state == "discount_applied" %}
-          <p class="notice notice-ok">
-            Codice sconto valido: <strong>{{ box.referral.percentage }}%</strong>.
-          </p>
-          {%- elif box.referral.state == "discount_expired" %}
-          <p class="notice notice-warn">
-            Questo codice sconto non è applicabile: con ogni probabilità è scaduto.
-            Vai avanti lo stesso: al tuo progetto assegniamo noi un driver.
-          </p>
-          {%- elif box.referral.state == "discount_driver_missing" %}
-          <p class="notice notice-warn">
-            Questo codice sconto non è applicabile: il driver a cui è collegato,
-            {% if box.referral.driverName %}<strong>{{ box.referral.driverName }}</strong>
-            {%- elif box.referral.driverUid %}<code>{{ box.referral.driverUid }}</code>
-            {%- else %}quello del link{% endif %}, non si trova più.
-            Contattalo per farti dare un codice nuovo. Puoi anche andare avanti così:
-            al tuo progetto assegniamo noi un driver.
-          </p>
-          {%- elif box.referral.state == "driver_unknown" %}
-          <p class="notice notice-warn">
-            Il driver di questo link{% if box.referral.driverUid %} (<code>{{ box.referral.driverUid }}</code>){% endif %}
-            non si trova più.
-            Contattalo per farti dare un link nuovo. Puoi anche andare avanti così:
-            al tuo progetto assegniamo noi un driver.
+            {%- if box.link.driverUid %}{{ t_html("preanalyst.driver_box.driver_unknown_with_uid", { uid: box.link.driverUid }) }}
+            {%- else %}{{ t("preanalyst.driver_box.driver_unknown") }}{% endif -%}
           </p>
           {%- endif %}
 
@@ -64,12 +50,10 @@
               Dice quale delle due cose non verrà applicata, non "quello che c'è
               qui sopra": chi legge deve sapere che cosa perde. #}
           <p class="notice notice-warn ignored-note">
-            {%- if box.referral.state == "discount_applied" %}
-            Con il lavoro autonomo il codice sconto di {{ box.referral.driver.screen_name }}
-            non viene applicato, e lo sconto resta quello del lavoro autonomo: 20% sulla fee.
+            {%- if box.link.state == "discount_applied" %}
+            {{ t("preanalyst.driver_box.ignored_discount", { name: box.link.driver.screen_name }) }}
             {%- else %}
-            Con il lavoro autonomo il progetto non viene attribuito a
-            {{ box.referral.driver.screen_name }}.
+            {{ t("preanalyst.driver_box.ignored_driver", { name: box.link.driver.screen_name }) }}
             {%- endif %}
           </p>
           {%- endif %}

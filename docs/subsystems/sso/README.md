@@ -1,7 +1,7 @@
 # Sottosistema `sso`
 
 > Documentazione di riferimento per sviluppo, manutenzione, troubleshooting, bugfix e metriche.
-> Ultimo aggiornamento: 2026-09-21 · versione del sottosistema: `0.3.0`.
+> Ultimo aggiornamento: 2026-09-21 · versione del sottosistema: `0.4.0`.
 > Codice: `webtools/sso/` (percorsi relativi alla root del workspace `ftab - webtools/`).
 
 ---
@@ -20,9 +20,10 @@
 | Indirizzo | `http://127.0.0.1:8300` |
 | Dipende da | `webtools_anagraphics` su `http://127.0.0.1:8100` (deve essere acceso) |
 | Database | Nessuno: utenti, sessioni e biglietti stanno in anagraphics |
-| Accesso | Solo dagli IP in `ALLOWED_IPS` (default: localhost); gli altri ricevono `403` |
+| Accesso | Solo dagli IP in `access.allowed_ips` della configurazione; gli altri ricevono `403` |
+| Configurazione | Letta all'avvio da anagraphics (`GET /configuration/sso`). Nessun default: se manca, il server non parte (§6) |
 | Client per i sottosistemi | `webtools/commons/sso/`: `sso_client.js` per il server, `sso_popup.js` per il browser. Distribuiti da `webtools/configurator/sso_deployer/deploy.sh` |
-| Test | `npm test` (31 test, non serve nessun server acceso) |
+| Test | `npm test` (35 test, non serve nessun server acceso) |
 | Stato | Login con username e password, sessioni a token, pagine di accesso. Nessun ruolo, nessun permesso, registrazione non attiva |
 
 Prova veloce, con anagraphics e sso accesi:
@@ -93,7 +94,7 @@ Utenti, credenziali, sessioni e biglietti stanno in `anagraphics`, che li conser
 | **Nomi dei cookie diversi tra sottosistemi** | Conseguenza della stessa regola: siccome la porta non conta, su `127.0.0.1` i cookie finiscono tutti nello stesso mucchio e due con lo stesso nome si sovrascriverebbero. Il sso usa `webtools_sso`, preanalyst `webtools_preanalyst`. |
 | **`next` solo verso indirizzi ammessi** | Chi manda qui il browser dice anche dove tornare. Senza un elenco, chiunque potrebbe costruire `…/ui/login?next=http://sito-finto` e usare la nostra pagina di login come trampolino. |
 | **Token opaco, 32 byte casuali** | Non contiene informazioni: non si legge e non si fabbrica. Il prezzo è una lettura a ogni `GET /session`; il vantaggio è che il logout ha effetto immediato, cosa che con un JWT autoconsistente non si ottiene. |
-| **Scadenza fissa dal login, senza prolungamenti** | 8 ore (`SESSION_TTL_SECONDS`). Regola prevedibile, e nessuna scrittura a ogni lettura. |
+| **Scadenza fissa dal login, senza prolungamenti** | 8 ore (`session.ttl_seconds`). Regola prevedibile, e nessuna scrittura a ogni lettura. |
 | **Tutti i modi di non entrare danno la stessa risposta** | Utente sconosciuto, disattivato, senza password, password sbagliata: sempre `401 INVALID_CREDENTIALS`. Distinguerli direbbe a chi prova se un indirizzo è registrato. Il motivo vero resta nel log (§7). |
 | **Token sconosciuto: `200 {"logged": false}`, non un errore** | "Questo token vale?" è una domanda legittima, e "no" è una risposta. Gli errori restano per i guasti veri. |
 | **Con anagraphics giù si risponde `503`, mai `logged: false`** | Se l'archivio non risponde non sappiamo se la sessione vale. Dire "non loggato" butterebbe fuori tutti a ogni guasto di Mongo. |
@@ -119,7 +120,8 @@ Utenti, credenziali, sessioni e biglietti stanno in `anagraphics`, che li conser
 | File | Responsabilità |
 |---|---|
 | `src/index.js` | Avvio: impostazioni, ascolto, riga di conferma, chiusura su SIGTERM/SIGINT |
-| `src/settings.js` | Variabili d'ambiente, default, e `safeNext()` che valida l'indirizzo di ritorno |
+| `src/settings.js` | Legge la configurazione all'avvio e la traduce nelle impostazioni del server; `safeNext()` valida l'indirizzo di ritorno |
+| `src/commons/configuration_client.js` | Client della configurazione: **copia generata** dal deployer `configuration` |
 | `src/server.js` | HTTP: pool di IP, rotte, cookie, corpo delle richieste, file statici |
 | `src/auth.js` | Le operazioni: `login`, `readSession`, `logout`, `issueTicket`, `exchangeTicket` |
 | `src/sessions.js` | Il documento di sessione: token, date, scadenza |
@@ -192,7 +194,7 @@ Le rotte JSON seguono il contratto del progetto: stato HTTP corretto e **codice 
 | `400` | `MISSING_TOKEN` | Manca `Authorization: Bearer <token>` su `/session` o `/logout` |
 | `400` | `TICKET_EXPIRED` | Biglietto presentato oltre il minuto |
 | `401` | `INVALID_CREDENTIALS` | Login rifiutato, per uno qualsiasi dei quattro motivi (§2) |
-| `403` | `IP_NOT_ALLOWED` | IP del chiamante fuori da `ALLOWED_IPS` |
+| `403` | `IP_NOT_ALLOWED` | IP del chiamante fuori da `access.allowed_ips` |
 | `403` | `TICKET_MISMATCH` | Biglietto emesso per un sottosistema, presentato da un altro |
 | `404` | `TICKET_NOT_FOUND` | Biglietto sconosciuto o già consumato |
 | `404` | `ROUTE_NOT_FOUND` | URL inesistente |
@@ -208,6 +210,9 @@ Le rotte JSON seguono il contratto del progetto: stato HTTP corretto e **codice 
 | `GET /session` | `Authorization: Bearer <token>` | `200 {"logged":true,"session":{…}}` · `200 {"logged":false}` · `400` · `503` |
 | `POST /logout` | `Authorization: Bearer <token>` | `200 {"logged":false}`, ripetibile · `400` · `503` |
 | `POST /tickets/exchange` | `{"ticket","service"}` | `200 {"logged":…,"session"?}` · `400` · `403` · `404` · `503` |
+| `POST /session/locale` | `Authorization: Bearer <token>`, `{"locale"}` | `200 {"logged":true,"session":{…}}` · `200 {"logged":false}` · `400 INVALID_LOCALE` · `400` · `503` |
+
+`POST /session/locale` mette la lingua nella sessione (`data.locale`) e nel profilo dell'utente in anagraphics. Solo le lingue di `i18n.locales`. Lo chiamano i sottosistemi quando chi è entrato cambia lingua dal selettore (`saveSessionLocale` in `commons/sso/sso_client.js`).
 
 `service` è l'indirizzo del sottosistema che scambia, es. `http://127.0.0.1:8200`: deve combaciare con quello per cui il biglietto è stato emesso.
 
@@ -221,8 +226,11 @@ Login ripetuti aprono **sessioni diverse**, tutte valide: chiuderne una non tocc
 | `POST /ui/login` | Il form di sopra (`username`, `password`, `next`) |
 | `GET /ui/logout?next=…` | Chiude la sessione condivisa, toglie il cookie del sso, torna al `next` |
 | `GET /ui/register?next=…` | La registrazione, che non è ancora attiva: la pagina lo dice |
+| `POST /locale` | Il selettore della lingua in testata (`locale`, `return_to`): scrive il cookie comune `i18n.cookie_name` e torna alla pagina. Se il browser ha il cookie del sso, salva la lingua anche nella sessione e nel profilo |
 
-`next` deve cominciare con uno degli indirizzi in `ALLOWED_NEXT`, altrimenti viene sostituito con il primo della lista (e la cosa finisce nel log).
+**La lingua.** Le pagine sono nella lingua del cookie comune `webtools_locale`, oppure in quella di `Accept-Language`, oppure in inglese; i testi stanno nei cataloghi `webtools/commons/i18n/locales/`. Al login la lingua della sessione è quella del profilo; se il profilo non ne ha, diventa quella della pagina di login e si salva nel profilo. Il login riscrive il cookie della lingua con quella della sessione, così tutti i sottosistemi la vedono.
+
+`next` deve cominciare con uno degli indirizzi in `login.allowed_next`, altrimenti viene sostituito con il primo della lista (e la cosa finisce nel log).
 
 I file statici delle pagine (`commons.css`, `styles.css`, `assets/`, `fonts/`) si servono dalla radice.
 
@@ -237,7 +245,7 @@ I file statici delle pagine (`commons.css`, `styles.css`, `assets/`, `fonts/`) s
   "username": "dome.santoro@gmail.com",
   "issued_at": "2026-09-21T10:00:00.000Z",
   "expires_at": "2026-09-21T18:00:00.000Z",
-  "data": { "screen_name": "Dome", "driver_uid": "7633be3d-e701-42ca-9fea-6c6d1bb4b7d1" }
+  "data": { "screen_name": "Dome", "driver_uid": "7633be3d-e701-42ca-9fea-6c6d1bb4b7d1", "locale": "it" }
 }
 ```
 
@@ -252,23 +260,30 @@ L'integrazione di preanalyst è l'esempio di riferimento: `docs/subsystems/prean
 
 ---
 
-## 6. Configurazione (variabili d'ambiente)
+## 6. Configurazione
 
-| Variabile | Default | Note |
+Il server legge la sua configurazione **all'avvio** da anagraphics, `GET /configuration/sso`. La fonte è `webtools/configurator/configuration/sso.json`; la carica in Mongo `webtools/configurator/load_configuration.sh` (lo fa già `start.sh`). Nessun default: se manca il documento, un campo, o un campo è del tipo sbagliato, il server scrive `webtools_sso non parte: …` con il percorso del campo ed esce con 1. Dopo una modifica: `webtools/configurator/start.sh --restart`.
+
+Dall'ambiente arrivano solo `WEBTOOLS_ANAGRAPHICS_URL` e `WEBTOOLS_CONFIGURATION_TIMEOUT_MS`, che `--start` carica da `webtools/configurator/bootstrap.env`. `WEBTOOLS_ANAGRAPHICS_URL` è anche l'indirizzo di anagraphics per tutte le altre chiamate.
+
+| Campo | Oggi | Note |
 |---|---|---|
-| `HOST` | `127.0.0.1` | Interfaccia di ascolto |
-| `PORT` | `8300` | — |
-| `ALLOWED_IPS` | `127.0.0.1,::1` | Vale l'IP della connessione; `::ffff:127.0.0.1` è riconosciuto come `127.0.0.1` |
-| `ANAGRAPHICS_URL` | `http://127.0.0.1:8100` | — |
-| `ANAGRAPHICS_TIMEOUT_MS` | `5000` | anagraphics aspetta fino a 30 s se Mongo non risponde: qui si taglia prima |
-| `SESSION_TTL_SECONDS` | `28800` (8 ore) | Durata di una sessione dal login |
-| `TICKET_TTL_SECONDS` | `60` | Durata di un biglietto: il tempo di un redirect |
-| `COOKIE_NAME` | `webtools_sso` | Deve restare diverso dai cookie dei sottosistemi |
-| `ALLOWED_NEXT` | `http://127.0.0.1:8200,http://localhost:8200` | Dove si può rimandare il browser dopo il login |
+| `listen.host` | `127.0.0.1` | Interfaccia di ascolto |
+| `listen.port` | `8300` | — |
+| `access.allowed_ips` | `["127.0.0.1", "::1"]` | Vale l'IP della connessione; `::ffff:127.0.0.1` è riconosciuto come `127.0.0.1` |
+| `subsystems_infos.anagraphics.timeout_ms` | `5000` | anagraphics aspetta fino a 30 s se Mongo non risponde: qui si taglia prima |
+| `session.cookie_name` | `webtools_sso` | Deve restare diverso dai cookie dei sottosistemi |
+| `session.ttl_seconds` | `28800` (8 ore) | Durata di una sessione dal login |
+| `ticket.ttl_seconds` | `60` | Durata di un biglietto: il tempo di un redirect |
+| `login.allowed_next` | `["http://127.0.0.1:8200", "http://localhost:8200"]` | Dove si può rimandare il browser dopo il login. Solo indirizzi http(s) |
+| `limits.body_max_bytes` | `4096` | Il corpo più grande accettato da login, scambio del biglietto e form |
+| `i18n.locales` | `["en", "it"]` | Le lingue offerte: ognuna ha il suo catalogo in `commons/i18n/locales/` |
+| `i18n.fallback_locale` | `en` | La lingua di riserva, e quella da cui si prendono le chiavi che mancano in un'altra |
+| `i18n.cookie_name` | `webtools_locale` | Il cookie della lingua, **uguale in tutti i sottosistemi**: è così che tutti la vedono |
+| `i18n.cookie_max_age_seconds` | `31536000` (un anno) | Quanto dura la scelta della lingua nel browser |
+| `i18n.body_max_bytes` | `1024` | Il corpo più grande accettato da `POST /locale` |
 
-Si passano allo script di avvio: `PORT=8301 webtools/sso/webtools_sso.sh --start`.
-
-**Quando si aggiunge un sottosistema con login** servono tre cose: il suo indirizzo in `ALLOWED_NEXT`, un nome di cookie tutto suo, e una riga nel deployer del client (§8).
+**Quando si aggiunge un sottosistema con login** servono tre cose: il suo indirizzo in `login.allowed_next`, un nome di cookie tutto suo, e una riga nel deployer del client (§8).
 
 ---
 
@@ -298,7 +313,7 @@ Nel log non finiscono mai password né token. Gli username sì: senza, un tentat
 ```sh
 webtools/sso/webtools_sso.sh --start   # avvia in background
 webtools/sso/webtools_sso.sh --stop    # ferma
-npm start                              # in primo piano, per debug (da webtools/sso/)
+set -a; source ../configurator/bootstrap.env; set +a; npm start   # in primo piano, per debug (da webtools/sso/)
 npm test                               # i test
 ```
 
@@ -317,7 +332,7 @@ Le password si impostano da anagraphics (`docs/subsystems/anagraphics/README.md`
 
 ## 9. Test
 
-`npm test` (cioè `node --test "tests/*.test.js"`): **31 test**, nessun server da accendere.
+`npm test` (cioè `node --test "tests/*.test.js"`): **35 test** (4 sul client della configurazione, `tests/configuration.test.js`), nessun server da accendere.
 
 | File | Che cosa copre |
 |---|---|
@@ -336,11 +351,11 @@ Verificato a mano il 2026-09-21, con anagraphics, sso e preanalyst veri su porte
 
 | Sintomo | Causa probabile | Verifica / rimedio |
 |---|---|---|
-| Ogni chiamata risponde `503 ANAGRAPHICS_UNAVAILABLE` | anagraphics spento o su un'altra porta | `curl http://127.0.0.1:8100/drivers`; controllare `ANAGRAPHICS_URL`; il log ha la riga `[anagraphics] …` |
+| Ogni chiamata risponde `503 ANAGRAPHICS_UNAVAILABLE` | anagraphics spento o su un'altra porta | `curl http://127.0.0.1:8100/drivers`; controllare `WEBTOOLS_ANAGRAPHICS_URL` in `configurator/bootstrap.env`; il log ha la riga `[anagraphics] …` |
 | `401` anche con la password giusta | Password mai impostata, o utente `active: false` | Il log dice quale dei due |
-| Dopo il login il browser torna al posto sbagliato | `next` non è in `ALLOWED_NEXT`, quindi è stato sostituito | Il log ha `next fuori dagli indirizzi ammessi`; aggiungere l'indirizzo |
+| Dopo il login il browser torna al posto sbagliato | `next` non è in `login.allowed_next`, quindi è stato sostituito | Il log ha `next fuori dagli indirizzi ammessi`; aggiungere l'indirizzo |
 | Il ritorno dal login non logga nessuno | Biglietto scaduto (più di un minuto), già usato, o `service` che non combacia | Il log del sso dice quale dei tre |
-| Si entra in un sottosistema e si esce da un altro | Due sottosistemi con lo **stesso nome di cookie**: i cookie ignorano la porta, quindi si sovrascrivono | Dare a ciascuno il suo `COOKIE_NAME` |
+| Si entra in un sottosistema e si esce da un altro | Due sottosistemi con lo **stesso nome di cookie**: i cookie ignorano la porta, quindi si sovrascrivono | Dare a ciascuno il suo `session.cookie_name` |
 | `400 MISSING_TOKEN` con il token in mano | Header scritto male: ci vuole `Authorization: Bearer <token>`, un solo spazio | — |
 | Le pagine si vedono senza stile | `commons.css` non è mai stato copiato in `webtools/sso/public/` | `webtools/configurator/deploy.sh style` |
 | `template not found: commons/base.njk` | Il deployer dei template non è mai stato lanciato | `webtools/configurator/deploy.sh template` |
@@ -363,7 +378,6 @@ Verificato a mano il 2026-09-21, con anagraphics, sso e preanalyst veri su porte
 - **Il pool di IP è uno solo** per le rotte dei programmi e per le pagine, che invece sono destinate ai browser delle persone: il giorno che le pagine escono da localhost, i due elenchi vanno separati.
 - **Nessun endpoint per chiudere tutte le sessioni di un utente**: in anagraphics c'è (`DELETE /sessions?uid=…`), il sso non lo espone.
 - **Nessun `/health`, nessuna metrica**, log senza rotazione, nessun avvio automatico dopo un riavvio del Mac.
-- **I campi e gli avvisi delle pagine sono ricopiati** da preanalyst (`public/styles.css`): `commons.css` non contiene gli stili dei form. Al terzo sottosistema con un form vanno spostati in commons.
 - `node_modules/` non è gestito da nessuno script: dopo un clone o un cambio di versione serve `npm install` a mano.
 
 ---
@@ -371,7 +385,7 @@ Verificato a mano il 2026-09-21, con anagraphics, sso e preanalyst veri su porte
 ## 12. Come estendere (checklist)
 
 **Aggiungere un sottosistema con login**
-1. Il suo indirizzo in `ALLOWED_NEXT` (§6).
+1. Il suo indirizzo in `login.allowed_next` (§6).
 2. Un nome di cookie tutto suo (§2).
 3. Una funzione in `webtools/configurator/sso_deployer/deploy.sh` che gli copi `sso_client.js`.
 4. Nel suo server: `currentSession` su ogni pagina, una rotta di ritorno (`/login-done`) che fa `claimTicket` e mette il cookie, un `GET /session-fragment` per l'aggiornamento senza ricarica, e una rotta di logout che toglie il cookie e manda a `/ui/logout`.
@@ -392,6 +406,8 @@ Il formato è nel documento, non nel codice (`params`). Si aggiunge il nuovo alg
 
 | Data | Versione | Modifica |
 |---|---|---|
+| 2026-09-22 | 0.5.0 | **Lingue.** Pagine a chiavi dai cataloghi comuni (`commons/i18n`), selettore della lingua e `POST /locale`. Lingua nella sessione (`data.locale`) e nel profilo: al login vince il profilo, e il cookie della lingua si riscrive. Nuova rotta `POST /session/locale` e codice `INVALID_LOCALE`. Configurazione: sezione `i18n`. Test da 35 a 47. |
+| 2026-09-21 | 0.4.0 | **Configurazione dal sottosistema di configurazione.** All'avvio si legge `GET /configuration/sso` da anagraphics (client comune `commons/configuration/configuration_client.js`); via tutte le variabili d'ambiente e tutti i default, tranne il bootstrap `WEBTOOLS_*`. Senza configurazione il server non parte. Il limite del corpo delle richieste (prima la costante `MAX_BODY_BYTES`) diventa `limits.body_max_bytes`. Test da 31 a 35. |
 | 2026-09-21 | 0.3.0 | L'HTML esce dal JavaScript: pagine in `templates/*.njk` rese con **nunjucks** (autoescape), guscio comune in `commons/templates/base.njk` distribuito dal nuovo `template_deployer`. Corretti i percorsi dei fogli di stile, che erano relativi e sotto `/ui/` puntavano a file inesistenti. Prima dipendenza npm del sottosistema. |
 | 2026-09-21 | 0.2.0 | Le pagine: `GET/POST /ui/login`, `GET /ui/logout`, `GET /ui/register`. Cookie del sso, biglietti usa-e-getta (`POST /tickets/exchange`) e `ALLOWED_NEXT` per non fare da trampolino. Il client condiviso `commons/sso/sso_client.js` e il suo deployer. Stile delle pagine da `commons.css`. Test da 17 a 31. |
 | 2026-09-21 | 0.1.0 | Creazione: `POST /login`, `GET /session`, `POST /logout`. Sessioni persistenti in `anagraphics`, token opaco da 32 byte, password scrypt verificate qui e conservate là. Pool di IP su localhost. 17 test con `node --test`. |

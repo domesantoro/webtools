@@ -1,0 +1,31 @@
+{
+  "listen": { "host": "127.0.0.1", "port": 8300 },
+  "access": {
+    "allowed_ips": ["127.0.0.1", "::1"]
+  },
+  "subsystems_infos": {
+    "anagraphics": {
+      "timeout_ms": 5000
+    }
+  },
+  "session": {
+    "cookie_name": "webtools_sso",
+    "ttl_seconds": 28800
+  },
+  "ticket": {
+    "ttl_seconds": 60
+  },
+  "login": {
+    "allowed_next": ["http://127.0.0.1:8200", "http://localhost:8200"]
+  },
+  "limits": {
+    "body_max_bytes": 4096
+  },
+  "i18n": {
+    "locales": ["en", "it"],
+    "fallback_locale": "en",
+    "cookie_name": "webtools_locale",
+    "cookie_max_age_seconds": 31536000,
+    "body_max_bytes": 1024
+  }
+}

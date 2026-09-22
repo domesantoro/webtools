@@ -1,0 +1,14 @@
+{#- Il footer di tutte le pagine. Il link a Contatti non compare su Contatti.
+    Il selettore della lingua è separato dai link: non è una voce di navigazione. -#}
+<footer class="site-footer">
+  <div class="container footer-inner">
+    <span>*footer placeholder*</span>
+    <div class="footer-end">
+      <div class="footer-links">
+        {%- if page != "contatti" %}<a href="contatti.html">{{ t("front_gate.nav.contacts") }}</a>{% endif -%}
+        <a href="quanto-costa.html#faq">{{ t("front_gate.footer.faq") }}</a>
+      </div>
+      {% include "commons/locale_switch.njk" %}
+    </div>
+  </div>
+</footer>

@@ -397,3 +397,169 @@ Oltre a quanto già elencato in §6:
    dice il testo che ho scritto, o si sommino. È una regola economica, non grafica.
 4. Test di `referral.js` (ora sette stati) e del rendering della pagina.
 5. Due dati di prova in più da togliere uscendo dalla PoC: lo sconto di `Prova` e l'utente `Prova`.
+
+---
+
+# Sessione successiva (2026-09-21, sera) — invio del form e specifiche
+
+## 11. Stili dei campi in `commons.css`
+
+`.field`, `.field-label`, `.field-hint`, `.required`, `.input`, `textarea.input`, `.notice` (con
+`-ok` e `-warn`) spostati in `commons/style/commons.css` e tolti dagli stili locali di preanalyst e
+sso. `.field` in commons non ha margine: lo spazio tra i campi lo decide il form (nel sso,
+`.access .field { margin-bottom: 16px }`). Il punto 7 del §6 è chiuso.
+
+Confermato dall'utente: sconto di un altro driver e 20% del lavoro autonomo **si escludono**.
+
+## 12. Decisioni della sessione
+
+- **preanalyst è il sottosistema della chat**: la pagina dell'analisi vive lì (`/analysis/{id}`).
+- La collection `anagraphics` diventa **`projects`**.
+- Le specifiche stanno **sul filesystem**, nel workspace del progetto, gestite dal nuovo
+  sottosistema **`webtools-workspaces`** (nome e cartella scelti dall'utente).
+- Nel file caricato l'id sta nel **front matter YAML** (`project_id: <uuid>`). Da dove l'autore
+  prenda l'id non riguarda questo step: le analisi lo conterranno.
+- Un progetto di un altro utente risponde `PROJECT_NOT_FOUND`, come uno inesistente.
+- Più upload sullo stesso progetto: **versioni**, vale l'ultima.
+- Origine della specifica (`system` | `third_party`) marcata nella chiave riservata `webtools:` del
+  front matter, che timbra workspaces. **La decide il canale**, non il file.
+- Codici delle opzioni del form **in inglese** (`mobile`, `unknown`, …). Le skill **non** vanno nel
+  front matter: l'elenco è aperto e ha accanto un campo libero.
+- Risposte aperte testuali, nella lingua del cliente. Il resto della pre-specifica è in inglese.
+- Jev: per ora non se ne tiene conto.
+
+## 13. Che cosa è stato fatto
+
+- **anagraphics 0.5.0**:
+  - `GET/POST/DELETE /projects`, con l'id generato da anagraphics;
+  - `submission_id` univoco sparse, che rende idempotente l'invio;
+  - campi `owner_uid`, `created_at`, `state`, `referral`; codice `SUBMISSION_EXISTS`;
+  - test da 33 a **39**;
+  - **migrazione eseguita sul DB `webtools`**: `renameCollection("projects")` più il seed per il
+    nuovo indice. Password intatte.
+- **webtools-workspaces 0.1.0** (porta 8400, Node):
+  - `POST /projects/{id}/specs`, `GET /projects/{id}/specs/latest`;
+  - file in `<WORKSPACES_ROOT>/<id>/specs/spec-vNNN.md`; radice di default
+    `~/webtools_data/workspaces`, fuori dal repo;
+  - scrittura atomica con `link` (niente numeri doppi, niente file a metà); un front matter rotto
+    viene rifiutato prima di toccare il disco;
+  - **13 test**.
+- **`commons/specs/front_matter.js`**: `split`, `parse`, `stamp`, `isProjectId`, con la dipendenza
+  `yaml`. Lo distribuisce il nuovo sotto-deployer **`specs`**.
+- **preanalyst 0.10.0**:
+  - `POST /submit` → progetto → pre-specifica → `303` verso `/analysis/{id}`. Se la pre-specifica
+    non si scrive, il progetto si cancella;
+  - `/analysis/{id}`: pagina vuota, solo per il proprietario;
+  - `POST /upload`: solo `.md` UTF-8 con `project_id` valido e di un progetto dell'utente,
+    salvato come `third_party`;
+  - il bottone d'invio sta nel cancello dell'accesso e si abilita col login; il form non ha più
+    `novalidate`.
+- **Pre-specifica** (`templates/prespec.md.njk` + `src/prespec.js`):
+  - front matter con `project_id`, `kind`, `template: prespec/1`, `language: it` e i codici delle
+    risposte chiuse;
+  - corpo in inglese, testo del cliente in blockquote, `Not provided.` per i campi vuoti;
+  - la sezione **Open points** con i campi vuoti e le risposte `unknown`; skill e "Altro" contano
+    come una risposta sola.
+- `start.sh`: `anagraphics` → `sso` → `workspaces` → `preanalyst`.
+- Documentazione: nuovo `docs/subsystems/workspaces/README.md`; aggiornati anagraphics,
+  preanalyst, configurator e i README brevi.
+
+Il `.venv` di anagraphics puntava al vecchio percorso del progetto (`Desktop/ftab - webtools`):
+ricreato con `uv sync`. Il vecchio sta nella scratchpad della sessione.
+
+## 14. Verifiche
+
+- Test: anagraphics **39**, sso **31**, workspaces **13**, tutti verdi.
+- Prova dal vivo su porte 8101/8201/8301/8401, con il DB separato `webtools_prova_live` e la radice
+  nella scratchpad:
+  - login, invio, doppio invio (un progetto solo), `spec-v001.md` con `origin: system`;
+  - upload valido che dichiarava `system` → `spec-v002.md` `third_party`;
+  - upload senza id, con id malformato, sconosciuto, di un altro utente, binario, con front matter
+    rotto, da sloggati: errore giusto, niente sul disco;
+  - pagina dell'analisi vista da un altro utente → `404`;
+  - workspaces spento durante l'invio → `503` e progetto cancellato;
+  - bottone disabilitato da sloggati e abilitato nel frammento dopo il login.
+- Istanze temporanee fermate, DB di prova cancellato, radice di prova rimossa.
+- **Non provato in un browser vero**: invio dal form e caricamento dalla pagina.
+
+## 15. Stato a fine sessione
+
+I servizi dell'utente erano **spenti** a inizio sessione e restano spenti. Per riavviare:
+`npm install` in `webtools-workspaces/` è già fatto; `webtools/configurator/start.sh`.
+
+## 16. Da fare
+
+1. Provare nel browser invio e caricamento.
+2. La chat di analisi in `/analysis/{id}`.
+3. Test di `prespec.js` e `referral.js`.
+4. Workspaces: nessuna cancellazione, nessun elenco delle versioni, nessun backup della radice.
+
+**Aggiunta:** `commons/specs/front_matter.js` rinominato **`spec_front_matter.js`**, su richiesta
+dell'utente: «front matter» è troppo generico, perché più avanti nel processo ne scriveranno
+molti altri. Copie ridistribuite, vecchie copie rimosse, 13 test di workspaces verdi.
+
+**Aggiunta:** nei progetti `referral` è sostituito da due sotto-oggetti, su indicazione
+dell'utente: driver e sconti sono dati del **progetto**, non dell'analisi (che è solo di sistema o
+caricata).
+- `review: {driver_uid, preset}`: `preset` distingue il driver preimpostato (dal link, o il driver
+  stesso nel lavoro autonomo) da quello che assegnerà il sistema.
+- `billing: {discount_code, autonomous_work, autonomous_fee_discount}`: con il lavoro autonomo il
+  codice sconto è `null` (le due cose si escludono).
+
+Il 20% è ora `AUTONOMOUS_FEE_DISCOUNT` nelle impostazioni di preanalyst, letto sia dalla pagina sia
+da `billing`. Test anagraphics: 40. Provati dal vivo i cinque casi. Il sistema è **acceso**.
+
+**Aggiunta:** `preanalyst/src/referral.js` rinominato **`driver_link.js`** (`resolveDriverLink`,
+`withoutOwnLink`, variabile `driverLink`, nel template `box.link`). Il nome faceva pensare alla
+provenienza del progetto; il file decide solo che cosa mostra il box del driver.
+
+**Aggiunta: tutta la configurazione nel sottosistema di configurazione.** Su richiesta
+dell'utente, ogni valore configurabile esce dai sottosistemi e va in anagraphics
+(`GET /configuration/{subsystem}`), e ogni sottosistema si configura all'avvio **senza default**:
+se manca qualcosa, non parte (`webtools_<nome> non parte: …` nel log, uscita 1).
+- **Fonte**: `webtools/configurator/configuration/<sottosistema>.json`, uno per sottosistema
+  (anagraphics, sso, workspaces, preanalyst, front-gate), **strutturati** per argomento
+  (`listen`, `access`, `services`, `session`, `limits`, …). Li carica in Mongo
+  `configurator/load_configuration.sh` (→ `anagraphics/scripts/load_configuration.py`):
+  sostituzione intera, documenti senza file cancellati. `start.sh` lo lancia prima di avviare e si
+  ferma se non riesce. Il seed non scrive più configurazioni.
+- **Bootstrap**: `configurator/bootstrap.env` con le sole `WEBTOOLS_ANAGRAPHICS_URL`,
+  `WEBTOOLS_CONFIGURATION_TIMEOUT_MS`, `WEBTOOLS_MONGO_URI`, `WEBTOOLS_MONGO_DB`, caricato dagli
+  script di controllo. Anagraphics ricava host e porta dall'URL e legge il suo documento
+  (`access.allowed_ips`, `mongo.server_selection_timeout_ms`) direttamente da Mongo.
+- **Client comune** `commons/configuration/configuration_client.js` (lettura per percorso a
+  punti, controllo dei tipi), distribuito dal nuovo deployer `configuration` a sso, workspaces,
+  preanalyst, front-gate.
+- Diventano configurazione anche due costanti: `MAX_BODY_BYTES` del sso
+  (`limits.body_max_bytes`) e `MAX_TEXT_LENGTH` di preanalyst (`form.answer_max_chars`).
+- **Front-gate**: la configurazione non si rilegge più a ogni pagina con TTL, si legge all'avvio;
+  via `configuration.js` e il segnaposto di "Inizia". Un cambio richiede il riavvio.
+- Non sono configurazione (scelte di sicurezza o di protocollo, restano nel codice): byte di token
+  e biglietti, parametri scrypt, codici d'errore, domande del form.
+- Test: anagraphics 44 (4 nuovi sull'avvio), sso 35 (4 sul client), workspaces 13. Prova
+  end-to-end su DB `webtools_e2e` e porte 18xxx: tutti partono; senza documento o senza un campo
+  anagraphics e front-gate escono con 1. DB di prova cancellato.
+- Regole nuove in `CLAUDE.md`: dati configurabili solo dal sottosistema di configurazione;
+  configurazioni strutturate.
+- **Le istanze dell'utente erano accese e non sono state toccate**, e il DB `webtools` non è
+  stato modificato: girano ancora col codice vecchio. Per passare al nuovo:
+  `webtools/configurator/start.sh --restart` (carica la configurazione e riavvia).
+
+**Aggiunta:** su richiesta dell'utente, nei file di configurazione `services` diventa
+**`subsystems_infos`** e in front-gate `pricing` passa sotto **`screen_infos.pricing`**. Codice,
+client comune (ridistribuito) e documentazione allineati; prova isolata su `webtools_e2e` superata.
+Il sistema acceso non è stato riavviato: va fatto con `start.sh --restart`.
+
+**Aggiunta: preanalyst, avvisi di login in modale.** Su richiesta dell'utente, via i due riquadri
+gialli fissi (sotto "Manda la richiesta" e nel box "Analisi già pronta"). L'avviso che serve un
+account ora è una **modale** (`<dialog>`, macro `dialog` in `partials/access.njk`) che si apre
+solo al clic, da sloggati:
+- "Manda la richiesta" è sempre abilitato; da sloggati `public/gate.js` blocca l'invio e apre la
+  modale (dopo il controllo dei campi obbligatori del browser). A login finito la modale si
+  chiude e l'invio va ripetuto a mano: la colonna del driver può essere cambiata.
+- "Carica" da sloggati apre l'altra modale; a login finito il file parte da solo, chiudere la
+  modale annulla l'attesa (`public/upload.js`).
+- Sso non raggiungibile: lo dice la modale.
+- Tolti `fragments/access_gate.njk` e il pezzo `[data-sso-gate]` di `/session-fragment`: dopo il
+  login si rimpiazzano solo testata e colonna del driver. Docs preanalyst §6.1 aggiornate.
+- Provato nel browser dall'utente: funziona. Preanalyst riavviato su richiesta (PID 18654).

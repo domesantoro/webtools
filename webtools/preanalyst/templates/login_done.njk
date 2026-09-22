@@ -17,21 +17,15 @@
 {% block main %}
     <div class="container gate done">
       <div class="done-card card">
-        <div class="card-head">{{ "Accesso eseguito" if ok else "Accesso non riuscito" }}</div>
+        <div class="card-head">{{ t("preanalyst.login_done.ok_head") if ok else t("preanalyst.login_done.failed_head") }}</div>
         <div class="done-body">
           {%- if ok %}
-          <p class="done-lead">
-            Puoi chiudere questa finestra e tornare alla pre-analisi. Se non si chiude da
-            sola, torna alla finestra di prima e ricarica la pagina.
-          </p>
+          <p class="done-lead">{{ t("preanalyst.login_done.ok_text") }}</p>
           {%- else %}
-          <p class="notice notice-warn">
-            Il login non è andato a buon fine. Chiudi questa finestra e riprova dalla
-            pre-analisi.
-          </p>
+          <p class="notice notice-warn">{{ t("preanalyst.login_done.failed_text") }}</p>
           {%- endif %}
           <p class="done-alt">
-            <a class="text-link" href="/">Vai alla pre-analisi</a>
+            <a class="text-link" href="/">{{ t("preanalyst.login_done.back") }}</a>
           </p>
         </div>
       </div>

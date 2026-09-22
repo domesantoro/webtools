@@ -1,7 +1,7 @@
 {
   "name": "webtools_preanalyst",
   "version": "0.1.0",
-  "description": "Preanalysis gate: la pagina d'ingresso della pre-analisi.",
+  "description": "La pre-analisi: il form, il caricamento delle specifiche e la chat di analisi.",
   "private": true,
   "type": "module",
   "main": "src/index.js",
@@ -12,6 +12,7 @@
     "start": "node src/index.js"
   },
   "dependencies": {
-    "nunjucks": "^3.2.4"
+    "nunjucks": "^3.2.4",
+    "yaml": "^2.9.1"
   }
 }

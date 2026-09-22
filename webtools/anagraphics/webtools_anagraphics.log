@@ -440,3 +440,284 @@ INFO:     Shutting down
 INFO:     Waiting for application shutdown.
 INFO:     Application shutdown complete.
 INFO:     Finished server process [7237]
+=== start 2026-09-21 17:58:31 ===
+INFO:     Started server process [11394]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:8100 (Press CTRL+C to quit)
+INFO:     127.0.0.1:51735 - "GET /sessions/MsvqIrWOcr1QmUJHO8AYZ7yy5GrL6pgKpy890W1yFSM HTTP/1.1" 200 OK
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [11394]
+=== start 2026-09-21 18:05:26 ===
+INFO:     Started server process [12145]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:8100 (Press CTRL+C to quit)
+INFO:     127.0.0.1:51918 - "GET /drivers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51920 - "GET /discounts/e8013cf2-34eb-4bc3-8a34-b08fb24a1bf3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51918 - "GET /drivers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51918 - "GET /drivers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52030 - "GET /configuration/front-gate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52078 - "GET /configuration/front-gate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52083 - "GET /configuration/front-gate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52093 - "GET /sessions/MsvqIrWOcr1QmUJHO8AYZ7yy5GrL6pgKpy890W1yFSM HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52100 - "DELETE /sessions/MsvqIrWOcr1QmUJHO8AYZ7yy5GrL6pgKpy890W1yFSM HTTP/1.1" 204 No Content
+INFO:     127.0.0.1:52140 - "GET /configuration/front-gate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52142 - "GET /configuration/front-gate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52161 - "GET /configuration/front-gate HTTP/1.1" 200 OK
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [12145]
+=== start 2026-09-21 18:42:56 ===
+INFO:     Started server process [16458]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:8100 (Press CTRL+C to quit)
+INFO:     127.0.0.1:52875 - "GET /configuration/sso HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52877 - "GET /configuration/workspaces HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52878 - "GET /configuration/preanalyst HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52879 - "GET /configuration/front-gate HTTP/1.1" 200 OK
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [16458]
+=== start 2026-09-21 18:43:10 ===
+INFO:     Started server process [16718]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:8100 (Press CTRL+C to quit)
+INFO:     127.0.0.1:52889 - "GET /configuration/sso HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52892 - "GET /configuration/workspaces HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52893 - "GET /configuration/preanalyst HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52894 - "GET /configuration/front-gate HTTP/1.1" 200 OK
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [16718]
+=== start 2026-09-21 18:56:45 ===
+INFO:     Started server process [17775]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:8100 (Press CTRL+C to quit)
+INFO:     127.0.0.1:53084 - "GET /configuration/sso HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53086 - "GET /configuration/workspaces HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53087 - "GET /configuration/preanalyst HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53088 - "GET /configuration/front-gate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53377 - "GET /configuration/preanalyst HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53394 - "GET /users/dome.santoro%40gmail.com HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53395 - "GET /users/dome.santoro%40gmail.com/credential HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53394 - "POST /sessions HTTP/1.1" 201 Created
+INFO:     127.0.0.1:53395 - "POST /tickets HTTP/1.1" 201 Created
+INFO:     127.0.0.1:53394 - "DELETE /tickets/wGuPdlVep9qh8grYzDuXughWtbu6K-Im5qOx77UsTFA HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53395 - "GET /sessions/hDcWokJ-uUmvJSCo0fVFzaRGG04cUlum7wxPx--0GGk HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53394 - "GET /sessions/hDcWokJ-uUmvJSCo0fVFzaRGG04cUlum7wxPx--0GGk HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53394 - "GET /sessions/hDcWokJ-uUmvJSCo0fVFzaRGG04cUlum7wxPx--0GGk HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53401 - "DELETE /sessions/hDcWokJ-uUmvJSCo0fVFzaRGG04cUlum7wxPx--0GGk HTTP/1.1" 204 No Content
+INFO:     127.0.0.1:53410 - "GET /users/dome.santoro%40gmail.com HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53411 - "GET /users/dome.santoro%40gmail.com/credential HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53410 - "POST /sessions HTTP/1.1" 201 Created
+INFO:     127.0.0.1:53411 - "POST /tickets HTTP/1.1" 201 Created
+INFO:     127.0.0.1:53410 - "DELETE /tickets/tmAZ95Eg7L-P7BhLFG12cntqkqfCT9h8tRIqax2Ja7s HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53411 - "GET /sessions/3pw1itzo5dW5fxt2hyFFndok1UTtfwt4rrNRb1iLsV0 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53410 - "GET /sessions/3pw1itzo5dW5fxt2hyFFndok1UTtfwt4rrNRb1iLsV0 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53410 - "GET /sessions/3pw1itzo5dW5fxt2hyFFndok1UTtfwt4rrNRb1iLsV0 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53418 - "POST /projects HTTP/1.1" 201 Created
+INFO:     127.0.0.1:53410 - "GET /sessions/3pw1itzo5dW5fxt2hyFFndok1UTtfwt4rrNRb1iLsV0 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53418 - "GET /projects/9ebb4e13-2385-4f9e-96cd-8792dc22088f HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53423 - "GET /sessions/3pw1itzo5dW5fxt2hyFFndok1UTtfwt4rrNRb1iLsV0 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53425 - "POST /tickets HTTP/1.1" 201 Created
+INFO:     127.0.0.1:53423 - "DELETE /tickets/JofBfwv0G8XyrQyGUW-HNLP41klsN2pcSH7kqW6ji6c HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53425 - "GET /sessions/3pw1itzo5dW5fxt2hyFFndok1UTtfwt4rrNRb1iLsV0 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53423 - "GET /sessions/3pw1itzo5dW5fxt2hyFFndok1UTtfwt4rrNRb1iLsV0 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53423 - "GET /sessions/3pw1itzo5dW5fxt2hyFFndok1UTtfwt4rrNRb1iLsV0 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53430 - "POST /projects HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53423 - "GET /sessions/3pw1itzo5dW5fxt2hyFFndok1UTtfwt4rrNRb1iLsV0 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53430 - "GET /projects/9ebb4e13-2385-4f9e-96cd-8792dc22088f HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53436 - "GET /sessions/3pw1itzo5dW5fxt2hyFFndok1UTtfwt4rrNRb1iLsV0 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53443 - "GET /sessions/3pw1itzo5dW5fxt2hyFFndok1UTtfwt4rrNRb1iLsV0 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53448 - "GET /sessions/3pw1itzo5dW5fxt2hyFFndok1UTtfwt4rrNRb1iLsV0 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53449 - "POST /projects HTTP/1.1" 201 Created
+INFO:     127.0.0.1:53448 - "GET /sessions/3pw1itzo5dW5fxt2hyFFndok1UTtfwt4rrNRb1iLsV0 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53449 - "GET /projects/cb1981a0-38db-43fa-9aec-e4fb92958aab HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53452 - "GET /sessions/3pw1itzo5dW5fxt2hyFFndok1UTtfwt4rrNRb1iLsV0 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53453 - "POST /projects HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53452 - "GET /sessions/3pw1itzo5dW5fxt2hyFFndok1UTtfwt4rrNRb1iLsV0 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53453 - "GET /projects/cb1981a0-38db-43fa-9aec-e4fb92958aab HTTP/1.1" 200 OK
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [17775]
+=== start 2026-09-22 11:41:27 ===
+INFO:     Started server process [10221]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:8100 (Press CTRL+C to quit)
+INFO:     127.0.0.1:52435 - "GET /configuration/sso HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52437 - "GET /configuration/workspaces HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52438 - "GET /configuration/preanalyst HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52439 - "GET /configuration/front-gate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52499 - "GET /drivers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52500 - "GET /discounts/e8013cf2-34eb-4bc3-8a34-b08fb24a1bf3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52507 - "GET /users/dome.santoro%40gmail.com HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52508 - "GET /users/dome.santoro%40gmail.com/credential HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52507 - "POST /sessions HTTP/1.1" 201 Created
+INFO:     127.0.0.1:52508 - "POST /tickets HTTP/1.1" 201 Created
+INFO:     127.0.0.1:52507 - "DELETE /tickets/TtaQZ1tWjKb14p9fKoPgiJTcfTElLbNVLiscgyI3n5Y HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52508 - "GET /sessions/TXawKb07x6gLcNyNTX5RkKpR1iKyi_hQpsqfh8SdtJ8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52507 - "GET /sessions/TXawKb07x6gLcNyNTX5RkKpR1iKyi_hQpsqfh8SdtJ8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52510 - "GET /drivers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52511 - "GET /discounts/e8013cf2-34eb-4bc3-8a34-b08fb24a1bf3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52516 - "GET /sessions/TXawKb07x6gLcNyNTX5RkKpR1iKyi_hQpsqfh8SdtJ8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52517 - "GET /drivers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52524 - "GET /sessions/TXawKb07x6gLcNyNTX5RkKpR1iKyi_hQpsqfh8SdtJ8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52525 - "GET /drivers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52531 - "GET /sessions/TXawKb07x6gLcNyNTX5RkKpR1iKyi_hQpsqfh8SdtJ8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52532 - "GET /drivers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52542 - "GET /sessions/TXawKb07x6gLcNyNTX5RkKpR1iKyi_hQpsqfh8SdtJ8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52543 - "GET /drivers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52548 - "GET /sessions/TXawKb07x6gLcNyNTX5RkKpR1iKyi_hQpsqfh8SdtJ8 HTTP/1.1" 200 OK
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [10221]
+=== start 2026-09-22 11:51:52 ===
+INFO:     Started server process [11483]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:8100 (Press CTRL+C to quit)
+INFO:     127.0.0.1:52569 - "GET /configuration/sso HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52571 - "GET /configuration/workspaces HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52572 - "GET /configuration/preanalyst HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52573 - "GET /configuration/front-gate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52581 - "GET /sessions/TXawKb07x6gLcNyNTX5RkKpR1iKyi_hQpsqfh8SdtJ8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52596 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [11483]
+=== start 2026-09-22 11:57:23 ===
+INFO:     Started server process [12215]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:8100 (Press CTRL+C to quit)
+INFO:     127.0.0.1:52626 - "GET /configuration/sso HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52628 - "GET /configuration/workspaces HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52629 - "GET /configuration/preanalyst HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52630 - "GET /configuration/front-gate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52629 - "GET /drivers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52629 - "GET /drivers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52629 - "GET /drivers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52635 - "GET /drivers/7633be3d-e701-42ca-9fea-6c6d1bb4b7d1 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52636 - "GET /drivers/nope HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:52635 - "GET /drivers/7633be3d-e701-42ca-9fea-6c6d1bb4b7d1 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52643 - "GET /sessions/TXawKb07x6gLcNyNTX5RkKpR1iKyi_hQpsqfh8SdtJ8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52649 - "GET /configuration/front-gate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52650 - "GET /configuration/preanalyst HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52655 - "GET /sessions/TXawKb07x6gLcNyNTX5RkKpR1iKyi_hQpsqfh8SdtJ8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52656 - "GET /drivers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52664 - "GET /sessions/TXawKb07x6gLcNyNTX5RkKpR1iKyi_hQpsqfh8SdtJ8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52665 - "GET /drivers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52669 - "GET /sessions/TXawKb07x6gLcNyNTX5RkKpR1iKyi_hQpsqfh8SdtJ8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52670 - "GET /drivers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52675 - "DELETE /sessions/TXawKb07x6gLcNyNTX5RkKpR1iKyi_hQpsqfh8SdtJ8 HTTP/1.1" 204 No Content
+INFO:     127.0.0.1:52679 - "GET /drivers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52685 - "GET /users/dome.santoro%40gmail.com HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52686 - "GET /users/dome.santoro%40gmail.com/credential HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52685 - "POST /sessions HTTP/1.1" 201 Created
+INFO:     127.0.0.1:52686 - "POST /tickets HTTP/1.1" 201 Created
+INFO:     127.0.0.1:52685 - "DELETE /tickets/7JMXmka1ZLMMQ_0t9E9jVS9dWjqV1GBdqL4R9vbdKD0 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52686 - "GET /sessions/jwL8J7AxG5AexrvGMPyMbsoyeokO4VMMzzEuABtRJS4 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52685 - "GET /sessions/jwL8J7AxG5AexrvGMPyMbsoyeokO4VMMzzEuABtRJS4 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52690 - "GET /drivers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52713 - "GET /configuration/front-gate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52718 - "GET /configuration/front-gate HTTP/1.1" 200 OK
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [12215]
+=== start 2026-09-22 12:25:59 ===
+INFO:     Started server process [14061]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:8100 (Press CTRL+C to quit)
+INFO:     127.0.0.1:52826 - "GET /configuration/preanalyst HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52828 - "GET /configuration/front-gate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52826 - "GET /drivers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52826 - "GET /drivers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52831 - "GET /discounts/91165eb1-65d6-43a9-ade8-681ec3ebef8d HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52826 - "GET /drivers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52826 - "GET /drivers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52831 - "GET /discounts/e8013cf2-34eb-4bc3-8a34-b08fb24a1bf3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52826 - "GET /drivers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52870 - "GET /configuration/front-gate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52915 - "GET /configuration/front-gate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52926 - "GET /configuration/front-gate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52937 - "GET /configuration/front-gate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52943 - "GET /configuration/front-gate HTTP/1.1" 200 OK
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [14061]
+=== start 2026-09-22 12:43:05 ===
+INFO:     Started server process [15434]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:8100 (Press CTRL+C to quit)
+INFO:     127.0.0.1:52963 - "GET /configuration/sso HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52965 - "GET /configuration/workspaces HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52966 - "GET /configuration/preanalyst HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52967 - "GET /configuration/front-gate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52976 - "GET /configuration/front-gate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52984 - "GET /drivers/7633be3d-e701-42ca-9fea-6c6d1bb4b7d1 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52985 - "GET /drivers/f234b930-e5d0-4e10-8a4f-1a8a13814370 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52984 - "GET /drivers/nope HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:52985 - "GET /discounts/e8013cf2-34eb-4bc3-8a34-b08fb24a1bf3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52984 - "GET /drivers/7633be3d-e701-42ca-9fea-6c6d1bb4b7d1 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52985 - "GET /discounts/e8013cf2-34eb-4bc3-8a34-b08fb24a1bf3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52984 - "GET /drivers/7633be3d-e701-42ca-9fea-6c6d1bb4b7d1 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52985 - "GET /discounts/91165eb1-65d6-43a9-ade8-681ec3ebef8d HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52984 - "GET /drivers/f234b930-e5d0-4e10-8a4f-1a8a13814370 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52985 - "GET /discounts/nope HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:52986 - "GET /configuration/preanalyst HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52987 - "GET /configuration/front-gate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52986 - "GET /drivers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52995 - "GET /drivers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52995 - "GET /drivers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52997 - "GET /discounts/91165eb1-65d6-43a9-ade8-681ec3ebef8d HTTP/1.1" 200 OK
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [15434]
+=== start 2026-09-22 14:40:02 ===
+INFO:     Started server process [22347]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:8100 (Press CTRL+C to quit)
+INFO:     127.0.0.1:54057 - "GET /configuration/sso HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54060 - "GET /configuration/workspaces HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54063 - "GET /configuration/preanalyst HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54064 - "GET /configuration/front-gate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54084 - "GET /sessions/jwL8J7AxG5AexrvGMPyMbsoyeokO4VMMzzEuABtRJS4 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54085 - "GET /drivers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54093 - "GET /sessions/jwL8J7AxG5AexrvGMPyMbsoyeokO4VMMzzEuABtRJS4 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54094 - "PUT /sessions/jwL8J7AxG5AexrvGMPyMbsoyeokO4VMMzzEuABtRJS4/locale HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54093 - "PUT /users/dome.santoro%40gmail.com/locale HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54093 - "GET /sessions/jwL8J7AxG5AexrvGMPyMbsoyeokO4VMMzzEuABtRJS4 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54095 - "GET /drivers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54100 - "GET /sessions/jwL8J7AxG5AexrvGMPyMbsoyeokO4VMMzzEuABtRJS4 HTTP/1.1" 200 OK
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [22347]
+=== start 2026-09-22 14:43:42 ===
+INFO:     Started server process [22894]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:8100 (Press CTRL+C to quit)
+INFO:     127.0.0.1:54197 - "GET /configuration/sso HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54199 - "GET /configuration/workspaces HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54200 - "GET /configuration/preanalyst HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54201 - "GET /configuration/front-gate HTTP/1.1" 200 OK

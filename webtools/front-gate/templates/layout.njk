@@ -1,0 +1,33 @@
+{#-
+  Il guscio di tutte le pagine del sito vetrina: head, header, footer.
+  La pagina lo estende e imposta, fuori dai blocchi:
+    page         il nome della pagina (`esempi`, `contatti`, …): evidenzia la
+                 sua voce nel menu e toglie dal footer il link a se stessa
+    title        il <title>
+    description  la meta description
+  e riempie il blocco `main`.
+
+  I testi stanno nei cataloghi (webtools/commons/i18n/locales/), sotto
+  `front_gate.*`; `t`, `locale` e il selettore della lingua li dà
+  `i18n.pageContext` (src/page.js).
+-#}
+<!doctype html>
+<html lang="{{ locale }}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ title }}</title>
+  <meta name="description" content="{{ description }}">
+  <link rel="icon" href="assets/mark.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="css/commons.css">
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+<div class="site-shell">
+{% include "partials/header.njk" %}
+{% block main %}{% endblock %}
+{% include "partials/footer.njk" %}
+</div>
+<script src="js/main.js"></script>
+</body>
+</html>

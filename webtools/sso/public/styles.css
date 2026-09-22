@@ -1,11 +1,7 @@
 /* Stile locale delle pagine del sso: entra e registrati.
-   Font, token, header, marchio, schede e bottoni arrivano da commons.css, che è
-   una copia generata dal deployer (webtools/configurator/style_deployer/deploy.sh)
-   e non va modificata qui.
-
-   I campi (.field, .input) e gli avvisi (.notice) sono ricopiati da preanalyst:
-   commons.css non li contiene. Finché le copie sono due si tengono d'occhio; al
-   terzo sottosistema con un form vanno spostati in commons. */
+   Font, token, header, marchio, schede, bottoni, campi e avvisi arrivano da
+   commons.css, che è una copia generata dal deployer
+   (webtools/configurator/style_deployer/deploy.sh) e non va modificata qui. */
 
 .site-shell { display: flex; flex-direction: column; min-height: 100vh; }
 .page-main { flex: 1; display: flex; align-items: center; }
@@ -26,40 +22,10 @@
 
 /* ------------------------------------------------------------------ campi */
 
-.field { display: grid; gap: 8px; border: 0; padding: 0; margin: 0 0 16px; min-width: 0; }
-.field-label { font-weight: 600; font-size: 15px; padding: 0; }
-.input {
-  width: 100%;
-  padding: 12px 14px;
-  color: var(--ink);
-  background: var(--paper);
-  border: 1.5px solid var(--ink);
-  border-radius: var(--radius-sm);
-  box-shadow: var(--shadow-hard-sm);
-  transition: border-color .15s ease;
-}
-.input:focus-visible {
-  /* Il campo attivo non si muove e l'ombra resta quella di prima: il bordo
-     diventa vermiglio, senza cambiare spessore. */
-  outline: none;
-  border-color: var(--accent);
-}
-
+.access .field { margin-bottom: 16px; }
 
 .form-actions { margin-top: 20px; }
 .form-actions .btn { width: 100%; }
-
-/* ---------------------------------------------------------------- avvisi */
-
-.notice {
-  margin: 0 0 18px;
-  padding: 13px 15px;
-  border: 1.5px solid var(--ink);
-  border-radius: var(--radius-sm);
-  font-size: 14px;
-  line-height: 1.5;
-}
-.notice-warn { background: var(--note); }
 
 /* --------------------------------------------------------- schermi stretti */
 

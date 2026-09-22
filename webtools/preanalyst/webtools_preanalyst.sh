@@ -6,11 +6,13 @@
 # - --stop:  ferma il processo indicato dal file PID, solo dopo aver verificato
 #            che quel PID sia davvero il nostro server (mai per nome o per porta).
 #
-# Le variabili d'ambiente (HOST, PORT, ANAGRAPHICS_URL, ANAGRAPHICS_TIMEOUT_MS)
-# passate con --start arrivano al server.
+# Il server non ha valori di default: prende dall'ambiente solo le variabili di
+# ../configurator/bootstrap.env (caricate qui con --start) e il resto dalla sua
+# configurazione in anagraphics. Se manca qualcosa, non parte.
 set -euo pipefail
 
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+BOOTSTRAP="$DIR/../configurator/bootstrap.env"
 NODE="$(command -v node || true)"
 ENTRY="$DIR/src/index.js"
 PID_FILE="$DIR/webtools_preanalyst.pid"
@@ -42,6 +44,14 @@ start() {
     echo "File di avvio mancante: $ENTRY" >&2
     return 1
   fi
+  if [[ ! -f "$BOOTSTRAP" ]]; then
+    echo "File di avvio mancante: $BOOTSTRAP" >&2
+    return 1
+  fi
+  set -a
+  # shellcheck source=../configurator/bootstrap.env
+  source "$BOOTSTRAP"
+  set +a
   rm -f "$PID_FILE"
 
   local log_offset

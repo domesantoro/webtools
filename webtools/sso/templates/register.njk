@@ -6,13 +6,13 @@
 {% block main %}
     <div class="container access">
       <div class="access-card card">
-        <div class="card-head">Registrati</div>
+        <div class="card-head">{{ t("sso.register.title") }}</div>
         <div class="access-body">
           <p class="access-lead">
-            La registrazione non è ancora attiva: per ora gli account li creiamo noi.
+            {{ t("sso.register.closed") }}
           </p>
           <p class="access-alt">
-            <a class="text-link" href="/ui/login?next={{ next | urlencode }}">Torna al login</a>
+            <a class="text-link" href="/ui/login?next={{ next | urlencode }}">{{ t("sso.register.back_to_login") }}</a>
           </p>
         </div>
       </div>

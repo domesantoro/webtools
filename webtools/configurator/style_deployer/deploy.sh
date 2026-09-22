@@ -7,10 +7,11 @@ set -euo pipefail
 WEBTOOLS="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 SOURCE="$WEBTOOLS/commons/style"
 
-# front-gate — sito vetrina statico.
-# Le pagine caricano css/commons.css, che cerca i font in css/fonts/.
+# front-gate — sito vetrina, pagine statiche servite da un server Node.
+# I file stanno in public/; le pagine caricano css/commons.css, che cerca i
+# font in css/fonts/.
 deploy_front_gate() {
-  local css="$WEBTOOLS/front-gate/css"
+  local css="$WEBTOOLS/front-gate/public/css"
   echo "→ front-gate"
 
   cp "$SOURCE/commons.css" "$css/commons.css"

@@ -1,4 +1,5 @@
 {# Solo gli interni di [data-sso-driver]: li rimpiazza il browser dopo il login. #}
-{% import "partials/driver_box.njk" as box %}
-{% import "partials/driver_work.njk" as lavoro %}
-{% if aside.driver_box.show %}{{ box.render(aside.driver_box) }}{% endif %}{% if aside.driver_work.show %}{{ lavoro.render(aside.driver_work) }}{% endif %}
+{% import "partials/driver_box.njk" as box with context %}
+{% import "partials/ambassador_box.njk" as invito with context %}
+{% import "partials/driver_work.njk" as lavoro with context %}
+{% if aside.driver_box.show %}{{ box.render(aside.driver_box) }}{% endif %}{% if aside.ambassador_box.show %}{{ invito.render(aside.ambassador_box) }}{% endif %}{% if aside.driver_work.show %}{{ lavoro.render(aside.driver_work) }}{% endif %}

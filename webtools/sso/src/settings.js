@@ -1,41 +1,43 @@
-// Impostazioni lette dalle variabili d'ambiente, con default per lo sviluppo locale.
+// Impostazioni, lette all'avvio dalla configurazione `sso` in anagraphics
+// (webtools/configurator/configuration/sso.json). Niente valori di default: se
+// manca un campo, loadSettings lancia ConfigurationError e il server non parte.
 
-export function loadSettings() {
+import { loadConfiguration } from "./commons/configuration_client.js";
+import { loadI18n } from "./commons/i18n/webtools_i18n.js";
+
+export async function loadSettings() {
+  const configuration = await loadConfiguration("sso");
   return {
-    host: process.env.HOST ?? "127.0.0.1",
-    port: Number(process.env.PORT ?? 8300),
-    // Sottosistema interno: risponde solo a chi chiama da questa macchina.
+    host: configuration.string("listen.host"),
+    port: configuration.port("listen.port"),
+    // Sottosistema interno: risponde solo a chi chiama dagli IP del pool.
     // È un controllo sull'IP della connessione, non un'autorizzazione: dice da
     // dove arriva la richiesta, non per conto di chi.
-    allowedIps: split(process.env.ALLOWED_IPS ?? "127.0.0.1,::1"),
-    // Utenti, credenziali, sessioni e biglietti stanno tutti lì: il sso non ha database.
-    anagraphicsUrl: process.env.ANAGRAPHICS_URL ?? "http://127.0.0.1:8100",
-    anagraphicsTimeoutMs: Number(process.env.ANAGRAPHICS_TIMEOUT_MS ?? 5000),
+    allowedIps: configuration.stringList("access.allowed_ips"),
+    // Utenti, credenziali, sessioni e biglietti stanno tutti lì: il sso non ha
+    // database. L'indirizzo è quello da cui è arrivata la configurazione.
+    anagraphicsUrl: configuration.anagraphicsUrl,
+    anagraphicsTimeoutMs: configuration.integer("subsystems_infos.anagraphics.timeout_ms", { min: 1 }),
     // Durata di una sessione, dal login. Non si allunga da sola a ogni lettura:
     // chi è entrato otto ore fa rifà il login, anche se ha lavorato tutto il giorno.
-    sessionTtlSeconds: Number(process.env.SESSION_TTL_SECONDS ?? 8 * 60 * 60),
+    sessionTtlSeconds: configuration.integer("session.ttl_seconds", { min: 1 }),
     // Il cookie del sso: dice a questo server che quel browser è già entrato,
     // così il secondo sottosistema non richiede la password. Il nome deve essere
     // diverso da quello dei sottosistemi: i cookie ignorano la porta, quindi su
     // 127.0.0.1 stanno tutti nello stesso mucchio e due cookie con lo stesso
     // nome si sovrascriverebbero a vicenda.
-    cookieName: process.env.COOKIE_NAME ?? "webtools_sso",
-    // Il biglietto vive un minuto: il tempo di un redirect, non di più.
-    ticketTtlSeconds: Number(process.env.TICKET_TTL_SECONDS ?? 60),
+    cookieName: configuration.string("session.cookie_name"),
+    // Il biglietto vive il tempo di un redirect, non di più.
+    ticketTtlSeconds: configuration.integer("ticket.ttl_seconds", { min: 1 }),
     // Dove si può rimandare il browser dopo il login. Senza questo elenco,
     // chiunque potrebbe costruire un link `…/ui/login?next=http://sito-finto`
     // e usare la nostra pagina di login come trampolino.
-    allowedNext: split(
-      process.env.ALLOWED_NEXT ?? "http://127.0.0.1:8200,http://localhost:8200"
-    ),
+    allowedNext: configuration.httpUrlList("login.allowed_next"),
+    // Il corpo più grande accettato da login, scambio del biglietto e form.
+    bodyMaxBytes: configuration.integer("limits.body_max_bytes", { min: 1 }),
+    // Lingue, cataloghi e cookie della lingua: vedi src/commons/i18n/webtools_i18n.js.
+    i18n: loadI18n(configuration),
   };
-}
-
-function split(value) {
-  return value
-    .split(",")
-    .map((item) => item.trim())
-    .filter(Boolean);
 }
 
 // L'indirizzo a cui tornare dopo il login è deciso da chi ci manda qui, quindi

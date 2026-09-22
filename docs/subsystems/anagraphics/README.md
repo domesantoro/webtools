@@ -1,7 +1,7 @@
 # Sottosistema `anagraphics`
 
 > Documentazione di riferimento per sviluppo, manutenzione, troubleshooting, bugfix e metriche.
-> Ultimo aggiornamento: 2026-09-21 · versione del sottosistema: `0.3.0`.
+> Ultimo aggiornamento: 2026-09-22 · versione del sottosistema: `0.7.0`.
 > Codice: `webtools/anagraphics/` (percorsi relativi alla root del workspace `ftab - webtools/`).
 
 ---
@@ -10,26 +10,27 @@
 
 | Voce | Valore |
 |---|---|
-| Cosa fa | API HTTP interna con la configurazione dei sottosistemi, l'anagrafica dei progetti, i driver e i loro codici sconto, gli **utenti** e le **sessioni** |
+| Cosa fa | API HTTP interna con la **configurazione di tutti i sottosistemi** (è il sottosistema di configurazione), l'anagrafica dei progetti, i driver e i loro codici sconto, gli **utenti** e le **sessioni** |
 | Stack | Python 3.13 · FastAPI · uvicorn · pymongo · MongoDB 8 |
 | Codice | `webtools/anagraphics/` |
 | Avvio (background, slegato dal terminale) | `webtools/anagraphics/webtools_anagraphics.sh --start` |
 | Arresto | `webtools/anagraphics/webtools_anagraphics.sh --stop` |
 | Processo | `…/webtools/anagraphics/.venv/bin/python -m webtools_anagraphics` |
 | PID / Log | `webtools/anagraphics/webtools_anagraphics.pid` / `webtools/anagraphics/webtools_anagraphics.log` |
-| Indirizzo | `http://127.0.0.1:8100` |
-| Database | MongoDB `mongodb://localhost:27017`, DB `webtools` |
-| Collection | `configuration` (chiave `subsystem`), `anagraphics` (chiave `project_id`), `drivers` (chiave `uid`), `discounts` (chiave `discount_code`), `users` (chiave `username`), `sessions` (chiave `token`) |
-| Scritture | Solo sessioni e biglietti: `POST /sessions`, `DELETE /sessions/{token}`, `DELETE /sessions?uid=…`, `POST /tickets`, `DELETE /tickets/{ticket}`. Tutto il resto è di sola lettura |
-| Accesso | Solo dagli IP in `ALLOWED_IPS` (default: localhost); gli altri ricevono `403` |
+| Indirizzo | `WEBTOOLS_ANAGRAPHICS_URL` in `webtools/configurator/bootstrap.env` (oggi `http://127.0.0.1:8100`) |
+| Database | `WEBTOOLS_MONGO_URI` / `WEBTOOLS_MONGO_DB` in `bootstrap.env` (oggi `mongodb://localhost:27017`, DB `webtools`) |
+| Collection | `configuration` (chiave `subsystem`), `projects` (chiave `project_id`), `drivers` (chiave `uid`), `discounts` (chiave `discount_code`), `users` (chiave `username`), `sessions` (chiave `token`) |
+| Scritture | Sessioni, biglietti e lingua: `POST /sessions`, `DELETE /sessions/{token}`, `DELETE /sessions?uid=…`, `PUT /sessions/{token}/locale`, `PUT /users/{username}/locale`, `POST /tickets`, `DELETE /tickets/{ticket}`. Tutto il resto è di sola lettura |
+| Accesso | Solo dagli IP in `access.allowed_ips` della sua configurazione; gli altri ricevono `403` |
+| Configurazione | Letta all'avvio da Mongo (documento `anagraphics` di `configuration`). Nessun default: se manca, il server non parte (§7) |
 | Autenticazione | Nessuna: l'unico controllo è il pool di IP. Chi autentica è `webtools_sso`, che usa questi dati |
-| Test | `uv run pytest` (33 test, usa il DB `webtools_test`, cancellato alla fine) |
+| Test | `uv run pytest` (44 test, usa il DB `webtools_test`, cancellato alla fine) |
 | Stato | Letture su sei collection, scritture su sessioni e biglietti. CRUD completo previsto più avanti |
 
 Prova veloce, con il server acceso:
 ```sh
-curl http://127.0.0.1:8100/configuration/front-gate   # {"subsystem":"front-gate"}
-curl http://127.0.0.1:8100/anagraphics/1f251606-bdba-40c4-bbee-bfedc6e57f70       # {"project_id":"1f251606-bdba-40c4-bbee-bfedc6e57f70"}
+curl http://127.0.0.1:8100/configuration/front-gate   # {"subsystem":"front-gate","listen":{…},"subsystems_infos":{…},"screen_infos":{…}}
+curl http://127.0.0.1:8100/projects/1f251606-bdba-40c4-bbee-bfedc6e57f70       # {"project_id":"1f251606-bdba-40c4-bbee-bfedc6e57f70"}
 curl http://127.0.0.1:8100/drivers                                               # tutti i driver
 curl http://127.0.0.1:8100/drivers/7633be3d-e701-42ca-9fea-6c6d1bb4b7d1          # il driver Dome
 curl http://127.0.0.1:8100/drivers/7633be3d-e701-42ca-9fea-6c6d1bb4b7d1/discounts   # i suoi codici sconto
@@ -42,8 +43,8 @@ curl http://127.0.0.1:8100/discounts/e8013cf2-34eb-4bc3-8a34-b08fb24a1bf3       
 
 Il progetto è una "fabbrica" di piccoli software su misura, composta da più sottosistemi: il sito vetrina `front-gate`, i sistemi di pre-analisi e analisi, l'interfaccia dei driver, le demo e altri ancora (vedi `contesto/02. contesto_aggiornato.md`). `anagraphics` è la **fonte dati interna** condivisa:
 
-- **Configurazioni dei sottosistemi** (collection `configuration`): ogni sottosistema legge da qui la propria conf, cercandola per nome.
-- **Anagrafica dei progetti** (collection `anagraphics`): ogni progetto cliente ha un documento, identificato da `project_id`.
+- **Configurazioni dei sottosistemi** (collection `configuration`): **ogni** sottosistema legge da qui la propria configurazione all'avvio, cercandola per nome, e senza non parte. I documenti si scrivono in `webtools/configurator/configuration/<nome>.json` e li carica `webtools/configurator/load_configuration.sh` (§7). Anagraphics stesso legge la sua (documento `anagraphics`) direttamente da Mongo.
+- **Progetti** (collection `projects`): ogni progetto cliente ha un documento, identificato da `project_id`. Nasce con `POST /projects` quando il cliente manda la pre-analisi (§6.3.1); i file del progetto (specifiche) non stanno qui ma in `webtools-workspaces`.
 - **Driver** (collection `drivers`): le persone che supervisionano i progetti, identificate da `uid`.
 - **Codici sconto** (collection `discounts`): ogni codice appartiene a un driver, identificato da `discount_code`.
 - **Utenti** (collection `users`): chi può entrare nel sistema, identificato da `username`, con il blocco delle credenziali.
@@ -64,14 +65,13 @@ Il progetto è una "fabbrica" di piccoli software su misura, composta da più so
 | **Chiavi con nome dedicato** (`subsystem`, `project_id`) al posto dell'`_id` di Mongo | Sono chiavi leggibili e stabili, pensate per essere usate dagli altri sottosistemi. L'`_id` resta un dettaglio interno di Mongo. |
 | **Indice univoco su ogni chiave** | Garantisce un solo documento per sottosistema o progetto. Un doppio inserimento fallisce con `DuplicateKeyError`. |
 | **`_id` mai restituito** | Le risposte contengono solo i dati di dominio. Inoltre `ObjectId` non si converte in JSON. |
-| **Dati minimi** | Oggi `configuration` = `{subsystem}` e `anagraphics` = `{project_id}`. Le strutture verranno estese; l'API restituisce **tutto il documento** (tranne `_id`), quindi i nuovi campi compaiono senza modificare il codice. |
+| **Dati minimi** | Oggi `configuration` = `{subsystem}`; `projects` ha i campi di §5.2. Le strutture verranno estese; l'API restituisce **tutto il documento** (tranne `_id`), quindi i nuovi campi compaiono senza modificare il codice. |
 | **Errori = stato HTTP + codice stabile** (`{"error": "PROJECT_NOT_FOUND", ...}`) | I consumer (Node, Python) decidono dallo stato HTTP (`res.ok`, `raise_for_status()`, axios) e distinguono il caso con un confronto di stringhe, senza interpretare testo. Un formato unico per tutti gli errori (§6.1). Scartato `200 + null`: renderebbe "non trovato" indistinguibile da un successo e nasconderebbe gli URL sbagliati. |
 | **Pool di IP al posto dell'autenticazione** | Servizio interno su una sola macchina: il pool basta per ora. Il controllo avviene **prima** di qualsiasi altra logica. |
 | **Conta solo l'IP della connessione** | Gli header `X-Forwarded-For` sono falsificabili, quindi non vengono considerati (§9.2). |
 
-Dati di esempio caricati dal seed:
-- `configuration`: `{"subsystem": "front-gate"}`, la conf vuota del sito vetrina;
-- `anagraphics`: `{"project_id": "1f251606-bdba-40c4-bbee-bfedc6e57f70"}`, un progetto di prova.
+Dati di esempio caricati dal seed (la collection `configuration` non passa dal seed: la carica `webtools/configurator/load_configuration.sh`, §5.1):
+- `projects`: `{"project_id": "1f251606-bdba-40c4-bbee-bfedc6e57f70"}`, un progetto di prova (senza proprietario: è precedente a `POST /projects`).
 
 ---
 
@@ -89,7 +89,7 @@ Dati di esempio caricati dal seed:
 
 Scartati, per semplicità:
 - **Motor / pymongo async**: non serve con questo carico;
-- **Pydantic settings**: 3 variabili d'ambiente non lo giustificano;
+- **Pydantic settings**: la configurazione arriva da Mongo, non dall'ambiente, e i campi sono pochi;
 - **Docker**: il daemon non era attivo e Mongo è già installato in locale.
 
 ---
@@ -108,22 +108,23 @@ webtools/anagraphics/
 ├── webtools_anagraphics.log  # generato da --start (append)
 ├── webtools_anagraphics/     # pacchetto Python (nome specifico, niente nomi generici come "app")
 │   ├── __init__.py
-│   ├── __main__.py    # AVVIO: uvicorn.run("webtools_anagraphics.main:app", proxy_headers=False), HOST/PORT da env
-│   ├── settings.py    # Settings (dataclass frozen) + load_settings() dalle variabili d'ambiente
+│   ├── __main__.py    # AVVIO: importa main (che legge la configurazione) e lancia uvicorn con proxy_headers=False; esce con 1 se la configurazione manca
+│   ├── settings.py    # Settings + load_settings(): bootstrap dall'ambiente, il resto dal documento `anagraphics` in Mongo
 │   ├── errors.py      # codici di errore (contratto API), ApiError, handler per 403/404/405/503/500
-│   ├── db.py          # connect(), ensure_indexes(), find_*(); costanti CONFIGURATION/ANAGRAPHICS/DRIVERS/DISCOUNTS/PUBLIC
+│   ├── db.py          # connect(), ensure_indexes(), find_*(); costanti CONFIGURATION/PROJECTS/DRIVERS/DISCOUNTS/PUBLIC
 │   └── main.py        # oggetto FastAPI `app`, middleware del pool di IP, i 6 endpoint
 ├── scripts/
-│   └── seed.py        # indici univoci + upsert dei dati iniziali (idempotente)
+│   ├── seed.py        # indici univoci + upsert dei dati iniziali (idempotente); niente configurazioni
+│   └── load_configuration.py  # carica configurator/configuration/*.json nella collection `configuration`
 └── tests/
-    └── test_api.py    # 17 test end-to-end su Mongo reale (DB webtools_test)
+    └── test_api.py    # 44 test end-to-end su Mongo reale (DB webtools_test)
 ```
 
 ### 4.2 Ciclo di vita
 
 - `webtools_anagraphics/main.py` legge le impostazioni e crea il client Mongo **all'import del modulo**, cioè all'avvio del server. Di conseguenza:
-  - le variabili d'ambiente cambiate dopo l'avvio non hanno effetto: **serve un riavvio**;
-  - `MongoClient` si collega in modo pigro: **il server parte anche se Mongo è spento**, e l'errore compare solo alla prima richiesta (§11).
+  - la configurazione cambiata dopo l'avvio non ha effetto: **serve un riavvio**;
+  - leggere la configurazione vuol dire interrogare Mongo: **se Mongo è spento, o il documento `anagraphics` non c'è, il server non parte** (`webtools_anagraphics non parte: …` nel log, uscita 1). Se Mongo cade dopo l'avvio, le richieste rispondono `503` (§11).
 - Il server **non crea gli indici** all'avvio: li crea `scripts/seed.py`.
 - Non ci sono hook di startup o shutdown (lifespan): il client Mongo si chiude con il processo.
 
@@ -134,7 +135,7 @@ client ──HTTP──> uvicorn (127.0.0.1:8100, proxy_headers=False)
                    │
                    ▼
           middleware allow_only_known_ips   (webtools_anagraphics/main.py)
-          request.client.host ∈ ALLOWED_IPS ?
+          request.client.host ∈ access.allowed_ips ?
              │ no  → 403 {"error":"IP_NOT_ALLOWED"}      (nessuna query a Mongo)
              │ sì
              ▼
@@ -158,12 +159,12 @@ Il controllo IP viene **prima** del routing, quindi un IP fuori dal pool riceve 
 
 ## 5. Modello dati (MongoDB)
 
-**Database**: `webtools` (variabile `MONGO_DB`). Gli indici li crea `scripts/seed.py` (`db.ensure_indexes`), non l'avvio del server.
+**Database**: `webtools` (variabile `WEBTOOLS_MONGO_DB` di `bootstrap.env`). Gli indici li crea `scripts/seed.py` (`db.ensure_indexes`), non l'avvio del server.
 
 | Collection | Chiave | Altri indici | Contenuto | Chi scrive |
 |---|---|---|---|---|
-| `configuration` | `subsystem` (univoco) | — | La configurazione di ogni sottosistema | seed / `mongosh` |
-| `anagraphics` | `project_id` (univoco) | — | Un documento per progetto cliente | seed / `mongosh` |
+| `configuration` | `subsystem` (univoco) | — | La configurazione di ogni sottosistema | `configurator/load_configuration.sh` |
+| `projects` | `project_id` (univoco) | `submission_id` (univoco, sparse) | Un documento per progetto cliente | `webtools_preanalyst`, via API |
 | `drivers` | `uid` (univoco) | — | Le persone che supervisionano i progetti | seed / `mongosh` |
 | `discounts` | `discount_code` (univoco) | `driver.uid` | I codici sconto, col driver ridondato dentro | seed / `mongosh` |
 | `users` | `username` (univoco) | `uid` (univoco) | Chi può entrare nel sistema, con le credenziali | seed + comando a mano (§8.5) |
@@ -178,11 +179,30 @@ Il controllo IP viene **prima** del routing, quindi un IP fuori dal pool riceve 
 | `_id` | ObjectId | automatico | Mai esposto |
 | `subsystem` | string | **univoco** (indice `subsystem_1`) | Nome del sottosistema, es. `front-gate`. Distingue maiuscole e minuscole |
 
-### 5.2 `anagraphics`
+Gli altri campi dipendono dal sottosistema e l'API li restituisce così come sono. Sono **strutturati** (oggetti annidati per argomento: `listen`, `access`, `subsystems_infos`, `session`, …), non piatti.
+
+**Da dove arrivano.** La fonte è un file per sottosistema, `webtools/configurator/configuration/<subsystem>.json`, senza il campo `subsystem` (lo dà il nome del file). `webtools/configurator/load_configuration.sh` li carica tutti: ogni documento viene **sostituito per intero** e quelli senza più un file vengono cancellati. Lo lancia `start.sh` prima di avviare i servizi. Modificare i documenti a mano in Mongo non serve: al prossimo avvio verrebbero sovrascritti.
+
+Il significato di ogni campo sta nella documentazione del sottosistema che lo legge. Qui solo quello di anagraphics stesso:
+
+| Campo | Tipo | Note |
+|---|---|---|
+| `access.allowed_ips` | string[] | Gli IP ammessi, **esatti** (niente CIDR). Non vuoto |
+| `mongo.server_selection_timeout_ms` | int | Quanto aspettare Mongo in ogni richiesta prima di rispondere `503` |
+
+### 5.2 `projects`
+Fino alla 0.4.0 la collection si chiamava `anagraphics` (migrazione in §8.7).
+
 | Campo | Tipo | Vincoli | Note |
 |---|---|---|---|
 | `_id` | ObjectId | automatico | Mai esposto |
-| `project_id` | string | **univoco** (indice `project_id_1`) | **UUID** (v4, formato canonico minuscolo con trattini), es. `1f251606-bdba-40c4-bbee-bfedc6e57f70`. Oggi il formato non viene validato dall'API. Distingue maiuscole e minuscole |
+| `project_id` | string | **univoco** (indice `project_id_1`) | **UUID** v4 in forma canonica minuscola, es. `1f251606-bdba-40c4-bbee-bfedc6e57f70`. Lo genera anagraphics in `POST /projects`: chi chiama non può sceglierlo |
+| `owner_uid` | string | — | L'`uid` dell'utente (`users.uid`) che ha creato il progetto. Chi legge un progetto per conto di un utente confronta questo campo |
+| `submission_id` | string | **univoco, sparse** (indice `submission_id_1`) | L'id dell'invio del form della pre-analisi. Lo stesso invio ripetuto trova il progetto già nato invece di crearne un altro. Sparse: un progetto può nascere anche per altre strade |
+| `created_at` | datetime (UTC) | — | Momento della creazione |
+| `state` | string | — | Stato nel flusso. Oggi solo `PREANALYSIS`, il primo |
+| `review` | object | — | Chi supervisiona il progetto: `{driver_uid, preset}`. `preset: true` = driver **preimpostato** (dal link di un driver, o il driver stesso in un lavoro autonomo); `preset: false` = assegnato dal sistema. Alla creazione, senza link, `driver_uid` è `null` |
+| `billing` | object | — | I dati economici: `{discount_code, autonomous_work, ambassador_uid}`. Il codice sconto del link e il lavoro autonomo **si escludono**: con il lavoro autonomo `discount_code` è `null`. `ambassador_uid` è l'uid del driver che ha invitato l'utente a lavorare con noi, o `null`; i progetti creati prima della 0.6.2 non hanno il campo. Fino alla 0.6.0 c'era anche `autonomous_fee_discount` (migrazione §8.8). Si conservano soltanto: il prezzo non si calcola qui |
 
 ### 5.3 `drivers`
 | Campo | Tipo | Vincoli | Note |
@@ -191,13 +211,15 @@ Il controllo IP viene **prima** del routing, quindi un IP fuori dal pool riceve 
 | `uid` | string | **univoco** (indice `uid_1`) | **UUID** del driver, es. `7633be3d-e701-42ca-9fea-6c6d1bb4b7d1`. Come per `project_id`, il formato non viene validato dall'API |
 | `username` | string | — | Identificativo di accesso del driver. Il login non è ancora gestito: oggi il campo è solo un dato |
 | `screen_name` | string | — | Nome mostrato, es. `Dome` |
+| `enabled` | bool | — | Abilitato a seguire i progetti dei clienti (dopo il colloquio). Un driver non abilitato può essere ambassador e fare lavoro autonomo, ma nessun cliente può averlo come driver: le regole le applica preanalyst |
 
 Driver presenti:
 
-| `uid` | `username` | `screen_name` | Note |
-|---|---|---|---|
-| `7633be3d-e701-42ca-9fea-6c6d1bb4b7d1` | `dome.santoro@gmail.com` | `Dome` | Il driver reale. Ha un codice sconto |
-| `639718a3-ea41-4533-bdb8-73ac58b3b1b2` | `driver.prova@example.com` | `Prova` | **Dato di prova**, senza codici sconto: serve per vedere più di un driver nella lista e per il caso "driver esistente senza sconti" |
+| `uid` | `username` | `screen_name` | `enabled` | Note |
+|---|---|---|---|---|
+| `7633be3d-e701-42ca-9fea-6c6d1bb4b7d1` | `dome.santoro@gmail.com` | `Dome` | `true` | Il driver reale. Ha un codice sconto |
+| `639718a3-ea41-4533-bdb8-73ac58b3b1b2` | `driver.prova@example.com` | `Prova` | `true` | **Dato di prova**, senza codici sconto: serve per vedere più di un driver nella lista e per il caso "driver esistente senza sconti" |
+| `f234b930-e5d0-4e10-8a4f-1a8a13814370` | `driver.nonabilitato@example.com` | `Non abilitato` | `false` | **Dato di prova** con un codice sconto: serve per i casi "link" e "sconto" di un driver non abilitato |
 
 ### 5.4 `discounts`
 | Campo | Tipo | Vincoli | Note |
@@ -208,7 +230,7 @@ Driver presenti:
 | `driver.screen_name` | string | — | Nome del driver, **ridondato** |
 | `percentage` | number | — | Percentuale di sconto in **punti percentuali**: `5` significa 5%, non 0,05 |
 
-Codice presente: `e8013cf2-34eb-4bc3-8a34-b08fb24a1bf3`, del driver `Dome`, al 5%.
+Codici presenti: `e8013cf2-34eb-4bc3-8a34-b08fb24a1bf3`, del driver `Dome`, al 5%; `91165eb1-65d6-43a9-ade8-681ec3ebef8d`, del driver di prova `Non abilitato`, al 10%.
 
 **Sulla ridondanza del driver.** `uid` e `screen_name` sono copiati dentro lo sconto di proposito: chi legge un codice sconto ha subito il nome da mostrare, senza una seconda lettura. Il prezzo è che **un cambio di `screen_name` in `drivers` non si propaga**: finché non c'è il CRUD va aggiornato a mano anche in `discounts` (§8.4). `uid` invece non cambia mai.
 
@@ -221,6 +243,7 @@ Codice presente: `e8013cf2-34eb-4bc3-8a34-b08fb24a1bf3`, del driver `Dome`, al 5
 | `active` | bool | — | `false` impedisce il login (lo controlla il sso). Il documento resta |
 | `driver_uid` | string / assente | — | `uid` del documento in `drivers`, se questa persona è anche un driver |
 | `credential` | oggetto / `null` | — | Il blocco della password, sotto. `null` significa "password mai impostata": l'utente esiste ma non può entrare |
+| `locale` | string / assente | — | La lingua preferita (`it`, `en`, …). La scrive il sso al primo login e a ogni cambio di lingua; al login successivo la rimette nella sessione (§6.19) |
 
 Il blocco `credential`:
 
@@ -255,7 +278,7 @@ Le due password sono **password di sviluppo**, corte e note: vanno rifatte prima
 | `username` | string | — | Copiato al login, per non dover rileggere l'utente |
 | `issued_at` | data | — | Quando è entrata |
 | `expires_at` | data | indice **TTL** (`expires_at_1`, `expireAfterSeconds: 0`) | Quando smette di valere |
-| `data` | oggetto | — | Dati di sessione, liberi. Oggi contiene `screen_name` e `driver_uid` fotografati al login |
+| `data` | oggetto | — | Dati di sessione, liberi. Oggi contiene `screen_name` e `driver_uid` fotografati al login, e `locale`, la lingua della sessione, che cambia con `PUT /sessions/{token}/locale` |
 
 **Il documento lo costruisce il sso.** Token, date e contenuto di `data` arrivano già fatti in `POST /sessions`: qui si controlla che i campi ci siano e si conserva. `GET /sessions/{token}` restituisce la sessione **anche se scaduta**, finché il TTL non l'ha rimossa: decidere se vale ancora è del sso.
 
@@ -309,17 +332,18 @@ Ogni errore ha lo **stato HTTP corretto** e un body con un **codice stabile**:
 | `409` | `SESSION_EXISTS` | `token` | Esiste già una sessione con quel token. Non si sovrascrive |
 | `404` | `TICKET_NOT_FOUND` | — | Nessun biglietto con quel codice: sconosciuto, già consumato o rimosso dal TTL |
 | `409` | `TICKET_EXISTS` | — | Esiste già un biglietto con quel codice |
-| `400` | `INVALID_BODY` | — | Corpo di `POST /sessions` mancante, incompleto o con campi non validi. Il dettaglio dei campi resta nel log, non nella risposta |
+| `409` | `SUBMISSION_EXISTS` | — | Un `POST /projects` con il `submission_id` di un progetto di un altro utente |
+| `400` | `INVALID_BODY` | — | Corpo di `POST /sessions`, `POST /tickets` o `POST /projects` mancante, incompleto o con campi non validi. Il dettaglio dei campi resta nel log, non nella risposta |
 | `404` | `ROUTE_NOT_FOUND` | — | URL inesistente: di solito un bug nel consumer |
 | `405` | `METHOD_NOT_ALLOWED` | — | Metodo non ammesso su una route esistente |
-| `403` | `IP_NOT_ALLOWED` | — | IP del chiamante fuori da `ALLOWED_IPS` (§9) |
+| `403` | `IP_NOT_ALLOWED` | — | IP del chiamante fuori da `access.allowed_ips` (§9) |
 | `503` | `DATABASE_UNAVAILABLE` | — | MongoDB irraggiungibile, dopo il timeout di selezione del server (default 30 s) |
 | `500` | `INTERNAL_ERROR` | — | Qualsiasi altro errore imprevisto; il traceback è nel log |
 
 Esempi di gestione lato consumer:
 ```python
 # Python (requests)
-r = requests.get(f"{BASE}/anagraphics/{project_id}")
+r = requests.get(f"{BASE}/projects/{project_id}")
 if r.ok:
     project = r.json()
 elif r.json()["error"] == "PROJECT_NOT_FOUND":
@@ -329,7 +353,7 @@ else:
 ```
 ```js
 // Node (fetch)
-const res = await fetch(`${BASE}/anagraphics/${projectId}`);
+const res = await fetch(`${BASE}/projects/${projectId}`);
 const body = await res.json();
 if (res.ok) return body;
 if (body.error === "PROJECT_NOT_FOUND") return null;
@@ -341,25 +365,44 @@ Restituisce la configurazione del sottosistema.
 
 | Esito | Stato | Body |
 |---|---|---|
-| Trovata | `200` | il documento senza `_id`, es. `{"subsystem":"front-gate"}` |
+| Trovata | `200` | il documento senza `_id`, es. `{"subsystem":"front-gate","listen":{"host":"127.0.0.1","port":8000},"subsystems_infos":{"preanalyst":{"url":"http://127.0.0.1:8200"}},"screen_infos":{"pricing":{"standard_price_cents":40000}}}` |
 | Non trovata | `404` | `{"error":"CONFIGURATION_NOT_FOUND","subsystem":"<richiesto>"}` |
 | Altri errori | `403` / `503` / `500` | vedi §6.1 |
 
-### 6.3 `GET /anagraphics/{project_id}`
-Restituisce il progetto.
+### 6.3 `GET /projects/{project_id}`
+Restituisce il progetto. Fino alla 0.4.0 era `GET /anagraphics/{project_id}`, che non esiste più.
 
 | Esito | Stato | Body |
 |---|---|---|
-| Trovato | `200` | il documento senza `_id`, es. `{"project_id":"1f251606-bdba-40c4-bbee-bfedc6e57f70"}` |
+| Trovato | `200` | il documento senza `_id` (§5.2) |
 | Non trovato | `404` | `{"error":"PROJECT_NOT_FOUND","project_id":"<richiesto>"}` |
 | Altri errori | `403` / `503` / `500` | vedi §6.1 |
 
-### 6.4 `GET /drivers`
-Restituisce **tutti** i driver, ordinati per `uid`, con i soli campi `uid` e `screen_name`.
+#### 6.3.1 `POST /projects`
+Crea un progetto. Corpo: `{"owner_uid": "<uid>", "submission_id": "<id dell'invio, almeno 16 caratteri>", "review": {"driver_uid": …, "preset": true}, "billing": {"discount_code": …, "autonomous_work": false, "ambassador_uid": null}}` (`review` e `billing` facoltativi, con i default di §5.2). Le regole su chi è preimpostato e quale sconto vale le applica chi chiama (preanalyst). Anagraphics genera `project_id`, `created_at` e `state: "PREANALYSIS"`; un `project_id` nel corpo viene ignorato.
 
 | Esito | Stato | Body |
 |---|---|---|
-| Sempre | `200` | `{"drivers":[{"uid":…,"screen_name":…}, …]}` |
+| Creato | `201` | il documento completo |
+| Stesso `submission_id`, stesso `owner_uid` | `200` | il progetto **già esistente**: non se ne crea un secondo |
+| Stesso `submission_id`, altro `owner_uid` | `409` | `{"error":"SUBMISSION_EXISTS"}` (non si rivela il progetto dell'altro) |
+| Corpo non valido | `400` | `{"error":"INVALID_BODY"}` |
+| Altri errori | `403` / `503` / `500` | vedi §6.1 |
+
+#### 6.3.2 `DELETE /projects/{project_id}`
+Cancella un progetto. Serve a disfare un progetto rimasto a metà: preanalyst lo usa quando la pre-specifica non si riesce a scrivere.
+
+| Esito | Stato | Body |
+|---|---|---|
+| Cancellato | `204` | — |
+| Non trovato | `404` | `{"error":"PROJECT_NOT_FOUND","project_id":"<richiesto>"}` |
+
+### 6.4 `GET /drivers`
+Restituisce **tutti** i driver, ordinati per `uid`, con i soli campi `uid`, `screen_name` ed `enabled`.
+
+| Esito | Stato | Body |
+|---|---|---|
+| Sempre | `200` | `{"drivers":[{"uid":…,"screen_name":…,"enabled":…}, …]}` |
 | Nessun driver | `200` | `{"drivers":[]}` |
 | Altri errori | `403` / `503` / `500` | vedi §6.1 |
 
@@ -503,6 +546,20 @@ Il 404 non ripete il biglietto, per la stessa ragione delle sessioni: finirebbe 
 - Il parametro di percorso è una stringa su **un solo segmento**: non può contenere `/`. I caratteri speciali vanno codificati nell'URL (`@` negli username va bene così com'è).
 - La corrispondenza è esatta e distingue maiuscole e minuscole (`Front-Gate` ≠ `front-gate`).
 
+### 6.19 `PUT /users/{username}/locale` e `PUT /sessions/{token}/locale`
+La lingua preferita dell'utente e quella della sessione. Le chiama il sso: al primo login (se il profilo non ha ancora una lingua) e quando si cambia lingua dal selettore delle pagine.
+
+Corpo (JSON): `{"locale": "it"}`. Qui si controlla solo che sia un codice di lingua (`^[a-z]{2,3}$`): quali lingue esistono lo decide il sso, dalla sua configurazione (`i18n.locales`).
+
+| Esito | Stato | Body |
+|---|---|---|
+| Fatto (utente) | `200` | l'utente senza `credential`, con `locale` |
+| Fatto (sessione) | `200` | la sessione, con `data.locale`; il resto di `data` resta com'era |
+| Utente inesistente | `404` | `{"error":"USER_NOT_FOUND","username":"<richiesto>"}` |
+| Sessione inesistente | `404` | `{"error":"SESSION_NOT_FOUND"}` |
+| Codice non valido | `400` | `{"error":"INVALID_BODY"}` |
+| Altri errori | `403` / `503` / `500` | vedi §6.1 |
+
 ### 6.17 Route generate da FastAPI
 Sono raggiungibili, sempre solo da IP consentiti:
 - `GET /docs`: interfaccia Swagger;
@@ -515,11 +572,11 @@ Qualsiasi altra route risponde `404 {"error":"ROUTE_NOT_FOUND"}`.
 ```sh
 curl -i http://127.0.0.1:8100/configuration/front-gate
 curl -s http://127.0.0.1:8100/drivers
-curl -s http://127.0.0.1:8100/anagraphics/1f251606-bdba-40c4-bbee-bfedc6e57f70
+curl -s http://127.0.0.1:8100/projects/1f251606-bdba-40c4-bbee-bfedc6e57f70
 curl -s http://127.0.0.1:8100/drivers/7633be3d-e701-42ca-9fea-6c6d1bb4b7d1
 curl -s http://127.0.0.1:8100/drivers/7633be3d-e701-42ca-9fea-6c6d1bb4b7d1/discounts
 curl -s http://127.0.0.1:8100/discounts/e8013cf2-34eb-4bc3-8a34-b08fb24a1bf3
-curl -s -w " [%{http_code}]\n" http://127.0.0.1:8100/anagraphics/inesistente   # {"error":"PROJECT_NOT_FOUND","project_id":"inesistente"} [404]
+curl -s -w " [%{http_code}]\n" http://127.0.0.1:8100/projects/inesistente   # {"error":"PROJECT_NOT_FOUND","project_id":"inesistente"} [404]
 curl -s -w " [%{http_code}]\n" http://127.0.0.1:8100/drivers/inesistente/discounts   # {"error":"DRIVER_NOT_FOUND","uid":"inesistente"} [404]
 
 # utenti
@@ -536,21 +593,22 @@ curl -s -X DELETE "http://127.0.0.1:8100/sessions?uid=214912a9-2cc4-4205-87b7-93
 
 ---
 
-## 7. Configurazione (variabili d'ambiente)
+## 7. Configurazione
 
-| Variabile | Default | Letta da | Note |
-|---|---|---|---|
-| `MONGO_URI` | `mongodb://localhost:27017` | `webtools_anagraphics/settings.py` | Accetta opzioni pymongo, es. `?serverSelectionTimeoutMS=2000` |
-| `MONGO_DB` | `webtools` | `webtools_anagraphics/settings.py` | I test la impostano a `webtools_test` |
-| `ALLOWED_IPS` | `127.0.0.1,::1` | `webtools_anagraphics/settings.py` | Lista separata da virgole, **IP esatti** (niente CIDR) |
-| `HOST` | `127.0.0.1` | `webtools_anagraphics/__main__.py` | Interfaccia su cui ascolta il server |
-| `PORT` | `8100` | `webtools_anagraphics/__main__.py` | |
+Nessun valore di default: se manca qualcosa, il server scrive il motivo nel log (`webtools_anagraphics non parte: …`) ed esce con 1.
 
-Esempio: `ALLOWED_IPS=127.0.0.1,192.168.1.20 PORT=8200 webtools/anagraphics/webtools_anagraphics.sh --start`
+**Dall'ambiente** arriva solo quello che serve a raggiungere la configurazione. Lo script di controllo lo carica da `webtools/configurator/bootstrap.env`:
 
-Le variabili passate a `--start` arrivano al server.
+| Variabile | Letta da | Note |
+|---|---|---|
+| `WEBTOOLS_ANAGRAPHICS_URL` | `settings.py` | Il nostro indirizzo, `http://host:porta`: il server si mette in ascolto lì. Gli altri sottosistemi usano la stessa variabile per chiamarci, quindi c'è un solo posto dove cambiarlo |
+| `WEBTOOLS_CONFIGURATION_TIMEOUT_MS` | `settings.py` | Quanto aspettare Mongo per leggere la configurazione, all'avvio |
+| `WEBTOOLS_MONGO_URI` | `settings.py` | Anche `scripts/seed.py` e `scripts/load_configuration.py` |
+| `WEBTOOLS_MONGO_DB` | `settings.py` | I test la impostano a `webtools_test` |
 
-Le variabili vengono lette **una volta all'avvio**: dopo una modifica bisogna riavviare.
+**Tutto il resto** è il documento `anagraphics` della collection `configuration` (§5.1), letto direttamente da Mongo: anagraphics non può chiedere la configurazione a sé stesso via HTTP prima di essere acceso. Si modifica `webtools/configurator/configuration/anagraphics.json` e si rilancia `webtools/configurator/start.sh --restart`.
+
+La configurazione si legge **una volta all'avvio**: dopo una modifica bisogna riavviare.
 
 ---
 
@@ -562,7 +620,10 @@ I comandi `uv` si lanciano da `webtools/anagraphics/`; lo script di controllo fu
 ```sh
 uv sync                        # crea .venv e installa le dipendenze (anche quelle di sviluppo)
 uv run python -m scripts.seed  # indici + dati iniziali; si può rilanciare
+../configurator/load_configuration.sh   # la configurazione di tutti i sottosistemi
 ```
+
+Il seed e `load_configuration.py` leggono `WEBTOOLS_MONGO_URI` e `WEBTOOLS_MONGO_DB` dall'ambiente: `load_configuration.sh` li carica da sé, per il seed si lancia prima `set -a; source ../configurator/bootstrap.env; set +a`.
 
 ### 8.2 Avvio e arresto
 
@@ -576,6 +637,7 @@ webtools/anagraphics/webtools_anagraphics.sh --stop    # ferma
 **`--start`**
 - Avvia `…/webtools/anagraphics/.venv/bin/python -m webtools_anagraphics` con `nohup`: il server resta attivo anche chiudendo il terminale.
 - Scrive il PID in `webtools_anagraphics.pid` e accoda stdout e stderr (log di accesso e traceback) in `webtools_anagraphics.log`. Prima di ogni avvio aggiunge al log una riga `=== start <data> ===`.
+- Carica nell'ambiente le variabili di `webtools/configurator/bootstrap.env`.
 - Aspetta fino a 10 s il messaggio `Uvicorn running on`:
   - se arriva: `webtools_anagraphics avviato (PID …)`, uscita 0;
   - se il processo muore: stampa le ultime righe del log, cancella il file PID, uscita 1.
@@ -595,12 +657,13 @@ webtools/anagraphics/webtools_anagraphics.sh --stop    # ferma
 
 **Controlli utili**
 ```sh
-curl http://127.0.0.1:8100/configuration/front-gate          # risponde? {"subsystem":"front-gate"}
+curl http://127.0.0.1:8100/configuration/front-gate          # risponde? {"subsystem":"front-gate",…}
 tail -f webtools/anagraphics/webtools_anagraphics.log         # log in tempo reale
 ```
 
 **Avvio in primo piano, per il debug** (Ctrl+C per fermarlo), da `webtools/anagraphics/`:
 ```sh
+set -a; source ../configurator/bootstrap.env; set +a
 uv run python -m webtools_anagraphics
 ```
 
@@ -626,7 +689,7 @@ mongosh --quiet --eval 'db.runCommand({ping:1})'   # risponde { ok: 1 }
 ### 8.4 Ispezionare e modificare i dati (finché non c'è il CRUD)
 ```sh
 mongosh webtools --quiet --eval 'db.configuration.find({}, {_id:0}).toArray()'
-mongosh webtools --quiet --eval 'db.anagraphics.find({}, {_id:0}).toArray()'
+mongosh webtools --quiet --eval 'db.projects.find({}, {_id:0}).toArray()'
 mongosh webtools --quiet --eval 'db.drivers.find({}, {_id:0}).toArray()'
 mongosh webtools --quiet --eval 'db.discounts.find({}, {_id:0}).toArray()'
 # gli utenti senza il blocco delle credenziali
@@ -635,14 +698,14 @@ mongosh webtools --quiet --eval 'db.users.find({}, {_id:0, credential:0}).toArra
 mongosh webtools --quiet --eval 'db.users.find({}, {_id:0, username:1, "credential.updated_at":1}).toArray()'
 # le sessioni aperte, senza il token intero
 mongosh webtools --quiet --eval 'db.sessions.find({}, {_id:0, username:1, issued_at:1, expires_at:1}).toArray()'
-mongosh webtools --quiet --eval 'db.anagraphics.getIndexes()'
+mongosh webtools --quiet --eval 'db.projects.getIndexes()'
 
 # nuovo UUID: python3 -c 'import uuid; print(uuid.uuid4())'
 # aggiungere o aggiornare un progetto (upsert, rispetta l'indice univoco)
-mongosh webtools --quiet --eval 'db.anagraphics.updateOne({project_id:"<uuid>"}, {$set:{project_id:"<uuid>"}}, {upsert:true})'
+mongosh webtools --quiet --eval 'db.projects.updateOne({project_id:"<uuid>"}, {$set:{project_id:"<uuid>"}}, {upsert:true})'
 
 # eliminare un progetto
-mongosh webtools --quiet --eval 'db.anagraphics.deleteOne({project_id:"<uuid>"})'
+mongosh webtools --quiet --eval 'db.projects.deleteOne({project_id:"<uuid>"})'
 
 # aggiungere un driver
 mongosh webtools --quiet --eval 'db.drivers.updateOne({uid:"<uuid>"}, {$set:{uid:"<uuid>", username:"<username>", screen_name:"<nome>"}}, {upsert:true})'
@@ -687,9 +750,32 @@ Due cose da non perdere per strada:
 
 ### 8.6 Test
 ```sh
-uv run pytest        # 33 test, circa 1 secondo; serve Mongo acceso
+uv run pytest        # 44 test, circa 1 secondo; serve Mongo acceso
 uv run pytest -v     # con il nome dei singoli test
 ```
+
+---
+
+### 8.7 Migrazione alla 0.5.0: `anagraphics` → `projects`
+
+Una volta sola per database, **prima** di avviare la 0.5.0. Poi il seed crea l'indice nuovo su `submission_id` (non tocca le password):
+
+```sh
+mongosh webtools --quiet --eval 'db.anagraphics.renameCollection("projects")'
+uv run python -m scripts.seed
+```
+
+Eseguita sul database `webtools` il 2026-09-21.
+
+### 8.8 Migrazione alla 0.6.1: via `billing.autonomous_fee_discount`
+
+Il lavoro autonomo non ha più uno sconto sulla fee. Una volta sola per database; il campo, se resta, viene comunque restituito così com'è:
+
+```sh
+mongosh webtools --quiet --eval 'db.projects.updateMany({"billing.autonomous_fee_discount": {$exists: true}}, {$unset: {"billing.autonomous_fee_discount": ""}})'
+```
+
+Eseguita sul database `webtools` il 2026-09-22 (2 progetti).
 
 ---
 
@@ -713,9 +799,9 @@ Verifica fatta il 2026-09-19: con `-H "X-Forwarded-For: 10.0.0.1"`
 Se in futuro il servizio starà dietro un reverse proxy, andrà rivisto: con `proxy_headers=False` tutte le richieste risulteranno provenire dall'IP del proxy.
 
 ### 9.3 Rete
-- `HOST=127.0.0.1` (default): il server non è raggiungibile da altre macchine, qualunque sia `ALLOWED_IPS`.
-- Con il default il server **non ascolta su IPv6**: `http://[::1]:8100` non risponde. `::1` in `ALLOWED_IPS` serve solo con `HOST=::`. `curl http://localhost:8100` funziona lo stesso, perché dopo il tentativo IPv6 ripiega su IPv4.
-- Per accettare chiamate da un'altra macchina servono **entrambe** le cose: `HOST=0.0.0.0` (o l'IP dell'interfaccia) e il suo IP in `ALLOWED_IPS`.
+- Con `WEBTOOLS_ANAGRAPHICS_URL=http://127.0.0.1:8100` il server non è raggiungibile da altre macchine, qualunque sia `access.allowed_ips`.
+- Con `127.0.0.1` il server **non ascolta su IPv6**: `http://[::1]:8100` non risponde. `::1` in `access.allowed_ips` serve solo ascoltando su `::`. `curl http://localhost:8100` funziona lo stesso, perché dopo il tentativo IPv6 ripiega su IPv4.
+- Per accettare chiamate da un'altra macchina servono **entrambe** le cose: l'host dell'URL sull'interfaccia giusta e l'IP del chiamante in `access.allowed_ips`.
 
 ### 9.4 Cosa manca, per scelta
 - Autenticazione e autorizzazione.
@@ -729,7 +815,8 @@ Se in futuro il servizio starà dietro un reverse proxy, andrà rivisto: con `pr
 
 Il file `tests/test_api.py` esegue test end-to-end sul **Mongo reale**.
 
-- In cima al file, **prima degli import di `webtools_anagraphics`**, vengono impostati `MONGO_DB=webtools_test` e `ALLOWED_IPS`. Serve perché le impostazioni si leggono all'import di `webtools_anagraphics.main`: se l'import avviene prima, i test userebbero il DB `webtools` di produzione.
+- In cima al file, **prima degli import di `webtools_anagraphics`**, vengono impostate le variabili di bootstrap con `WEBTOOLS_MONGO_DB=webtools_test` e si scrive in `webtools_test` il documento `anagraphics` della configurazione. Serve perché le impostazioni si leggono all'import di `webtools_anagraphics.main`: senza documento l'import fallirebbe, e con l'import prima delle variabili i test userebbero il DB `webtools` di produzione.
+- Quattro test (`test_settings_*`) provano l'avvio: configurazione letta, variabile di bootstrap mancante, documento mancante, campo mancante. In tutti i casi mancanti `load_settings()` lancia `ConfigurationError`.
 - Una fixture di modulo crea gli indici, inserisce la conf `front-gate`, il progetto `1f251606-…`, **due** driver (uno col codice sconto, uno senza, per distinguere lista vuota da driver inesistente), il codice sconto e **due utenti** (uno con credenziali, uno con `credential: null`), e alla fine **cancella** `webtools_test`. Sono gli stessi due driver del seed, così la lista è verificabile anche a mano.
 - `TestClient` usa di default l'host `"testclient"`, che non è nel pool. Per questo i test passano `client=("127.0.0.1", 50000)` e, per il caso `403`, `client=("10.0.0.1", 50000)`.
 
@@ -784,22 +871,23 @@ Resta un warning noto e innocuo, interno a Starlette: `anyio.abc.BlockingPortal 
 
 | Sintomo | Causa probabile | Verifica / soluzione |
 |---|---|---|
-| `403 {"error":"IP_NOT_ALLOWED"}` da localhost | 1) Server avviato con `uvicorn` diretto e client che invia `X-Forwarded-For`. 2) `ALLOWED_IPS` impostata senza `127.0.0.1`. 3) Server su `HOST=::` e client arrivato come `::1` o `::ffff:127.0.0.1` | Avvia con `webtools_anagraphics.sh --start`. Controlla `echo $ALLOWED_IPS` nella shell che avvia il server. Guarda l'IP nel log di accesso (`INFO: <ip>:<porta> - "GET ..."`) e aggiungilo al pool |
-| `503 {"error":"DATABASE_UNAVAILABLE"}` dopo circa **30 s** | Mongo spento o irraggiungibile. Nel log compare `MongoDB non raggiungibile: …` | `mongosh --eval 'db.runCommand({ping:1})'`; `brew services start mongodb-community`; controlla `MONGO_URI`. Per ridurre l'attesa: `MONGO_URI="mongodb://localhost:27017/?serverSelectionTimeoutMS=2000"` |
-| `404 PROJECT_NOT_FOUND` / `CONFIGURATION_NOT_FOUND` su un dato che "dovrebbe esserci" | Seed non eseguito, `MONGO_DB` diverso, chiave scritta con maiuscole diverse, spazi nel valore | `mongosh webtools --eval 'db.anagraphics.find({},{_id:0})'`; confronta il valore esatto |
-| `404 {"error":"ROUTE_NOT_FOUND"}` | La route non esiste: errore di battitura nel percorso o `/` in più | Usa `/configuration/<nome>` o `/anagraphics/<id>`; vedi `/docs` |
+| `403 {"error":"IP_NOT_ALLOWED"}` da localhost | 1) Server avviato con `uvicorn` diretto e client che invia `X-Forwarded-For`. 2) `access.allowed_ips` senza `127.0.0.1`. 3) Server in ascolto su `::` e client arrivato come `::1` o `::ffff:127.0.0.1` | Avvia con `webtools_anagraphics.sh --start`. Controlla `configurator/configuration/anagraphics.json` e che sia stato caricato. Guarda l'IP nel log di accesso (`INFO: <ip>:<porta> - "GET ..."`) e aggiungilo al pool |
+| `503 {"error":"DATABASE_UNAVAILABLE"}` dopo circa **30 s** | Mongo spento o irraggiungibile. Nel log compare `MongoDB non raggiungibile: …` | `mongosh --eval 'db.runCommand({ping:1})'`; `brew services start mongodb-community`; controlla `WEBTOOLS_MONGO_URI`. L'attesa è `mongo.server_selection_timeout_ms` della configurazione |
+| `404 PROJECT_NOT_FOUND` / `CONFIGURATION_NOT_FOUND` su un dato che "dovrebbe esserci" | Seed o `load_configuration.sh` non eseguiti, `WEBTOOLS_MONGO_DB` diverso, chiave scritta con maiuscole diverse, spazi nel valore | `mongosh webtools --eval 'db.projects.find({},{_id:0})'`; confronta il valore esatto |
+| `404 {"error":"ROUTE_NOT_FOUND"}` | La route non esiste: errore di battitura nel percorso o `/` in più | Usa `/configuration/<nome>` o `/projects/<id>`; vedi `/docs` |
 | `500 {"error":"INTERNAL_ERROR"}` su un documento specifico | Campo non convertibile in JSON (`ObjectId`, `Decimal128`, binari) | Traceback nel log del server (`ValueError`/`TypeError` durante la serializzazione). Converti il campo o adatta la risposta |
 | `DuplicateKeyError` inserendo dati | Indice univoco su `subsystem` o `project_id` | Usa `updateOne(..., {upsert:true})` invece di `insertOne` |
 | `ModuleNotFoundError: No module named 'webtools_anagraphics'` | Seed lanciato come file (`python scripts/seed.py`) o da una cartella diversa | Da `webtools/anagraphics/`: `uv run python -m scripts.seed` |
-| `[Errno 48] Address already in use` (stampato da `--start`) | Porta 8100 occupata da un altro programma o da un'istanza avviata senza lo script | `lsof -nP -iTCP:8100 -sTCP:LISTEN` per vedere chi è. Se non è nostro, avvia su un'altra porta: `PORT=8200 …/webtools_anagraphics.sh --start` |
+| `[Errno 48] Address already in use` (stampato da `--start`) | Porta 8100 occupata da un altro programma o da un'istanza avviata senza lo script | `lsof -nP -iTCP:8100 -sTCP:LISTEN` per vedere chi è. Se non è nostro, cambia la porta in `WEBTOOLS_ANAGRAPHICS_URL` (`bootstrap.env`): vale per tutti i sottosistemi |
 | `--start` dice "già in esecuzione" ma il server non risponde | Processo bloccato | `…/webtools_anagraphics.sh --stop` e poi `--start`; guarda il log |
 | `--start` fallisce con "Ambiente mancante" | `.venv` non creato | `cd webtools/anagraphics && uv sync` |
-| `--start` fallisce con altre righe di log | Errore all'avvio (import, configurazione) | Il messaggio stampato è la coda di `webtools_anagraphics.log` |
-| Le modifiche alle variabili d'ambiente non hanno effetto | Le impostazioni si leggono solo all'avvio | Riavvia il server |
+| `--start` fallisce con `webtools_anagraphics non parte: …` | Configurazione assente o sbagliata: variabile di bootstrap mancante, Mongo spento, documento `anagraphics` non caricato, campo mancante | Il messaggio dice quale. `webtools/configurator/load_configuration.sh`, poi di nuovo `--start` |
+| `--start` fallisce con altre righe di log | Errore all'avvio (import) | Il messaggio stampato è la coda di `webtools_anagraphics.log` |
+| Le modifiche alla configurazione non hanno effetto | Si legge solo all'avvio, e va prima caricata in Mongo | `webtools/configurator/start.sh --restart` (carica e riavvia) |
 | Le modifiche al codice non hanno effetto | Il server non ha il reload automatico | `--stop` e `--start`. In sviluppo si può usare `uv run uvicorn webtools_anagraphics.main:app --reload --no-proxy-headers --host 127.0.0.1 --port 8100` |
-| I test scrivono nel DB `webtools` | Qualcuno ha spostato gli import di `webtools_anagraphics` sopra l'impostazione delle variabili d'ambiente in `tests/test_api.py` | Ripristina l'ordine (§10) |
+| I test scrivono nel DB `webtools` | Qualcuno ha spostato gli import di `webtools_anagraphics` sopra l'impostazione delle variabili di bootstrap in `tests/test_api.py` | Ripristina l'ordine (§10) |
 | I test falliscono tutti con timeout | Mongo spento | Avvia Mongo (§8.3) |
-| `http://[::1]:8100` non risponde | Il server ascolta solo su IPv4 | Normale con `HOST=127.0.0.1` (§9.3) |
+| `http://[::1]:8100` non risponde | Il server ascolta solo su IPv4 | Normale con `127.0.0.1` in `WEBTOOLS_ANAGRAPHICS_URL` (§9.3) |
 
 Dove guardare:
 - **log del server**: `webtools/anagraphics/webtools_anagraphics.log` se avviato con `--start` (§8.2), altrimenti lo stdout del terminale. Contiene i log di accesso uvicorn e i traceback;
@@ -813,11 +901,11 @@ Stato attuale: **nessuna metrica dedicata**. Non esistono endpoint `/health` o `
 
 | Cosa | Come |
 |---|---|
-| Traffico ed esiti | Log di accesso uvicorn in `webtools_anagraphics.log`: `INFO: 127.0.0.1:61935 - "GET /anagraphics/1f251606-bdba-40c4-bbee-bfedc6e57f70 HTTP/1.1" 200 OK`. Conteggio per codice: `grep -c '" 403' webtools_anagraphics.log`, ecc. |
+| Traffico ed esiti | Log di accesso uvicorn in `webtools_anagraphics.log`: `INFO: 127.0.0.1:61935 - "GET /projects/1f251606-bdba-40c4-bbee-bfedc6e57f70 HTTP/1.1" 200 OK`. Conteggio per codice: `grep -c '" 403' webtools_anagraphics.log`, ecc. |
 | Stato del servizio | `curl -s -o /dev/null -w "%{http_code} %{time_total}s\n" http://127.0.0.1:8100/configuration/front-gate` (200 = servizio e Mongo attivi) |
 | Stato di Mongo | `mongosh --eval 'db.runCommand({ping:1})'` |
-| Volume dei dati | `mongosh webtools --quiet --eval 'db.anagraphics.countDocuments()'` (idem per `configuration`) |
-| Dimensioni e indici | `mongosh webtools --quiet --eval 'db.anagraphics.stats()'` |
+| Volume dei dati | `mongosh webtools --quiet --eval 'db.projects.countDocuments()'` (idem per `configuration`) |
+| Dimensioni e indici | `mongosh webtools --quiet --eval 'db.projects.stats()'` |
 | Query lente | Profiler di Mongo: `db.setProfilingLevel(1, {slowms: 50})`, poi `db.system.profile.find()` |
 
 Primi candidati se servissero metriche: un endpoint `/health` con ping a Mongo, un logging JSON con durata delle richieste, un exporter Prometheus.
@@ -863,8 +951,11 @@ Nessuna modifica al codice. Aggiorna `scripts/seed.py` se il campo deve far part
 **Aggiungere una collection**
 Costante in `webtools_anagraphics/db.py`, indice in `ensure_indexes()`, dati iniziali in `scripts/seed.py`, pulizia già coperta dal `drop_database` dei test, documentazione in §5. Se la collection punta a un'altra (come `discounts` → `drivers`), serve anche un indice **non** univoco sul campo di collegamento.
 
-**Aggiungere una variabile d'ambiente**
-Campo in `Settings` più lettura in `load_settings()` (`webtools_anagraphics/settings.py`). Se riguarda il server, va in `webtools_anagraphics/__main__.py`. Documenta in §7.
+**Aggiungere un valore configurabile**
+Non una variabile d'ambiente: un campo in `webtools/configurator/configuration/anagraphics.json`, nel gruppo giusto (o in uno nuovo). Poi campo in `Settings` e lettura in `load_settings()`, senza default. Documenta in §5.1. L'ambiente resta per il solo bootstrap (§7).
+
+**Configurazione di un sottosistema nuovo**
+Un file `webtools/configurator/configuration/<nome>.json`; il sottosistema lo legge all'avvio con `GET /configuration/<nome>` (i sottosistemi Node con `commons/configuration/configuration_client.js`). Qui non serve cambiare niente.
 
 **Passare al CRUD**
 Punti da decidere:
@@ -879,12 +970,18 @@ Punti da decidere:
 
 | Data | Versione | Modifica |
 |---|---|---|
+| 2026-09-22 | 0.8.0 | **La lingua.** Nuovi `PUT /users/{username}/locale` e `PUT /sessions/{token}/locale` (§6.19): campo `users.locale` e `sessions.data.locale`. Li usa il sso per ricordare la lingua scelta tra un login e l'altro. Test da 45 a 50. |
+| 2026-09-22 | 0.7.0 | Campo **`enabled`** dei driver (abilitato a seguire i progetti), anche nella lista `GET /drivers` (`DRIVER_SUMMARY`). `Dome` e `Prova` abilitati; nuovo driver di prova non abilitato, `Non abilitato`, con un codice sconto al 10%. Dati aggiornati con il seed il 2026-09-22. |
+| 2026-09-22 | 0.6.2 | Nuovo `billing.ambassador_uid` (default `null`): il driver che ha invitato l'utente. Le regole su quando vale le applica preanalyst. Test da 44 a 45. |
+| 2026-09-22 | 0.6.1 | Tolto `billing.autonomous_fee_discount`: il lavoro autonomo non ha più uno sconto sulla fee (migrazione §8.8). Un corpo di `POST /projects` che lo contiene ancora non dà errore: il campo si ignora. |
+| 2026-09-21 | 0.6.0 | **Sottosistema di configurazione per tutti.** Configurazione di anagraphics letta all'avvio dal suo documento in `configuration` (`access.allowed_ips`, `mongo.server_selection_timeout_ms`); indirizzo e porta da `WEBTOOLS_ANAGRAPHICS_URL`. Niente più default né variabili `HOST`, `PORT`, `MONGO_URI`, `MONGO_DB`, `ALLOWED_IPS`: dall'ambiente solo il bootstrap `WEBTOOLS_*`. Senza configurazione il server non parte. Le configurazioni non stanno più nel seed: nuovo `scripts/load_configuration.py`, che carica `configurator/configuration/*.json`. Test da 40 a 44. |
 | 2026-09-19 | 0.1.0 | Creazione: API di lettura `configuration`/`anagraphics`, pool di IP, seed, test. |
 | 2026-09-19 | 0.1.0 | Fix: avvio tramite `__main__.py` con `proxy_headers=False`. Prima, con uvicorn diretto, `X-Forwarded-For` da localhost sostituiva l'IP del client. |
 | 2026-09-19 | 0.1.0 | Pacchetto rinominato da `app` a `webtools_anagraphics`, per non avere nomi generici tra i processi del Mac. |
 | 2026-09-19 | 0.1.0 | Progetto di prova `demo-001` eliminato e sostituito da `1f251606-bdba-40c4-bbee-bfedc6e57f70`: i `project_id` sono UUID. |
 | 2026-09-19 | 0.1.0 | Errori: stato HTTP + codice stabile (`{"error": "…"}`), niente più testi discorsivi (`{"detail": "…"}`). Nuovi codici: `CONFIGURATION_NOT_FOUND`, `PROJECT_NOT_FOUND`, `ROUTE_NOT_FOUND`, `METHOD_NOT_ALLOWED`, `IP_NOT_ALLOWED`, `DATABASE_UNAVAILABLE` (503, prima 500), `INTERNAL_ERROR`. |
 | 2026-09-19 | 0.1.0 | Script `webtools_anagraphics.sh --start/--stop`: nohup, file PID e arresto solo dopo aver verificato la riga di comando. Sostituisce `pkill -f` e l'arresto per porta. |
+| 2026-09-21 | 0.5.0 | La collection `anagraphics` diventa **`projects`** (migrazione §8.7) e `GET /anagraphics/{id}` diventa `GET /projects/{id}`. Nuovi `POST /projects` (l'id lo genera anagraphics; `submission_id` univoco sparse rende idempotente l'invio del form) e `DELETE /projects/{id}`. Campi nuovi del progetto: `owner_uid`, `submission_id`, `created_at`, `state`, `review` (driver e `preset`), `billing` (sconto e sconto sulla fee del lavoro autonomo). Codice nuovo: `SUBMISSION_EXISTS`. Test da 33 a 40. |
 | 2026-09-21 | 0.4.0 | Collection `tickets` (chiave `ticket`, TTL su `expires_at`) con `POST /tickets` e `DELETE /tickets/{ticket}`, che consuma il biglietto leggendolo. Serve al sso per passare una sessione da un indirizzo a un altro, cosa che un cookie non sa fare (§5.7). Codici nuovi: `TICKET_NOT_FOUND`, `TICKET_EXISTS`. Test da 30 a 33. |
 | 2026-09-21 | 0.3.0 | Collection `users` (chiave `username`, con il blocco `credential` in scrypt) e `sessions` (chiave `token`, indice TTL su `expires_at`). Endpoint nuovi: `GET /users/{username}`, `GET /users/{username}/credential`, `POST /sessions`, `GET /sessions/{token}`, `DELETE /sessions/{token}`, `DELETE /sessions?uid=…`. **Prime scritture** del sottosistema. Codici nuovi: `USER_NOT_FOUND`, `CREDENTIAL_NOT_SET`, `SESSION_NOT_FOUND`, `SESSION_EXISTS`, `INVALID_BODY`. Client Mongo con `tz_aware=True`. Test da 17 a 30. Il login resta fuori di qui: lo fa `webtools_sso`. |
 | 2026-09-20 | 0.2.1 | `GET /drivers`, la lista di tutti i driver, con i soli `uid` e `screen_name`. `username` del driver `Dome` corretto in `dome.santoro@gmail.com`. Aggiunto il driver di prova `Prova`. Test da 16 a 17. |

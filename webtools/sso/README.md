@@ -72,6 +72,8 @@ Dura 8 ore dal login e non si allunga con l'uso.
 
 `public/commons.css` e `public/fonts/` sono **copie generate** dal deployer: non si modificano
 qui. Si modifica `webtools/commons/style/` e si lancia `webtools/configurator/deploy.sh style`.
+Lo stesso vale per `src/commons/configuration_client.js` (originale in
+`webtools/commons/configuration/`, deployer `configuration`).
 `public/styles.css` è lo stile locale delle due pagine e si modifica a mano.
 
 ## Password
@@ -83,26 +85,18 @@ aperte di quell'utente: la password nuova da sola non le ferma.
 Il formato conservato (scrypt, con i parametri dentro il documento) è descritto in
 `docs/subsystems/anagraphics/README.md` §5.5. Qui si verifica soltanto.
 
-## Variabili d'ambiente
+## Configurazione
 
-Si passano con `--start`, per esempio `PORT=8301 ./webtools_sso.sh --start`.
-
-| Variabile | Default |
-|---|---|
-| `HOST` | `127.0.0.1` |
-| `PORT` | `8300` |
-| `ALLOWED_IPS` | `127.0.0.1,::1` |
-| `ANAGRAPHICS_URL` | `http://127.0.0.1:8100` |
-| `ANAGRAPHICS_TIMEOUT_MS` | `5000` |
-| `SESSION_TTL_SECONDS` | `28800` (8 ore) |
-| `TICKET_TTL_SECONDS` | `60` |
-| `COOKIE_NAME` | `webtools_sso` |
-| `ALLOWED_NEXT` | `http://127.0.0.1:8200,http://localhost:8200` |
+Letta all'avvio da anagraphics (`GET /configuration/sso`); la fonte è
+`webtools/configurator/configuration/sso.json`. Nessun default: se manca qualcosa il server
+non parte e il log dice quale campo. Dall'ambiente arrivano solo le variabili di
+`webtools/configurator/bootstrap.env`, che `--start` carica da sé. Il significato dei campi è
+nella documentazione completa (§6).
 
 ## Test
 
 ```sh
-npm test    # 31 test, nessun server da accendere
+npm test    # 35 test, nessun server da accendere
 ```
 
 Al posto di anagraphics c'è un archivio finto, guasti compresi. `tests/credentials.test.js`

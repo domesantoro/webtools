@@ -1,0 +1,24 @@
+{#- L'header di tutte le pagine. `page` dice quale voce è quella corrente. -#}
+{%- set voci = [
+  ["che-cos-e", "front_gate.nav.what"],
+  ["esempi", "front_gate.nav.examples"],
+  ["come-funziona", "front_gate.nav.how"],
+  ["quanto-costa", "front_gate.nav.pricing"],
+  ["lavora-con-noi", "front_gate.nav.work_with_us"]
+] %}
+<header class="site-header">
+  <div class="container header-inner">
+    <a class="brand" href="index.html" aria-label="{{ t('common.brand.home') }}">
+      <span class="brand-mark">w</span>
+      <span class="brand-stack">webtools<small>{{ t("common.brand.tagline") }}</small></span>
+    </a>
+    <nav class="main-nav" aria-label="{{ t("front_gate.nav.label") }}">
+      {%- for voce in voci %}
+      <a href="{{ voce[0] }}.html"{% if page == voce[0] %} aria-current="page"{% endif %}>{{ t(voce[1]) }}</a>
+      {%- endfor %}
+      {% include "partials/start.njk" %}
+    </nav>
+    <a class="btn utility-link" href="contatti.html"{% if page == "contatti" %} aria-current="page"{% endif %}>{{ t("front_gate.nav.contacts") }}</a>
+    <button class="menu-toggle" aria-label="{{ t("front_gate.nav.open_menu") }}" aria-expanded="false"><span></span><span></span></button>
+  </div>
+</header>

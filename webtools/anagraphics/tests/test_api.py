@@ -1,33 +1,58 @@
 import os
 
-# I test usano un database separato, cancellato alla fine.
-os.environ["MONGO_DB"] = "webtools_test"
-os.environ["ALLOWED_IPS"] = "127.0.0.1,::1"
+from pymongo import MongoClient
+
+# I test usano un database separato, cancellato alla fine. Le variabili sono
+# quelle di configurator/bootstrap.env, con il database di prova.
+TEST_ENV = {
+    "WEBTOOLS_ANAGRAPHICS_URL": "http://127.0.0.1:8100",
+    "WEBTOOLS_CONFIGURATION_TIMEOUT_MS": "5000",
+    "WEBTOOLS_MONGO_URI": "mongodb://localhost:27017",
+    "WEBTOOLS_MONGO_DB": "webtools_test",
+}
+os.environ.update(TEST_ENV)
+
+# Anagraphics legge la propria configurazione all'import di main: deve esserci prima.
+ANAGRAPHICS_CONFIGURATION = {
+    "subsystem": "anagraphics",
+    "access": {"allowed_ips": ["127.0.0.1", "::1"]},
+    "mongo": {"server_selection_timeout_ms": 5000},
+}
+MongoClient(TEST_ENV["WEBTOOLS_MONGO_URI"])[TEST_ENV["WEBTOOLS_MONGO_DB"]]["configuration"].replace_one(
+    {"subsystem": "anagraphics"}, ANAGRAPHICS_CONFIGURATION, upsert=True
+)
 
 import pytest
 from fastapi.testclient import TestClient
 from pymongo.errors import ServerSelectionTimeoutError
 
-from webtools_anagraphics import db
+from webtools_anagraphics import db, settings
 from webtools_anagraphics.main import app, database
 
 LOCALHOST = ("127.0.0.1", 50000)
 OUTSIDER = ("10.0.0.1", 50000)
 
 DRIVER_UID = "7633be3d-e701-42ca-9fea-6c6d1bb4b7d1"
-DRIVER = {"uid": DRIVER_UID, "username": "dome.santoro@gmail.com", "screen_name": "Dome"}
+DRIVER = {
+    "uid": DRIVER_UID,
+    "username": "dome.santoro@gmail.com",
+    "screen_name": "Dome",
+    "enabled": True,
+}
 # Driver esistente ma senza sconti: la lista deve essere vuota, non un 404.
 DRIVER_WITHOUT_DISCOUNTS_UID = "639718a3-ea41-4533-bdb8-73ac58b3b1b2"
 DRIVER_WITHOUT_DISCOUNTS = {
     "uid": DRIVER_WITHOUT_DISCOUNTS_UID,
     "username": "driver.prova@example.com",
     "screen_name": "Prova",
+    "enabled": False,
 }
-# La lista dei driver non espone `username`.
-DRIVER_SUMMARY = {"uid": DRIVER_UID, "screen_name": "Dome"}
+# La lista dei driver non espone `username`, ma dice se il driver è abilitato.
+DRIVER_SUMMARY = {"uid": DRIVER_UID, "screen_name": "Dome", "enabled": True}
 DRIVER_WITHOUT_DISCOUNTS_SUMMARY = {
     "uid": DRIVER_WITHOUT_DISCOUNTS_UID,
     "screen_name": "Prova",
+    "enabled": False,
 }
 DISCOUNT_CODE = "e8013cf2-34eb-4bc3-8a34-b08fb24a1bf3"
 DISCOUNT = {
@@ -75,7 +100,7 @@ def a_session(token: str, uid: str = USER_UID) -> dict:
 def seeded_database():
     db.ensure_indexes(database)
     database[db.CONFIGURATION].insert_one({"subsystem": "front-gate"})
-    database[db.ANAGRAPHICS].insert_one({"project_id": "1f251606-bdba-40c4-bbee-bfedc6e57f70"})
+    database[db.PROJECTS].insert_one({"project_id": "1f251606-bdba-40c4-bbee-bfedc6e57f70"})
     database[db.DRIVERS].insert_many([dict(DRIVER), dict(DRIVER_WITHOUT_DISCOUNTS)])
     database[db.DISCOUNTS].insert_one(dict(DISCOUNT))
     database[db.USERS].insert_many(
@@ -106,15 +131,102 @@ def test_configuration_not_found(client):
 
 
 def test_project_found(client):
-    response = client.get("/anagraphics/1f251606-bdba-40c4-bbee-bfedc6e57f70")
+    response = client.get("/projects/1f251606-bdba-40c4-bbee-bfedc6e57f70")
     assert response.status_code == 200
     assert response.json() == {"project_id": "1f251606-bdba-40c4-bbee-bfedc6e57f70"}
 
 
 def test_project_not_found(client):
-    response = client.get("/anagraphics/unknown")
+    response = client.get("/projects/unknown")
     assert response.status_code == 404
     assert response.json() == {"error": "PROJECT_NOT_FOUND", "project_id": "unknown"}
+
+
+OWNER_UID = "8ff93901-673e-44ba-b05b-56011395dcba"
+
+
+def a_project(submission_id: str, owner_uid: str = OWNER_UID) -> dict:
+    return {
+        "owner_uid": owner_uid,
+        "submission_id": submission_id,
+        "review": {"driver_uid": DRIVER_UID, "preset": True},
+        "billing": {"discount_code": DISCOUNT_CODE},
+    }
+
+
+def test_create_project(client):
+    response = client.post("/projects", json=a_project("invio-000000000000001"))
+    assert response.status_code == 201
+    project = response.json()
+    # L'id lo genera anagraphics: un UUID v4 in forma canonica.
+    assert len(project["project_id"]) == 36 and project["project_id"][14] == "4"
+    assert project["owner_uid"] == OWNER_UID
+    assert project["state"] == "PREANALYSIS"
+    assert project["review"] == {"driver_uid": DRIVER_UID, "preset": True}
+    assert project["billing"] == {
+        "discount_code": DISCOUNT_CODE,
+        "autonomous_work": False,
+        "ambassador_uid": None,
+    }
+    assert "referral" not in project
+    assert project["created_at"]
+
+    stored = client.get(f"/projects/{project['project_id']}")
+    assert stored.status_code == 200
+    assert stored.json()["submission_id"] == "invio-000000000000001"
+
+
+def test_create_project_twice_returns_the_same(client):
+    first = client.post("/projects", json=a_project("invio-000000000000002"))
+    second = client.post("/projects", json=a_project("invio-000000000000002"))
+    assert first.status_code == 201
+    assert second.status_code == 200
+    assert second.json()["project_id"] == first.json()["project_id"]
+    assert database[db.PROJECTS].count_documents({"submission_id": "invio-000000000000002"}) == 1
+
+
+def test_create_project_with_submission_of_another_user(client):
+    client.post("/projects", json=a_project("invio-000000000000003"))
+    response = client.post("/projects", json=a_project("invio-000000000000003", "un-altro"))
+    assert response.status_code == 409
+    assert response.json() == {"error": "SUBMISSION_EXISTS"}
+
+
+def test_create_project_without_review_and_billing(client):
+    body = {"owner_uid": OWNER_UID, "submission_id": "invio-000000000000006"}
+    project = client.post("/projects", json=body).json()
+    assert project["review"] == {"driver_uid": None, "preset": False}
+    assert project["billing"]["discount_code"] is None
+    assert project["billing"]["ambassador_uid"] is None
+
+
+def test_create_project_with_ambassador(client):
+    body = a_project("invio-000000000000007")
+    body["billing"] = {"ambassador_uid": DRIVER_UID}
+    project = client.post("/projects", json=body).json()
+    assert project["billing"]["ambassador_uid"] == DRIVER_UID
+
+
+def test_create_project_invalid_body(client):
+    response = client.post("/projects", json={"owner_uid": OWNER_UID})
+    assert response.status_code == 400
+    assert response.json() == {"error": "INVALID_BODY"}
+
+
+def test_create_project_ignores_chosen_id(client):
+    body = {**a_project("invio-000000000000004"), "project_id": "scelto-da-fuori"}
+    response = client.post("/projects", json=body)
+    assert response.status_code == 201
+    assert response.json()["project_id"] != "scelto-da-fuori"
+
+
+def test_delete_project(client):
+    project_id = client.post("/projects", json=a_project("invio-000000000000005")).json()["project_id"]
+    assert client.delete(f"/projects/{project_id}").status_code == 204
+    assert client.get(f"/projects/{project_id}").status_code == 404
+    response = client.delete(f"/projects/{project_id}")
+    assert response.status_code == 404
+    assert response.json() == {"error": "PROJECT_NOT_FOUND", "project_id": project_id}
 
 
 def test_driver_found(client):
@@ -127,7 +239,7 @@ def test_drivers_list(client):
     response = client.get("/drivers")
     assert response.status_code == 200
     # Ordinati per uid: 639718a3… viene prima di 7633be3d…
-    # Solo uid e screen_name: `username` non deve comparire nella lista.
+    # Solo uid, screen_name ed enabled: `username` non deve comparire nella lista.
     assert response.json() == {"drivers": [DRIVER_WITHOUT_DISCOUNTS_SUMMARY, DRIVER_SUMMARY]}
 
 
@@ -232,6 +344,44 @@ def test_session_keeps_free_data(client):
     assert created.status_code == 201
     assert created.json()["data"] == {"subsystem": "preanalyst", "role": "driver"}
     client.delete(f"/sessions/{token}")
+
+
+def test_user_locale(client):
+    response = client.put(f"/users/{USERNAME}/locale", json={"locale": "it"})
+    assert response.status_code == 200
+    assert response.json()["locale"] == "it"
+    assert "credential" not in response.json()
+    assert client.get(f"/users/{USERNAME}").json()["locale"] == "it"
+
+
+def test_user_locale_of_unknown_user(client):
+    response = client.put("/users/nessuno@example.com/locale", json={"locale": "it"})
+    assert response.status_code == 404
+    assert response.json()["error"] == "USER_NOT_FOUND"
+
+
+def test_locale_must_be_a_language_code(client):
+    for body in ({"locale": "Italiano"}, {"locale": ""}, {}):
+        response = client.put(f"/users/{USERNAME}/locale", json=body)
+        assert response.status_code == 400
+        assert response.json() == {"error": "INVALID_BODY"}
+
+
+def test_session_locale(client):
+    token = "token-di-prova-0000000000000009"
+    payload = {**a_session(token), "data": {"screen_name": "Dome"}}
+    assert client.post("/sessions", json=payload).status_code == 201
+    response = client.put(f"/sessions/{token}/locale", json={"locale": "en"})
+    assert response.status_code == 200
+    # Gli altri dati di sessione restano.
+    assert response.json()["data"] == {"screen_name": "Dome", "locale": "en"}
+    client.delete(f"/sessions/{token}")
+
+
+def test_session_locale_of_unknown_session(client):
+    response = client.put("/sessions/token-sconosciuto-00000000/locale", json={"locale": "en"})
+    assert response.status_code == 404
+    assert response.json() == {"error": "SESSION_NOT_FOUND"}
 
 
 def test_session_expired_is_still_returned(client):
@@ -347,7 +497,7 @@ def test_ip_outside_pool_is_rejected():
     outsider = TestClient(app, client=OUTSIDER)
     paths = (
         "/configuration/front-gate",
-        "/anagraphics/1f251606-bdba-40c4-bbee-bfedc6e57f70",
+        "/projects/1f251606-bdba-40c4-bbee-bfedc6e57f70",
         "/drivers",
         f"/drivers/{DRIVER_UID}",
         f"/drivers/{DRIVER_UID}/discounts",
@@ -366,6 +516,8 @@ def test_ip_outside_pool_is_rejected():
     for response in (
         outsider.post("/sessions", json=a_session("token-da-fuori-000000000000001")),
         outsider.delete("/sessions/qualsiasi"),
+        outsider.post("/projects", json=a_project("invio-da-fuori-0000001")),
+        outsider.delete("/projects/1f251606-bdba-40c4-bbee-bfedc6e57f70"),
     ):
         assert response.status_code == 403
         assert response.json() == {"error": "IP_NOT_ALLOWED"}
@@ -378,7 +530,7 @@ def test_unknown_route(client):
 
 
 def test_method_not_allowed(client):
-    response = client.post("/anagraphics/1f251606-bdba-40c4-bbee-bfedc6e57f70")
+    response = client.post("/projects/1f251606-bdba-40c4-bbee-bfedc6e57f70")
     assert response.status_code == 405
     assert response.json() == {"error": "METHOD_NOT_ALLOWED"}
 
@@ -388,7 +540,7 @@ def test_database_unavailable(client, monkeypatch):
         raise ServerSelectionTimeoutError("localhost:27017: connection refused")
 
     monkeypatch.setattr(db, "find_project", unreachable)
-    response = client.get("/anagraphics/1f251606-bdba-40c4-bbee-bfedc6e57f70")
+    response = client.get("/projects/1f251606-bdba-40c4-bbee-bfedc6e57f70")
     assert response.status_code == 503
     assert response.json() == {"error": "DATABASE_UNAVAILABLE"}
 
@@ -402,3 +554,39 @@ def test_internal_error(monkeypatch):
     response = client.get("/configuration/front-gate")
     assert response.status_code == 500
     assert response.json() == {"error": "INTERNAL_ERROR"}
+
+
+# --- configurazione all'avvio: niente default, se manca qualcosa non si parte
+
+
+def test_settings_from_configuration():
+    loaded = settings.load_settings()
+    assert (loaded.host, loaded.port) == ("127.0.0.1", 8100)
+    assert loaded.allowed_ips == frozenset({"127.0.0.1", "::1"})
+    assert loaded.mongo_server_selection_timeout_ms == 5000
+
+
+def test_settings_without_bootstrap_variable(monkeypatch):
+    monkeypatch.delenv("WEBTOOLS_MONGO_DB")
+    with pytest.raises(settings.ConfigurationError, match="WEBTOOLS_MONGO_DB"):
+        settings.load_settings()
+
+
+def test_settings_without_configuration_document(monkeypatch):
+    # Un database senza la collection `configuration`: non si crea niente.
+    monkeypatch.setenv("WEBTOOLS_MONGO_DB", "webtools_test_empty")
+    with pytest.raises(settings.ConfigurationError, match="nessuna configurazione"):
+        settings.load_settings()
+
+
+def test_settings_with_missing_field():
+    database[db.CONFIGURATION].replace_one(
+        {"subsystem": "anagraphics"}, {"subsystem": "anagraphics", "access": {}}
+    )
+    try:
+        with pytest.raises(settings.ConfigurationError, match="access.allowed_ips"):
+            settings.load_settings()
+    finally:
+        database[db.CONFIGURATION].replace_one(
+            {"subsystem": "anagraphics"}, ANAGRAPHICS_CONFIGURATION
+        )

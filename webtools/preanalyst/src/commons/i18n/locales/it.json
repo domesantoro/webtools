@@ -1,0 +1,683 @@
+{
+  "common": {
+    "locale": {
+      "name": "Italiano",
+      "label": "Lingua"
+    },
+    "brand": {
+      "tagline": "strumenti su misura",
+      "home": "Home"
+    }
+  },
+  "sso": {
+    "login": {
+      "title": "Entra",
+      "username": "Username",
+      "password": "Password",
+      "submit": "Entra",
+      "no_account": "Non hai un account?",
+      "register": "Registrati",
+      "errors": {
+        "invalid_credentials": "Username o password non validi.",
+        "unavailable": "Il servizio non è raggiungibile. Riprova tra poco."
+      }
+    },
+    "register": {
+      "title": "Registrati",
+      "closed": "La registrazione non è ancora attiva: per ora gli account li creiamo noi.",
+      "back_to_login": "Torna al login"
+    }
+  },
+  "preanalyst": {
+    "form": {
+      "required": "obbligatorio"
+    },
+    "page": {
+      "title": "Pre-analisi",
+      "description": "L'ingresso della pre-analisi: si racconta che cosa serve e noi capiamo se possiamo risolverlo.",
+      "eyebrow": "Primo passo",
+      "heading": "Raccontaci che cosa ti serve.",
+      "lead": "Da qui comincia la pre-analisi: ci racconti il tuo problema e noi capiamo se è una cosa che possiamo risolvere, e come. Non serve sapere nulla di informatica: rispondi con parole tue, e quello che non sai lascialo in bianco.",
+      "submit": "Manda la richiesta"
+    },
+    "dialogs": {
+      "title": "Serve un account",
+      "unavailable_lead": "L'accesso non è raggiungibile in questo momento: non si può proseguire.",
+      "unavailable_hint": "Quello che hai scritto resta qui finché non chiudi la pagina.",
+      "close": "Chiudi",
+      "submit": {
+        "lead": "Per mandare la richiesta serve un account.",
+        "hint": "Il login si apre in una finestra a parte: quello che hai scritto qui resta. Finito il login, premi di nuovo «Manda la richiesta»."
+      },
+      "upload": {
+        "lead": "Per caricare un'analisi serve un account.",
+        "hint": "Il login si apre in una finestra a parte. Il file che hai scelto resta qui e parte appena sei dentro."
+      }
+    },
+    "access": {
+      "logout": "Esci",
+      "unreachable": "Accesso non raggiungibile",
+      "login": "Entra",
+      "register": "Registrati"
+    },
+    "ambassador_box": {
+      "title": "Invito",
+      "lead": "Ti ha invitato a usare webtools."
+    },
+    "driver_box": {
+      "title": "Driver",
+      "resolved_lead": "È la persona che segue il tuo progetto: valida l'analisi e ti accompagna fino alla demo.",
+      "lead": "Il driver è la persona che segue il tuo progetto: valida l'analisi e ti accompagna fino alla demo.",
+      "drivers_unavailable": "In questo momento non riusciamo a dirti chi è il driver del tuo link. Non va perso: lo controlliamo noi quando leggiamo la tua richiesta.",
+      "discount_applied": "Codice sconto valido: <strong>{percentage}%</strong>.",
+      "discount_expired": "Questo codice sconto non è applicabile: con ogni probabilità è scaduto. Vai avanti lo stesso: al tuo progetto assegniamo noi un driver.",
+      "link_driver": "quello del link",
+      "discount_driver_missing": "Questo codice sconto non è applicabile: il driver a cui è collegato, {driver}, non si trova più. Contattalo per farti dare un codice nuovo. Puoi anche andare avanti così: al tuo progetto assegniamo noi un driver.",
+      "discount_driver_disabled": "Questo codice sconto non è applicabile: il driver a cui è collegato, <strong>{name}</strong>, non è abilitato a seguire progetti, e con lui non possiamo proseguire. Contattalo. Puoi anche andare avanti così: al tuo progetto assegniamo noi un driver.",
+      "driver_disabled": "Il driver di questo link, <strong>{name}</strong>, non è abilitato a seguire progetti, e con lui non possiamo proseguire. Contattalo. Puoi anche andare avanti così: al tuo progetto assegniamo noi un driver.",
+      "driver_unknown": "Il driver di questo link non si trova più. Contattalo per farti dare un link nuovo. Puoi anche andare avanti così: al tuo progetto assegniamo noi un driver.",
+      "driver_unknown_with_uid": "Il driver di questo link (<code>{uid}</code>) non si trova più. Contattalo per farti dare un link nuovo. Puoi anche andare avanti così: al tuo progetto assegniamo noi un driver.",
+      "ignored_discount": "Con il lavoro autonomo il codice sconto di {name} non viene applicato.",
+      "ignored_driver": "Con il lavoro autonomo il progetto non viene attribuito a {name}."
+    },
+    "driver_work": {
+      "title": "Lavoro autonomo",
+      "own_link": "Il link che hai usato è tuo: non si applica.",
+      "checkbox": "È un lavoro autonomo.",
+      "hint": "Il progetto lo segui tu: al prezzo non si aggiunge la quota del driver. Lo paghi a consumo con i tuoi token, più la fee di sistema.",
+      "more": "Vuoi saperne di più?"
+    },
+    "upload": {
+      "title": "Analisi già pronta",
+      "lead": "Hai già un'analisi? Caricala o trascinala qui.",
+      "choose": "Scegli un file o trascinalo qui",
+      "limit": "File .md con il codice del progetto, fino a {mb} MB",
+      "send": "Carica",
+      "clear": "Rimuovi",
+      "status": {
+        "finish_login": "Finisci il login nella finestra che si è aperta.",
+        "in_progress": "Caricamento in corso…",
+        "done": "Caricato: {name}",
+        "failed": "Non è riuscito. Riprova."
+      },
+      "errors": {
+        "NOT_LOGGED": "Serve l'accesso per caricare un file.",
+        "FILE_TOO_LARGE": "Il file è troppo grande.",
+        "EMPTY_FILE": "Il file è vuoto.",
+        "MISSING_FILE_NAME": "Manca il nome del file.",
+        "NOT_UTF8": "Il file non è un testo: serve un file .md.",
+        "INVALID_FRONT_MATTER": "L'intestazione del file (il blocco tra le righe ---) non è leggibile.",
+        "MISSING_PROJECT_ID": "Nell'intestazione del file manca project_id.",
+        "INVALID_PROJECT_ID": "Il project_id nel file non è un codice di progetto valido.",
+        "PROJECT_NOT_FOUND": "Il project_id nel file non corrisponde a nessun tuo progetto.",
+        "SSO_UNAVAILABLE": "L'accesso non risponde. Il file non è stato salvato: riprova tra qualche minuto.",
+        "ANAGRAPHICS_UNAVAILABLE": "Un servizio non risponde. Il file non è stato salvato: riprova tra qualche minuto.",
+        "WORKSPACES_UNAVAILABLE": "Un servizio non risponde. Il file non è stato salvato: riprova tra qualche minuto."
+      }
+    },
+    "messages": {
+      "back": "Vai alla pre-analisi",
+      "not_logged": {
+        "title": "Serve l'accesso",
+        "text": "Per mandare la richiesta, o per vedere un'analisi, serve l'accesso."
+      },
+      "missing": {
+        "title": "Richiesta incompleta",
+        "text": "Manca la risposta a «Che cosa ti serve?». Torna indietro e completala."
+      },
+      "invalid": {
+        "title": "Richiesta non valida",
+        "text": "La richiesta non è stata registrata. Ricarica la pre-analisi e mandala di nuovo."
+      },
+      "too_large": {
+        "title": "Richiesta troppo lunga",
+        "text": "La richiesta supera la lunghezza massima e non è stata registrata. Accorcia le risposte e riprova."
+      },
+      "unavailable": {
+        "title": "Servizio non raggiungibile",
+        "text": "La richiesta non è stata registrata perché un servizio non risponde. Riprova tra qualche minuto."
+      },
+      "not_found": {
+        "title": "Analisi non trovata",
+        "text": "Questa analisi non esiste, oppure appartiene a un altro account."
+      }
+    },
+    "analysis": {
+      "title": "Analisi"
+    },
+    "login_done": {
+      "title": "Accesso",
+      "ok_head": "Accesso eseguito",
+      "failed_head": "Accesso non riuscito",
+      "ok_text": "Puoi chiudere questa finestra e tornare alla pre-analisi. Se non si chiude da sola, torna alla finestra di prima e ricarica la pagina.",
+      "failed_text": "Il login non è andato a buon fine. Chiudi questa finestra e riprova dalla pre-analisi.",
+      "back": "Vai alla pre-analisi"
+    },
+    "questions": {
+      "sections": {
+        "problem": {
+          "legend": "Il problema",
+          "hint": "La parte che conta davvero. Il resto sono dettagli che ci aiutano a capirla meglio."
+        },
+        "usage": {
+          "legend": "Chi lo usa e dove"
+        },
+        "skill": {
+          "legend": "Che cosa deve saper fare",
+          "hint": "Non sono funzioni del tuo strumento, ma capacità che potrebbe dovergli servire. Segna solo quelle di cui sei sicuro: il resto si vede dopo."
+        },
+        "boundaries": {
+          "legend": "Che cosa NON deve fare",
+          "hint": "Anche i confini aiutano: dire «i pagamenti li gestisco altrove» ci risparmia un giro."
+        },
+        "data": {
+          "legend": "I dati"
+        }
+      },
+      "fields": {
+        "need": {
+          "label": "Che cosa ti serve?",
+          "hint": "Raccontalo con parole tue, come lo diresti a un amico. Non serve essere precisi.",
+          "placeholder": "Esempio: gestisco un piccolo magazzino di ricambi e tengo tutto su un quaderno. Vorrei sapere in ogni momento che cosa ho, che cosa sta finendo e dove l'ho messo."
+        },
+        "today": {
+          "label": "Come fai adesso?",
+          "options": {
+            "spreadsheet": "Con un foglio Excel o Google Sheets",
+            "paper": "Su carta: quaderno, agenda, foglietti",
+            "messages": "A messaggi, mail, WhatsApp",
+            "other_software": "Con un programma che non mi va bene",
+            "none": "Non lo faccio ancora: vorrei cominciare"
+          }
+        },
+        "pain": {
+          "label": "Che cosa ti fa perdere più tempo, o ti fa sbagliare?",
+          "hint": "Se c'è un momento della settimana in cui dici «che rottura», è quello che ci interessa."
+        },
+        "users": {
+          "label": "Chi lo userà?",
+          "options": {
+            "only_me": "Solo io",
+            "few": "Io e poche altre persone (2–5)",
+            "group": "Un gruppo più grande",
+            "external": "Anche persone di fuori: clienti, soci, pubblico"
+          }
+        },
+        "devices": {
+          "label": "Da dove lo userete?",
+          "hint": "Più di una risposta, se serve.",
+          "options": {
+            "computer": "Computer",
+            "mobile": "Telefono",
+            "tablet": "Tablet"
+          }
+        },
+        "skills": {
+          "label": "Allo strumento servirà:",
+          "options": {
+            "attachments": "Tenere foto e documenti allegati",
+            "images": "Ritagliare, rimpicciolire o marchiare le immagini",
+            "ocr": "Leggere il testo dentro foto e scansioni",
+            "barcodes": "Leggere o creare codici a barre e QR",
+            "pdf": "Creare PDF: schede, report, ricevute",
+            "word_templates": "Riempire modelli Word già pronti",
+            "invoices": "Creare fatture o ricevute",
+            "import": "Leggere file Excel o CSV già esistenti",
+            "export": "Esportare in Excel o CSV",
+            "charts": "Disegnare grafici e statistiche",
+            "search": "Cercare liberamente dentro tutti i dati",
+            "dates": "Fare i conti sulle date: scadenze, giorni lavorativi, turni",
+            "validations": "Controllare codici fiscali, partite IVA, IBAN",
+            "email": "Mandare email",
+            "reminders": "Avvisare da solo quando scade qualcosa",
+            "calendar": "Gestire un calendario o delle prenotazioni",
+            "maps": "Mostrare mappe, indirizzi e distanze",
+            "signature": "Raccogliere una firma fatta sullo schermo",
+            "login": "Dare a ognuno la sua password, e decidere chi vede che cosa",
+            "audit_log": "Tenere lo storico di chi ha cambiato cosa"
+          }
+        },
+        "skills_other": {
+          "label": "Altro",
+          "hint": "Serve qualcosa che non è nell'elenco? Scrivilo in una riga, secco. Ma scrivi solo se hai le idee chiare: se sei nel dubbio lascia in bianco, è una cosa di cui parliamo meglio dopo. Qui vanno anche le cose che si appoggiano a un servizio esterno da configurare — pagamenti, WhatsApp, Google — che si possono fare, ma vanno viste caso per caso.",
+          "placeholder": "Esempio: leggere la temperatura da un sensore in cella frigorifera"
+        },
+        "out_of_scope": {
+          "label": "C'è qualcosa che vuoi tenere fuori?",
+          "hint": "Cose che continuerai a fare altrove, parti che non ti interessano, o che hai già visto andare male in un altro progetto.",
+          "placeholder": "Esempio: i pagamenti li gestisco con il commercialista, non devono entrarci. E non voglio che i clienti possano vedere i prezzi di acquisto."
+        },
+        "volume": {
+          "label": "Quante voci, all'incirca?",
+          "options": {
+            "tens": "Qualche decina",
+            "hundreds": "Qualche centinaio",
+            "thousands": "Migliaia",
+            "unknown": "Non saprei"
+          }
+        },
+        "personal_data": {
+          "label": "Ci finiranno dati di altre persone (nomi, contatti, dati di salute)?",
+          "hint": "Non è un problema: cambia solo come li teniamo.",
+          "options": {
+            "none": "No",
+            "contacts": "Sì: nomi e contatti",
+            "sensitive": "Sì, e qualcuno è delicato (salute, minori, denaro)",
+            "unknown": "Non saprei"
+          }
+        },
+        "existing_data": {
+          "label": "Hai già dei dati da portare dentro?",
+          "options": {
+            "none": "No, si parte da zero",
+            "file": "Sì, in un file (Excel, CSV)",
+            "paper": "Sì, ma su carta",
+            "other_software": "Sì, dentro un altro programma"
+          }
+        }
+      }
+    }
+  },
+  "front_gate": {
+    "nav": {
+      "what": "Che cos’è",
+      "examples": "Esempi",
+      "how": "Come funziona",
+      "pricing": "Quanto costa",
+      "work_with_us": "Lavora con noi",
+      "label": "Navigazione principale",
+      "contacts": "Contatti",
+      "open_menu": "Apri menu"
+    },
+    "start": "Inizia",
+    "footer": {
+      "faq": "FAQ"
+    },
+    "index": {
+      "title": "Webtools — piccoli strumenti software su misura",
+      "description": "Piccoli strumenti digitali costruiti su misura per necessità precise. Si aprono con un link, senza installare nulla.",
+      "hero": {
+        "eyebrow": "Software piccolo, per esigenze precise",
+        "heading": "Un software per quella cosa lì.",
+        "text": "Un webtool è un piccolo strumento digitale creato per risolvere una necessità precisa. Si apre con un link, funziona dal browser e puoi usarlo da computer, tablet o telefono, senza installare nulla.",
+        "link_what": "Capisci che cos’è",
+        "link_examples": "Guarda qualche esempio"
+      },
+      "stage": {
+        "label": "Esempio illustrativo di webtool per archivio cantina",
+        "window_title": "cantina.local / bottiglie",
+        "brand": "Cantina",
+        "nav": {
+          "bottles": "Bottiglie",
+          "shelves": "Scaffali",
+          "vintages": "Annate",
+          "to_drink": "Da bere"
+        },
+        "heading": "Le mie bottiglie",
+        "updated": "138 bottiglie · aggiornato oggi",
+        "add": "+ aggiungi",
+        "metrics": {
+          "stored": "in cantina",
+          "ready": "pronte",
+          "low": "scorte basse"
+        },
+        "float": {
+          "label": "Finestra ideale",
+          "text": "12 bottiglie da bere entro 6 mesi"
+        }
+      },
+      "small": {
+        "heading": "Piccolo non vuol dire generico.",
+        "text": "Il punto è costruire solo quello che serve. Nessuna piattaforma enorme da imparare, nessun pacchetto pieno di funzioni che resteranno spente."
+      },
+      "league": {
+        "title": "Classifica per un torneo",
+        "text": "Squadre, risultati e classifica aggiornati secondo le regole del tuo torneo."
+      },
+      "tools": {
+        "title": "Inventario attrezzi",
+        "text": "Una mappa semplice di cosa c’è, dove si trova e cosa manca.",
+        "drills": "Trapani",
+        "shelf_a2": "Scaffale A2",
+        "bits": "Punte",
+        "drawer_4": "Cassetto 4",
+        "wrenches": "Chiavi",
+        "north_wall": "Parete nord",
+        "discs": "Dischi",
+        "shelf_b1": "Scaffale B1",
+        "gloves": "Guanti",
+        "pairs": "12 paia",
+        "silicone": "Silicone",
+        "tubes": "3 tubi"
+      },
+      "docs": {
+        "title": "Smistamento documenti",
+        "text": "Carichi file, li classifichi con le tue regole e li ritrovi senza scavare in cartelle infinite."
+      },
+      "value": {
+        "text": "Un incarico, un risultato. Dopo l’accettazione della demo ricevi il software completo, il codice sorgente e lo ZIP con le istruzioni. Non c’è un canone da continuare a pagare.",
+        "sources": "sorgenti inclusi",
+        "no_subscription": "nessun abbonamento",
+        "yours": "software tuo",
+        "link": "Vedi cosa comprende"
+      }
+    },
+    "common": {
+      "standard_price": "prezzo standard"
+    },
+    "regions": {
+      "piemonte": "Piemonte",
+      "sicilia": "Sicilia",
+      "marche": "Marche",
+      "toscana": "Toscana"
+    },
+    "files": {
+      "invoice": "fattura_0326.pdf",
+      "administration": "Amministrazione",
+      "minutes": "verbale_assemblea.pdf",
+      "minutes_category": "Verbali",
+      "quote": "preventivo_falegname.pdf",
+      "suppliers": "Fornitori",
+      "meter_photo": "foto_contatore.jpg",
+      "property": "Immobile"
+    },
+    "what": {
+      "title": "Che cos’è un webtool",
+      "description": "Uno strumento digitale piccolo e focalizzato, costruito per una necessità precisa e usabile direttamente dal browser.",
+      "eyebrow": "Che cos’è",
+      "heading": "Uno strumento piccolo, focalizzato, tuo.",
+      "lead": "Un webtool nasce per fare bene una cosa precisa. Lo apri con un link, lo usi dal browser e non devi installare nulla sul dispositivo.",
+      "url": "mio-tool.it",
+      "not_an_app": {
+        "heading": "Non è un’app da cercare nello store.",
+        "text1": "È un piccolo software accessibile via web. Questo gli permette di funzionare su computer, tablet e telefono senza distribuire versioni diverse.",
+        "text2": "Può tenere dati, applicare regole, fare calcoli, organizzare informazioni o rendere più semplice un’attività ripetitiva.",
+        "points": {
+          "link": "Si apre con un link.",
+          "need": "È costruito intorno a una necessità definita.",
+          "lean": "Non porta con sé funzioni inutili.",
+          "source": "Alla consegna ricevi anche il codice sorgente."
+        }
+      },
+      "scale": {
+        "heading": "La scala giusta conta.",
+        "text": "Un webtool ha senso quando il problema è troppo specifico per essere risolto bene da un prodotto generico, ma abbastanza circoscritto da non richiedere un grande progetto software.",
+        "need": {
+          "title": "Una necessità precisa",
+          "text": "Per esempio: tenere un archivio, applicare poche regole, raccogliere disponibilità, registrare manutenzioni."
+        },
+        "scope": {
+          "title": "Un perimetro chiaro",
+          "text": "Si decide prima cosa deve fare lo strumento. Quello è il confine del lavoro e anche il criterio con cui viene valutato."
+        },
+        "no_platform": {
+          "title": "Niente piattaforma gigante",
+          "text": "Non è un gestionale universale e non prova a sostituire un intero ecosistema di software."
+        }
+      },
+      "practice": {
+        "label": "in pratica",
+        "value": "1 link",
+        "text": "La tecnologia resta sullo sfondo. Per usarlo non serve conoscere framework, server o architetture: serve sapere cosa deve fare lo strumento.",
+        "link": "Vedi casi concreti"
+      }
+    },
+    "how": {
+      "steps": {
+        "spec": {
+          "title": "Definisci la specifica",
+          "text": "Descrive in modo concreto cosa deve fare il webtool. Puoi prepararla con un prompt guidato da usare con l’AI che preferisci."
+        },
+        "review": {
+          "title": "La specifica viene valutata",
+          "text": "Si verifica che il lavoro sia adatto a questo formato e che il perimetro sia sufficientemente chiaro. Non è previsto un lungo ciclo di chiarimenti."
+        },
+        "accept": {
+          "title": "Accetti la specifica",
+          "text": "Se la proposta è accettabile, la specifica viene marcata come definitiva. Da quel momento è il riferimento per lo sviluppo e per la verifica del risultato."
+        },
+        "develop": {
+          "title": "Il webtool viene sviluppato",
+          "text": "Non devi seguire il lavoro passo passo. Il momento successivo in cui intervieni è la demo."
+        },
+        "demo": {
+          "title": "Vedi la demo",
+          "text": "La demo non apre una fase di revisioni. Serve a scegliere se accettare o rifiutare il webtool così come è stato sviluppato rispetto alla specifica.",
+          "yes": "Accetti → si prosegue",
+          "no": "Rifiuti → il processo termina, senza pagamento"
+        },
+        "pay": {
+          "title": "Paghi solo dopo l’accettazione",
+          "text": "Se accetti la demo, paghi il prezzo concordato. Il prezzo standard del webtool è {price}."
+        },
+        "zip": {
+          "title": "Ricevi lo ZIP",
+          "text": "La consegna comprende il software completo, il codice sorgente e le istruzioni per installarlo."
+        },
+        "after": {
+          "title": "Dopo la consegna",
+          "text": "Se il software non rispetta la specifica accettata, gli interventi necessari a renderlo conforme sono gratuiti. Nuove funzioni o cambi di idea appartengono invece a un nuovo lavoro."
+        }
+      },
+      "title": "Come funziona",
+      "description": "Dalla specifica alla demo, fino alla consegna del software e del codice sorgente.",
+      "eyebrow": "Come funziona",
+      "heading": "Prima si decide cosa deve fare. Poi si costruisce.",
+      "lead": "Il percorso è corto e ha confini chiari. La specifica definisce il lavoro; la demo serve a decidere se accettare il risultato.",
+      "map": {
+        "label": "Sintesi del processo",
+        "spec": "specifica",
+        "review": "valutazione",
+        "develop": "sviluppo",
+        "demo": "demo",
+        "payment": "pagamento",
+        "zip": "ZIP"
+      }
+    },
+    "contacts": {
+      "title": "Contatti",
+      "description": "Contatto diretto per informazioni sul servizio webtools.",
+      "eyebrow": "Contatti",
+      "heading": "Una mail basta.",
+      "panel": {
+        "title": "Contatto diretto",
+        "text": "Questa pagina resterà volutamente semplice: un indirizzo email e le sole informazioni operative necessarie.",
+        "placeholder": "Indirizzo email da inserire prima della pubblicazione",
+        "placeholder_note": "La specifica non fornisce un recapito reale, quindi qui non ne viene inventato uno."
+      }
+    },
+    "examples": {
+      "title": "Esempi di webtool",
+      "description": "Esempi concreti di piccoli strumenti digitali su misura: archivi, classifiche, registri, preventivi, turni e altro.",
+      "eyebrow": "Esempi",
+      "heading": "La scala si capisce meglio guardandola.",
+      "lead": "Questi sono esempi del tipo di strumenti che possono essere costruiti. Non sono prodotti pronti da scegliere: ciascun webtool nasce da una specifica esigenza.",
+      "cellar": {
+        "title": "Archivio della cantina",
+        "text": "Bottiglie, annate, scaffali e note di degustazione in un archivio fatto per la propria collezione.",
+        "count": "138 bottiglie"
+      },
+      "league": {
+        "text": "Inserisci i risultati e ottieni la classifica secondo le regole che hai deciso.",
+        "head": "Torneo",
+        "round": "giornata 8",
+        "final": "Finale",
+        "final_time": "sab 18:30"
+      },
+      "library": {
+        "title": "Archivio libri o dischi",
+        "text": "Una collezione personale con campi e filtri scelti in base a come la usi davvero.",
+        "head": "Scaffale",
+        "count": "267 elementi"
+      },
+      "garage": {
+        "title": "Registro manutenzione auto o moto",
+        "text": "Scadenze, interventi, chilometraggio e documenti senza trasformare tutto in un gestionale.",
+        "head": "Garage",
+        "date1": "12/09/26",
+        "oil": "Cambio olio",
+        "km1": "84.200 km",
+        "date2": "03/07/26",
+        "tyres": "Pneumatici",
+        "km2": "81.050 km",
+        "date3": "20/01/26",
+        "inspection": "Revisione",
+        "km3": "74.900 km"
+      },
+      "quote": {
+        "title": "Preventivatore con poche regole specifiche",
+        "text": "Un calcolo che oggi vive in un foglio, in una tabella o nella testa di chi prepara i preventivi.",
+        "head": "Preventivo",
+        "new": "nuovo",
+        "kind": "Tipo intervento · manutenzione",
+        "hours": "Ore previste · 6",
+        "materials": "Materiali · 145 €",
+        "travel": "Trasferta · 24 km",
+        "total": "Totale calcolato",
+        "amount": "612,00 €"
+      },
+      "shifts": {
+        "title": "Turni e disponibilità",
+        "text": "Un piccolo gruppo indica quando c’è. Il coordinatore vede il quadro senza rincorrere messaggi.",
+        "head": "Disponibilità",
+        "week": "settimana 38",
+        "days": {
+          "mon": "L",
+          "tue": "M",
+          "wed": "M",
+          "thu": "G",
+          "fri": "V"
+        }
+      },
+      "inventory": {
+        "title": "Inventario di attrezzi o materiali",
+        "text": "Cosa c’è, quanto ce n’è e dove si trova. Con le categorie che servono a quel laboratorio.",
+        "head": "Magazzino",
+        "count": "41 voci",
+        "shelf_a": "Scaffale A",
+        "shelf_a_items": "Trapani · smerigliatrice · avvitatori",
+        "shelf_b": "Scaffale B",
+        "shelf_b_items": "Dischi · punte · lame",
+        "drawers": "Cassetti",
+        "drawers_items": "Viteria · tasselli · fascette",
+        "consumables": "Consumabili",
+        "consumables_items": "Guanti · silicone · nastro"
+      },
+      "garden": {
+        "title": "Diario dell’orto",
+        "text": "Semine, trapianti, raccolti e note legate alle parcelle, non a un modello agricolo generico.",
+        "head": "Orto",
+        "month": "settembre"
+      },
+      "docs": {
+        "title": "Classificazione di documenti",
+        "text": "Una piccola coda di file da assegnare a categorie, pratiche o destinazioni definite dal tuo flusso di lavoro.",
+        "head": "Documenti",
+        "pending_count": "12 da classificare",
+        "file_minutes": "verbale_18_09.pdf",
+        "pending": "in attesa",
+        "file_invoice": "fattura_392.pdf",
+        "minutes_note": "riunioni e assemblee",
+        "administration_note": "fatture e pagamenti",
+        "property_note": "documenti tecnici"
+      }
+    },
+    "work_with_us": {
+      "title": "Lavora con noi",
+      "description": "Lavorare con webtools: ambassador, driver, lavoro autonomo.",
+      "eyebrow": "Lavora con noi",
+      "heading": "Tre modi di lavorare con webtools.",
+      "lead": "Tutti e tre partono dalla registrazione come driver, il nostro collaboratore.",
+      "ambassador": {
+        "title": "Diventa ambassador",
+        "text1": "Dopo esserti registrato come driver, puoi invitare altre persone a usare webtools.",
+        "text2": "Se il progetto di una persona che hai invitato va a buon fine, cioè il cliente accetta la demo e paga, il 50% della fee di sistema va a te.",
+        "text3": "Per invitare qualcuno generi un link dalla tua area driver e glielo mandi."
+      },
+      "driver": {
+        "title": "Driver",
+        "text1": "Il driver segue i progetti dei clienti: valida l’analisi e li accompagna fino alla demo. Gran parte del guadagno per singolo progetto va a te; al sistema resta una piccola fee.",
+        "text2": "Quando ti registri puoi chiedere di diventare driver abilitato. Facciamo un colloquio e, se va bene, potrai seguire i progetti procacciati da te o quelli assegnati a te dal sistema.",
+        "text3": "Da quel momento puoi generare i tuoi link personali: chi arriva da un tuo link ha te come driver. Potrai addirittura decidere di applicare piccoli sconti ai tuoi clienti."
+      },
+      "autonomous": {
+        "title": "Lavoro autonomo",
+        "text1": "Da driver (abilitato o meno) puoi usare webtools per i tuoi progetti e pagarlo a consumo con i tuoi token, più la fee di sistema.",
+        "text2": "I token sono il credito del tuo account driver, e li usi proprio per svolgere lavori autonomi. A ogni passaggio (pre-analisi, analisi, sviluppo) il sistema scala i token consumati.",
+        "text3": "Il codice è tuo: puoi usarlo, rivenderlo o farne quello che vuoi. In caso, puoi anche cancellare il codice dal nostro sistema: così hai una certezza semideterministica dell’unicità del codice stesso.",
+        "note": "Se i token non bastano, il sistema ti avvisa via mail. Dopo la ricarica puoi sbloccare le pipeline ferme."
+      },
+      "note_label": "Nota 1",
+      "back_to_text": "Torna al testo"
+    },
+    "pricing": {
+      "faq": {
+        "recurring": {
+          "question": "Ci sono costi ricorrenti?",
+          "answer": "No per il webtool in sé. Potrebbero esistere costi esterni, per esempio VPS, dominio o servizi di terze parti necessari al funzionamento."
+        },
+        "source": {
+          "question": "Ricevo davvero il codice sorgente?",
+          "answer": "Sì. Il codice sorgente completo fa parte della consegna insieme al software e alle istruzioni."
+        },
+        "others": {
+          "question": "Posso farlo modificare da qualcun altro?",
+          "answer": "Sì. Il software consegnato è nella tua disponibilità e puoi farlo modificare da chi vuoi."
+        },
+        "compliance": {
+          "question": "Cosa succede se dopo la consegna c’è qualcosa che non rispetta la specifica?",
+          "answer": "Gli interventi necessari a riportare il software alla specifica accettata sono gratuiti."
+        },
+        "new_feature": {
+          "question": "E se voglio aggiungere una nuova funzione?",
+          "answer": "Una nuova funzione o un cambio di idea non è una correzione di conformità. Il lavoro consegnato non evolve dentro lo stesso incarico."
+        },
+        "hosting": {
+          "question": "L’hosting è incluso?",
+          "answer": "No. VPS, dominio e altri costi infrastrutturali esterni non sono compresi nel prezzo standard."
+        },
+        "heading": "Domande frequenti"
+      },
+      "package": {
+        "yours": {
+          "title": "Il software è tuo",
+          "text": "Puoi usarlo, modificarlo, farlo modificare, riutilizzarlo e disporne liberamente."
+        },
+        "no_fee": {
+          "title": "Nessun canone",
+          "text": "Non viene venduta assistenza continuativa e non c’è un abbonamento legato al webtool."
+        },
+        "not_exclusive": {
+          "title": "Il codice non è esclusivo",
+          "text": "La consegna ti dà piena disponibilità del tuo software, ma non impedisce il riuso di strutture, componenti o soluzioni analoghe in altri lavori."
+        },
+        "external_costs": {
+          "title": "Costi esterni separati",
+          "text": "VPS, dominio ed eventuali servizi di terze parti non fanno parte dei {price}."
+        },
+        "installation": {
+          "title": "Installazione",
+          "text": "Se hai già un VPS e serve una mano per installare il webtool, l’installazione può essere eseguita senza costi aggiuntivi."
+        },
+        "label": "Contenuto illustrativo del pacchetto consegnato",
+        "delivery": "consegna",
+        "software": "software completo",
+        "included": "incluso",
+        "source": "codice sorgente",
+        "instructions": "istruzioni di installazione",
+        "included_plural": "incluse",
+        "fixes": "correzioni di conformità"
+      },
+      "title": "Quanto costa",
+      "description": "Il prezzo standard di un webtool è {price}. Software completo, sorgenti e ZIP inclusi, senza canone.",
+      "heading": "Paghi il webtool. Non un abbonamento.",
+      "lead": "Il prezzo standard comprende il software completo, il codice sorgente, lo ZIP e le istruzioni per installarlo. Il pagamento avviene solo dopo che hai visto e accettato la demo.",
+      "after_demo": {
+        "label": "dopo la demo",
+        "question": "accetti?",
+        "text": "Se la risposta è no, il processo termina: non paghi i {price} e non ricevi il software. Se la risposta è sì, paghi e ricevi il pacchetto completo.",
+        "link": "Vedi il percorso completo"
+      }
+    }
+  }
+}

@@ -22,7 +22,7 @@ import nunjucks from "nunjucks";
 
 import { loginUrl, registerUrl } from "./commons/sso_client.js";
 import { SECTIONS } from "./questions.js";
-import { isResolved, OWN_LINK } from "./referral.js";
+import { DISCOUNT_DRIVER_DISABLED, isResolved, OWN_LINK } from "./driver_link.js";
 
 const TEMPLATES_DIR = fileURLToPath(new URL("../templates/", import.meta.url));
 
@@ -41,11 +41,14 @@ const env = nunjucks.configure(TEMPLATES_DIR, {
 // driver è stato riconosciuto si manda il suo uid; quando non si è potuto
 // risolvere niente, si rimanda indietro quello che era arrivato — se il guasto
 // è nostro, non deve pagarlo l'utente.
-function hiddenFields(referral, params, driversAvailable) {
+function hiddenFields(driverLink, params, driversAvailable) {
   const campi = [];
-  if (params.discountCode) campi.push({ name: "discount", value: params.discountCode });
-  if (driversAvailable && isResolved(referral)) {
-    campi.push({ name: "driver", value: referral.driver.uid });
+  // Lo sconto di un driver non abilitato non si applica: non viaggia col form.
+  if (params.discountCode && driverLink.state !== DISCOUNT_DRIVER_DISABLED) {
+    campi.push({ name: "discount", value: params.discountCode });
+  }
+  if (driversAvailable && isResolved(driverLink)) {
+    campi.push({ name: "driver", value: driverLink.driver.uid });
   } else if (!driversAvailable && params.driverUid) {
     campi.push({ name: "driver", value: params.driverUid });
   }
@@ -61,21 +64,25 @@ function afterLogin(settings) {
   return `${settings.publicUrl}/login-done`;
 }
 
-// I due pezzi che dipendono da chi è entrato. Sono gli stessi macro usati dalla
+// La sezione "Lavoro autonomo" della pagina "Lavora con noi" del sito vetrina.
+function workWithUsUrl(settings) {
+  return `${settings.frontGateUrl}/lavora-con-noi.html#lavoro-autonomo`;
+}
+
+// I pezzi che dipendono da chi è entrato. Sono gli stessi macro usati dalla
 // pagina, quindi quella appena caricata e quella aggiornata dal browser non
 // possono divergere.
 // I pezzi da rimpiazzare dopo il login, ognuno col selettore del contenitore.
 // Non si rimpiazza la colonna destra intera: dentro c'è il blocco del
 // caricamento, e rifarlo butterebbe via il file che l'utente ha già scelto.
-export function renderAccessFragments(access, settings, colonna) {
+export function renderAccessFragments(ui, access, settings, colonna) {
   const dati = accessData(access, settings);
-  const aside = asideData(colonna);
+  const aside = asideData({ ...colonna, moreUrl: workWithUsUrl(settings) });
   return {
     logged: dati.logged,
     fragments: {
-      "[data-sso-header]": env.render("fragments/access_header.njk", { access: dati }),
-      "[data-sso-gate]": env.render("fragments/access_gate.njk", { access: dati }),
-      "[data-sso-driver]": env.render("fragments/driver.njk", { aside }),
+      "[data-sso-header]": env.render("fragments/access_header.njk", { ...ui, access: dati }),
+      "[data-sso-driver]": env.render("fragments/driver.njk", { ...ui, aside }),
     },
   };
 }
@@ -83,34 +90,117 @@ export function renderAccessFragments(access, settings, colonna) {
 // La colonna destra: il box del driver e, solo per un driver, il blocco del
 // lavoro autonomo. Può essere vuota — chi arriva senza link e non è un driver
 // non ha niente da vedere lì — e in quel caso la pagina resta a una colonna.
-function asideData({ referral, params, showDriverBox, driversAvailable, isDriver }) {
-  const ownLink = referral.state === OWN_LINK;
+function asideData({ driverLink, params, showDriverBox, driversAvailable, ambassador, isDriver, moreUrl }) {
+  const ownLink = driverLink.state === OWN_LINK;
   // Un link proprio non si mostra: il box sparisce e a dirlo è il blocco del
   // lavoro autonomo, che per un driver c'è comunque.
   const boxShow = showDriverBox && !ownLink;
-  const resolved = driversAvailable && isResolved(referral);
+  const resolved = driversAvailable && isResolved(driverLink);
 
   return {
     driver_box: {
       show: boxShow,
       drivers_available: driversAvailable,
       resolved,
-      referral,
+      link: driverLink,
       // L'avviso ha senso solo se c'è una casella da segnare e qualcosa di
       // valido da non applicare: un driver che guarda un riferimento a un altro
       // driver, riconosciuto. Su uno sconto scaduto non c'è niente da ignorare.
       can_be_ignored: boxShow && isDriver && resolved,
-      hidden: hiddenFields(referral, params, driversAvailable),
+      hidden: hiddenFields(driverLink, params, driversAvailable),
+    },
+    // Chi ha invitato l'utente a usare webtools (src/ambassador.js). C'è solo
+    // se l'ambassador è stato riconosciuto; con il lavoro autonomo segnato lo
+    // spegne il CSS.
+    ambassador_box: {
+      show: Boolean(ambassador),
+      driver: ambassador,
     },
     driver_work: {
       show: isDriver,
       own_link: ownLink,
+      more_url: moreUrl,
     },
   };
 }
 
-export function renderLoginDone({ ok }) {
-  return env.render("login_done.njk", { title: "Accesso", noindex: true, ok });
+// Le pagine di esito dell'invio e dell'analisi, quando qualcosa non va.
+// Una frase su che cosa è successo, una su che cosa fare: i testi stanno nei
+// cataloghi, sotto `preanalyst.messages.<tipo>.title` e `.text`.
+//
+// `ui`, in ogni pagina resa qui, è quello che dà `settings.i18n.pageContext(…)`:
+// lingua, `t` e selettore della lingua, che il layout comune usa su ogni pagina.
+export function renderMessage(ui, kind) {
+  const message = {
+    title: ui.t(`preanalyst.messages.${kind}.title`),
+    text: ui.t(`preanalyst.messages.${kind}.text`),
+  };
+  return env.render("message.njk", { ...ui, title: message.title, noindex: true, home_link: "/", message });
+}
+
+// La pagina dell'analisi: per ora solo il guscio, con chi è entrato in testata.
+export function renderAnalysis(ui, { access, settings }) {
+  return env.render("analysis.njk", {
+    ...ui,
+    title: ui.t("preanalyst.analysis.title"),
+    noindex: true,
+    home_link: "/",
+    access: accessData(access, settings),
+  });
+}
+
+export function renderLoginDone(ui, { ok }) {
+  return env.render("login_done.njk", { ...ui, title: ui.t("preanalyst.login_done.title"), noindex: true, ok });
+}
+
+// Le domande di `src/questions.js` con i loro testi nella lingua della pagina.
+// `hint` e `placeholder` ci sono solo se il catalogo li ha.
+function localizedSections(ui) {
+  const optional = (key) => (ui.has(key) ? ui.t(key) : null);
+  return SECTIONS.map((section) => {
+    const base = `preanalyst.questions.sections.${section.id}`;
+    return {
+      ...section,
+      legend: ui.t(`${base}.legend`),
+      hint: optional(`${base}.hint`),
+      fields: section.fields.map((field) => {
+        const key = `preanalyst.questions.fields.${field.name}`;
+        return {
+          ...field,
+          label: ui.t(`${key}.label`),
+          hint: optional(`${key}.hint`),
+          placeholder: optional(`${key}.placeholder`),
+          options: field.options?.map(([code]) => [code, ui.t(`${key}.options.${code}`)]),
+        };
+      }),
+    };
+  });
+}
+
+// I messaggi del caricamento (public/upload.js): il browser non ha cataloghi,
+// li riceve dalla pagina già nella lingua giusta. Un codice d'errore senza testo
+// cade su `failed`.
+const UPLOAD_ERRORS = [
+  "NOT_LOGGED",
+  "FILE_TOO_LARGE",
+  "EMPTY_FILE",
+  "MISSING_FILE_NAME",
+  "NOT_UTF8",
+  "INVALID_FRONT_MATTER",
+  "MISSING_PROJECT_ID",
+  "INVALID_PROJECT_ID",
+  "PROJECT_NOT_FOUND",
+  "SSO_UNAVAILABLE",
+  "ANAGRAPHICS_UNAVAILABLE",
+  "WORKSPACES_UNAVAILABLE",
+];
+
+function uploadMessages(ui) {
+  const status = ["finish_login", "in_progress", "done", "failed"];
+  return {
+    ...Object.fromEntries(status.map((name) => [name, ui.t(`preanalyst.upload.status.${name}`)])),
+    errors: Object.fromEntries(UPLOAD_ERRORS.map((code) => [code, ui.t(`preanalyst.upload.errors.${code}`)])),
+  };
 }
 
 function accessData(access, settings) {
@@ -126,26 +216,38 @@ function accessData(access, settings) {
   };
 }
 
-export function renderPage({
-  referral,
+export function renderPage(ui, {
+  driverLink,
   params,
   showDriverBox,
   driversAvailable,
+  ambassador,
   isDriver,
   access,
   settings,
+  submissionId,
 }) {
   return env.render("page.njk", {
-    title: "Pre-analisi",
-    description:
-      "L'ingresso della pre-analisi: si racconta che cosa serve e noi capiamo se possiamo risolverlo.",
+    ...ui,
+    submission_id: submissionId,
+    title: ui.t("preanalyst.page.title"),
+    description: ui.t("preanalyst.page.description"),
     home_link: "/",
-    sections: SECTIONS,
+    sections: localizedSections(ui),
     access: accessData(access, settings),
-    aside: asideData({ referral, params, showDriverBox, driversAvailable, isDriver }),
+    aside: asideData({
+      driverLink,
+      params,
+      showDriverBox,
+      driversAvailable,
+      ambassador,
+      isDriver,
+      moreUrl: workWithUsUrl(settings),
+    }),
     upload: {
       max_mb: Math.round(settings.uploadMaxBytes / (1024 * 1024)),
       accept: settings.uploadAccept,
+      messages: uploadMessages(ui),
     },
   });
 }

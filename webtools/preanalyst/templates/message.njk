@@ -1,0 +1,21 @@
+{% extends "commons/base.njk" %}
+
+{#
+  Una pagina con un messaggio solo: l'esito di un invio andato storto, o
+  un'analisi che non si può mostrare. I testi stanno nei cataloghi, sotto
+  `preanalyst.messages.<tipo>`.
+#}
+
+{% block main %}
+    <div class="container gate done">
+      <div class="done-card card">
+        <div class="card-head">{{ message.title }}</div>
+        <div class="done-body">
+          <p class="done-lead">{{ message.text }}</p>
+          <p class="done-alt">
+            <a class="text-link" href="/">{{ t("preanalyst.messages.back") }}</a>
+          </p>
+        </div>
+      </div>
+    </div>
+{% endblock %}

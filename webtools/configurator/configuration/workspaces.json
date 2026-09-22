@@ -1,0 +1,10 @@
+{
+  "listen": { "host": "127.0.0.1", "port": 8400 },
+  "access": {
+    "allowed_ips": ["127.0.0.1", "::1"]
+  },
+  "storage": {
+    "root": "~/webtools_data/workspaces",
+    "spec_max_bytes": 10485760
+  }
+}

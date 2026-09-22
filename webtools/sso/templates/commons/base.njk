@@ -1,5 +1,5 @@
 {#
-  Layout comune dei siti webtool: guscio della pagina, testata e marchio.
+  Layout comune dei siti webtools: guscio della pagina, testata e marchio.
 
   NON MODIFICARE LA COPIA DENTRO UN SOTTOSISTEMA.
   L'originale è `webtools/commons/templates/base.njk`; le copie le distribuisce
@@ -11,10 +11,15 @@
       {% block main %}…{% endblock %}
 
   Variabili attese:
-    title        obbligatoria: finisce nel <title>, seguita da " — webtool"
+    title        obbligatoria: finisce nel <title>, seguita da " — webtools"
     description   facoltativa: <meta name="description">
     noindex       facoltativa: se vera, chiede ai motori di non indicizzare
     home_link     facoltativa: se c'è, il marchio diventa un link a quell'indirizzo
+    locale, t, locale_switch
+                  obbligatorie: la lingua, la traduzione e il selettore della
+                  lingua. Le dà `i18n.pageContext(request, url)` (vedi
+                  webtools/commons/i18n/webtools_i18n.js): il sottosistema le
+                  aggiunge ai dati di ogni pagina.
 
   Blocchi:
     head             roba in più dentro <head>
@@ -27,11 +32,11 @@
   sotto un percorso qualsiasi (per esempio /ui/login), e con un percorso relativo
   il browser andrebbe a cercarli accanto alla pagina, dove non ci sono.
 #}<!doctype html>
-<html lang="it">
+<html lang="{{ locale }}">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{{ title }} — webtool</title>
+  <title>{{ title }} — webtools</title>
   {%- if description %}
   <meta name="description" content="{{ description }}">
   {%- endif %}
@@ -48,14 +53,14 @@
   <header class="site-header">
     <div class="container header-inner">
       {%- if home_link %}
-      <a class="brand" href="{{ home_link }}" aria-label="Home">
+      <a class="brand" href="{{ home_link }}" aria-label="{{ t('common.brand.home') }}">
         <span class="brand-mark">w</span>
-        <span class="brand-stack">webtool<small>strumenti su misura</small></span>
+        <span class="brand-stack">webtools<small>{{ t("common.brand.tagline") }}</small></span>
       </a>
       {%- else %}
-      <span class="brand" aria-label="webtool">
+      <span class="brand" aria-label="webtools">
         <span class="brand-mark">w</span>
-        <span class="brand-stack">webtool<small>strumenti su misura</small></span>
+        <span class="brand-stack">webtools<small>{{ t("common.brand.tagline") }}</small></span>
       </span>
       {%- endif %}
       {%- block header_extra %}{% endblock %}
@@ -65,6 +70,12 @@
   <main class="page-main">
     {%- block main %}{% endblock %}
   </main>
+
+  <footer class="site-footer">
+    <div class="container footer-inner">
+      {% include "commons/locale_switch.njk" %}
+    </div>
+  </footer>
 </div>
 {%- block scripts %}{% endblock %}
 </body>

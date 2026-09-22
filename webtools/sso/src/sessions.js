@@ -12,7 +12,8 @@
 //     expires_at: quando smette di valere
 //     data:       dati di sessione, liberi. Oggi contiene la fotografia
 //                 dell'utente al momento del login (screen_name, driver_uid),
-//                 così leggere una sessione non costa una seconda lettura.
+//                 così leggere una sessione non costa una seconda lettura, e
+//                 la lingua (locale), che cambia con il selettore delle pagine.
 //   }
 //
 // La fotografia invecchia: se cambia lo `screen_name`, le sessioni già aperte
@@ -29,7 +30,8 @@ export function newToken() {
   return randomBytes(TOKEN_BYTES).toString("base64url");
 }
 
-export function buildSession(user, ttlSeconds, now = new Date()) {
+// `locale`: la lingua della sessione, già decisa da chi fa il login.
+export function buildSession(user, ttlSeconds, now = new Date(), locale = null) {
   const issuedAt = new Date(now.getTime());
   const expiresAt = new Date(now.getTime() + ttlSeconds * 1000);
   return {
@@ -41,6 +43,7 @@ export function buildSession(user, ttlSeconds, now = new Date()) {
     data: {
       screen_name: user.screen_name ?? null,
       driver_uid: user.driver_uid ?? null,
+      locale,
     },
   };
 }

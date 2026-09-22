@@ -1,5 +1,5 @@
 /* ==========================================================
-   commons — stile condiviso dell'ecosistema webtool
+   commons — stile condiviso dell'ecosistema webtools
    "bottega digitale": carta, inchiostro, un solo colore deciso
 
    Contiene solo le parti generalizzabili: font, token, base,
@@ -161,6 +161,45 @@ h1, h2, h3 { font-family: var(--serif); }
   border-radius: calc(var(--radius-sm) - 2px) calc(var(--radius-sm) - 2px) 0 0;
 }
 
+/* ---------- campi ---------- */
+/* Nessun margine: la distanza fra i campi la decide il form che li contiene. */
+.field { display: grid; gap: 8px; border: 0; padding: 0; margin: 0; min-width: 0; }
+.field-label { font-weight: 600; font-size: 15px; padding: 0; }
+.field-hint { color: var(--muted); font-size: 14px; margin: -2px 0 0; line-height: 1.45; }
+.field-hint code, .field code { font-family: var(--mono); font-size: 13px; }
+.required { color: var(--accent); text-decoration: none; border: 0; }
+.input {
+  width: 100%;
+  padding: 12px 14px;
+  color: var(--ink);
+  background: var(--paper);
+  border: 1.5px solid var(--ink);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-hard-sm);
+  transition: border-color .15s ease;
+}
+.input::placeholder { color: var(--muted); opacity: .75; }
+.input:focus-visible {
+  /* Il campo attivo non si muove e l'ombra resta quella di prima: il bordo
+     diventa vermiglio, senza cambiare spessore. */
+  outline: none;
+  border-color: var(--accent);
+}
+textarea.input { resize: vertical; line-height: 1.55; min-height: 80px; }
+
+/* ---------- avvisi ---------- */
+.notice {
+  margin: 0 0 18px;
+  padding: 13px 15px;
+  border: 1.5px solid var(--ink);
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  line-height: 1.5;
+}
+.notice code { font-family: var(--mono); font-size: 12px; word-break: break-all; }
+.notice-ok { background: var(--sage-soft); border-color: var(--sage); }
+.notice-warn { background: var(--note); }
+
 /* ---------- header ---------- */
 .site-header {
   position: sticky;
@@ -275,4 +314,24 @@ details p { color: var(--muted); max-width: 760px; margin: -4px 0 22px; font-siz
   .utility-link { display: none; }
   .header-inner { min-height: 64px; }
   .main-nav { top: 64px; left: 16px; right: 16px; }
+}
+
+/* ---------- piè di pagina e selettore della lingua ---------- */
+.site-footer { border-top: 1.5px solid var(--ink); padding: 30px 0 40px; color: var(--muted); font-family: var(--mono); font-size: 12px; }
+.footer-inner { display: flex; justify-content: space-between; align-items: center; gap: 20px; }
+.footer-links { display: flex; gap: 20px; }
+.footer-links a { color: var(--ink-2); }
+.footer-links a:hover { color: var(--accent-ink); }
+.footer-end { display: flex; align-items: center; gap: 20px; }
+.footer-end .locale-switch { padding-left: 20px; border-left: 1px solid var(--line); }
+
+.locale-switch { display: flex; align-items: center; gap: 6px; font: 500 12px var(--mono); letter-spacing: .06em; }
+.locale-switch button { border: 0; background: none; padding: 2px 0; color: var(--muted); font: inherit; letter-spacing: inherit; cursor: pointer; }
+.locale-switch button:hover { color: var(--ink); }
+.locale-switch button[aria-current="true"] { color: var(--ink); text-decoration: underline; text-decoration-color: var(--accent); text-decoration-thickness: 2px; text-underline-offset: 4px; }
+.locale-sep { color: var(--line-strong); }
+
+@media (max-width: 680px) {
+  .footer-inner { align-items: flex-start; flex-direction: column; }
+  .footer-links { flex-wrap: wrap; }
 }

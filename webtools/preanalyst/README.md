@@ -1,7 +1,12 @@
 # webtools_preanalyst
 
-Il **cancello della pre-analisi**: una sola pagina, resa dal server, da cui il cliente entra nel
-flusso. Node, con **nunjucks** per le pagine (unica dipendenza).
+La **pre-analisi**: la pagina da cui il cliente entra nel flusso e, in futuro, la chat di analisi.
+Node, con **nunjucks** per le pagine e **yaml** per il front matter delle specifiche.
+
+- `POST /submit`: il form crea il progetto (anagraphics) con la sua pre-specifica .md
+  (webtools-workspaces) e manda a `/analysis/{id}`, per ora vuota.
+- `POST /upload`: una specifica .md già pronta, con il `project_id` nel front matter, per un
+  progetto dell'utente.
 
 Documentazione completa: `docs/subsystems/preanalyst/README.md` (nella root del workspace).
 
@@ -15,15 +20,11 @@ webtools/preanalyst/webtools_preanalyst.sh --stop    # ferma
 - PID: `webtools_preanalyst.pid`. Log: `webtools_preanalyst.log` (in append).
 - `--stop` ferma solo il processo del file PID, e solo dopo aver verificato che sia
   `node …/webtools/preanalyst/src/index.js`.
-- Debug in primo piano, da questa cartella: `npm start` (Ctrl+C per fermarlo).
-- Dopo un `git clone` o un cambio di versione: `npm install` (una sola dipendenza, nunjucks).
+- Debug in primo piano, da questa cartella: `set -a; source ../configurator/bootstrap.env; set +a; npm start` (Ctrl+C per fermarlo).
+- Dopo un `git clone` o un cambio di versione: `npm install`.
 
-**Servono anche anagraphics e sso accesi**: il primo per driver e sconti, il secondo per
-l'accesso.
-```sh
-webtools/anagraphics/webtools_anagraphics.sh --start
-webtools/sso/webtools_sso.sh --start
-```
+**Servono anche anagraphics, sso e webtools-workspaces accesi**. `webtools/configurator/start.sh`
+li avvia tutti nell'ordine giusto.
 
 ## La pagina (`http://127.0.0.1:8200`)
 
@@ -44,8 +45,10 @@ si trova, la tendina è bloccata.
 | `?discount=`, driver dello sconto non trovato | "Non è applicabile: il driver non si trova, contattalo" |
 | `?driver=`, uid trovato | Nome del driver nel box, nessun avviso |
 | `?driver=`, uid non trovato | "Il driver di questo link non si trova, contattalo" |
+| `?driver=` o `?discount=`, driver non abilitato | "Non è abilitato a seguire progetti, con lui non possiamo proseguire: contattalo"; il driver lo assegniamo noi e lo sconto non si applica |
 | Tutti e due i parametri | Vince `discount`; `driver` viene ignorato e la cosa finisce nel log |
 | Elenco dei driver irraggiungibile | `200`: il box dice che non riesce a identificarlo, e il form resta compilabile |
+| `?ambassador=<uid>` senza gli altri due, uid di un driver | Box "Invito" con il nome; sparisce se si segna il lavoro autonomo. Uid sconosciuto: nessun box |
 
 Le letture verso anagraphics le fa **questo server**, mai il browser: anagraphics accetta solo
 chiamate dagli IP del suo pool.
@@ -53,8 +56,8 @@ chiamate dagli IP del suo pool.
 ## L'accesso
 
 La pagina si compila **anche da sloggati**: il conto serve per proseguire, e lo si chiede lì. In
-testata c'è "Entra" oppure il nome di chi è entrato con "Esci"; sotto il bottone d'invio c'è il
-riquadro che chiede di entrare o registrarsi.
+testata c'è "Entra" oppure il nome di chi è entrato con "Esci". Il bottone d'invio è abilitato solo
+per chi è entrato; da sloggati sotto c'è il riquadro che chiede di entrare o registrarsi.
 
 Il login **si apre in una finestra a parte**, di proposito: quello che si è scritto nel form non è
 salvato da nessuna parte, e se il login sostituisse questa pagina andrebbe perso. Finito il login
@@ -70,9 +73,10 @@ Il dialogo col sso sta tutto in `src/commons/sso_client.js`, che è una copia ge
 
 ## Stile e parti comuni
 
-- `public/commons.css`, `public/fonts/`, `src/commons/sso_client.js`, `public/sso_popup.js` e
-  `templates/commons/base.njk` sono **copie generate** dal deployer: non modificarle qui. Si
-  modificano gli originali in `webtools/commons/` e si lancia `webtools/configurator/deploy.sh`.
+- `public/commons.css`, `public/fonts/`, `src/commons/sso_client.js`,
+  `src/commons/configuration_client.js`, `public/sso_popup.js` e `templates/commons/base.njk`
+  sono **copie generate** dal deployer: non modificarle qui. Si modificano gli originali in
+  `webtools/commons/` e si lancia `webtools/configurator/deploy.sh`.
 
 ## Dov'è l'HTML
 
@@ -85,21 +89,14 @@ il motivo principale della scelta: qui ogni valore arriva dall'URL o dal databas
 - `public/styles.css` è lo stile **locale** di questa pagina, e si modifica a mano.
 - `public/assets/mark.svg` è una copia a mano di quello del front-gate.
 
-## Variabili d'ambiente
+## Configurazione
 
-Si passano con `--start`, per esempio `PORT=8300 ./webtools_preanalyst.sh --start`.
-
-| Variabile | Default |
-|---|---|
-| `HOST` | `127.0.0.1` |
-| `PORT` | `8200` |
-| `ANAGRAPHICS_URL` | `http://127.0.0.1:8100` |
-| `ANAGRAPHICS_TIMEOUT_MS` | `5000` |
-| `PUBLIC_URL` | `http://127.0.0.1:8200` |
-| `SSO_URL` | `http://127.0.0.1:8300` |
-| `SSO_TIMEOUT_MS` | `5000` |
-| `COOKIE_NAME` | `webtools_preanalyst` |
+Letta all'avvio da anagraphics (`GET /configuration/preanalyst`); la fonte è
+`webtools/configurator/configuration/preanalyst.json`. Nessun default: se manca qualcosa il
+server non parte e il log dice quale campo. Dall'ambiente arrivano solo le variabili di
+`webtools/configurator/bootstrap.env`, che `--start` carica da sé. Il significato dei campi è
+nella documentazione completa (§8).
 
 ## Test
 
-Non ce ne sono ancora: è un buco noto, non una scelta. Il primo candidato è `src/referral.js`.
+Non ce ne sono ancora: è un buco noto, non una scelta. Il primo candidato è `src/driver_link.js`.

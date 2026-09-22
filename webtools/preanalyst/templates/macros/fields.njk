@@ -3,6 +3,8 @@
   Qui non si sa che cosa chiedono le domande: si sa solo come si disegna un campo.
 
   Tipi gestiti: textarea, text, email (campi di testo), radio e checkbox (scelte).
+  I testi (legend, label, hint, placeholder, testo delle opzioni) arrivano già
+  tradotti da `src/page.js`.
 #}
 
 {% macro field_hint(hint) %}
@@ -10,7 +12,7 @@
 {%- endmacro %}
 
 {% macro required_mark(required) %}
-{%- if required %} <abbr class="required" title="obbligatorio">*</abbr>{% endif %}
+{%- if required %} <abbr class="required" title="{{ t('preanalyst.form.required') }}">*</abbr>{% endif %}
 {%- endmacro %}
 
 {# radio e checkbox: stessa struttura, cambiano il tipo e il nome inviato. #}

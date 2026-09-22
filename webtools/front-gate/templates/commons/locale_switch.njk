@@ -1,0 +1,19 @@
+{#-
+  Il selettore della lingua: sta nel piè di pagina, fuori dalla testata e dai
+  menu, perché non è una voce di navigazione.
+
+  NON MODIFICARE LA COPIA DENTRO UN SOTTOSISTEMA: l'originale è
+  `webtools/commons/templates/locale_switch.njk`, distribuito dal template_deployer.
+
+  Mostra i codici (IT / EN); il nome della lingua, scritto nella lingua stessa,
+  sta in `title` e `aria-label`. Ogni tasto manda `POST /locale`, che scrive il
+  cookie comune e torna alla pagina. Vuole `t` e `locale_switch` da
+  `i18n.pageContext` (webtools/commons/i18n/webtools_i18n.js).
+-#}
+<form class="locale-switch" method="post" action="{{ locale_switch.action }}" aria-label="{{ t('common.locale.label') }}">
+  <input type="hidden" name="return_to" value="{{ locale_switch.return_to }}">
+  {%- for choice in locale_switch.choices %}
+  {%- if not loop.first %}<span class="locale-sep" aria-hidden="true">/</span>{% endif %}
+  <button type="submit" name="locale" value="{{ choice.code }}" lang="{{ choice.code }}" title="{{ choice.name }}" aria-label="{{ choice.name }}"{% if choice.current %} aria-current="true"{% endif %}>{{ choice.code | upper }}</button>
+  {%- endfor %}
+</form>

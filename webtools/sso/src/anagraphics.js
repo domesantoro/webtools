@@ -65,6 +65,16 @@ export function findUserCredential(settings, username) {
   return request(settings, `/users/${encode(username)}/credential`);
 }
 
+// PUT /users/{username}/locale { locale } → l'utente, con la lingua preferita.
+export function setUserLocale(settings, username, locale) {
+  return request(settings, `/users/${encode(username)}/locale`, { method: "PUT", body: { locale } });
+}
+
+// PUT /sessions/{token}/locale { locale } → la sessione, con `data.locale`.
+export function setSessionLocale(settings, token, locale) {
+  return request(settings, `/sessions/${encode(token)}/locale`, { method: "PUT", body: { locale } });
+}
+
 // POST /sessions → il documento conservato. Il documento lo costruisce il sso.
 export function createSession(settings, session) {
   return request(settings, "/sessions", { method: "POST", body: session });

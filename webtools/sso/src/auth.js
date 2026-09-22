@@ -1,4 +1,4 @@
-// Le tre operazioni del sso: entrare, sapere chi è entrato, uscire.
+// Le operazioni del sso: entrare, sapere chi è entrato, uscire, cambiare lingua.
 //
 // Qui sta la decisione; il dato sta in anagraphics. Il client di anagraphics si
 // passa da fuori (`client`) perché queste funzioni si possano provare senza
@@ -25,7 +25,9 @@ const unavailable = { ok: false, status: 503, code: ANAGRAPHICS_UNAVAILABLE };
 // vero resta nel log.
 const refused = { ok: false, status: 401, code: INVALID_CREDENTIALS };
 
-export async function login(settings, { username, password }, client = anagraphics) {
+// `locale`: la lingua in cui si stava guardando la pagina di login, se c'è.
+// Vince quella salvata nel profilo; se il profilo non ne ha, si salva questa.
+export async function login(settings, { username, password, locale = null }, client = anagraphics) {
   const userResult = await client.findUser(settings, username);
   if (!userResult.ok) {
     if (userResult.reason === "not_found") {
@@ -56,7 +58,15 @@ export async function login(settings, { username, password }, client = anagraphi
     return refused;
   }
 
-  const session = buildSession(user, settings.sessionTtlSeconds);
+  const sessionLocale = user.locale ?? locale;
+  if (!user.locale && locale) {
+    // Se non si riesce a salvarla il login va avanti lo stesso: la lingua
+    // resta nel cookie e nella sessione.
+    const salvata = await client.setUserLocale(settings, username, locale);
+    if (!salvata.ok) console.error(`[sso] lingua non salvata nel profilo di ${username}: ${salvata.reason}`);
+  }
+
+  const session = buildSession(user, settings.sessionTtlSeconds, new Date(), sessionLocale);
   const created = await client.createSession(settings, session);
   if (!created.ok) {
     // Anche il 409: due token casuali da 32 byte non si scontrano, quindi un
@@ -139,4 +149,22 @@ export async function logout(settings, token, client = anagraphics) {
   // Token sconosciuto o già scaduto: il risultato chiesto — quella sessione non
   // esiste più — è comunque vero. Ripetere il logout non è un errore.
   return { ok: true, status: 200, body: { logged: false } };
+}
+
+// La lingua scelta da chi è entrato: va nella sessione e nel profilo, così il
+// login successivo la ritrova. La lingua delle pagine la decide il cookie
+// comune; questa è la memoria che sopravvive al logout.
+export async function setLocale(settings, token, locale, client = anagraphics) {
+  const current = await readSession(settings, token, client);
+  if (!current.ok || !current.body.logged) return current;
+
+  const updated = await client.setSessionLocale(settings, token, locale);
+  if (!updated.ok) {
+    if (updated.reason === "not_found") return { ok: true, status: 200, body: { logged: false } };
+    return unavailable;
+  }
+  const saved = await client.setUserLocale(settings, current.body.session.username, locale);
+  if (!saved.ok) return unavailable;
+
+  return { ok: true, status: 200, body: { logged: true, session: updated.data } };
 }

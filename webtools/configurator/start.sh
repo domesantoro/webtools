@@ -4,8 +4,9 @@
 #   ./start.sh             avvia i servizi che non sono già in esecuzione
 #   ./start.sh --restart   ferma prima quelli accesi, poi riavvia tutto
 #
-# L'ordine conta: anagraphics tiene i dati e gli altri due lo interrogano, il sso
-# autentica e preanalyst lo usa. All'arresto si va al contrario, così nessuno
+# L'ordine conta: anagraphics tiene i dati e gli altri lo interrogano, il sso
+# autentica, workspaces conserva i file, preanalyst usa tutti e tre, e il sito
+# vetrina (front-gate) viene per ultimo perché è la porta d'ingresso. All'arresto si va al contrario, così nessuno
 # resta acceso a parlare con un servizio che non c'è più.
 #
 # Ogni servizio si avvia e si ferma **con il proprio script di controllo**, che
@@ -17,16 +18,23 @@
 # risponde "è già in esecuzione" e si va avanti. Non si tocca un'istanza che sta
 # lavorando solo perché è stato lanciato questo comando.
 #
-# Il sito vetrina (front-gate) non compare: è statico, non ha un processo.
+# Prima di avviare si carica la configurazione (load_configuration.sh): i
+# servizi la leggono da anagraphics all'avvio, e senza non partono. Un servizio
+# già acceso continua con la configurazione che ha letto quando è partito.
 set -euo pipefail
 
-WEBTOOLS="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+WEBTOOLS="$(cd "$DIR/.." && pwd)"
 
-# nome : script di controllo : indirizzo. L'ordine è quello di avvio.
+# nome : script di controllo. L'ordine è quello di avvio. Il nome è anche quello
+# del file in configuration/ (anagraphics a parte: il suo indirizzo sta in
+# bootstrap.env).
 SERVICES=(
-  "anagraphics:$WEBTOOLS/anagraphics/webtools_anagraphics.sh:http://127.0.0.1:8100"
-  "sso:$WEBTOOLS/sso/webtools_sso.sh:http://127.0.0.1:8300"
-  "preanalyst:$WEBTOOLS/preanalyst/webtools_preanalyst.sh:http://127.0.0.1:8200"
+  "anagraphics:$WEBTOOLS/anagraphics/webtools_anagraphics.sh"
+  "sso:$WEBTOOLS/sso/webtools_sso.sh"
+  "workspaces:$WEBTOOLS/webtools-workspaces/webtools_workspaces.sh"
+  "preanalyst:$WEBTOOLS/preanalyst/webtools_preanalyst.sh"
+  "front-gate:$WEBTOOLS/front-gate/webtools_front_gate.sh"
 )
 
 usage() {
@@ -44,14 +52,27 @@ esac
 
 campo() { cut -d: -f"$1" <<< "$2"; }
 
-# Mongo serve ad anagraphics. Se non risponde, il sistema si avvia lo stesso e
-# risponde 503: meglio dirlo adesso che far cercare il guasto dopo.
-controlla_mongo() {
-  command -v mongosh >/dev/null 2>&1 || return 0
-  if ! mongosh --quiet --eval 'db.runCommand({ping:1})' >/dev/null 2>&1; then
-    echo "!! MongoDB non risponde: anagraphics si avvia ma risponderà 503." >&2
-    echo "   brew services start mongodb-community" >&2
+# L'indirizzo di un servizio, solo da mostrare: si legge da dove sta davvero,
+# così non ce n'è una seconda copia qui.
+indirizzo() {
+  if [[ "$1" == "anagraphics" ]]; then
+    (set -a; source "$DIR/bootstrap.env"; echo "$WEBTOOLS_ANAGRAPHICS_URL")
+    return
   fi
+  python3 -c 'import json, sys; l = json.load(open(sys.argv[1]))["listen"]; print("http://%s:%s" % (l["host"], l["port"]))' \
+    "$DIR/configuration/$1.json" 2>/dev/null || echo "?"
+}
+
+# La configurazione sta in Mongo: se Mongo non risponde, non si carica e nessun
+# servizio parte. Meglio fermarsi qui con un messaggio chiaro.
+carica_configurazione() {
+  echo "== configurazione"
+  if ! "$DIR/load_configuration.sh"; then
+    echo "!! Configurazione non caricata: nessun servizio avviato." >&2
+    echo "   Se MongoDB è spento: brew services start mongodb-community" >&2
+    exit 1
+  fi
+  echo
 }
 
 ferma_tutto() {
@@ -60,7 +81,7 @@ ferma_tutto() {
     local voce="${SERVICES[$i]}"
     local nome script
     nome="$(campo 1 "$voce")"
-    script="$(cut -d: -f2 <<< "$voce")"
+    script="$(campo 2 "$voce")"
     echo "-- $nome"
     "$script" --stop
   done
@@ -70,18 +91,17 @@ ferma_tutto() {
 avvia_tutto() {
   echo "== avvio"
   for voce in "${SERVICES[@]}"; do
-    local nome script indirizzo
+    local nome script
     nome="$(campo 1 "$voce")"
-    script="$(cut -d: -f2 <<< "$voce")"
-    indirizzo="$(cut -d: -f3- <<< "$voce")"
-    echo "-- $nome ($indirizzo)"
+    script="$(campo 2 "$voce")"
+    echo "-- $nome ($(indirizzo "$nome"))"
     # Se un servizio non parte ci si ferma qui: avviare quelli dopo, che
     # dipendono da lui, servirebbe solo a moltiplicare gli errori nei log.
     "$script" --start
   done
 }
 
-controlla_mongo
+carica_configurazione
 # Non `(( restart )) && ferma_tutto`: con restart=0 quella riga vale "falso" e
 # con `set -e` chiuderebbe lo script senza avviare niente.
 if (( restart )); then
@@ -92,5 +112,5 @@ avvia_tutto
 echo
 echo "Sistema avviato."
 for voce in "${SERVICES[@]}"; do
-  echo "  $(campo 1 "$voce"): $(cut -d: -f3- <<< "$voce")"
+  echo "  $(campo 1 "$voce"): $(indirizzo "$(campo 1 "$voce")")"
 done
