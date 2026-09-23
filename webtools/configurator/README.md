@@ -54,12 +54,17 @@ webtools/configurator/start.sh --restart     # carica la configurazione e riavvi
 Un servizio acceso continua con la configurazione letta quando è partito: senza riavvio un cambio
 non ha effetto.
 
-## Avviare tutto
+## Avviare e fermare tutto
 
 ```sh
 webtools/configurator/start.sh             # avvia quello che non è già acceso
 webtools/configurator/start.sh --restart   # ferma prima quelli accesi, poi riavvia tutto
+webtools/configurator/stop.sh              # ferma tutto, in ordine inverso
 ```
+
+`stop.sh` ferma ogni servizio con il suo script di controllo (file PID e riga di comando
+verificata, mai per nome o per porta). Un servizio già spento non è un errore; se uno non si
+ferma, si prosegue con gli altri e alla fine lo script esce con 1.
 
 Prima di avviare, `start.sh` lancia `load_configuration.sh`: se la configurazione non si carica
 (per esempio perché MongoDB è spento) si ferma lì, senza avviare niente. Gli indirizzi che stampa

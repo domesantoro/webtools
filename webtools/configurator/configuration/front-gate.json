@@ -1,8 +1,8 @@
 {
-  "listen": { "host": "127.0.0.1", "port": 8000 },
+  "listen": { "host": "127.0.0.1", "port": 9000 },
   "subsystems_infos": {
     "preanalyst": {
-      "url": "http://127.0.0.1:8200"
+      "url": "http://127.0.0.1:9200"
     }
   },
   "screen_infos": {

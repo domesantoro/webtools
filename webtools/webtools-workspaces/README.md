@@ -7,7 +7,7 @@ Documentazione completa: `docs/subsystems/workspaces/README.md` (nella root del 
 
 ```sh
 npm install                                  # la prima volta, e dopo un cambio di versione
-./webtools_workspaces.sh --start             # porta 8400, in background
+./webtools_workspaces.sh --start             # porta 9400, in background
 ./webtools_workspaces.sh --stop
 npm test
 ```

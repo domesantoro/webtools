@@ -1,5 +1,5 @@
 {
-  "listen": { "host": "127.0.0.1", "port": 8300 },
+  "listen": { "host": "127.0.0.1", "port": 9300 },
   "access": {
     "allowed_ips": ["127.0.0.1", "::1"]
   },
@@ -16,7 +16,7 @@
     "ttl_seconds": 60
   },
   "login": {
-    "allowed_next": ["http://127.0.0.1:8200", "http://localhost:8200"]
+    "allowed_next": ["http://127.0.0.1:9200", "http://localhost:9200"]
   },
   "limits": {
     "body_max_bytes": 4096

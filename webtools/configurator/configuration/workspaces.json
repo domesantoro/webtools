@@ -1,5 +1,5 @@
 {
-  "listen": { "host": "127.0.0.1", "port": 8400 },
+  "listen": { "host": "127.0.0.1", "port": 9400 },
   "access": {
     "allowed_ips": ["127.0.0.1", "::1"]
   },

@@ -69,3 +69,7 @@ webtools_sso in ascolto su http://127.0.0.1:8300 (anagraphics: http://127.0.0.1:
 webtools_sso in ascolto su http://127.0.0.1:8300 (anagraphics: http://127.0.0.1:8100, sessioni: 28800s)
 === start 2026-09-22 14:43:42 ===
 webtools_sso in ascolto su http://127.0.0.1:8300 (anagraphics: http://127.0.0.1:8100, sessioni: 28800s)
+=== start 2026-09-22 15:47:53 ===
+webtools_sso in ascolto su http://127.0.0.1:9300 (anagraphics: http://127.0.0.1:9100, sessioni: 28800s)
+=== start 2026-09-22 15:50:18 ===
+webtools_sso in ascolto su http://127.0.0.1:9300 (anagraphics: http://127.0.0.1:9100, sessioni: 28800s)

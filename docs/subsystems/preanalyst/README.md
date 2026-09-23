@@ -25,8 +25,8 @@ Codice: `webtools/preanalyst/`. Guida breve: `webtools/preanalyst/README.md`.
 | Arresto | `webtools/preanalyst/webtools_preanalyst.sh --stop` |
 | Processo | `…/node …/webtools/preanalyst/src/index.js` |
 | PID / Log | `webtools/preanalyst/webtools_preanalyst.pid` / `webtools/preanalyst/webtools_preanalyst.log` |
-| Indirizzo | `http://127.0.0.1:8200` |
-| Dipende da | `webtools_anagraphics` (8100), `webtools_sso` (8300), `webtools-workspaces` (8400) |
+| Indirizzo | `http://127.0.0.1:9200` |
+| Dipende da | `webtools_anagraphics` (9100), `webtools_sso` (9300), `webtools-workspaces` (9400) |
 | Database | Nessuno: non ha stato proprio |
 | Accesso | La pagina è pubblica e si compila anche da sloggati. Il conto serve per **proseguire** (§7) |
 | Test | Nessuno automatico, per ora (§11) |
@@ -34,9 +34,9 @@ Codice: `webtools/preanalyst/`. Guida breve: `webtools/preanalyst/README.md`.
 
 Prova veloce, con i due server accesi:
 ```sh
-open http://127.0.0.1:8200/
-open "http://127.0.0.1:8200/?discount=e8013cf2-34eb-4bc3-8a34-b08fb24a1bf3"
-open "http://127.0.0.1:8200/?driver=7633be3d-e701-42ca-9fea-6c6d1bb4b7d1"
+open http://127.0.0.1:9200/
+open "http://127.0.0.1:9200/?discount=e8013cf2-34eb-4bc3-8a34-b08fb24a1bf3"
+open "http://127.0.0.1:9200/?driver=7633be3d-e701-42ca-9fea-6c6d1bb4b7d1"
 ```
 
 ---
@@ -420,14 +420,14 @@ Dall'ambiente arrivano solo `WEBTOOLS_ANAGRAPHICS_URL` e `WEBTOOLS_CONFIGURATION
 | Campo | Oggi | A che serve |
 |---|---|---|
 | `listen.host` | `127.0.0.1` | Interfaccia di ascolto |
-| `listen.port` | `8200` | Porta. `8100` è di anagraphics |
-| `public_url` | `http://127.0.0.1:8200` | Il nostro indirizzo visto da fuori: ci torna il browser dopo il login, ed è quello che dichiariamo al sso allo scambio del biglietto |
+| `listen.port` | `9200` | Porta. `9100` è di anagraphics |
+| `public_url` | `http://127.0.0.1:9200` | Il nostro indirizzo visto da fuori: ci torna il browser dopo il login, ed è quello che dichiariamo al sso allo scambio del biglietto |
 | `subsystems_infos.anagraphics.timeout_ms` | `5000` | Taglio delle chiamate verso anagraphics |
-| `subsystems_infos.sso.url` | `http://127.0.0.1:8300` | Dove sta il sso |
+| `subsystems_infos.sso.url` | `http://127.0.0.1:9300` | Dove sta il sso |
 | `subsystems_infos.sso.timeout_ms` | `5000` | Taglio delle chiamate verso il sso |
-| `subsystems_infos.workspaces.url` | `http://127.0.0.1:8400` | Dove sta webtools-workspaces |
+| `subsystems_infos.workspaces.url` | `http://127.0.0.1:9400` | Dove sta webtools-workspaces |
 | `subsystems_infos.workspaces.timeout_ms` | `5000` | Taglio delle chiamate verso workspaces |
-| `subsystems_infos.front_gate.url` | `http://127.0.0.1:8000` | Il sito vetrina: il blocco del lavoro autonomo rimanda alla sua pagina `lavora-con-noi.html`. Solo `http`/`https`: finisce in un `href` |
+| `subsystems_infos.front_gate.url` | `http://127.0.0.1:9000` | Il sito vetrina: il blocco del lavoro autonomo rimanda alla sua pagina `lavora-con-noi.html`. Solo `http`/`https`: finisce in un `href` |
 | `session.cookie_name` | `webtools_preanalyst` | Il **nostro** cookie di sessione. Deve restare diverso da quello del sso |
 | `form.body_max_bytes` | `524288` | Dimensione massima dell'invio del form |
 | `form.answer_max_chars` | `20000` | Oltre, una risposta aperta si tronca |
@@ -522,7 +522,7 @@ Verificato a mano il 2026-09-20, con i due server accesi:
 | Ogni sconto risulta "scaduto" | Anagraphics risponde ma non trova i codici | `mongosh webtools --eval 'db.discounts.find({}, {_id:0}).toArray()'` |
 | Pagina senza stile o font | Deployer mai lanciato dopo aver creato `public/` | `webtools/configurator/style_deployer/deploy.sh` |
 | `--start` dice "già in esecuzione" ma non risponde | PID riciclato da un altro processo | Il controllo su `ps` lo esclude: guarda il log |
-| `EADDRINUSE` nel log | Porta 8200 occupata da altro | Cambiare `listen.port` (e `public_url`) in `configurator/configuration/preanalyst.json`, più gli indirizzi che puntano qui negli altri file (`sso.json`, `front-gate.json`); poi `start.sh --restart` |
+| `EADDRINUSE` nel log | Porta 9200 occupata da altro | Cambiare `listen.port` (e `public_url`) in `configurator/configuration/preanalyst.json`, più gli indirizzi che puntano qui negli altri file (`sso.json`, `front-gate.json`); poi `start.sh --restart` |
 
 ---
 

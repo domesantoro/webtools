@@ -35,7 +35,7 @@ uv run python -m scripts.seed  # indici + dati iniziali (si può rilanciare)
 
 In `discounts` il driver è **ridondato** di proposito (`uid` + `screen_name`): chi legge uno sconto non deve rileggere il driver. Un cambio di `screen_name` va però propagato a mano. `percentage` è in punti percentuali: `5` significa 5%.
 
-## Endpoint (`http://127.0.0.1:8100`)
+## Endpoint (`http://127.0.0.1:9100`)
 
 - `GET /configuration/{subsystem}`: la conf del sottosistema, oppure `404 {"error":"CONFIGURATION_NOT_FOUND","subsystem":…}`.
 - `GET /projects/{project_id}`: il progetto, oppure `404 {"error":"PROJECT_NOT_FOUND","project_id":…}`.

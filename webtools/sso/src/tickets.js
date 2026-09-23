@@ -1,7 +1,7 @@
 // Il biglietto: come si passa una sessione da un indirizzo a un altro.
 //
 // Il problema che risolve. Un cookie appartiene a un indirizzo: il sso, che sta
-// su `127.0.0.1:8300`, non può mettere un cookie per conto di preanalyst, che sta
+// su `127.0.0.1:9300`, non può mettere un cookie per conto di preanalyst, che sta
 // su un altro. E il token della sessione non può viaggiare nell'indirizzo, perché
 // l'indirizzo finisce nella cronologia del browser, nei log dei proxy e nei link
 // che la gente si passa: uno scontrino che vale otto ore non si lascia in giro.
@@ -42,8 +42,8 @@ export function isExpired(ticket, now = new Date()) {
   return expiresAt <= now.getTime();
 }
 
-// Il sottosistema che riceve il biglietto: `http://127.0.0.1:8200` da
-// `http://127.0.0.1:8200/qualcosa?x=1`. È la parte che si confronta con il
+// Il sottosistema che riceve il biglietto: `http://127.0.0.1:9200` da
+// `http://127.0.0.1:9200/qualcosa?x=1`. È la parte che si confronta con il
 // `service` scritto dentro il biglietto.
 export function serviceOf(url) {
   try {

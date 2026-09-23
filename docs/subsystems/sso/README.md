@@ -17,8 +17,8 @@
 | Arresto | `webtools/sso/webtools_sso.sh --stop` |
 | Processo | `…/node …/webtools/sso/src/index.js` |
 | PID / Log | `webtools/sso/webtools_sso.pid` / `webtools/sso/webtools_sso.log` |
-| Indirizzo | `http://127.0.0.1:8300` |
-| Dipende da | `webtools_anagraphics` su `http://127.0.0.1:8100` (deve essere acceso) |
+| Indirizzo | `http://127.0.0.1:9300` |
+| Dipende da | `webtools_anagraphics` su `http://127.0.0.1:9100` (deve essere acceso) |
 | Database | Nessuno: utenti, sessioni e biglietti stanno in anagraphics |
 | Accesso | Solo dagli IP in `access.allowed_ips` della configurazione; gli altri ricevono `403` |
 | Configurazione | Letta all'avvio da anagraphics (`GET /configuration/sso`). Nessun default: se manca, il server non parte (§6) |
@@ -29,10 +29,10 @@
 Prova veloce, con anagraphics e sso accesi:
 ```sh
 # dal browser
-open "http://127.0.0.1:8300/ui/login?next=http://127.0.0.1:8200/"
+open "http://127.0.0.1:9300/ui/login?next=http://127.0.0.1:9200/"
 
 # da riga di comando
-curl -s -X POST http://127.0.0.1:8300/login -H 'content-type: application/json' \
+curl -s -X POST http://127.0.0.1:9300/login -H 'content-type: application/json' \
   -d '{"username":"driver.prova@example.com","password":"<password>"}'
 ```
 
@@ -48,12 +48,12 @@ Queste due cose sono il cuore del sottosistema. Chi le ha chiare capisce tutto i
 
 **Il web non ha memoria.** Ogni richiesta che un browser fa a un server è slegata dalla precedente: se ti sei appena loggato e chiedi un'altra pagina, il server non ha nessun modo di sapere che sei tu. Serve quindi qualcosa che il browser riporti indietro da solo, ogni volta. Le possibilità sono tre: il **cookie** (il server dice al browser «tieni questa stringa e rimandamela sempre», e il browser lo fa da sé, senza JavaScript); il token **dentro l'indirizzo**, che però finisce nella cronologia, nei log dei proxy e nei link che la gente si passa; il **JavaScript** nella pagina, che qui non c'è per scelta, perché le pagine arrivano già fatte dal server. Resta il cookie.
 
-**Un cookie appartiene a un indirizzo solo.** Il sso sta su `127.0.0.1:8300`, preanalyst su `127.0.0.1:8200`: il sso non può mettere un cookie per conto di preanalyst. Ma allora, dopo il login, come fa preanalyst a sapere chi sei?
+**Un cookie appartiene a un indirizzo solo.** Il sso sta su `127.0.0.1:9300`, preanalyst su `127.0.0.1:9200`: il sso non può mettere un cookie per conto di preanalyst. Ma allora, dopo il login, come fa preanalyst a sapere chi sei?
 
 Con un **biglietto**: uno scontrino fatto apposta per viaggiare nell'indirizzo, perché vale **una volta sola** e per **un minuto**.
 
 ```text
-browser                     sso (8300)              preanalyst (8200)        anagraphics (8100)
+browser                     sso (9300)              preanalyst (9200)        anagraphics (9100)
    │                           │                          │                        │
    │ 1. "Entra" ──────────────►│                          │                        │
    │ 2. username + password ──►│  verifica ───────────────────────────────────────►│
@@ -182,7 +182,7 @@ La sessione scaduta non viene cancellata dal sso: la toglie l'indice TTL di anag
 
 ## 5. Riferimento API
 
-URL base: `http://127.0.0.1:8300`. Le risposte JSON hanno `Cache-Control: no-store`.
+URL base: `http://127.0.0.1:9300`. Le risposte JSON hanno `Cache-Control: no-store`.
 
 ### 5.1 Formato degli errori (contratto)
 
@@ -214,7 +214,7 @@ Le rotte JSON seguono il contratto del progetto: stato HTTP corretto e **codice 
 
 `POST /session/locale` mette la lingua nella sessione (`data.locale`) e nel profilo dell'utente in anagraphics. Solo le lingue di `i18n.locales`. Lo chiamano i sottosistemi quando chi è entrato cambia lingua dal selettore (`saveSessionLocale` in `commons/sso/sso_client.js`).
 
-`service` è l'indirizzo del sottosistema che scambia, es. `http://127.0.0.1:8200`: deve combaciare con quello per cui il biglietto è stato emesso.
+`service` è l'indirizzo del sottosistema che scambia, es. `http://127.0.0.1:9200`: deve combaciare con quello per cui il biglietto è stato emesso.
 
 Login ripetuti aprono **sessioni diverse**, tutte valide: chiuderne una non tocca le altre.
 
@@ -269,13 +269,13 @@ Dall'ambiente arrivano solo `WEBTOOLS_ANAGRAPHICS_URL` e `WEBTOOLS_CONFIGURATION
 | Campo | Oggi | Note |
 |---|---|---|
 | `listen.host` | `127.0.0.1` | Interfaccia di ascolto |
-| `listen.port` | `8300` | — |
+| `listen.port` | `9300` | — |
 | `access.allowed_ips` | `["127.0.0.1", "::1"]` | Vale l'IP della connessione; `::ffff:127.0.0.1` è riconosciuto come `127.0.0.1` |
 | `subsystems_infos.anagraphics.timeout_ms` | `5000` | anagraphics aspetta fino a 30 s se Mongo non risponde: qui si taglia prima |
 | `session.cookie_name` | `webtools_sso` | Deve restare diverso dai cookie dei sottosistemi |
 | `session.ttl_seconds` | `28800` (8 ore) | Durata di una sessione dal login |
 | `ticket.ttl_seconds` | `60` | Durata di un biglietto: il tempo di un redirect |
-| `login.allowed_next` | `["http://127.0.0.1:8200", "http://localhost:8200"]` | Dove si può rimandare il browser dopo il login. Solo indirizzi http(s) |
+| `login.allowed_next` | `["http://127.0.0.1:9200", "http://localhost:9200"]` | Dove si può rimandare il browser dopo il login. Solo indirizzi http(s) |
 | `limits.body_max_bytes` | `4096` | Il corpo più grande accettato da login, scambio del biglietto e form |
 | `i18n.locales` | `["en", "it"]` | Le lingue offerte: ognuna ha il suo catalogo in `commons/i18n/locales/` |
 | `i18n.fallback_locale` | `en` | La lingua di riserva, e quella da cui si prendono le chiavi che mancano in un'altra |
@@ -351,7 +351,7 @@ Verificato a mano il 2026-09-21, con anagraphics, sso e preanalyst veri su porte
 
 | Sintomo | Causa probabile | Verifica / rimedio |
 |---|---|---|
-| Ogni chiamata risponde `503 ANAGRAPHICS_UNAVAILABLE` | anagraphics spento o su un'altra porta | `curl http://127.0.0.1:8100/drivers`; controllare `WEBTOOLS_ANAGRAPHICS_URL` in `configurator/bootstrap.env`; il log ha la riga `[anagraphics] …` |
+| Ogni chiamata risponde `503 ANAGRAPHICS_UNAVAILABLE` | anagraphics spento o su un'altra porta | `curl http://127.0.0.1:9100/drivers`; controllare `WEBTOOLS_ANAGRAPHICS_URL` in `configurator/bootstrap.env`; il log ha la riga `[anagraphics] …` |
 | `401` anche con la password giusta | Password mai impostata, o utente `active: false` | Il log dice quale dei due |
 | Dopo il login il browser torna al posto sbagliato | `next` non è in `login.allowed_next`, quindi è stato sostituito | Il log ha `next fuori dagli indirizzi ammessi`; aggiungere l'indirizzo |
 | Il ritorno dal login non logga nessuno | Biglietto scaduto (più di un minuto), già usato, o `service` che non combacia | Il log del sso dice quale dei tre |

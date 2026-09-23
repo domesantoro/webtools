@@ -5,7 +5,7 @@ from pymongo import MongoClient
 # I test usano un database separato, cancellato alla fine. Le variabili sono
 # quelle di configurator/bootstrap.env, con il database di prova.
 TEST_ENV = {
-    "WEBTOOLS_ANAGRAPHICS_URL": "http://127.0.0.1:8100",
+    "WEBTOOLS_ANAGRAPHICS_URL": "http://127.0.0.1:9100",
     "WEBTOOLS_CONFIGURATION_TIMEOUT_MS": "5000",
     "WEBTOOLS_MONGO_URI": "mongodb://localhost:27017",
     "WEBTOOLS_MONGO_DB": "webtools_test",
@@ -442,7 +442,7 @@ def a_ticket(ticket: str, token: str = "token-di-prova-0000000000000100") -> dic
     return {
         "ticket": ticket,
         "token": token,
-        "service": "http://127.0.0.1:8200",
+        "service": "http://127.0.0.1:9200",
         "issued_at": "2026-09-21T10:00:00Z",
         "expires_at": "2026-09-21T10:01:00Z",
     }
@@ -455,7 +455,7 @@ def test_ticket_is_consumed_once(client):
     assert created.json() == {
         "ticket": ticket,
         "token": "token-di-prova-0000000000000100",
-        "service": "http://127.0.0.1:8200",
+        "service": "http://127.0.0.1:9200",
         "issued_at": "2026-09-21T10:00:00Z",
         "expires_at": "2026-09-21T10:01:00Z",
     }
@@ -561,7 +561,7 @@ def test_internal_error(monkeypatch):
 
 def test_settings_from_configuration():
     loaded = settings.load_settings()
-    assert (loaded.host, loaded.port) == ("127.0.0.1", 8100)
+    assert (loaded.host, loaded.port) == ("127.0.0.1", 9100)
     assert loaded.allowed_ips == frozenset({"127.0.0.1", "::1"})
     assert loaded.mongo_server_selection_timeout_ms == 5000
 

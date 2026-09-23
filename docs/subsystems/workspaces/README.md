@@ -8,7 +8,7 @@
 |---|---|
 | Ruolo | Conserva i file dei progetti, oggi solo le specifiche, nel workspace di ogni progetto |
 | Tecnologia | Node ≥ 20, `node:http`, una dipendenza (`yaml`) |
-| Porta | **8400** (`listen.port` della configurazione) |
+| Porta | **9400** (`listen.port` della configurazione) |
 | Configurazione | Letta all'avvio da anagraphics (`GET /configuration/workspaces`). Nessun default: se manca, il server non parte (§4) |
 | Avvio / arresto | `webtools/webtools-workspaces/webtools_workspaces.sh --start` / `--stop` |
 | PID / Log | `webtools_workspaces.pid` / `webtools_workspaces.log`, nella cartella del sottosistema |
@@ -115,7 +115,7 @@ Dall'ambiente arrivano solo `WEBTOOLS_ANAGRAPHICS_URL` e `WEBTOOLS_CONFIGURATION
 | Campo | Oggi | |
 |---|---|---|
 | `listen.host` | `127.0.0.1` | |
-| `listen.port` | `8400` | |
+| `listen.port` | `9400` | |
 | `access.allowed_ips` | `["127.0.0.1", "::1"]` | Il pool: confronto esatto sull'IP della connessione |
 | `storage.root` | `~/webtools_data/workspaces` | Assoluto, oppure con `~/` all'inizio (si espande nella home di chi avvia il server) |
 | `storage.spec_max_bytes` | `10485760` (10 MB) | |

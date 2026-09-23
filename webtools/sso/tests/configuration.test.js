@@ -9,19 +9,19 @@ import { Configuration, ConfigurationError, readBootstrap } from "../src/commons
 const configuration = new Configuration(
   "sso",
   {
-    listen: { host: "127.0.0.1", port: 8300 },
+    listen: { host: "127.0.0.1", port: 9300 },
     access: { allowed_ips: ["127.0.0.1"] },
-    login: { allowed_next: ["http://127.0.0.1:8200/", "javascript:alert(1)"] },
+    login: { allowed_next: ["http://127.0.0.1:9200/", "javascript:alert(1)"] },
     session: { ttl_seconds: "3600" },
   },
-  "http://127.0.0.1:8100"
+  "http://127.0.0.1:9100"
 );
 
 test("legge i campi per percorso", () => {
   assert.equal(configuration.string("listen.host"), "127.0.0.1");
-  assert.equal(configuration.port("listen.port"), 8300);
+  assert.equal(configuration.port("listen.port"), 9300);
   assert.deepEqual(configuration.stringList("access.allowed_ips"), ["127.0.0.1"]);
-  assert.equal(configuration.httpUrl("login.allowed_next.0"), "http://127.0.0.1:8200");
+  assert.equal(configuration.httpUrl("login.allowed_next.0"), "http://127.0.0.1:9200");
 });
 
 test("un campo mancante lancia ConfigurationError con il percorso", () => {

@@ -23,13 +23,13 @@
 //
 // Il sottosistema deve avere queste impostazioni:
 //
-//   ssoUrl        indirizzo del sso, es. "http://127.0.0.1:8300"
+//   ssoUrl        indirizzo del sso, es. "http://127.0.0.1:9300"
 //   ssoTimeoutMs  quanto si aspetta una risposta
 //   cookieName    nome del **proprio** cookie: deve essere diverso da quello del
 //                 sso e da quello degli altri sottosistemi, perché i cookie
 //                 ignorano la porta e su 127.0.0.1 finiscono tutti nello stesso
 //                 mucchio (due cookie con lo stesso nome si sovrascrivono)
-//   publicUrl     il proprio indirizzo pubblico, es. "http://127.0.0.1:8200":
+//   publicUrl     il proprio indirizzo pubblico, es. "http://127.0.0.1:9200":
 //                 è quello che si dichiara al sso quando si scambia il biglietto
 
 /* ------------------------------------------------------------- richieste */

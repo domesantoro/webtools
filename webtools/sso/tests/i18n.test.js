@@ -15,7 +15,7 @@ const I18N = {
   body_max_bytes: 1024,
 };
 
-const configuration = (i18n) => new Configuration("sso", { i18n }, "http://127.0.0.1:8100");
+const configuration = (i18n) => new Configuration("sso", { i18n }, "http://127.0.0.1:9100");
 
 const richiesta = (headers) => ({ headers });
 

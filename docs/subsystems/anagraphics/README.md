@@ -17,7 +17,7 @@
 | Arresto | `webtools/anagraphics/webtools_anagraphics.sh --stop` |
 | Processo | `…/webtools/anagraphics/.venv/bin/python -m webtools_anagraphics` |
 | PID / Log | `webtools/anagraphics/webtools_anagraphics.pid` / `webtools/anagraphics/webtools_anagraphics.log` |
-| Indirizzo | `WEBTOOLS_ANAGRAPHICS_URL` in `webtools/configurator/bootstrap.env` (oggi `http://127.0.0.1:8100`) |
+| Indirizzo | `WEBTOOLS_ANAGRAPHICS_URL` in `webtools/configurator/bootstrap.env` (oggi `http://127.0.0.1:9100`) |
 | Database | `WEBTOOLS_MONGO_URI` / `WEBTOOLS_MONGO_DB` in `bootstrap.env` (oggi `mongodb://localhost:27017`, DB `webtools`) |
 | Collection | `configuration` (chiave `subsystem`), `projects` (chiave `project_id`), `drivers` (chiave `uid`), `discounts` (chiave `discount_code`), `users` (chiave `username`), `sessions` (chiave `token`) |
 | Scritture | Sessioni, biglietti e lingua: `POST /sessions`, `DELETE /sessions/{token}`, `DELETE /sessions?uid=…`, `PUT /sessions/{token}/locale`, `PUT /users/{username}/locale`, `POST /tickets`, `DELETE /tickets/{ticket}`. Tutto il resto è di sola lettura |
@@ -29,12 +29,12 @@
 
 Prova veloce, con il server acceso:
 ```sh
-curl http://127.0.0.1:8100/configuration/front-gate   # {"subsystem":"front-gate","listen":{…},"subsystems_infos":{…},"screen_infos":{…}}
-curl http://127.0.0.1:8100/projects/1f251606-bdba-40c4-bbee-bfedc6e57f70       # {"project_id":"1f251606-bdba-40c4-bbee-bfedc6e57f70"}
-curl http://127.0.0.1:8100/drivers                                               # tutti i driver
-curl http://127.0.0.1:8100/drivers/7633be3d-e701-42ca-9fea-6c6d1bb4b7d1          # il driver Dome
-curl http://127.0.0.1:8100/drivers/7633be3d-e701-42ca-9fea-6c6d1bb4b7d1/discounts   # i suoi codici sconto
-curl http://127.0.0.1:8100/discounts/e8013cf2-34eb-4bc3-8a34-b08fb24a1bf3        # un singolo codice sconto
+curl http://127.0.0.1:9100/configuration/front-gate   # {"subsystem":"front-gate","listen":{…},"subsystems_infos":{…},"screen_infos":{…}}
+curl http://127.0.0.1:9100/projects/1f251606-bdba-40c4-bbee-bfedc6e57f70       # {"project_id":"1f251606-bdba-40c4-bbee-bfedc6e57f70"}
+curl http://127.0.0.1:9100/drivers                                               # tutti i driver
+curl http://127.0.0.1:9100/drivers/7633be3d-e701-42ca-9fea-6c6d1bb4b7d1          # il driver Dome
+curl http://127.0.0.1:9100/drivers/7633be3d-e701-42ca-9fea-6c6d1bb4b7d1/discounts   # i suoi codici sconto
+curl http://127.0.0.1:9100/discounts/e8013cf2-34eb-4bc3-8a34-b08fb24a1bf3        # un singolo codice sconto
 ```
 
 ---
@@ -131,7 +131,7 @@ webtools/anagraphics/
 ### 4.3 Percorso di una richiesta
 
 ```
-client ──HTTP──> uvicorn (127.0.0.1:8100, proxy_headers=False)
+client ──HTTP──> uvicorn (127.0.0.1:9100, proxy_headers=False)
                    │
                    ▼
           middleware allow_only_known_ips   (webtools_anagraphics/main.py)
@@ -291,11 +291,11 @@ Le due password sono **password di sviluppo**, corte e note: vanno rifatte prima
 |---|---|---|---|
 | `ticket` | string | **univoco** (indice `ticket_1`) | 32 byte casuali in base64url |
 | `token` | string | — | La sessione a cui dà accesso |
-| `service` | string | — | Il sottosistema per cui è stato emesso, es. `http://127.0.0.1:8200` |
+| `service` | string | — | Il sottosistema per cui è stato emesso, es. `http://127.0.0.1:9200` |
 | `issued_at` | data | — | — |
 | `expires_at` | data | indice **TTL** (`expires_at_1`) | Un minuto dopo l'emissione |
 
-**A che serve.** Un cookie appartiene a un indirizzo solo: il sso, che sta sulla porta 8300, non può metterne uno per conto di preanalyst, che sta sulla 8200. Dopo il login il sso rimanda quindi il browser al sottosistema con un **biglietto** nell'indirizzo; il sottosistema lo scambia da server a server e riceve la sessione. Il token vero, che dura ore, non passa mai dall'indirizzo — dove finirebbe nella cronologia del browser, nei log e nei link condivisi.
+**A che serve.** Un cookie appartiene a un indirizzo solo: il sso, che sta sulla porta 9300, non può metterne uno per conto di preanalyst, che sta sulla 9200. Dopo il login il sso rimanda quindi il browser al sottosistema con un **biglietto** nell'indirizzo; il sottosistema lo scambia da server a server e riceve la sessione. Il token vero, che dura ore, non passa mai dall'indirizzo — dove finirebbe nella cronologia del browser, nei log e nei link condivisi.
 
 **Vale una volta sola.** `DELETE /tickets/{ticket}` legge e cancella nello stesso momento (`find_one_and_delete`): due richieste con lo stesso biglietto non possono riuscire entrambe, nemmeno se arrivano insieme. Un biglietto letto da un log è quindi già consumato, e comunque scaduto dopo un minuto.
 
@@ -308,7 +308,7 @@ Le due password sono **password di sviluppo**, corte e note: vanno rifatte prima
 
 ## 6. Riferimento API
 
-URL base: `http://127.0.0.1:8100`. Tutte le risposte, errori compresi, sono JSON.
+URL base: `http://127.0.0.1:9100`. Tutte le risposte, errori compresi, sono JSON.
 
 ### 6.1 Formato degli errori (contratto)
 
@@ -365,7 +365,7 @@ Restituisce la configurazione del sottosistema.
 
 | Esito | Stato | Body |
 |---|---|---|
-| Trovata | `200` | il documento senza `_id`, es. `{"subsystem":"front-gate","listen":{"host":"127.0.0.1","port":8000},"subsystems_infos":{"preanalyst":{"url":"http://127.0.0.1:8200"}},"screen_infos":{"pricing":{"standard_price_cents":40000}}}` |
+| Trovata | `200` | il documento senza `_id`, es. `{"subsystem":"front-gate","listen":{"host":"127.0.0.1","port":9000},"subsystems_infos":{"preanalyst":{"url":"http://127.0.0.1:9200"}},"screen_infos":{"pricing":{"standard_price_cents":40000}}}` |
 | Non trovata | `404` | `{"error":"CONFIGURATION_NOT_FOUND","subsystem":"<richiesto>"}` |
 | Altri errori | `403` / `503` / `500` | vedi §6.1 |
 
@@ -570,25 +570,25 @@ Qualsiasi altra route risponde `404 {"error":"ROUTE_NOT_FOUND"}`.
 
 ### 6.18 Esempi
 ```sh
-curl -i http://127.0.0.1:8100/configuration/front-gate
-curl -s http://127.0.0.1:8100/drivers
-curl -s http://127.0.0.1:8100/projects/1f251606-bdba-40c4-bbee-bfedc6e57f70
-curl -s http://127.0.0.1:8100/drivers/7633be3d-e701-42ca-9fea-6c6d1bb4b7d1
-curl -s http://127.0.0.1:8100/drivers/7633be3d-e701-42ca-9fea-6c6d1bb4b7d1/discounts
-curl -s http://127.0.0.1:8100/discounts/e8013cf2-34eb-4bc3-8a34-b08fb24a1bf3
-curl -s -w " [%{http_code}]\n" http://127.0.0.1:8100/projects/inesistente   # {"error":"PROJECT_NOT_FOUND","project_id":"inesistente"} [404]
-curl -s -w " [%{http_code}]\n" http://127.0.0.1:8100/drivers/inesistente/discounts   # {"error":"DRIVER_NOT_FOUND","uid":"inesistente"} [404]
+curl -i http://127.0.0.1:9100/configuration/front-gate
+curl -s http://127.0.0.1:9100/drivers
+curl -s http://127.0.0.1:9100/projects/1f251606-bdba-40c4-bbee-bfedc6e57f70
+curl -s http://127.0.0.1:9100/drivers/7633be3d-e701-42ca-9fea-6c6d1bb4b7d1
+curl -s http://127.0.0.1:9100/drivers/7633be3d-e701-42ca-9fea-6c6d1bb4b7d1/discounts
+curl -s http://127.0.0.1:9100/discounts/e8013cf2-34eb-4bc3-8a34-b08fb24a1bf3
+curl -s -w " [%{http_code}]\n" http://127.0.0.1:9100/projects/inesistente   # {"error":"PROJECT_NOT_FOUND","project_id":"inesistente"} [404]
+curl -s -w " [%{http_code}]\n" http://127.0.0.1:9100/drivers/inesistente/discounts   # {"error":"DRIVER_NOT_FOUND","uid":"inesistente"} [404]
 
 # utenti
-curl -s http://127.0.0.1:8100/users/dome.santoro@gmail.com
-curl -s -w " [%{http_code}]\n" http://127.0.0.1:8100/users/dome.santoro@gmail.com/credential   # 404 CREDENTIAL_NOT_SET finché non c'è la password
+curl -s http://127.0.0.1:9100/users/dome.santoro@gmail.com
+curl -s -w " [%{http_code}]\n" http://127.0.0.1:9100/users/dome.santoro@gmail.com/credential   # 404 CREDENTIAL_NOT_SET finché non c'è la password
 
 # sessioni (normalmente le scrive il sso, non si fa a mano)
-curl -s -X POST http://127.0.0.1:8100/sessions -H 'content-type: application/json' \
+curl -s -X POST http://127.0.0.1:9100/sessions -H 'content-type: application/json' \
   -d '{"token":"token-di-prova-0123456789","uid":"214912a9-2cc4-4205-87b7-93ea71f6be72","username":"driver.prova@example.com","issued_at":"2026-09-21T10:00:00Z","expires_at":"2026-09-21T18:00:00Z"}'
-curl -s http://127.0.0.1:8100/sessions/token-di-prova-0123456789
-curl -s -o /dev/null -w "%{http_code}\n" -X DELETE http://127.0.0.1:8100/sessions/token-di-prova-0123456789   # 204
-curl -s -X DELETE "http://127.0.0.1:8100/sessions?uid=214912a9-2cc4-4205-87b7-93ea71f6be72"
+curl -s http://127.0.0.1:9100/sessions/token-di-prova-0123456789
+curl -s -o /dev/null -w "%{http_code}\n" -X DELETE http://127.0.0.1:9100/sessions/token-di-prova-0123456789   # 204
+curl -s -X DELETE "http://127.0.0.1:9100/sessions?uid=214912a9-2cc4-4205-87b7-93ea71f6be72"
 ```
 
 ---
@@ -657,7 +657,7 @@ webtools/anagraphics/webtools_anagraphics.sh --stop    # ferma
 
 **Controlli utili**
 ```sh
-curl http://127.0.0.1:8100/configuration/front-gate          # risponde? {"subsystem":"front-gate",…}
+curl http://127.0.0.1:9100/configuration/front-gate          # risponde? {"subsystem":"front-gate",…}
 tail -f webtools/anagraphics/webtools_anagraphics.log         # log in tempo reale
 ```
 
@@ -799,8 +799,8 @@ Verifica fatta il 2026-09-19: con `-H "X-Forwarded-For: 10.0.0.1"`
 Se in futuro il servizio starà dietro un reverse proxy, andrà rivisto: con `proxy_headers=False` tutte le richieste risulteranno provenire dall'IP del proxy.
 
 ### 9.3 Rete
-- Con `WEBTOOLS_ANAGRAPHICS_URL=http://127.0.0.1:8100` il server non è raggiungibile da altre macchine, qualunque sia `access.allowed_ips`.
-- Con `127.0.0.1` il server **non ascolta su IPv6**: `http://[::1]:8100` non risponde. `::1` in `access.allowed_ips` serve solo ascoltando su `::`. `curl http://localhost:8100` funziona lo stesso, perché dopo il tentativo IPv6 ripiega su IPv4.
+- Con `WEBTOOLS_ANAGRAPHICS_URL=http://127.0.0.1:9100` il server non è raggiungibile da altre macchine, qualunque sia `access.allowed_ips`.
+- Con `127.0.0.1` il server **non ascolta su IPv6**: `http://[::1]:9100` non risponde. `::1` in `access.allowed_ips` serve solo ascoltando su `::`. `curl http://localhost:9100` funziona lo stesso, perché dopo il tentativo IPv6 ripiega su IPv4.
 - Per accettare chiamate da un'altra macchina servono **entrambe** le cose: l'host dell'URL sull'interfaccia giusta e l'IP del chiamante in `access.allowed_ips`.
 
 ### 9.4 Cosa manca, per scelta
@@ -878,16 +878,16 @@ Resta un warning noto e innocuo, interno a Starlette: `anyio.abc.BlockingPortal 
 | `500 {"error":"INTERNAL_ERROR"}` su un documento specifico | Campo non convertibile in JSON (`ObjectId`, `Decimal128`, binari) | Traceback nel log del server (`ValueError`/`TypeError` durante la serializzazione). Converti il campo o adatta la risposta |
 | `DuplicateKeyError` inserendo dati | Indice univoco su `subsystem` o `project_id` | Usa `updateOne(..., {upsert:true})` invece di `insertOne` |
 | `ModuleNotFoundError: No module named 'webtools_anagraphics'` | Seed lanciato come file (`python scripts/seed.py`) o da una cartella diversa | Da `webtools/anagraphics/`: `uv run python -m scripts.seed` |
-| `[Errno 48] Address already in use` (stampato da `--start`) | Porta 8100 occupata da un altro programma o da un'istanza avviata senza lo script | `lsof -nP -iTCP:8100 -sTCP:LISTEN` per vedere chi è. Se non è nostro, cambia la porta in `WEBTOOLS_ANAGRAPHICS_URL` (`bootstrap.env`): vale per tutti i sottosistemi |
+| `[Errno 48] Address already in use` (stampato da `--start`) | Porta 9100 occupata da un altro programma o da un'istanza avviata senza lo script | `lsof -nP -iTCP:9100 -sTCP:LISTEN` per vedere chi è. Se non è nostro, cambia la porta in `WEBTOOLS_ANAGRAPHICS_URL` (`bootstrap.env`): vale per tutti i sottosistemi |
 | `--start` dice "già in esecuzione" ma il server non risponde | Processo bloccato | `…/webtools_anagraphics.sh --stop` e poi `--start`; guarda il log |
 | `--start` fallisce con "Ambiente mancante" | `.venv` non creato | `cd webtools/anagraphics && uv sync` |
 | `--start` fallisce con `webtools_anagraphics non parte: …` | Configurazione assente o sbagliata: variabile di bootstrap mancante, Mongo spento, documento `anagraphics` non caricato, campo mancante | Il messaggio dice quale. `webtools/configurator/load_configuration.sh`, poi di nuovo `--start` |
 | `--start` fallisce con altre righe di log | Errore all'avvio (import) | Il messaggio stampato è la coda di `webtools_anagraphics.log` |
 | Le modifiche alla configurazione non hanno effetto | Si legge solo all'avvio, e va prima caricata in Mongo | `webtools/configurator/start.sh --restart` (carica e riavvia) |
-| Le modifiche al codice non hanno effetto | Il server non ha il reload automatico | `--stop` e `--start`. In sviluppo si può usare `uv run uvicorn webtools_anagraphics.main:app --reload --no-proxy-headers --host 127.0.0.1 --port 8100` |
+| Le modifiche al codice non hanno effetto | Il server non ha il reload automatico | `--stop` e `--start`. In sviluppo si può usare `uv run uvicorn webtools_anagraphics.main:app --reload --no-proxy-headers --host 127.0.0.1 --port 9100` |
 | I test scrivono nel DB `webtools` | Qualcuno ha spostato gli import di `webtools_anagraphics` sopra l'impostazione delle variabili di bootstrap in `tests/test_api.py` | Ripristina l'ordine (§10) |
 | I test falliscono tutti con timeout | Mongo spento | Avvia Mongo (§8.3) |
-| `http://[::1]:8100` non risponde | Il server ascolta solo su IPv4 | Normale con `127.0.0.1` in `WEBTOOLS_ANAGRAPHICS_URL` (§9.3) |
+| `http://[::1]:9100` non risponde | Il server ascolta solo su IPv4 | Normale con `127.0.0.1` in `WEBTOOLS_ANAGRAPHICS_URL` (§9.3) |
 
 Dove guardare:
 - **log del server**: `webtools/anagraphics/webtools_anagraphics.log` se avviato con `--start` (§8.2), altrimenti lo stdout del terminale. Contiene i log di accesso uvicorn e i traceback;
@@ -902,7 +902,7 @@ Stato attuale: **nessuna metrica dedicata**. Non esistono endpoint `/health` o `
 | Cosa | Come |
 |---|---|
 | Traffico ed esiti | Log di accesso uvicorn in `webtools_anagraphics.log`: `INFO: 127.0.0.1:61935 - "GET /projects/1f251606-bdba-40c4-bbee-bfedc6e57f70 HTTP/1.1" 200 OK`. Conteggio per codice: `grep -c '" 403' webtools_anagraphics.log`, ecc. |
-| Stato del servizio | `curl -s -o /dev/null -w "%{http_code} %{time_total}s\n" http://127.0.0.1:8100/configuration/front-gate` (200 = servizio e Mongo attivi) |
+| Stato del servizio | `curl -s -o /dev/null -w "%{http_code} %{time_total}s\n" http://127.0.0.1:9100/configuration/front-gate` (200 = servizio e Mongo attivi) |
 | Stato di Mongo | `mongosh --eval 'db.runCommand({ping:1})'` |
 | Volume dei dati | `mongosh webtools --quiet --eval 'db.projects.countDocuments()'` (idem per `configuration`) |
 | Dimensioni e indici | `mongosh webtools --quiet --eval 'db.projects.stats()'` |

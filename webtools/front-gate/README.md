@@ -15,7 +15,7 @@ dopo `webtools/configurator/start.sh --restart`.
 
 | Campo | Uso |
 |---|---|
-| `listen.host`, `listen.port` | Dove il server si mette in ascolto (oggi `127.0.0.1:8000`) |
+| `listen.host`, `listen.port` | Dove il server si mette in ascolto (oggi `127.0.0.1:9000`) |
 | `subsystems_infos.preanalyst.url` | Il tasto "Inizia" apre questo indirizzo, nella stessa scheda: il form della pre-analisi. Solo `http`/`https`: il valore finisce in un `href` |
 | `screen_infos.pricing.standard_price_cents` | Il prezzo del tier standard, in centesimi di euro, intero ≥ 0: `40000` diventa "400 €" in italiano e "€400" in inglese (i decimali compaiono solo se ci sono centesimi) |
 | `i18n.locales`, `i18n.fallback_locale` | Le lingue offerte (`["en", "it"]`) e quella di riserva (`en`) |

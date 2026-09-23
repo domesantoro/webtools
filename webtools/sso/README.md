@@ -24,7 +24,7 @@ webtools/sso/webtools_sso.sh --stop    # ferma
 webtools/anagraphics/webtools_anagraphics.sh --start
 ```
 
-## Le rotte (`http://127.0.0.1:8300`)
+## Le rotte (`http://127.0.0.1:9300`)
 
 Per i programmi, in JSON:
 

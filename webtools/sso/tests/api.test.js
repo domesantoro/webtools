@@ -23,13 +23,13 @@ const CREDENTIAL = {
   hash: "sCBbG78hlwM7ZyWSi0vmMQwsURojukn7s99GhDhm51M=",
 };
 
-const NEXT = "http://127.0.0.1:8200/";
+const NEXT = "http://127.0.0.1:9200/";
 const SETTINGS = {
   allowedIps: ["127.0.0.1", "::1"],
   sessionTtlSeconds: 3600,
   ticketTtlSeconds: 60,
   cookieName: "webtools_sso",
-  allowedNext: ["http://127.0.0.1:8200"],
+  allowedNext: ["http://127.0.0.1:9200"],
   bodyMaxBytes: 4096,
   i18n: loadI18n(
     new Configuration(
@@ -43,7 +43,7 @@ const SETTINGS = {
           body_max_bytes: 1024,
         },
       },
-      "http://127.0.0.1:8100"
+      "http://127.0.0.1:9100"
     )
   ),
 };
@@ -336,7 +336,7 @@ test("la pagina di login mostra il form, e ricorda dove tornare", async () => {
   assert.match(response.headers.get("content-type"), /text\/html/);
   assert.match(html, /name="username"/);
   assert.match(html, /type="password"/);
-  assert.match(html, /name="next" value="http:\/\/127\.0\.0\.1:8200\/"/);
+  assert.match(html, /name="next" value="http:\/\/127\.0\.0\.1:9200\/"/);
 });
 
 test("un next fuori dagli indirizzi ammessi non viene usato", async () => {
@@ -347,7 +347,7 @@ test("un next fuori dagli indirizzi ammessi non viene usato", async () => {
   // Al suo posto c'è il primo indirizzo ammesso: la pagina di login non può
   // diventare il trampolino per mandare la gente dove capita.
   assert.doesNotMatch(html, /sito-finto/);
-  assert.match(html, /name="next" value="http:\/\/127\.0\.0\.1:8200"/);
+  assert.match(html, /name="next" value="http:\/\/127\.0\.0\.1:9200"/);
 });
 
 test("il giro completo del login dalle pagine", async () => {
@@ -363,7 +363,7 @@ test("il giro completo del login dalle pagine", async () => {
   // Si torna al sottosistema, con il biglietto nell'indirizzo…
   assert.equal(entrato.status, 303);
   const location = new URL(entrato.headers.get("location"));
-  assert.equal(location.origin, "http://127.0.0.1:8200");
+  assert.equal(location.origin, "http://127.0.0.1:9200");
   const ticket = location.searchParams.get("ticket");
   assert.ok(ticket);
 
@@ -377,14 +377,14 @@ test("il giro completo del login dalle pagine", async () => {
   assert.match(setCookie, /SameSite=Lax/);
 
   // Lo scambio, da server a server: il sottosistema riceve la sessione.
-  const scambiato = await sso.exchange({ ticket, service: "http://127.0.0.1:8200" });
+  const scambiato = await sso.exchange({ ticket, service: "http://127.0.0.1:9200" });
   assert.equal(scambiato.status, 200);
   const body = await scambiato.json();
   assert.equal(body.logged, true);
   assert.equal(body.session.username, USER.username);
 
   // Il biglietto vale una volta sola.
-  const ripetuto = await sso.exchange({ ticket, service: "http://127.0.0.1:8200" });
+  const ripetuto = await sso.exchange({ ticket, service: "http://127.0.0.1:9200" });
   assert.equal(ripetuto.status, 404);
   assert.deepEqual(await ripetuto.json(), { error: "TICKET_NOT_FOUND" });
 });
@@ -466,7 +466,7 @@ test("la registrazione dice che non è attiva", async () => {
 
 test("scambio con corpo non valido", async () => {
   const sso = await start(fakeAnagraphics());
-  for (const body of [{}, { ticket: "x" }, { service: "http://127.0.0.1:8200" }]) {
+  for (const body of [{}, { ticket: "x" }, { service: "http://127.0.0.1:9200" }]) {
     const response = await sso.exchange(body);
     assert.equal(response.status, 400);
     assert.deepEqual(await response.json(), { error: "INVALID_BODY" });
@@ -496,7 +496,7 @@ test("la pagina è nella lingua del cookie, e il selettore torna alla pagina", a
   const italiano = await (await sso.page(path, "webtools_locale=it")).text();
   assert.match(italiano, /<html lang="it">/);
   assert.match(italiano, /strumenti su misura/);
-  assert.match(italiano, /name="return_to" value="\/ui\/login\?next=http%3A%2F%2F127\.0\.0\.1%3A8200%2F"/);
+  assert.match(italiano, /name="return_to" value="\/ui\/login\?next=http%3A%2F%2F127\.0\.0\.1%3A9200%2F"/);
 
   const inglese = await (await sso.page(path, "webtools_locale=en")).text();
   assert.match(inglese, /<html lang="en">/);

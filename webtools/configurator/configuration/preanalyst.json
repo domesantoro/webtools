@@ -1,20 +1,20 @@
 {
-  "listen": { "host": "127.0.0.1", "port": 8200 },
-  "public_url": "http://127.0.0.1:8200",
+  "listen": { "host": "127.0.0.1", "port": 9200 },
+  "public_url": "http://127.0.0.1:9200",
   "subsystems_infos": {
     "anagraphics": {
       "timeout_ms": 5000
     },
     "sso": {
-      "url": "http://127.0.0.1:8300",
+      "url": "http://127.0.0.1:9300",
       "timeout_ms": 5000
     },
     "workspaces": {
-      "url": "http://127.0.0.1:8400",
+      "url": "http://127.0.0.1:9400",
       "timeout_ms": 5000
     },
     "front_gate": {
-      "url": "http://127.0.0.1:8000"
+      "url": "http://127.0.0.1:9000"
     }
   },
   "session": {
