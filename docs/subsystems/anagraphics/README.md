@@ -1,7 +1,7 @@
 # Sottosistema `anagraphics`
 
 > Documentazione di riferimento per sviluppo, manutenzione, troubleshooting, bugfix e metriche.
-> Ultimo aggiornamento: 2026-09-22 · versione del sottosistema: `0.7.0`.
+> Ultimo aggiornamento: 2026-09-23 · versione del sottosistema: `0.9.0`.
 > Codice: `webtools/anagraphics/` (percorsi relativi alla root del workspace `ftab - webtools/`).
 
 ---
@@ -181,7 +181,7 @@ Il controllo IP viene **prima** del routing, quindi un IP fuori dal pool riceve 
 
 Gli altri campi dipendono dal sottosistema e l'API li restituisce così come sono. Sono **strutturati** (oggetti annidati per argomento: `listen`, `access`, `subsystems_infos`, `session`, …), non piatti.
 
-**Da dove arrivano.** La fonte è un file per sottosistema, `webtools/configurator/configuration/<subsystem>.json`, senza il campo `subsystem` (lo dà il nome del file). `webtools/configurator/load_configuration.sh` li carica tutti: ogni documento viene **sostituito per intero** e quelli senza più un file vengono cancellati. Lo lancia `start.sh` prima di avviare i servizi. Modificare i documenti a mano in Mongo non serve: al prossimo avvio verrebbero sovrascritti.
+**Da dove arrivano.** La configurazione che vive sta **qui, in questa collection**. I file di `webtools/configurator/configuration/<subsystem>.json` (senza il campo `subsystem`, che lo dà il nome del file) sono il **seme** — i valori con cui nasce un ambiente nuovo — e la **forma attesa**: dicono quali campi esistono. `webtools/configurator/load_configuration.sh`, che `start.sh` lancia prima di avviare i servizi, aggiunge **solo i campi che mancano**: un campo che c'è non si tocca qualunque valore abbia, un campo tolto da un file resta, un sottosistema senza più un file non viene cancellato. Un documento modificato qui sopravvive a tutti i riavvii; per riportarlo al file serve `./load_configuration.sh --reset <subsystem>`, che è l'unico modo per cancellare quelle modifiche. I segreti di `configurator/secrets/` fanno eccezione e **sostituiscono sempre** il valore che trovano: una chiave ruotata deve valere.
 
 Il significato di ogni campo sta nella documentazione del sottosistema che lo legge. Qui solo quello di anagraphics stesso:
 
@@ -200,7 +200,7 @@ Fino alla 0.4.0 la collection si chiamava `anagraphics` (migrazione in §8.7).
 | `owner_uid` | string | — | L'`uid` dell'utente (`users.uid`) che ha creato il progetto. Chi legge un progetto per conto di un utente confronta questo campo |
 | `submission_id` | string | **univoco, sparse** (indice `submission_id_1`) | L'id dell'invio del form della pre-analisi. Lo stesso invio ripetuto trova il progetto già nato invece di crearne un altro. Sparse: un progetto può nascere anche per altre strade |
 | `created_at` | datetime (UTC) | — | Momento della creazione |
-| `state` | string | — | Stato nel flusso. Oggi solo `PREANALYSIS`, il primo |
+| `pipeline` | object | — | Dove sta il progetto lungo il flusso e che cosa gli è successo: `{state, steps}`. `state` è uno di `PREANALYSIS`, `PREVALIDATION`, `UNDERSPECIFIED`, `ANALYSIS`, `DRIVER_VALIDATION`, `CLIENT_VALIDATION`, `DEVELOPMENT`, `ALPHA_TEST`, `DEMO`, `PAID`, `REJECTED` — `UNDERSPECIFIED` è la richiesta tornata all'utente perché diceva troppo poco: non è un rifiuto, e da lì si riparte riscrivendo. `steps` è una **lista in ordine** dei passi compiuti, non una mappa: un passo può ripetersi, e la lista è il registro delle decisioni prese sul progetto. Ogni passo: `{step, result, decided_at, data}`, con `result` fra `passed`, `rejected`, `underspecified` e `failed` e `data` libero — la forma la decide chi compie il passo, qui si conserva e non si interpreta. Fino alla 0.8.0 c'era un `state` piatto al posto di tutto questo (migrazione §8.9) |
 | `review` | object | — | Chi supervisiona il progetto: `{driver_uid, preset}`. `preset: true` = driver **preimpostato** (dal link di un driver, o il driver stesso in un lavoro autonomo); `preset: false` = assegnato dal sistema. Alla creazione, senza link, `driver_uid` è `null` |
 | `billing` | object | — | I dati economici: `{discount_code, autonomous_work, ambassador_uid}`. Il codice sconto del link e il lavoro autonomo **si escludono**: con il lavoro autonomo `discount_code` è `null`. `ambassador_uid` è l'uid del driver che ha invitato l'utente a lavorare con noi, o `null`; i progetti creati prima della 0.6.2 non hanno il campo. Fino alla 0.6.0 c'era anche `autonomous_fee_discount` (migrazione §8.8). Si conservano soltanto: il prezzo non si calcola qui |
 
@@ -379,7 +379,7 @@ Restituisce il progetto. Fino alla 0.4.0 era `GET /anagraphics/{project_id}`, ch
 | Altri errori | `403` / `503` / `500` | vedi §6.1 |
 
 #### 6.3.1 `POST /projects`
-Crea un progetto. Corpo: `{"owner_uid": "<uid>", "submission_id": "<id dell'invio, almeno 16 caratteri>", "review": {"driver_uid": …, "preset": true}, "billing": {"discount_code": …, "autonomous_work": false, "ambassador_uid": null}}` (`review` e `billing` facoltativi, con i default di §5.2). Le regole su chi è preimpostato e quale sconto vale le applica chi chiama (preanalyst). Anagraphics genera `project_id`, `created_at` e `state: "PREANALYSIS"`; un `project_id` nel corpo viene ignorato.
+Crea un progetto. Corpo: `{"owner_uid": "<uid>", "submission_id": "<id dell'invio, almeno 16 caratteri>", "review": {"driver_uid": …, "preset": true}, "billing": {"discount_code": …, "autonomous_work": false, "ambassador_uid": null}}` (`review` e `billing` facoltativi, con i default di §5.2). Le regole su chi è preimpostato e quale sconto vale le applica chi chiama (preanalyst). Anagraphics genera `project_id`, `created_at` e `pipeline: {state: "PREANALYSIS", steps: []}`; un `project_id` nel corpo viene ignorato.
 
 | Esito | Stato | Body |
 |---|---|---|
@@ -389,7 +389,25 @@ Crea un progetto. Corpo: `{"owner_uid": "<uid>", "submission_id": "<id dell'invi
 | Corpo non valido | `400` | `{"error":"INVALID_BODY"}` |
 | Altri errori | `403` / `503` / `500` | vedi §6.1 |
 
-#### 6.3.2 `DELETE /projects/{project_id}`
+#### 6.3.2 `POST /projects/{project_id}/pipeline/steps`
+Accoda un passo alla pipeline del progetto e lo porta nello stato che il passo dice. Corpo: `{"step": "prevalidation", "result": "passed", "state": "ANALYSIS", "data": {…}}`.
+
+- `step` e `state` sono elenchi chiusi (§5.2): un nome inventato risponde `400`, e nel database non entra niente.
+- `result` è `passed`, `rejected`, `underspecified` o `failed`. `underspecified` è un passo compiuto
+  che rimanda indietro senza chiudere niente: sta fra `passed` e `rejected`, e **si conta** — chi
+  decide quante volte si può tornare indietro guarda quanti ce ne sono già nella lista.
+- `state` è **dove porta** il passo, non un campo del passo: lo stesso esito può portare in posti diversi a seconda del cancello, quindi lo decide chi chiama. Nel documento finisce in `pipeline.state`, non dentro il passo.
+- `decided_at` lo mette anagraphics: quando è successo non lo sceglie chi chiama.
+- La scrittura è una sola (`$push` e `$set` insieme): non esiste un momento in cui il passo c'è e lo stato è ancora quello di prima.
+
+| Esito | Stato | Body |
+|---|---|---|
+| Accodato | `201` | il progetto aggiornato |
+| Progetto inesistente | `404` | `{"error":"PROJECT_NOT_FOUND","project_id":"<richiesto>"}` |
+| Corpo non valido, nome fuori elenco | `400` | `{"error":"INVALID_BODY"}` |
+| Altri errori | `403` / `503` / `500` | vedi §6.1 |
+
+#### 6.3.3 `DELETE /projects/{project_id}`
 Cancella un progetto. Serve a disfare un progetto rimasto a metà: preanalyst lo usa quando la pre-specifica non si riesce a scrivere.
 
 | Esito | Stato | Body |
@@ -777,6 +795,21 @@ mongosh webtools --quiet --eval 'db.projects.updateMany({"billing.autonomous_fee
 
 Eseguita sul database `webtools` il 2026-09-22 (2 progetti).
 
+### 8.9 Migrazione alla 0.9.0: `state` → `pipeline`
+
+Il campo `state` piatto diventa l'oggetto `pipeline`, con lo stato e la lista dei passi. `steps` nasce vuota: dei progetti già esistenti non sappiamo quali passi abbiano attraversato, e inventarli sarebbe peggio che non averli.
+
+Lo script è idempotente e ha una prova a vuoto:
+
+```sh
+cd webtools/anagraphics
+set -a; source ../configurator/bootstrap.env; set +a
+.venv/bin/python -m scripts.migrate_pipeline --dry-run
+.venv/bin/python -m scripts.migrate_pipeline
+```
+
+Eseguita sul database `webtools` il 2026-09-23 (4 progetti).
+
 ---
 
 ## 9. Sicurezza e pool di IP
@@ -970,6 +1003,9 @@ Punti da decidere:
 
 | Data | Versione | Modifica |
 |---|---|---|
+| 2026-09-23 | 0.9.2 | **La configurazione che vive sta in Mongo.** `scripts/load_configuration.py` non sostituisce più i documenti per intero a ogni avvio: aggiunge **solo i campi mancanti**, non cancella un campo tolto da un file né un sottosistema che un file non ce l'ha più. I file di `configurator/configuration/` diventano il seme e la forma attesa. Nuovo `--reset [sottosistema …]`, l'unico modo per riportare i documenti ai file. I segreti restano un'eccezione e sostituiscono sempre: una chiave ruotata deve valere. Prima un valore cambiato in esercizio spariva al primo `start.sh`, in silenzio. Test da 56 a 62 (`tests/test_load_configuration.py`). |
+| 2026-09-23 | 0.9.1 | Due voci in più negli elenchi chiusi della pipeline (§5.2): lo stato `UNDERSPECIFIED` e il `result` `underspecified`, per la richiesta che torna all'utente perché diceva troppo poco (preanalyst §16.6). Nient'altro cambia: i documenti già scritti restano validi. Test da 55 a 56. |
+| 2026-09-23 | 0.9.0 | **La pipeline del progetto** (§5.2): il campo `state` piatto diventa l'oggetto `pipeline` con lo stato e la lista in ordine dei passi compiuti — il registro delle decisioni. Nuova `POST /projects/{id}/pipeline/steps` (§6.3.2), con elenchi chiusi per i nomi dei passi e degli stati: un nome inventato non entra nel database. Migrazione §8.9. `scripts/load_configuration.py` accetta una seconda cartella, i **segreti**, e la fonde in profondità sulla configurazione prima di scriverla in Mongo: le chiavi delle API sono configurazione, ma non possono stare in git. Test da 50 a 55. |
 | 2026-09-22 | 0.8.0 | **La lingua.** Nuovi `PUT /users/{username}/locale` e `PUT /sessions/{token}/locale` (§6.19): campo `users.locale` e `sessions.data.locale`. Li usa il sso per ricordare la lingua scelta tra un login e l'altro. Test da 45 a 50. |
 | 2026-09-22 | 0.7.0 | Campo **`enabled`** dei driver (abilitato a seguire i progetti), anche nella lista `GET /drivers` (`DRIVER_SUMMARY`). `Dome` e `Prova` abilitati; nuovo driver di prova non abilitato, `Non abilitato`, con un codice sconto al 10%. Dati aggiornati con il seed il 2026-09-22. |
 | 2026-09-22 | 0.6.2 | Nuovo `billing.ambassador_uid` (default `null`): il driver che ha invitato l'utente. Le regole su quando vale le applica preanalyst. Test da 44 a 45. |

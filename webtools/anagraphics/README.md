@@ -63,10 +63,12 @@ Nessun default: se manca qualcosa il server non parte (`webtools_anagraphics non
 - Dall'ambiente, caricate da `--start` da `webtools/configurator/bootstrap.env`: `WEBTOOLS_ANAGRAPHICS_URL` (da qui host e porta di ascolto), `WEBTOOLS_CONFIGURATION_TIMEOUT_MS`, `WEBTOOLS_MONGO_URI`, `WEBTOOLS_MONGO_DB`.
 - Il resto dal documento `anagraphics` della collection `configuration`, letto da Mongo all'avvio: si scrive in `webtools/configurator/configuration/anagraphics.json`.
 
+`scripts/load_configuration.py` carica i file di `configurator/configuration/` e, se gli si dà una seconda cartella, ci fonde sopra in profondità i **segreti** di `configurator/secrets/` (le chiavi delle API, che non possono stare in git). Lo fa `configurator/load_configuration.sh`.
+
 ## Test
 
 ```sh
-uv run pytest        # 44 test
+uv run pytest        # 62 test
 ```
 
 I test usano il database `webtools_test`, che viene cancellato alla fine.

@@ -5,6 +5,11 @@
   Tipi gestiti: textarea, text, email (campi di testo), radio e checkbox (scelte).
   I testi (legend, label, hint, placeholder, testo delle opzioni) arrivano già
   tradotti da `src/page.js`.
+
+  Ogni campo si porta dietro la risposta già data, se c'è: `field.value` per i
+  campi di testo, `field.selected` (un elenco di codici) per le scelte. Al primo
+  invio sono vuoti. Serve a chi è tornato indietro perché la richiesta diceva
+  troppo poco: ritrova quello che aveva scritto.
 #}
 
 {% macro field_hint(hint) %}
@@ -26,7 +31,8 @@
                 <input type="{{ "radio" if field.kind == "radio" else "checkbox" }}"
                        id="{{ field.name }}-{{ loop.index0 }}"
                        name="{{ field.name }}{{ "" if field.kind == "radio" else "[]" }}"
-                       value="{{ option[0] }}">
+                       value="{{ option[0] }}"
+                       {{- " checked" if option[0] in (field.selected or []) }}>
                 <span>{{ option[1] }}</span>
               </label>
             {%- endfor %}
@@ -41,10 +47,10 @@
             {%- if field.kind == "textarea" %}
             <textarea class="input" id="{{ field.name }}" name="{{ field.name }}"
                       rows="{{ field.rows or 3 }}" placeholder="{{ field.placeholder or "" }}"
-                      {{- " required" if field.required }}></textarea>
+                      {{- " required" if field.required }}>{{ field.value or "" }}</textarea>
             {%- else %}
             <input class="input" type="{{ field.kind }}" id="{{ field.name }}" name="{{ field.name }}"
-                   placeholder="{{ field.placeholder or "" }}"
+                   placeholder="{{ field.placeholder or "" }}" value="{{ field.value or "" }}"
                    {%- if field.autocomplete %} autocomplete="{{ field.autocomplete }}"{% endif %}
                    {{- " required" if field.required }}>
             {%- endif %}

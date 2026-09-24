@@ -83,6 +83,21 @@ def insert_project(db: Database, project: dict) -> None:
     db[PROJECTS].insert_one(dict(project))
 
 
+def append_pipeline_step(db: Database, project_id: str, step: dict, state: str) -> dict | None:
+    """Accoda un passo alla pipeline del progetto e ne porta avanti lo stato.
+
+    Una sola scrittura: `$push` e `$set` insieme, così non esiste un momento in
+    cui il passo c'è e lo stato è ancora quello di prima. Restituisce il
+    progetto aggiornato, oppure `None` se non esiste.
+    """
+    return db[PROJECTS].find_one_and_update(
+        {"project_id": project_id},
+        {"$push": {"pipeline.steps": step}, "$set": {"pipeline.state": state}},
+        projection=PUBLIC,
+        return_document=ReturnDocument.AFTER,
+    )
+
+
 def delete_project(db: Database, project_id: str) -> bool:
     return db[PROJECTS].delete_one({"project_id": project_id}).deleted_count == 1
 

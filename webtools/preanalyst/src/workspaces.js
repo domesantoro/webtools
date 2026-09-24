@@ -44,3 +44,28 @@ export async function storeSpec(settings, projectId, text, { origin, uploadedBy 
   }
   return { ok: false, reason: "unavailable", code: body?.error };
 }
+
+// GET /projects/{id}/specs/latest → il .md dell'ultima specifica conservata.
+// Serve a chi deve rileggere quello che l'utente ha mandato: la pagina del
+// rigetto ne fa un PDF. Chi chiama ha già verificato di chi è il progetto:
+// workspaces conserva e non decide.
+export async function latestSpec(settings, projectId) {
+  const path = `/projects/${encodeURIComponent(projectId)}/specs/latest`;
+  let response;
+  try {
+    response = await fetch(`${settings.workspacesUrl}${path}`, {
+      headers: { accept: "text/markdown" },
+      signal: AbortSignal.timeout(settings.workspacesTimeoutMs),
+    });
+  } catch (error) {
+    console.error(`[workspaces] GET ${path}: ${error.name} ${error.message}`);
+    return { ok: false, reason: "unavailable" };
+  }
+
+  if (response.status === 404) return { ok: false, reason: "not_found" };
+  if (!response.ok) {
+    console.error(`[workspaces] GET ${path}: HTTP ${response.status}`);
+    return { ok: false, reason: "unavailable" };
+  }
+  return { ok: true, data: await response.text() };
+}

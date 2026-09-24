@@ -106,6 +106,14 @@ export class Configuration {
     throw this.#fail(path, value, `un intero tra ${min} e ${max}`);
   }
 
+  // Un numero con la virgola: soglie, probabilità, fattori. Gli importi **non**
+  // passano di qui: quelli sono interi in centesimi.
+  number(path, { min = -Infinity, max = Infinity } = {}) {
+    const value = this.get(path);
+    if (typeof value === "number" && Number.isFinite(value) && value >= min && value <= max) return value;
+    throw this.#fail(path, value, `un numero tra ${min} e ${max}`);
+  }
+
   port(path) {
     return this.integer(path, { min: 1, max: 65535 });
   }

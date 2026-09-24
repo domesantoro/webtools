@@ -33,7 +33,7 @@
 //
 // Il driver non si sceglie: o lo porta il link, o lo assegniamo noi.
 
-import { findDiscount } from "./anagraphics.js";
+import { findDiscount, findDriver } from "./anagraphics.js";
 
 export const NONE = "none";
 export const DISCOUNT_APPLIED = "discount_applied";
@@ -130,4 +130,34 @@ export async function resolveDriverLink(settings, { discountCode, driverUid }, d
     return fromDriver(driverUid, drivers);
   }
   return { state: NONE };
+}
+
+// Il link di un driver **ricostruito dal progetto**, per la pagina che torna
+// indietro quando la richiesta dice troppo poco (§16.6 del README).
+//
+// Lì l'indirizzo con i parametri non c'è più — è la risposta a un `POST` — ma
+// quello che i parametri portavano è stato registrato sul progetto al primo
+// invio: `review.driver_uid` con `preset`, e `billing.discount_code`. Il box
+// deve mostrare le stesse cose di prima, altrimenti la pagina si presenta
+// mutilata a chi la rivede.
+//
+// Qui gli stati sono solo quelli riconosciuti: un driver che non si trova più, o
+// che nel frattempo è stato disabilitato, non è un problema dell'utente — il
+// progetto è già assegnato, e dirglielo adesso non gli serve a niente.
+export async function driverLinkOfProject(settings, project) {
+  const driverUid = project.review?.preset ? project.review?.driver_uid : null;
+  if (!driverUid) return { state: NONE };
+
+  const trovato = await findDriver(settings, driverUid);
+  if (!trovato.ok) return { state: NONE };
+  const driver = trovato.data;
+
+  const discountCode = project.billing?.discount_code ?? null;
+  if (!discountCode) return { state: DRIVER_APPLIED, driver };
+
+  // La percentuale non è sul progetto: si rilegge dallo sconto. Se non si
+  // riesce, resta il driver — che è la parte che conta per chi guarda.
+  const sconto = await findDiscount(settings, discountCode);
+  if (!sconto.ok) return { state: DRIVER_APPLIED, driver };
+  return { state: DISCOUNT_APPLIED, code: discountCode, driver, percentage: sconto.data.percentage };
 }

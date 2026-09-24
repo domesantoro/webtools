@@ -90,7 +90,17 @@ export function renderAccessFragments(ui, access, settings, colonna) {
 // La colonna destra: il box del driver e, solo per un driver, il blocco del
 // lavoro autonomo. Può essere vuota — chi arriva senza link e non è un driver
 // non ha niente da vedere lì — e in quel caso la pagina resta a una colonna.
-function asideData({ driverLink, params, showDriverBox, driversAvailable, ambassador, isDriver, moreUrl }) {
+function asideData({
+  driverLink,
+  params,
+  showDriverBox,
+  driversAvailable,
+  ambassador,
+  isDriver,
+  moreUrl,
+  autonomousWork,
+  locked,
+}) {
   const ownLink = driverLink.state === OWN_LINK;
   // Un link proprio non si mostra: il box sparisce e a dirlo è il blocco del
   // lavoro autonomo, che per un driver c'è comunque.
@@ -106,8 +116,11 @@ function asideData({ driverLink, params, showDriverBox, driversAvailable, ambass
       // L'avviso ha senso solo se c'è una casella da segnare e qualcosa di
       // valido da non applicare: un driver che guarda un riferimento a un altro
       // driver, riconosciuto. Su uno sconto scaduto non c'è niente da ignorare.
-      can_be_ignored: boxShow && isDriver && resolved,
-      hidden: hiddenFields(driverLink, params, driversAvailable),
+      // Con la casella ferma non c'è più niente da ignorare, e niente deve
+      // viaggiare col form: i termini del progetto si sono decisi al primo invio
+      // e questo giro non li rilegge.
+      can_be_ignored: boxShow && isDriver && resolved && !locked,
+      hidden: locked ? [] : hiddenFields(driverLink, params, driversAvailable),
     },
     // Chi ha invitato l'utente a usare webtools (src/ambassador.js). C'è solo
     // se l'ambassador è stato riconosciuto; con il lavoro autonomo segnato lo
@@ -115,11 +128,19 @@ function asideData({ driverLink, params, showDriverBox, driversAvailable, ambass
     ambassador_box: {
       show: Boolean(ambassador),
       driver: ambassador,
+      // Quando il form si ripresenta il box si legge e basta: l'uid non
+      // riparte col form, perché il progetto ce l'ha già.
+      locked: Boolean(locked),
     },
     driver_work: {
       show: isDriver,
       own_link: ownLink,
       more_url: moreUrl,
+      // Com'è messa la casella. Al primo invio è libera e vuota; quando il form
+      // si ripresenta dice quello che il progetto ha già registrato e non si
+      // tocca più, perché quella scelta è stata fatta (src/server.js).
+      checked: Boolean(autonomousWork?.checked),
+      locked: Boolean(autonomousWork?.locked),
     },
   };
 }
@@ -155,7 +176,11 @@ export function renderLoginDone(ui, { ok }) {
 
 // Le domande di `src/questions.js` con i loro testi nella lingua della pagina.
 // `hint` e `placeholder` ci sono solo se il catalogo li ha.
-function localizedSections(ui) {
+//
+// `answers` sono le risposte già date, quando il form si ripresenta a chi è
+// tornato indietro (src/server.js): ogni campo si porta dietro quello che c'era.
+// Al primo invio è vuoto e i campi nascono vuoti.
+function localizedSections(ui, answers) {
   const optional = (key) => (ui.has(key) ? ui.t(key) : null);
   return SECTIONS.map((section) => {
     const base = `preanalyst.questions.sections.${section.id}`;
@@ -171,10 +196,22 @@ function localizedSections(ui) {
           hint: optional(`${key}.hint`),
           placeholder: optional(`${key}.placeholder`),
           options: field.options?.map(([code]) => [code, ui.t(`${key}.options.${code}`)]),
+          ...answered(field, answers[field.name]),
         };
       }),
     };
   });
+}
+
+// Che cosa aveva risposto l'utente a una domanda, nella forma che serve al
+// template: `value` per i campi di testo, `selected` per le scelte — sempre un
+// elenco di codici, anche per un radio, così il template fa una cosa sola.
+function answered(field, value) {
+  if (field.kind === "radio" || field.kind === "checkbox") {
+    const codici = Array.isArray(value) ? value : value ? [value] : [];
+    return { selected: codici };
+  }
+  return { value: typeof value === "string" ? value : "" };
 }
 
 // I messaggi del caricamento (public/upload.js): il browser non ha cataloghi,
@@ -226,6 +263,10 @@ export function renderPage(ui, {
   access,
   settings,
   submissionId,
+  rejectedProjectId,
+  answers = {},
+  resumed = null,
+  autonomousWork = null,
 }) {
   return env.render("page.njk", {
     ...ui,
@@ -233,7 +274,11 @@ export function renderPage(ui, {
     title: ui.t("preanalyst.page.title"),
     description: ui.t("preanalyst.page.description"),
     home_link: "/",
-    sections: localizedSections(ui),
+    sections: localizedSections(ui, answers),
+    // Il secondo giro: la richiesta è tornata indietro perché diceva troppo
+    // poco. La pagina lo dice in testa al form e si porta dietro il progetto,
+    // così la riscrittura non ne fa nascere un altro.
+    resumed: resumed ? { project_id: resumed.projectId } : null,
     access: accessData(access, settings),
     aside: asideData({
       driverLink,
@@ -243,11 +288,22 @@ export function renderPage(ui, {
       ambassador,
       isDriver,
       moreUrl: workWithUsUrl(settings),
+      autonomousWork,
+      locked: Boolean(autonomousWork?.locked),
     }),
     upload: {
       max_mb: Math.round(settings.uploadMaxBytes / (1024 * 1024)),
       accept: settings.uploadAccept,
       messages: uploadMessages(ui),
     },
+    // La modale del rifiuto c'è solo per chi ci è appena stato mandato da
+    // `/submit`. `rejectedProjectId` arriva già verificato: progetto esistente,
+    // di chi guarda, davvero rifiutato (src/server.js).
+    rejection: rejectedProjectId
+      ? {
+          pdf_url: `/projects/${encodeURIComponent(rejectedProjectId)}/rejection.pdf`,
+          home_url: settings.frontGateUrl,
+        }
+      : null,
   });
 }

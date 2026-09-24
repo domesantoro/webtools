@@ -1,0 +1,23 @@
+{#
+  Il velo che copre la pagina mentre una richiesta è per strada.
+
+  NON MODIFICARE LA COPIA DENTRO UN SOTTOSISTEMA.
+  L'originale è `webtools/commons/templates/loader.njk`; le copie le distribuisce
+  `webtools/configurator/template_deployer/deploy.sh`.
+
+  Si usa così:
+
+      {% include "commons/loader.njk" %}
+
+  e sul form che lo deve accendere si mette `data-webtools-loader`. Lo accende
+  `webtools/commons/script/webtools_loader.js`, distribuito dallo script_deployer
+  e caricato dalla pagina nel blocco `scripts`.
+
+  Variabili attese: `t`, la traduzione (la dà i18n.pageContext).
+#}
+<div class="webtools-loader" id="webtools-loader" role="status" aria-live="polite" aria-hidden="true">
+  <div class="webtools-loader-box">
+    <div class="webtools-loader-spinner"></div>
+    <p class="webtools-loader-text">{{ t("common.loader.working") }}</p>
+  </div>
+</div>

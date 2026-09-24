@@ -6,6 +6,7 @@
 {% import "partials/access.njk" as accesso with context %}
 {% import "partials/driver_work.njk" as lavoro with context %}
 {% import "partials/upload_box.njk" as caricamento with context %}
+{% import "partials/rejection_dialog.njk" as rigetto with context %}
 
 {#
   La pagina della pre-analisi.
@@ -40,11 +41,25 @@
 
       <div class="gate-layout">
         <div class="gate-main reveal delay-1">
+{%- if resumed %}
+          {#- Il secondo giro: la richiesta è tornata indietro perché diceva
+              troppo poco. L'avviso sta in testa al form, sopra la prima domanda,
+              perché è lì che si riprende a scrivere. #}
+          <div class="form-notice">
+            <h2 class="form-notice-title">{{ t("preanalyst.underspecified.title") }}</h2>
+            <p class="form-notice-text">{{ t("preanalyst.underspecified.text") }}</p>
+          </div>
+{%- endif %}
           {#- Senza `novalidate`: il browser controlla da sé i campi obbligatori
               prima di mandare il form. Il server li ricontrolla comunque. #}
-          <form class="gate-form" id="gate-form" method="post" action="/submit">
+          <form class="gate-form" id="gate-form" method="post" action="/submit" data-webtools-loader>
             {#- L'id di questo invio: se il form arriva due volte, il progetto resta uno. #}
             <input type="hidden" name="submission_id" value="{{ submission_id }}">
+{%- if resumed %}
+            {#- Il progetto che si sta riscrivendo: senza, questo invio ne farebbe
+                nascere un altro e i giri non si conterebbero più. #}
+            <input type="hidden" name="project_id" value="{{ resumed.project_id }}">
+{%- endif %}
             {%- for sezione in sections %}
             {{ campi.section(sezione) }}
             {%- endfor %}
@@ -78,11 +93,22 @@
            t("preanalyst.dialogs.submit.lead"), t("preanalyst.dialogs.submit.hint")) }}
       {{ accesso.dialog(access, "login-dialog-upload",
            t("preanalyst.dialogs.upload.lead"), t("preanalyst.dialogs.upload.hint")) }}
+{%- if rejection %}
+      {{ rigetto.render(rejection) }}
+{%- endif %}
     </div>
+
+{% include "commons/loader.njk" %}
 {% endblock %}
 
 {% block scripts %}
 <script src="/sso_popup.js" defer></script>
 <script src="/gate.js" defer></script>
 <script src="/upload.js" defer></script>
+{#- Dopo gate.js: il loader si accende solo se il submit non è stato fermato, e i
+    gestori si chiamano nell'ordine in cui sono stati registrati. #}
+<script src="/webtools_loader.js" defer></script>
+{%- if rejection %}
+<script src="/rejection.js" defer></script>
+{%- endif %}
 {% endblock %}

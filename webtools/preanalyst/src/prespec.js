@@ -17,6 +17,10 @@
 //
 // La chiave `webtools:` del front matter non si scrive qui: la timbra
 // webtools-workspaces quando conserva il file.
+//
+// Il template sta in `templates/commons/prespec.md.njk`, ed è una **copia
+// generata**: la forma del documento è configurazione, quindi l'originale è in
+// `webtools/configurator/documents/` e lo distribuisce il documents_deployer.
 
 import { fileURLToPath } from "node:url";
 
@@ -120,7 +124,7 @@ function openPoints(answers) {
 // `language`: la lingua in cui il cliente ha scritto le risposte aperte, cioè
 // quella della pagina da cui ha mandato il form. Il resto è in inglese.
 export function renderPrespec(projectId, answers, language) {
-  return env.render("prespec.md.njk", {
+  return env.render("commons/prespec.md.njk", {
     project_id: projectId,
     template: TEMPLATE,
     language,

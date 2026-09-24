@@ -4,7 +4,9 @@
   porta il progetto (src/ambassador.js). Con il lavoro autonomo segnato lo
   nasconde il CSS (regola `:has()` in styles.css).
 
-  Il campo nascosto porta l'uid all'invio, dove viene verificato di nuovo.
+  Il campo nascosto porta l'uid all'invio, dove viene verificato di nuovo. Non
+  c'è quando il form si ripresenta (`locked`): l'ambassador del progetto è già
+  stato registrato al primo invio, e quel giro non lo rilegge.
 #}
 
 {% macro render(ambassador) %}
@@ -13,7 +15,9 @@
         <div class="driver-box-body">
           <p class="driver-name">{{ ambassador.driver.screen_name }}</p>
           <p class="driver-box-lead">{{ t("preanalyst.ambassador_box.lead") }}</p>
+          {%- if not ambassador.locked %}
           <input type="hidden" name="ambassador" value="{{ ambassador.driver.uid }}" form="gate-form">
+          {%- endif %}
         </div>
       </aside>
 {%- endmacro %}

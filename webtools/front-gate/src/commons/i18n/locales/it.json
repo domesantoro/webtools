@@ -7,6 +7,9 @@
     "brand": {
       "tagline": "strumenti su misura",
       "home": "Home"
+    },
+    "loader": {
+      "working": "Invio in corso…"
     }
   },
   "sso": {
@@ -85,7 +88,8 @@
       "own_link": "Il link che hai usato è tuo: non si applica.",
       "checkbox": "È un lavoro autonomo.",
       "hint": "Il progetto lo segui tu: al prezzo non si aggiunge la quota del driver. Lo paghi a consumo con i tuoi token, più la fee di sistema.",
-      "more": "Vuoi saperne di più?"
+      "more": "Vuoi saperne di più?",
+      "locked": "Questa scelta è stata registrata con il primo invio e non cambia."
     },
     "upload": {
       "title": "Analisi già pronta",
@@ -141,6 +145,10 @@
         "title": "Analisi non trovata",
         "text": "Questa analisi non esiste, oppure appartiene a un altro account."
       }
+    },
+    "underspecified": {
+      "title": "Serve qualche dettaglio in più",
+      "text": "Da quello che hai scritto non si capisce ancora che cosa deve fare lo strumento. Aggiungi qualche dettaglio nelle risposte qui sotto e manda di nuovo la richiesta: quello che avevi scritto è rimasto."
     },
     "analysis": {
       "title": "Analisi"
@@ -275,6 +283,18 @@
             "other_software": "Sì, dentro un altro programma"
           }
         }
+      }
+    },
+    "rejection": {
+      "title": "Non possiamo proseguire con questa richiesta",
+      "lead": "Da quello che hai descritto, webtools probabilmente non è lo strumento adatto a questo bisogno.",
+      "pdf_hint": "Quello che hai scritto nel form puoi conservarlo:",
+      "pdf_link": "scaricalo in PDF",
+      "ok": "Ok",
+      "pdf": {
+        "title": "La tua richiesta di pre-analisi",
+        "lead": "Le risposte che hai mandato con il form di webtools.",
+        "reason_title": "Perché la richiesta non è stata accolta"
       }
     }
   },

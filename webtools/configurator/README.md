@@ -20,10 +20,26 @@ I file sono **strutturati**: i campi si raggruppano per argomento (`listen`, `ac
 `session`, `limits`, …), non si scrivono piatti. Il campo `subsystem` non si scrive: lo dà il nome
 del file. Il significato dei campi sta nella documentazione del sottosistema che li legge.
 
-`load_configuration.sh` li carica nella collection `configuration` di anagraphics, che li serve con
-`GET /configuration/{subsystem}`. Ogni documento viene **sostituito per intero** e quelli senza più
-un file vengono cancellati: la fonte sono i file, non Mongo. Non si carica niente se anche un solo
-file non è JSON valido.
+`load_configuration.sh` li porta nella collection `configuration` di anagraphics, che li serve con
+`GET /configuration/{subsystem}`. **La configurazione che vive sta lì, non nei file**: questi sono
+il seme — i valori con cui nasce un ambiente nuovo — e la forma attesa, cioè quali campi esistono.
+Quello che gira può divergere, ed è normale.
+
+Per questo il caricamento aggiunge **solo i campi che mancano**: un campo che c'è non si tocca
+qualunque valore abbia, un campo tolto da un file resta in Mongo, un sottosistema senza più un file
+non viene cancellato. Un campo nuovo introdotto da uno sviluppo entra da solo al primo avvio, e
+niente di quello che è stato cambiato in esercizio si perde. Lo dice mentre lo fa:
+
+```
+Configurazione di 'webtools': 5 sottosistemi letti da configuration/
+  preanalyst: aggiunti prevalidation.max_underspecified_attempts
+```
+
+Per tornare ai file bisogna chiederlo — `./load_configuration.sh --reset [sottosistema …]` — ed è
+l'unico modo: cancella le modifiche di quei sottosistemi e li riporta a quello che dice il file. Un
+campo nuovo va aggiunto **anche** al file, o l'ambiente successivo nascerà senza.
+
+Non si carica niente se anche un solo file non è JSON valido.
 
 Ogni sottosistema legge la sua configurazione **all'avvio**, e **non ha valori di default**: se il
 documento manca, o un campo manca o è del tipo sbagliato, scrive nel log `webtools_<nome> non
@@ -103,7 +119,9 @@ Un nome che non esiste fa uscire con codice 2 e stampa l'elenco di quelli dispon
 | Nome | Script | Che cosa distribuisce | A chi |
 |---|---|---|---|
 | `style` | `style_deployer/deploy.sh` | `commons/style/commons.css` e `commons/style/fonts/` | front-gate, preanalyst, sso |
-| `template` | `template_deployer/deploy.sh` | `commons/templates/*.njk`: il guscio comune delle pagine e il selettore della lingua | preanalyst, sso; front-gate solo `locale_switch.njk` |
+| `template` | `template_deployer/deploy.sh` | `commons/templates/*.njk`: il guscio comune delle pagine, il selettore della lingua, il loader | preanalyst, sso; front-gate solo `locale_switch.njk` |
+| `script` | `script_deployer/deploy.sh` | `commons/script/*.js`, il JavaScript di **browser** comune (oggi il loader) | preanalyst, sso, front-gate (in `public/`) |
+| `documents` | `documents_deployer/deploy.sh` | `configurator/documents/*.njk` e `configurator/policies/*.md`: la forma dei documenti che il sistema produce e i criteri delle decisioni | preanalyst (in `templates/commons/` e `policies/`) |
 | `i18n` | `i18n_deployer/deploy.sh` | `commons/i18n/webtools_i18n.js` e **tutti** i cataloghi `commons/i18n/locales/*.json` | preanalyst, sso, front-gate (in `src/commons/i18n/`) |
 | `sso` | `sso_deployer/deploy.sh` | `commons/sso/sso_client.js` (server) e `commons/sso/sso_popup.js` (browser) | preanalyst |
 | `specs` | `specs_deployer/deploy.sh` | `commons/specs/spec_front_matter.js`, il front matter delle specifiche | preanalyst, webtools-workspaces (in `src/commons/`) |
@@ -122,6 +140,45 @@ aggiunge una lingua. Una chiave che manca in una lingua si prende dalla lingua d
 tutti i sottosistemi.
 Per controllare che ogni chiave usata esista, e vedere che cosa manca da tradurre:
 `node webtools/commons/i18n/webtools_i18n_check.mjs`.
+
+## I segreti
+
+Le chiavi delle API sono configurazione come tutto il resto, ma `configuration/` è in git. Stanno
+quindi in **`secrets/`**, che in git non c'è: un file per sottosistema, con lo stesso nome e la
+stessa forma annidata del file di configurazione.
+
+`load_configuration.sh` li **fonde in profondità** sul file di configurazione prima di scrivere il
+documento in Mongo: le chiavi del segreto si affiancano a quelle della configurazione senza
+cancellare i rami vicini, e il sottosistema legge una configurazione sola da
+`GET /configuration/{subsystem}` senza sapere che un pezzo era segreto.
+
+```sh
+cd webtools/configurator/secrets
+cp preanalyst.json.example preanalyst.json    # poi ci si mette il valore vero
+cd .. && ./load_configuration.sh && ./start.sh --restart
+```
+
+In git restano soltanto il `README.md` della cartella e i file `*.example`.
+
+## I documenti e le policy
+
+Due cose che sembrano codice e non lo sono:
+
+- **`documents/`** — la **forma** dei documenti che il sistema produce: oggi `prespec.md.njk`, il
+  template della pre-specifica;
+- **`policies/`** — i criteri delle decisioni, cioè che cosa si chiede a un modello e con quali
+  regole risponde: oggi `scope-v1.md`, la policy della prevalidazione.
+
+Dicono che cosa il sistema considera accettabile e che aspetto hanno i suoi documenti: sono
+configurazione, quindi stanno qui, e nei sottosistemi ci vanno copie generate (deployer
+`documents`). **Quale** policy si usa lo dice la configurazione del sottosistema
+(`prevalidation.policy`), non il deployer.
+
+Le copie delle policy portano in testa un commento HTML con l'avviso «non modificare qui»: chi le
+manda a un modello toglie i commenti in testa, così l'avviso non finisce nel prompt.
+
+Un limite di `prespec.md.njk`: è accoppiato a `preanalyst/src/prespec.js`, che gli passa le
+variabili. Si può cambiare la forma del documento, non inventare campi che il codice non manda.
 
 ## Come sono fatti
 

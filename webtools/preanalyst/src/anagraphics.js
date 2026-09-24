@@ -91,3 +91,13 @@ export async function createProject(settings, { ownerUid, submissionId, review, 
 export async function deleteProject(settings, projectId) {
   return readJson(settings, `/projects/${encodeURIComponent(projectId)}`, { method: "DELETE" });
 }
+
+// POST /projects/{id}/pipeline/steps → il progetto aggiornato.
+// Accoda un passo alla pipeline e porta il progetto nello stato che il passo
+// dice. Quando è successo lo mette anagraphics.
+export async function addPipelineStep(settings, projectId, { step, result, state, data }) {
+  return readJson(settings, `/projects/${encodeURIComponent(projectId)}/pipeline/steps`, {
+    method: "POST",
+    body: { step, result, state, data },
+  });
+}

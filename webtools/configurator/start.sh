@@ -21,6 +21,11 @@
 # Prima di avviare si carica la configurazione (load_configuration.sh): i
 # servizi la leggono da anagraphics all'avvio, e senza non partono. Un servizio
 # già acceso continua con la configurazione che ha letto quando è partito.
+#
+# Caricare **non sovrascrive**: la configurazione che vive sta in Mongo e i file
+# sono il seme, quindi da qui entrano solo i campi che in Mongo non ci sono. Un
+# valore cambiato in esercizio sopravvive a tutti i riavvii; per riportarlo a
+# quello del file ci vuole `./load_configuration.sh --reset [sottosistema]`.
 set -euo pipefail
 
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

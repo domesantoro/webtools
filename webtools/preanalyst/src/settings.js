@@ -47,6 +47,40 @@ export async function loadSettings() {
     // Quanto testo si accetta in una risposta aperta. Un racconto lungo sta in
     // poche migliaia di caratteri: oltre è un incollaggio sbagliato, non una risposta.
     answerMaxChars: configuration.integer("form.answer_max_chars", { min: 1 }),
+    // Il modulo IA: quale fornitore si usa e come lo si raggiunge. La chiave
+    // arriva dai segreti (configurator/secrets/preanalyst.json), fusi nella
+    // configurazione al caricamento: qui è un campo come gli altri, e se manca
+    // il server non parte.
+    ai: {
+      provider: configuration.string("ai.provider"),
+      timeoutMs: configuration.integer("ai.timeout_ms", { min: 1 }),
+      providers: {
+        anthropic: {
+          model: configuration.string("ai.providers.anthropic.model"),
+          maxTokens: configuration.integer("ai.providers.anthropic.max_tokens", { min: 1 }),
+          apiKey: configuration.string("ai.providers.anthropic.api_key"),
+        },
+      },
+    },
+    // Il primo cancello: vedi src/prevalidator.js.
+    prevalidation: {
+      // Quale policy si usa. Il file sta in policies/, copia generata
+      // dall'originale in configurator/policies/.
+      policy: configuration.string("prevalidation.policy"),
+      // Sopra questa probabilità di `run_out_certain` la richiesta si rifiuta.
+      rejectThreshold: configuration.number("prevalidation.reject_threshold", { min: 0, max: 1 }),
+      // Quanta pre-specifica si manda al modello. Rete di sicurezza: le risposte
+      // aperte sono già limitate all'invio.
+      specMaxChars: configuration.integer("prevalidation.spec_max_chars", { min: 1 }),
+      // Quante volte la stessa richiesta può tornare indietro per mancanza di
+      // dettagli. Oltre questo numero non si chiede più: si rifiuta.
+      maxUnderspecifiedAttempts: configuration.integer("prevalidation.max_underspecified_attempts", {
+        min: 0,
+      }),
+      // Se la motivazione estesa del rigetto finisce nel PDF anche per chi non è
+      // un driver. I driver la vedono comunque.
+      rejectionReasonInPdf: configuration.boolean("prevalidation.rejection_reason_in_pdf"),
+    },
     // Lingue, cataloghi e cookie della lingua: vedi src/commons/i18n/webtools_i18n.js.
     i18n: loadI18n(configuration),
   };

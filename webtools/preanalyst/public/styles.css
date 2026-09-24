@@ -87,6 +87,22 @@
 
 .gate-form { display: grid; gap: 28px; }
 
+/* L'avviso di chi è tornato indietro: la richiesta diceva troppo poco. Sta sopra
+   il form, con lo stesso trattamento delle sezioni ma sul giallo della nota, per
+   distinguersi da una domanda senza sembrare un errore. */
+.form-notice {
+  background: var(--note);
+  border: 1.5px solid var(--ink);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-hard-md);
+  padding: 20px 22px;
+  margin-bottom: 28px;
+  display: grid;
+  gap: 8px;
+}
+.form-notice-title { font-size: 18px; letter-spacing: -.01em; margin: 0; }
+.form-notice-text { margin: 0; font-size: 15px; line-height: 1.5; }
+
 .form-section {
   background: var(--surface);
   border: 1.5px solid var(--ink);
@@ -125,6 +141,10 @@
 .choice:hover { background: var(--paper-2); }
 .choice input { margin: 2px 0 0; accent-color: var(--accent); width: 17px; height: 17px; flex: none; }
 .choice:has(input:checked) { background: var(--accent-soft); }
+/* Una scelta già fatta e non più modificabile: si legge, non si tocca. */
+.choice-locked { cursor: default; opacity: .7; }
+.choice-locked:hover { background: none; }
+.choice-locked:has(input:checked) { background: var(--accent-soft); opacity: .8; }
 
 /* Invio. */
 .form-actions { display: grid; gap: 10px; justify-items: start; }

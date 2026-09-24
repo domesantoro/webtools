@@ -50,4 +50,14 @@ None.
   Reso da `src/prespec.js` con un ambiente senza autoescape (è markdown, non
   HTML): il testo del cliente entra **solo** attraverso il filtro `quote`.
   Perché è fatta così: vedi il commento in cima a `src/prespec.js`.
+
+  NON MODIFICARE LA COPIA DENTRO UN SOTTOSISTEMA.
+  Questo file dice che **forma** ha la pre-specifica, quindi è configurazione:
+  l'originale sta in `webtools/configurator/documents/prespec.md.njk` e le copie
+  (`preanalyst/templates/commons/`) le distribuisce
+  `webtools/configurator/documents_deployer/deploy.sh`.
+
+  Limite: il template è accoppiato a `src/prespec.js`, che gli passa le
+  variabili. Si può cambiare la forma del documento, non inventare campi che il
+  codice non manda.
 #}

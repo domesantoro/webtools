@@ -1,8 +1,10 @@
 // Server HTTP della pre-analisi.
 //
 //   GET  /                     la pagina con il form
-//   POST /submit               il form: nasce il progetto con la sua pre-specifica
+//                              con ?rejected={id}: la modale della richiesta rifiutata
+//   POST /submit               il form: nasce il progetto, la pre-specifica e la prevalidazione
 //   GET  /analysis/{id}        la pagina dell'analisi (per ora vuota)
+//   GET  /projects/{id}/rejection.pdf   i dati del form dopo un rifiuto
 //   POST /upload               una specifica già pronta, per un progetto esistente
 //   GET  /login-done, /session-fragment, /logout   il giro dell'accesso
 //   POST /locale               cambia la lingua (cookie comune) e torna alla pagina
@@ -16,7 +18,14 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { ambassadorOf, resolveAmbassador } from "./ambassador.js";
-import { createProject, deleteProject, findProject, listDrivers } from "./anagraphics.js";
+import {
+  addPipelineStep,
+  createProject,
+  deleteProject,
+  findDriver,
+  findProject,
+  listDrivers,
+} from "./anagraphics.js";
 import { FrontMatterError, isProjectId, parse } from "./commons/spec_front_matter.js";
 import {
   claimTicket,
@@ -27,7 +36,7 @@ import {
   sessionCookie,
   ticketFrom,
 } from "./commons/sso_client.js";
-import { NONE, resolveDriverLink, withoutOwnLink } from "./driver_link.js";
+import { driverLinkOfProject, NONE, resolveDriverLink, withoutOwnLink } from "./driver_link.js";
 import {
   renderAccessFragments,
   renderAnalysis,
@@ -36,8 +45,10 @@ import {
   renderPage,
 } from "./page.js";
 import { readAnswers, renderPrespec } from "./prespec.js";
+import { prevalidate, verdict } from "./prevalidator.js";
 import { linkTermsOf } from "./project_driver.js";
-import { storeSpec } from "./workspaces.js";
+import { writeRejectionPdf } from "./rejection_pdf.js";
+import { latestSpec, storeSpec } from "./workspaces.js";
 
 const PUBLIC_DIR = fileURLToPath(new URL("../public/", import.meta.url));
 
@@ -294,6 +305,19 @@ async function receiveForm(request, settings, response, ui) {
   const { answers, missing } = readAnswers(form, settings.answerMaxChars);
   if (missing.length > 0) return sendMessage(response, ui, 400, "missing");
 
+  // Una riscrittura: chi è tornato indietro perché serviva qualche dettaglio in
+  // più rimanda il form con l'id del suo progetto. Si riparte da quello invece
+  // di crearne un altro, così i giri restano contati in un posto solo.
+  const ripresa = await resumedProject(settings, form, accesso.session);
+  if (ripresa) {
+    return await writeAndPrevalidate(settings, response, ui, {
+      projectId: ripresa.projectId,
+      answers,
+      session: accesso.session,
+      attempts: ripresa.attempts,
+    });
+  }
+
   // Tutto ciò che arriva dai campi nascosti si ricontrolla su anagraphics.
   const ownDriverUid = accesso.session.data?.driver_uid ?? null;
   const autonomous = Boolean(ownDriverUid) && form.get("autonomous_work") === "yes";
@@ -320,24 +344,220 @@ async function receiveForm(request, settings, response, ui) {
     return redirect(response, `/analysis/${projectId}`);
   }
 
-  const salvato = await storeSpec(settings, projectId, renderPrespec(projectId, answers, ui.locale), {
+  return await writeAndPrevalidate(settings, response, ui, {
+    projectId,
+    answers,
+    session: accesso.session,
+    attempts: 0,
+  });
+}
+
+// Il progetto da riprendere, se il form ne porta uno valido.
+//   → { projectId, attempts } oppure null
+//
+// Vale solo per un progetto che esiste, è di chi manda il form ed è fermo in
+// `UNDERSPECIFIED`: un id qualunque nel campo nascosto non permette di
+// riscrivere il progetto di un altro, né di rianimarne uno già rifiutato.
+//
+// `attempts` sono i giri già fatti, contati sui passi della pipeline: il
+// registro dei passi è l'unico posto dove quel numero esiste, e non serve
+// tenerlo da nessun'altra parte.
+async function resumedProject(settings, form, session) {
+  const projectId = form.get("project_id") ?? "";
+  if (!isProjectId(projectId)) return null;
+
+  const progetto = await findProject(settings, projectId);
+  if (!progetto.ok) return null;
+  if (progetto.data.owner_uid !== session.uid) {
+    console.warn(
+      `[preanalyst] ${session.username} ha riscritto il progetto di un altro (${projectId}): ignorato`
+    );
+    return null;
+  }
+  if (progetto.data.pipeline?.state !== "UNDERSPECIFIED") return null;
+
+  return { projectId, attempts: underspecifiedAttempts(progetto.data) };
+}
+
+// Quante volte questa richiesta è già tornata indietro per mancanza di dettagli.
+export function underspecifiedAttempts(progetto) {
+  const passi = progetto.pipeline?.steps ?? [];
+  return passi.filter((voce) => voce.result === "underspecified").length;
+}
+
+// La pre-specifica si rende, si conserva e si prevalida. È la parte comune fra
+// il primo invio e la riscrittura di chi è tornato indietro (§16.6 del README):
+// cambia solo da quale progetto si parte e quanti giri sono già stati fatti.
+async function writeAndPrevalidate(settings, response, ui, { projectId, answers, session, attempts }) {
+  const prespec = renderPrespec(projectId, answers, ui.locale);
+  const salvato = await storeSpec(settings, projectId, prespec, {
     origin: "system",
-    uploadedBy: accesso.session.uid,
+    uploadedBy: session.uid,
   });
   if (!salvato.ok) {
-    const cancellato = await deleteProject(settings, projectId);
-    console.error(
-      `[preanalyst] pre-specifica non scritta per il progetto ${projectId}: ` +
-        (cancellato.ok ? "progetto cancellato" : "PROGETTO RIMASTO SENZA PRE-SPECIFICA")
-    );
+    // Solo al primo giro il progetto si cancella: senza pre-specifica non ha
+    // niente da cui partire. Chi ha già riscritto ha una versione buona alle
+    // spalle, e buttarla via sarebbe peggio.
+    if (attempts === 0) {
+      const cancellato = await deleteProject(settings, projectId);
+      console.error(
+        `[preanalyst] pre-specifica non scritta per il progetto ${projectId}: ` +
+          (cancellato.ok ? "progetto cancellato" : "PROGETTO RIMASTO SENZA PRE-SPECIFICA")
+      );
+    } else {
+      console.error(`[preanalyst] riscrittura non conservata per il progetto ${projectId}`);
+    }
     return sendMessage(response, ui, 503, "unavailable");
   }
 
   console.log(
-    `[preanalyst] richiesta di ${accesso.session.username}: progetto ${projectId}, ` +
-      `pre-specifica v${salvato.data.version}`
+    `[preanalyst] richiesta di ${session.username}: progetto ${projectId}, ` +
+      `pre-specifica v${salvato.data.version}${attempts ? ` (giro ${attempts + 1})` : ""}`
   );
+
+  const esito = await runPrevalidation(settings, projectId, prespec, attempts);
+
+  if (esito === "rejected") return redirect(response, `/?rejected=${projectId}`);
+  if (esito === "underspecified") {
+    // Qui **non** si reindirizza: la pagina si rende con le risposte già dentro.
+    // Chiedere qualche dettaglio in più e restituire un form vuoto sarebbe un
+    // invito impossibile da accogliere. Il prezzo è che ricaricare rimanda il
+    // form — vedi §16.7 del README.
+    return await serveFormAgain(settings, response, ui, { projectId, answers, session });
+  }
   return redirect(response, `/analysis/${projectId}`);
+}
+
+// Il form di nuovo, con dentro quello che l'utente aveva già scritto, perché la
+// richiesta non diceva abbastanza per essere giudicata.
+//
+// Non è un reindirizzamento: la pagina si rende qui, in risposta al POST. Un
+// `303` verso la home riporterebbe un form vuoto, e chiedere qualche dettaglio
+// in più restituendo un foglio bianco è un invito che nessuno può accogliere.
+//
+// **La pagina resta la pagina**: la colonna destra è quella di prima — il box del
+// driver, quello dell'ambassador, il blocco del lavoro autonomo per un driver, il
+// caricamento di una specifica già pronta. Chi rivede il form deve ritrovarlo
+// com'era, o sembra che qualcosa si sia rotto.
+//
+// Quello che cambia è che i box **si leggono e non si toccano**: le condizioni
+// economiche del progetto si sono decise al primo invio e questo giro non le
+// rilegge. Quindi niente campi nascosti che viaggiano col form, niente avviso
+// «questo driver verrà ignorato», e la casella del lavoro autonomo mostra quello
+// che è registrato, ferma.
+//
+// I parametri dell'indirizzo qui non ci sono — è la risposta a un `POST` — ma non
+// servono: quello che portavano sta sul progetto, e da lì si rilegge
+// (`driverLinkOfProject`).
+async function serveFormAgain(settings, response, ui, { projectId, answers, session }) {
+  // Che cosa si è deciso al primo invio. Se anagraphics non risponde si va
+  // avanti lo stesso con la pagina: un dettaglio della colonna destra non vale
+  // la richiesta dell'utente, che è già stata scritta.
+  const progetto = await findProject(settings, projectId);
+  const dati = progetto.ok ? progetto.data : null;
+  const autonomous = Boolean(dati?.billing?.autonomous_work);
+
+  // In un lavoro autonomo il driver è chi sta compilando, e il box non si mostra:
+  // è quello che succede al primo invio, dove lo spegne il CSS della casella.
+  const driverLink = dati && !autonomous ? await driverLinkOfProject(settings, dati) : { state: NONE };
+
+  const ambassadorUid = dati?.billing?.ambassador_uid ?? null;
+  const invito = ambassadorUid ? await findDriver(settings, ambassadorUid) : { ok: false };
+
+  const html = renderPage(ui, {
+    access: { logged: true, session, ssoAvailable: true },
+    settings,
+    params: {},
+    driverLink,
+    showDriverBox: driverLink.state !== NONE,
+    driversAvailable: true,
+    ambassador: invito.ok ? invito.data : null,
+    isDriver: Boolean(session.data?.driver_uid),
+    // La casella dice com'è il progetto, e non si può più cambiare: al secondo
+    // giro nessuno rilegge `autonomous_work`, e una casella che non fa niente è
+    // peggio che una casella ferma.
+    autonomousWork: { checked: autonomous, locked: true },
+    // Un id nuovo per il giro nuovo: questo è un altro invio, e la deduplica
+    // degli invii lavora su quello.
+    submissionId: randomUUID(),
+    answers,
+    resumed: { projectId },
+    rejectedProjectId: null,
+  });
+  send(response, 200, "text/html; charset=utf-8", html);
+}
+
+// Dove porta la pipeline ognuna delle tre decisioni. Il passo dice due cose —
+// com'è andato e dove si va — e chi le decide è questo cancello.
+const STATE_AFTER = {
+  passed: "ANALYSIS",
+  rejected: "REJECTED",
+  underspecified: "UNDERSPECIFIED",
+};
+
+// Il primo cancello: la pre-specifica passa dal prevalidator e l'esito si accoda
+// alla pipeline del progetto. Restituisce che cosa si fa della richiesta —
+// "passed", "rejected", "underspecified" — oppure "failed" se il controllo non
+// è riuscito.
+//
+// Se il controllo non riesce — fornitore giù, risposta inutilizzabile — il
+// progetto **resta**: il passo si segna `failed` e si va avanti. Una richiesta
+// valida non si butta via perché un controllo non ha funzionato; il rifiuto è
+// una decisione, non un guasto.
+async function runPrevalidation(settings, projectId, prespec, attempts) {
+  const esito = await prevalidate(settings, prespec);
+
+  if (!esito.ok) {
+    // Se il modello ha risposto — male, ma ha risposto — i token sono stati
+    // pagati lo stesso, e finiscono sul passo insieme all'errore: il costo di un
+    // tentativo andato storto è costo, e il PoC misura quello vero. Se invece il
+    // fornitore non ha risposto affatto non c'è nessun `usage` da scrivere.
+    const { usage, model } = esito;
+    console.error(
+      `[preanalyst] prevalidazione non riuscita per ${projectId}: ${esito.reason}` +
+        (usage ? `; ${usage.input_tokens}+${usage.output_tokens} token spesi lo stesso` : "")
+    );
+    await savePipelineStep(settings, projectId, {
+      step: "prevalidation",
+      result: "failed",
+      state: "PREVALIDATION",
+      data: { error: esito.reason, ...(usage ? { usage, model } : {}) },
+    });
+    return "failed";
+  }
+
+  const { outcome, distribution } = esito.data;
+  const decisione = verdict(distribution, outcome, {
+    threshold: settings.prevalidation.rejectThreshold,
+    attempts,
+    maxAttempts: settings.prevalidation.maxUnderspecifiedAttempts,
+  });
+
+  console.log(
+    `[preanalyst] prevalidazione di ${projectId}: ${outcome} ` +
+      `(${distribution[outcome].toFixed(2)}) → ${decisione}` +
+      `${esito.data.off_domain.flag ? ", fuori dominio" : ""}; ` +
+      `${esito.data.usage.input_tokens}+${esito.data.usage.output_tokens} token`
+  );
+
+  await savePipelineStep(settings, projectId, {
+    step: "prevalidation",
+    result: decisione,
+    state: STATE_AFTER[decisione],
+    data: esito.data,
+  });
+  return decisione;
+}
+
+// Il passo non si perde in silenzio: se anagraphics non lo prende, resta nel log.
+async function savePipelineStep(settings, projectId, step) {
+  const salvato = await addPipelineStep(settings, projectId, step);
+  if (!salvato.ok) {
+    console.error(
+      `[preanalyst] passo '${step.step}' non registrato sul progetto ${projectId}: ${salvato.reason}`
+    );
+  }
+  return salvato;
 }
 
 // Driver e sconti sono dati del **progetto**, non della pre-specifica: vanno in
@@ -370,6 +590,54 @@ function projectTerms({ ownDriverUid, autonomous, link, ambassadorUid }) {
       ambassador_uid: ambassadorUid,
     },
   };
+}
+
+// `GET /projects/{id}/rejection.pdf` — quello che l'utente aveva scritto nel
+// form, da portarsi via dopo un rifiuto.
+//
+// Lo vede solo il proprietario, e solo per un progetto davvero rifiutato: un
+// progetto di un altro risponde come uno inesistente.
+//
+// La **motivazione estesa** del rifiuto ci finisce dentro in due casi: se la
+// configurazione dice di darla a tutti, oppure se chi scarica è un driver. È un
+// dato interno: fuori da questi due casi il PDF non lo nomina nemmeno.
+async function serveRejectionPdf(request, projectId, settings, response, ui) {
+  const accesso = await currentSession(settings, request);
+  if (!accesso.ok) return sendMessage(response, ui, 503, "unavailable");
+  if (!accesso.logged) return sendMessage(response, ui, 401, "not_logged");
+  if (!isProjectId(projectId)) return sendMessage(response, ui, 404, "not_found");
+
+  const progetto = await findProject(settings, projectId);
+  if (!progetto.ok && progetto.reason !== "not_found") return sendMessage(response, ui, 503, "unavailable");
+  if (!progetto.ok || progetto.data.owner_uid !== accesso.session.uid) {
+    return sendMessage(response, ui, 404, "not_found");
+  }
+  if (progetto.data.pipeline?.state !== "REJECTED") return sendMessage(response, ui, 404, "not_found");
+
+  const specifica = await latestSpec(settings, projectId);
+  if (!specifica.ok && specifica.reason === "not_found") return sendMessage(response, ui, 404, "not_found");
+  if (!specifica.ok) return sendMessage(response, ui, 503, "unavailable");
+
+  const isDriver = Boolean(accesso.session.data?.driver_uid);
+  const mostraMotivazione = settings.prevalidation.rejectionReasonInPdf || isDriver;
+
+  return writeRejectionPdf(response, {
+    t: ui.t,
+    spec: specifica.data,
+    reason: mostraMotivazione ? rejectionReasonOf(progetto.data) : null,
+    // Il nome del file: solo l'id, che è un UUID, quindi niente da ripulire.
+    fileName: `webtools-${projectId}.pdf`,
+  });
+}
+
+// La motivazione scritta dal prevalidator, presa dall'ultimo passo che ha
+// deciso. `off_domain.reason` si aggiunge se c'è: è l'altra metà del giudizio.
+function rejectionReasonOf(progetto) {
+  const passi = progetto.pipeline?.steps ?? [];
+  const passo = [...passi].reverse().find((voce) => voce.step === "prevalidation" && voce.data?.reason);
+  if (!passo) return null;
+  const fuoriDominio = passo.data.off_domain?.flag ? passo.data.off_domain.reason : "";
+  return [passo.data.reason, fuoriDominio].filter(Boolean).join("\n\n");
 }
 
 // `GET /analysis/{id}` — la pagina dell'analisi, per ora vuota. La vede solo chi
@@ -452,7 +720,24 @@ async function pageState(request, url, settings) {
     driversAvailable,
     ambassador,
     isDriver: Boolean(ownDriverUid),
+    rejectedProjectId: await rejectedProject(request, url, settings, access),
   };
+}
+
+// `?rejected={id}` — ci arriva chi ha appena mandato il form e si è visto
+// rifiutare la richiesta. Il parametro vale solo se il progetto esiste, è di chi
+// guarda ed è davvero rifiutato: in tutti gli altri casi si ignora e la pagina è
+// quella di sempre. Così l'indirizzo non si può usare per far comparire un
+// rifiuto a qualcun altro, né per scoprire quali progetti esistono.
+async function rejectedProject(request, url, settings, access) {
+  const projectId = url.searchParams.get("rejected");
+  if (!projectId || !isProjectId(projectId) || !access.logged) return null;
+
+  const progetto = await findProject(settings, projectId);
+  if (!progetto.ok) return null;
+  if (progetto.data.owner_uid !== access.session.uid) return null;
+  if (progetto.data.pipeline?.state !== "REJECTED") return null;
+  return projectId;
 }
 
 async function servePage(request, url, settings, response, ui) {
@@ -543,6 +828,10 @@ export function createServer(settings) {
       const analisi = /^\/analysis\/([^/]+)$/.exec(url.pathname);
       if (analisi) {
         return await serveAnalysis(request, analisi[1], settings, response, ui);
+      }
+      const rigetto = /^\/projects\/([^/]+)\/rejection\.pdf$/.exec(url.pathname);
+      if (rigetto) {
+        return await serveRejectionPdf(request, rigetto[1], settings, response, ui);
       }
       return await serveStatic(url.pathname, response);
     } catch (error) {

@@ -752,3 +752,225 @@ INFO:     Shutting down
 INFO:     Waiting for application shutdown.
 INFO:     Application shutdown complete.
 INFO:     Finished server process [33320]
+=== start 2026-09-23 12:25:39 ===
+INFO:     Started server process [12268]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:9100 (Press CTRL+C to quit)
+INFO:     127.0.0.1:54635 - "GET /configuration/sso HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54637 - "GET /configuration/workspaces HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54638 - "GET /configuration/preanalyst HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54639 - "GET /configuration/front-gate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54698 - "GET /users/dome.santoro%40gmail.com HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54699 - "GET /users/dome.santoro%40gmail.com/credential HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54698 - "GET /users/dome.santoro%40gmail.com HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54699 - "GET /users/dome.santoro%40gmail.com/credential HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54698 - "POST /sessions HTTP/1.1" 201 Created
+INFO:     127.0.0.1:54699 - "POST /tickets HTTP/1.1" 201 Created
+INFO:     127.0.0.1:54698 - "DELETE /tickets/NPFMyR7x37Ntn48MyEbG0aZIMNZpbuHNAiFHcjoigeE HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54699 - "GET /sessions/yBvRXvafANPWuiTGXo1gfR2UDHMonma3a3zAr6IEIWI HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54698 - "GET /sessions/yBvRXvafANPWuiTGXo1gfR2UDHMonma3a3zAr6IEIWI HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54709 - "GET /sessions/yBvRXvafANPWuiTGXo1gfR2UDHMonma3a3zAr6IEIWI HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54710 - "POST /projects HTTP/1.1" 201 Created
+INFO:     127.0.0.1:54709 - "GET /sessions/yBvRXvafANPWuiTGXo1gfR2UDHMonma3a3zAr6IEIWI HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54710 - "GET /projects/4cfd2916-0ca0-431c-b4e2-f34be6d09581 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54836 - "GET /sessions/yBvRXvafANPWuiTGXo1gfR2UDHMonma3a3zAr6IEIWI HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54837 - "PUT /sessions/yBvRXvafANPWuiTGXo1gfR2UDHMonma3a3zAr6IEIWI/locale HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54836 - "PUT /users/dome.santoro%40gmail.com/locale HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54836 - "GET /sessions/yBvRXvafANPWuiTGXo1gfR2UDHMonma3a3zAr6IEIWI HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54838 - "GET /projects/4cfd2916-0ca0-431c-b4e2-f34be6d09581 HTTP/1.1" 200 OK
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [12268]
+=== start 2026-09-23 14:50:11 ===
+INFO:     Started server process [27835]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:9100 (Press CTRL+C to quit)
+INFO:     127.0.0.1:59347 - "GET /configuration/sso HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59349 - "GET /configuration/workspaces HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59350 - "GET /configuration/preanalyst HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59351 - "GET /configuration/front-gate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60270 - "GET /configuration/preanalyst HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60291 - "GET /configuration/preanalyst HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60463 - "GET /configuration/preanalyst HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60465 - "GET /configuration/preanalyst HTTP/1.1" 200 OK
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [27835]
+=== start 2026-09-23 16:27:33 ===
+INFO:     Started server process [37232]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:9100 (Press CTRL+C to quit)
+INFO:     127.0.0.1:61792 - "GET /configuration/sso HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61794 - "GET /configuration/workspaces HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61795 - "GET /configuration/preanalyst HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61796 - "GET /configuration/front-gate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61800 - "GET /configuration/preanalyst HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61803 - "GET / HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:61841 - "GET /sessions/yBvRXvafANPWuiTGXo1gfR2UDHMonma3a3zAr6IEIWI HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61842 - "GET /projects/4cfd2916-0ca0-431c-b4e2-f34be6d09581 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61891 - "GET /sessions/yBvRXvafANPWuiTGXo1gfR2UDHMonma3a3zAr6IEIWI HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61892 - "POST /tickets HTTP/1.1" 201 Created
+INFO:     127.0.0.1:61891 - "DELETE /tickets/Vr8_G_bfGa4FLmzvCNHY_qoZeOkWhREC3QAz78Tep9g HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61892 - "GET /sessions/yBvRXvafANPWuiTGXo1gfR2UDHMonma3a3zAr6IEIWI HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61891 - "GET /sessions/yBvRXvafANPWuiTGXo1gfR2UDHMonma3a3zAr6IEIWI HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61891 - "GET /sessions/yBvRXvafANPWuiTGXo1gfR2UDHMonma3a3zAr6IEIWI HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61898 - "POST /projects HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61891 - "GET /sessions/yBvRXvafANPWuiTGXo1gfR2UDHMonma3a3zAr6IEIWI HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61898 - "GET /projects/4cfd2916-0ca0-431c-b4e2-f34be6d09581 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61908 - "GET /sessions/yBvRXvafANPWuiTGXo1gfR2UDHMonma3a3zAr6IEIWI HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61926 - "GET /sessions/yBvRXvafANPWuiTGXo1gfR2UDHMonma3a3zAr6IEIWI HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61927 - "POST /projects HTTP/1.1" 201 Created
+INFO:     127.0.0.1:61927 - "POST /projects/ab27d60e-ab55-45ce-969f-ff3aa5a0d3b7/pipeline/steps HTTP/1.1" 201 Created
+INFO:     127.0.0.1:61926 - "GET /sessions/yBvRXvafANPWuiTGXo1gfR2UDHMonma3a3zAr6IEIWI HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61927 - "GET /projects/ab27d60e-ab55-45ce-969f-ff3aa5a0d3b7 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61945 - "GET /sessions/yBvRXvafANPWuiTGXo1gfR2UDHMonma3a3zAr6IEIWI HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61953 - "GET /configuration/preanalyst HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61961 - "GET /sessions/yBvRXvafANPWuiTGXo1gfR2UDHMonma3a3zAr6IEIWI HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61962 - "POST /projects HTTP/1.1" 201 Created
+INFO:     127.0.0.1:61966 - "POST /projects/55712611-493d-4832-9bfc-d30a70a7db5d/pipeline/steps HTTP/1.1" 201 Created
+INFO:     127.0.0.1:61968 - "GET /sessions/yBvRXvafANPWuiTGXo1gfR2UDHMonma3a3zAr6IEIWI HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61966 - "GET /projects/55712611-493d-4832-9bfc-d30a70a7db5d HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61975 - "GET /sessions/yBvRXvafANPWuiTGXo1gfR2UDHMonma3a3zAr6IEIWI HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61987 - "GET /sessions/yBvRXvafANPWuiTGXo1gfR2UDHMonma3a3zAr6IEIWI HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61988 - "POST /projects HTTP/1.1" 201 Created
+INFO:     127.0.0.1:61991 - "POST /projects/ad2f6493-9d49-4116-8012-b8b527259705/pipeline/steps HTTP/1.1" 201 Created
+INFO:     127.0.0.1:62004 - "GET /sessions/yBvRXvafANPWuiTGXo1gfR2UDHMonma3a3zAr6IEIWI HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62012 - "GET /sessions/yBvRXvafANPWuiTGXo1gfR2UDHMonma3a3zAr6IEIWI HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62013 - "POST /projects HTTP/1.1" 201 Created
+INFO:     127.0.0.1:62016 - "POST /projects/08786075-fd0b-49c0-ae1a-5f8995083839/pipeline/steps HTTP/1.1" 201 Created
+INFO:     127.0.0.1:62018 - "GET /sessions/yBvRXvafANPWuiTGXo1gfR2UDHMonma3a3zAr6IEIWI HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62016 - "GET /projects/08786075-fd0b-49c0-ae1a-5f8995083839 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62028 - "GET /sessions/yBvRXvafANPWuiTGXo1gfR2UDHMonma3a3zAr6IEIWI HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62037 - "GET /sessions/yBvRXvafANPWuiTGXo1gfR2UDHMonma3a3zAr6IEIWI HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62038 - "POST /projects HTTP/1.1" 201 Created
+INFO:     127.0.0.1:62041 - "POST /projects/2d8d7793-860e-41f1-ab56-15c411bdb55a/pipeline/steps HTTP/1.1" 201 Created
+INFO:     127.0.0.1:62043 - "GET /sessions/yBvRXvafANPWuiTGXo1gfR2UDHMonma3a3zAr6IEIWI HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62041 - "GET /projects/2d8d7793-860e-41f1-ab56-15c411bdb55a HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62057 - "GET /sessions/yBvRXvafANPWuiTGXo1gfR2UDHMonma3a3zAr6IEIWI HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62058 - "GET /projects/2d8d7793-860e-41f1-ab56-15c411bdb55a HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62077 - "GET /configuration/preanalyst HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62559 - "GET /configuration/preanalyst HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62564 - "GET /configuration/preanalyst HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62842 - "GET /configuration/preanalyst HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62868 - "GET /configuration/preanalyst HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62893 - "GET /configuration/preanalyst HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62894 - "GET /configuration/preanalyst HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62904 - "GET /configuration/preanalyst HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62987 - "GET /configuration/preanalyst HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62991 - "GET /configuration/preanalyst HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63000 - "GET /configuration/preanalyst HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63001 - "GET /configuration/preanalyst HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63004 - "GET /configuration/preanalyst HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63007 - "GET /configuration/preanalyst HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63010 - "GET /configuration/preanalyst HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63012 - "GET /configuration/preanalyst HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63043 - "GET /sessions/yBvRXvafANPWuiTGXo1gfR2UDHMonma3a3zAr6IEIWI HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63062 - "GET /sessions/yBvRXvafANPWuiTGXo1gfR2UDHMonma3a3zAr6IEIWI HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63063 - "POST /projects HTTP/1.1" 201 Created
+INFO:     127.0.0.1:63073 - "POST /projects/b808790d-72e3-431c-a9fd-b60b9d127ae5/pipeline/steps HTTP/1.1" 201 Created
+INFO:     127.0.0.1:63075 - "GET /sessions/yBvRXvafANPWuiTGXo1gfR2UDHMonma3a3zAr6IEIWI HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63073 - "GET /projects/b808790d-72e3-431c-a9fd-b60b9d127ae5 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63093 - "GET /sessions/yBvRXvafANPWuiTGXo1gfR2UDHMonma3a3zAr6IEIWI HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63105 - "GET /configuration/preanalyst HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63120 - "GET /sessions/yBvRXvafANPWuiTGXo1gfR2UDHMonma3a3zAr6IEIWI HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63121 - "POST /projects HTTP/1.1" 201 Created
+INFO:     127.0.0.1:63126 - "POST /projects/24c5bbf8-de39-4814-82ea-93a4d946ddd4/pipeline/steps HTTP/1.1" 201 Created
+INFO:     127.0.0.1:63128 - "GET /sessions/yBvRXvafANPWuiTGXo1gfR2UDHMonma3a3zAr6IEIWI HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63126 - "GET /projects/24c5bbf8-de39-4814-82ea-93a4d946ddd4 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63133 - "GET /sessions/yBvRXvafANPWuiTGXo1gfR2UDHMonma3a3zAr6IEIWI HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63135 - "GET /configuration/preanalyst HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63137 - "GET /configuration/preanalyst HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63145 - "GET /sessions/yBvRXvafANPWuiTGXo1gfR2UDHMonma3a3zAr6IEIWI HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63146 - "POST /projects HTTP/1.1" 201 Created
+INFO:     127.0.0.1:63150 - "POST /projects/72348a6a-c23a-4706-9d9e-8d9135862244/pipeline/steps HTTP/1.1" 201 Created
+INFO:     127.0.0.1:63152 - "GET /sessions/yBvRXvafANPWuiTGXo1gfR2UDHMonma3a3zAr6IEIWI HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63150 - "GET /projects/72348a6a-c23a-4706-9d9e-8d9135862244 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63165 - "GET /sessions/yBvRXvafANPWuiTGXo1gfR2UDHMonma3a3zAr6IEIWI HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63172 - "GET /sessions/yBvRXvafANPWuiTGXo1gfR2UDHMonma3a3zAr6IEIWI HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63173 - "POST /projects HTTP/1.1" 201 Created
+INFO:     127.0.0.1:63176 - "POST /projects/7e96a534-3183-42b3-8d16-436bfff06558/pipeline/steps HTTP/1.1" 201 Created
+INFO:     127.0.0.1:63178 - "GET /sessions/yBvRXvafANPWuiTGXo1gfR2UDHMonma3a3zAr6IEIWI HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63176 - "GET /projects/7e96a534-3183-42b3-8d16-436bfff06558 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63178 - "GET /sessions/yBvRXvafANPWuiTGXo1gfR2UDHMonma3a3zAr6IEIWI HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63176 - "GET /projects/7e96a534-3183-42b3-8d16-436bfff06558 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63199 - "GET /sessions/yBvRXvafANPWuiTGXo1gfR2UDHMonma3a3zAr6IEIWI HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63208 - "GET /sessions/yBvRXvafANPWuiTGXo1gfR2UDHMonma3a3zAr6IEIWI HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63209 - "POST /projects HTTP/1.1" 201 Created
+INFO:     127.0.0.1:63212 - "POST /projects/761ec33b-7fac-4cd2-b7c7-bc4c1ed5aeaf/pipeline/steps HTTP/1.1" 201 Created
+INFO:     127.0.0.1:63227 - "GET /configuration/preanalyst HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63240 - "GET / HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:63374 - "GET /sessions/yBvRXvafANPWuiTGXo1gfR2UDHMonma3a3zAr6IEIWI HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63389 - "GET /sessions/yBvRXvafANPWuiTGXo1gfR2UDHMonma3a3zAr6IEIWI HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63390 - "POST /projects HTTP/1.1" 201 Created
+INFO:     127.0.0.1:63393 - "POST /projects/22c8c99a-6c13-4888-87eb-62ebe696ee8c/pipeline/steps HTTP/1.1" 201 Created
+INFO:     127.0.0.1:63434 - "GET /configuration/preanalyst HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63448 - "GET /sessions/yBvRXvafANPWuiTGXo1gfR2UDHMonma3a3zAr6IEIWI HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63449 - "GET /drivers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63455 - "GET /sessions/yBvRXvafANPWuiTGXo1gfR2UDHMonma3a3zAr6IEIWI HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63456 - "POST /projects HTTP/1.1" 201 Created
+INFO:     127.0.0.1:63459 - "POST /projects/c01ef47c-257a-45b2-b56e-c2e17a5fadde/pipeline/steps HTTP/1.1" 201 Created
+INFO:     127.0.0.1:63460 - "GET /projects/c01ef47c-257a-45b2-b56e-c2e17a5fadde HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63478 - "GET /sessions/yBvRXvafANPWuiTGXo1gfR2UDHMonma3a3zAr6IEIWI HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63479 - "GET /drivers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63485 - "GET /sessions/yBvRXvafANPWuiTGXo1gfR2UDHMonma3a3zAr6IEIWI HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63486 - "GET /drivers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63508 - "GET /sessions/yBvRXvafANPWuiTGXo1gfR2UDHMonma3a3zAr6IEIWI HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63509 - "GET /drivers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63519 - "GET /configuration/preanalyst HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63525 - "GET /sessions/yBvRXvafANPWuiTGXo1gfR2UDHMonma3a3zAr6IEIWI HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63526 - "GET /drivers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63533 - "GET /sessions/yBvRXvafANPWuiTGXo1gfR2UDHMonma3a3zAr6IEIWI HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63534 - "GET /drivers/639718a3-ea41-4533-bdb8-73ac58b3b1b2 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63535 - "POST /projects HTTP/1.1" 201 Created
+INFO:     127.0.0.1:63534 - "POST /projects/58664214-b5cb-4560-8341-0b8b16b84b04/pipeline/steps HTTP/1.1" 201 Created
+INFO:     127.0.0.1:63535 - "GET /projects/58664214-b5cb-4560-8341-0b8b16b84b04 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63534 - "GET /drivers/639718a3-ea41-4533-bdb8-73ac58b3b1b2 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63551 - "GET /sessions/yBvRXvafANPWuiTGXo1gfR2UDHMonma3a3zAr6IEIWI HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63552 - "GET /drivers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63565 - "GET /drivers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63566 - "GET /discounts/2629fcbd-9589-462e-a549-777b58f07aa7 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63565 - "GET /drivers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63565 - "GET /drivers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63574 - "GET /sessions/yBvRXvafANPWuiTGXo1gfR2UDHMonma3a3zAr6IEIWI HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63575 - "GET /drivers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63576 - "GET /discounts/2629fcbd-9589-462e-a549-777b58f07aa7 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63584 - "GET /sessions/yBvRXvafANPWuiTGXo1gfR2UDHMonma3a3zAr6IEIWI HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63585 - "GET /discounts/2629fcbd-9589-462e-a549-777b58f07aa7 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63586 - "GET /drivers/639718a3-ea41-4533-bdb8-73ac58b3b1b2 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63585 - "POST /projects HTTP/1.1" 201 Created
+INFO:     127.0.0.1:63589 - "POST /projects/d97cbb60-a0b7-4b3a-9088-0bd2bb063e94/pipeline/steps HTTP/1.1" 201 Created
+INFO:     127.0.0.1:63590 - "GET /projects/d97cbb60-a0b7-4b3a-9088-0bd2bb063e94 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63589 - "GET /drivers/639718a3-ea41-4533-bdb8-73ac58b3b1b2 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63590 - "GET /discounts/2629fcbd-9589-462e-a549-777b58f07aa7 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63596 - "GET /sessions/yBvRXvafANPWuiTGXo1gfR2UDHMonma3a3zAr6IEIWI HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63597 - "GET /projects/d97cbb60-a0b7-4b3a-9088-0bd2bb063e94 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63600 - "POST /projects/d97cbb60-a0b7-4b3a-9088-0bd2bb063e94/pipeline/steps HTTP/1.1" 201 Created
+INFO:     127.0.0.1:63601 - "GET /projects/d97cbb60-a0b7-4b3a-9088-0bd2bb063e94 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63600 - "GET /drivers/639718a3-ea41-4533-bdb8-73ac58b3b1b2 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63601 - "GET /discounts/2629fcbd-9589-462e-a549-777b58f07aa7 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63607 - "GET /sessions/yBvRXvafANPWuiTGXo1gfR2UDHMonma3a3zAr6IEIWI HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63608 - "GET /drivers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63612 - "GET /sessions/yBvRXvafANPWuiTGXo1gfR2UDHMonma3a3zAr6IEIWI HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63613 - "GET /drivers/639718a3-ea41-4533-bdb8-73ac58b3b1b2 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63614 - "POST /projects HTTP/1.1" 201 Created
+INFO:     127.0.0.1:63613 - "POST /projects/69b378ed-9257-4abd-9f2b-945d918477fd/pipeline/steps HTTP/1.1" 201 Created
+INFO:     127.0.0.1:63614 - "GET /projects/69b378ed-9257-4abd-9f2b-945d918477fd HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63613 - "GET /drivers/639718a3-ea41-4533-bdb8-73ac58b3b1b2 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63625 - "GET /sessions/yBvRXvafANPWuiTGXo1gfR2UDHMonma3a3zAr6IEIWI HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63626 - "GET /drivers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63632 - "GET /sessions/yBvRXvafANPWuiTGXo1gfR2UDHMonma3a3zAr6IEIWI HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63633 - "GET /drivers/639718a3-ea41-4533-bdb8-73ac58b3b1b2 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63634 - "POST /projects HTTP/1.1" 201 Created
+INFO:     127.0.0.1:63637 - "POST /projects/180bc425-c481-4999-855c-71efb8e0f3b1/pipeline/steps HTTP/1.1" 201 Created
+INFO:     127.0.0.1:63638 - "GET /projects/180bc425-c481-4999-855c-71efb8e0f3b1 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63637 - "GET /drivers/639718a3-ea41-4533-bdb8-73ac58b3b1b2 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63648 - "GET / HTTP/1.1" 404 Not Found
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [37232]

@@ -335,3 +335,15 @@ details p { color: var(--muted); max-width: 760px; margin: -4px 0 22px; font-siz
   .footer-inner { align-items: flex-start; flex-direction: column; }
   .footer-links { flex-wrap: wrap; }
 }
+
+/* ---------- loader ---------- */
+/* Il velo che copre la pagina mentre una richiesta è per strada. Compare solo
+   quando l'utente ha chiesto qualcosa: lo accende `webtools_loader.js`.
+   Markup in commons/templates/loader.njk. */
+.webtools-loader { position: fixed; inset: 0; z-index: 90; display: none; place-items: center; background: rgba(244,239,230,.86); }
+.webtools-loader[data-on] { display: grid; }
+.webtools-loader-box { display: grid; justify-items: center; gap: 16px; padding: 28px 34px; background: var(--surface); border: 1.5px solid var(--ink); border-radius: var(--radius); box-shadow: var(--shadow-hard-md); }
+.webtools-loader-spinner { width: 34px; height: 34px; border: 3px solid var(--line-strong); border-top-color: var(--accent); border-radius: 50%; animation: webtools-spin 900ms linear infinite; }
+.webtools-loader-text { margin: 0; font: 500 13px var(--mono); letter-spacing: .04em; color: var(--muted); }
+@keyframes webtools-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .webtools-loader-spinner { animation: none; border-top-color: var(--accent); } }

@@ -13,6 +13,11 @@
   La casella non fa nulla da sé: il CSS legge `#autonomous-work:checked` (regola
   `:has()` in styles.css) e spegne il box qui sopra, facendo comparire l'avviso.
   Nessun JavaScript, nessun giro sul server.
+
+  Quando il form si ripresenta — la richiesta è tornata indietro per mancanza di
+  dettagli — la casella dice com'è il progetto ed è **ferma**: quella scelta si è
+  fatta al primo invio e il secondo giro non la rilegge. Una casella che si può
+  muovere senza che muoversi serva a qualcosa è peggio di una ferma.
 #}
 
 {% macro render(work) %}
@@ -22,11 +27,15 @@
           {%- if work.own_link %}
           <p class="notice notice-warn">{{ t("preanalyst.driver_work.own_link") }}</p>
           {%- endif %}
-          <label class="choice" for="autonomous-work">
+          <label class="choice{% if work.locked %} choice-locked{% endif %}" for="autonomous-work">
             <input type="checkbox" id="autonomous-work" name="autonomous_work" value="yes"
-                   form="gate-form">
+                   form="gate-form"
+                   {{- " checked" if work.checked }}{{ " disabled" if work.locked }}>
             <span>{{ t("preanalyst.driver_work.checkbox") }}</span>
           </label>
+          {%- if work.locked %}
+          <p class="driver-work-hint">{{ t("preanalyst.driver_work.locked") }}</p>
+          {%- endif %}
           <p class="driver-work-hint">{{ t("preanalyst.driver_work.hint") }}</p>
           <p class="driver-work-hint">
             <a href="{{ work.more_url }}" target="_blank" rel="noopener">{{ t("preanalyst.driver_work.more") }}</a>

@@ -7,6 +7,7 @@ Anagraphics non verifica password e non giudica se una sessione è ancora valida
 """
 
 from datetime import datetime, timezone
+from typing import Literal
 from uuid import uuid4
 
 from fastapi import FastAPI, Request, Response
@@ -19,7 +20,7 @@ from webtools_anagraphics.settings import load_settings
 settings = load_settings()
 database = db.connect(settings)
 
-app = FastAPI(title="anagraphics", version="0.8.0")
+app = FastAPI(title="anagraphics", version="0.9.0")
 errors.install_error_handlers(app)
 
 
@@ -84,6 +85,57 @@ class ProjectToCreate(BaseModel):
     billing: Billing = Field(default_factory=Billing)
 
 
+# Gli stati della pipeline e i suoi passi. Sono un contratto: chi li scrive e chi
+# li legge devono chiamarli allo stesso modo, e un nome inventato non deve poter
+# entrare nel database. Il percorso è quello del flusso principale (vedi
+# `contesto/02. contesto_aggiornato.md`); REJECTED è il capolinea di ogni cancello.
+PipelineState = Literal[
+    "PREANALYSIS",
+    "PREVALIDATION",
+    # La richiesta è tornata all'utente: non si riesce a giudicarla, servono più
+    # dettagli. Non è un rifiuto, e da qui si riparte riscrivendo.
+    "UNDERSPECIFIED",
+    "ANALYSIS",
+    "DRIVER_VALIDATION",
+    "CLIENT_VALIDATION",
+    "DEVELOPMENT",
+    "ALPHA_TEST",
+    "DEMO",
+    "PAID",
+    "REJECTED",
+]
+
+PipelineStepName = Literal[
+    "prevalidation",
+    "analysis",
+    "driver_validation",
+    "client_validation",
+    "development",
+    "alpha_test",
+    "demo",
+    "payment",
+]
+
+
+class PipelineStep(BaseModel):
+    """Un passo compiuto sulla pipeline del progetto.
+
+    `result` dice com'è andato il passo, `state` dove porta la pipeline: sono due
+    cose diverse, perché lo stesso esito può portare in posti diversi a seconda
+    del cancello. `data` è quello che il passo ha prodotto, e la sua forma la
+    decide chi lo compie: qui si conserva, non si interpreta.
+
+    `underspecified` è un passo compiuto che rimanda indietro senza chiudere
+    niente: sta fra `passed` e `rejected`, e si conta — chi decide quante volte
+    si può tornare indietro guarda quanti ce ne sono già.
+    """
+
+    step: PipelineStepName
+    result: Literal["passed", "rejected", "underspecified", "failed"]
+    state: PipelineState
+    data: dict = Field(default_factory=dict)
+
+
 @app.post("/projects", status_code=201)
 def create_project(project: ProjectToCreate, response: Response) -> dict:
     # L'id del progetto nasce qui, dove il progetto si conserva: chi chiama non
@@ -93,7 +145,10 @@ def create_project(project: ProjectToCreate, response: Response) -> dict:
         "owner_uid": project.owner_uid,
         "submission_id": project.submission_id,
         "created_at": datetime.now(timezone.utc),
-        "state": "PREANALYSIS",
+        # Dove sta il progetto lungo il flusso, e che cosa gli è successo finora.
+        # `steps` è una lista in ordine, non una mappa: un passo può ripetersi, e
+        # la lista è il registro delle decisioni prese sul progetto.
+        "pipeline": {"state": "PREANALYSIS", "steps": []},
         "review": project.review.model_dump(),
         "billing": project.billing.model_dump(),
     }
@@ -108,6 +163,24 @@ def create_project(project: ProjectToCreate, response: Response) -> dict:
             raise errors.ApiError(409, errors.SUBMISSION_EXISTS)
         response.status_code = 200
         return existing
+    return document
+
+
+@app.post("/projects/{project_id}/pipeline/steps", status_code=201)
+def add_pipeline_step(project_id: str, step: PipelineStep) -> dict:
+    """Accoda un passo alla pipeline e porta il progetto nello stato che il passo dice.
+
+    `decided_at` lo mette qui, dove il passo si conserva: chi chiama non sceglie
+    quando è successo. Restituisce il progetto aggiornato.
+    """
+    document = db.append_pipeline_step(
+        database,
+        project_id,
+        {**step.model_dump(exclude={"state"}), "decided_at": datetime.now(timezone.utc)},
+        step.state,
+    )
+    if document is None:
+        raise errors.ApiError(404, errors.PROJECT_NOT_FOUND, project_id=project_id)
     return document
 
 

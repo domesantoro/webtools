@@ -7,6 +7,9 @@
     "brand": {
       "tagline": "tailor-made tools",
       "home": "Home"
+    },
+    "loader": {
+      "working": "Sending…"
     }
   },
   "sso": {
@@ -85,7 +88,8 @@
       "own_link": "The link you used is your own: it does not apply.",
       "checkbox": "This is autonomous work.",
       "hint": "You follow the project yourself: the driver's share is not added to the price. You pay per use with your own tokens, plus the system fee.",
-      "more": "Want to know more?"
+      "more": "Want to know more?",
+      "locked": "This choice was recorded with the first submission and does not change."
     },
     "upload": {
       "title": "Ready-made analysis",
@@ -141,6 +145,10 @@
         "title": "Analysis not found",
         "text": "This analysis does not exist, or it belongs to another account."
       }
+    },
+    "underspecified": {
+      "title": "A few more details are needed",
+      "text": "What you wrote does not yet say what the tool should do. Add some detail to the answers below and send the request again: what you had written is still here."
     },
     "analysis": {
       "title": "Analysis"
@@ -275,6 +283,18 @@
             "other_software": "Yes, inside another program"
           }
         }
+      }
+    },
+    "rejection": {
+      "title": "We cannot go on with this request",
+      "lead": "From what you described, webtools is probably not the right tool for this need.",
+      "pdf_hint": "You can keep what you wrote in the form:",
+      "pdf_link": "download it as a PDF",
+      "ok": "Ok",
+      "pdf": {
+        "title": "Your pre-analysis request",
+        "lead": "The answers you sent through the webtools form.",
+        "reason_title": "Why the request was not accepted"
       }
     }
   },

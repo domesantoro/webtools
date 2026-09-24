@@ -161,3 +161,63 @@ webtools_preanalyst in ascolto su http://127.0.0.1:8200 (anagraphics: http://127
 webtools_preanalyst in ascolto su http://127.0.0.1:9200 (anagraphics: http://127.0.0.1:9100)
 === start 2026-09-22 15:50:19 ===
 webtools_preanalyst in ascolto su http://127.0.0.1:9200 (anagraphics: http://127.0.0.1:9100)
+=== start 2026-09-23 12:25:40 ===
+webtools_preanalyst in ascolto su http://127.0.0.1:9200 (anagraphics: http://127.0.0.1:9100)
+[preanalyst] entrato dome.santoro@gmail.com
+[preanalyst] richiesta di dome.santoro@gmail.com: progetto 4cfd2916-0ca0-431c-b4e2-f34be6d09581, pre-specifica v1
+=== start 2026-09-23 14:50:12 ===
+webtools_preanalyst in ascolto su http://127.0.0.1:9200 (anagraphics: http://127.0.0.1:9100)
+=== start 2026-09-23 16:27:34 ===
+webtools_preanalyst in ascolto su http://127.0.0.1:9200 (anagraphics: http://127.0.0.1:9100)
+[preanalyst] entrato dome.santoro@gmail.com
+[preanalyst] invio ripetuto da dome.santoro@gmail.com: progetto 4cfd2916-0ca0-431c-b4e2-f34be6d09581
+[preanalyst] richiesta di dome.santoro@gmail.com: progetto ab27d60e-ab55-45ce-969f-ff3aa5a0d3b7, pre-specifica v1
+[ai/anthropic] Error: 400 {"type":"error","error":{"type":"invalid_request_error","message":"output_config.format.schema: For 'number' type, properties maximum, minimum are not supported"},"request_id":"req_011CfLYNvT4uHj3AEoZFDsTq"}
+[preanalyst] prevalidazione non riuscita per ab27d60e-ab55-45ce-969f-ff3aa5a0d3b7: unavailable
+=== start 2026-09-23 16:39:53 ===
+webtools_preanalyst in ascolto su http://127.0.0.1:9200 (anagraphics: http://127.0.0.1:9100)
+[preanalyst] richiesta di dome.santoro@gmail.com: progetto 55712611-493d-4832-9bfc-d30a70a7db5d, pre-specifica v1
+[preanalyst] prevalidazione di 55712611-493d-4832-9bfc-d30a70a7db5d: safe (0.75) → passed; 2074+244 token
+[preanalyst] richiesta di dome.santoro@gmail.com: progetto ad2f6493-9d49-4116-8012-b8b527259705, pre-specifica v1
+[preanalyst] prevalidazione di ad2f6493-9d49-4116-8012-b8b527259705: underspecified (1.00) → underspecified; 2016+247 token
+[preanalyst] richiesta di dome.santoro@gmail.com: progetto 08786075-fd0b-49c0-ae1a-5f8995083839, pre-specifica v1
+[prevalidator] distribuzione non utilizzabile
+[preanalyst] prevalidazione non riuscita per 08786075-fd0b-49c0-ae1a-5f8995083839: rejected
+[preanalyst] richiesta di dome.santoro@gmail.com: progetto 2d8d7793-860e-41f1-ab56-15c411bdb55a, pre-specifica v1
+[preanalyst] prevalidazione di 2d8d7793-860e-41f1-ab56-15c411bdb55a: run_out_certain (0.95) → rejected; 2120+231 token
+=== start 2026-09-23 17:02:49 ===
+webtools_preanalyst in ascolto su http://127.0.0.1:9200 (anagraphics: http://127.0.0.1:9100)
+=== start 2026-09-23 17:12:39 ===
+webtools_preanalyst in ascolto su http://127.0.0.1:9200 (anagraphics: http://127.0.0.1:9100)
+=== start 2026-09-23 17:13:31 ===
+webtools_preanalyst in ascolto su http://127.0.0.1:9200 (anagraphics: http://127.0.0.1:9100)
+=== start 2026-09-23 17:21:14 ===
+webtools_preanalyst in ascolto su http://127.0.0.1:9200 (anagraphics: http://127.0.0.1:9100)
+[preanalyst] richiesta di dome.santoro@gmail.com: progetto b808790d-72e3-431c-a9fd-b60b9d127ae5, pre-specifica v1
+[preanalyst] prevalidazione di b808790d-72e3-431c-a9fd-b60b9d127ae5: non_sequitur (1.00) → rejected; 3961+199 token
+[preanalyst] richiesta di dome.santoro@gmail.com: progetto 24c5bbf8-de39-4814-82ea-93a4d946ddd4, pre-specifica v1
+[preanalyst] prevalidazione di 24c5bbf8-de39-4814-82ea-93a4d946ddd4: safe (0.75) → passed; 3968+217 token
+[preanalyst] richiesta di dome.santoro@gmail.com: progetto 72348a6a-c23a-4706-9d9e-8d9135862244, pre-specifica v1
+[preanalyst] prevalidazione di 72348a6a-c23a-4706-9d9e-8d9135862244: safe (0.85) → passed, fuori dominio; 3951+273 token
+[preanalyst] richiesta di dome.santoro@gmail.com: progetto 7e96a534-3183-42b3-8d16-436bfff06558, pre-specifica v1
+[preanalyst] prevalidazione di 7e96a534-3183-42b3-8d16-436bfff06558: run_out_certain (0.85) → rejected; 4030+265 token
+[preanalyst] richiesta di dome.santoro@gmail.com: progetto 761ec33b-7fac-4cd2-b7c7-bc4c1ed5aeaf, pre-specifica v1
+[preanalyst] prevalidazione di 761ec33b-7fac-4cd2-b7c7-bc4c1ed5aeaf: underspecified (0.80) → underspecified; 3925+245 token
+[preanalyst] richiesta di dome.santoro@gmail.com: progetto 22c8c99a-6c13-4888-87eb-62ebe696ee8c, pre-specifica v1
+[preanalyst] prevalidazione di 22c8c99a-6c13-4888-87eb-62ebe696ee8c: underspecified (0.80) → underspecified; 3922+251 token
+=== start 2026-09-23 17:41:42 ===
+webtools_preanalyst in ascolto su http://127.0.0.1:9200 (anagraphics: http://127.0.0.1:9100)
+[preanalyst] richiesta di dome.santoro@gmail.com: progetto c01ef47c-257a-45b2-b56e-c2e17a5fadde, pre-specifica v1
+[preanalyst] prevalidazione di c01ef47c-257a-45b2-b56e-c2e17a5fadde: underspecified (0.85) → underspecified; 3922+253 token
+=== start 2026-09-23 17:46:12 ===
+webtools_preanalyst in ascolto su http://127.0.0.1:9200 (anagraphics: http://127.0.0.1:9100)
+[preanalyst] richiesta di dome.santoro@gmail.com: progetto 58664214-b5cb-4560-8341-0b8b16b84b04, pre-specifica v1
+[preanalyst] prevalidazione di 58664214-b5cb-4560-8341-0b8b16b84b04: underspecified (1.00) → underspecified; 3921+213 token
+[preanalyst] richiesta di dome.santoro@gmail.com: progetto d97cbb60-a0b7-4b3a-9088-0bd2bb063e94, pre-specifica v1
+[preanalyst] prevalidazione di d97cbb60-a0b7-4b3a-9088-0bd2bb063e94: underspecified (1.00) → underspecified; 3923+218 token
+[preanalyst] richiesta di dome.santoro@gmail.com: progetto d97cbb60-a0b7-4b3a-9088-0bd2bb063e94, pre-specifica v2 (giro 2)
+[preanalyst] prevalidazione di d97cbb60-a0b7-4b3a-9088-0bd2bb063e94: underspecified (0.80) → underspecified; 3923+251 token
+[preanalyst] richiesta di dome.santoro@gmail.com: progetto 69b378ed-9257-4abd-9f2b-945d918477fd, pre-specifica v1
+[preanalyst] prevalidazione di 69b378ed-9257-4abd-9f2b-945d918477fd: underspecified (0.82) → underspecified; 3919+214 token
+[preanalyst] richiesta di dome.santoro@gmail.com: progetto 180bc425-c481-4999-855c-71efb8e0f3b1, pre-specifica v1
+[preanalyst] prevalidazione di 180bc425-c481-4999-855c-71efb8e0f3b1: underspecified (0.85) → underspecified; 3921+233 token

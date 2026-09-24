@@ -161,7 +161,8 @@ def test_create_project(client):
     # L'id lo genera anagraphics: un UUID v4 in forma canonica.
     assert len(project["project_id"]) == 36 and project["project_id"][14] == "4"
     assert project["owner_uid"] == OWNER_UID
-    assert project["state"] == "PREANALYSIS"
+    assert project["pipeline"] == {"state": "PREANALYSIS", "steps": []}
+    assert "state" not in project
     assert project["review"] == {"driver_uid": DRIVER_UID, "preset": True}
     assert project["billing"] == {
         "discount_code": DISCOUNT_CODE,
@@ -218,6 +219,108 @@ def test_create_project_ignores_chosen_id(client):
     response = client.post("/projects", json=body)
     assert response.status_code == 201
     assert response.json()["project_id"] != "scelto-da-fuori"
+
+
+def a_prevalidation_step(result="passed", state="ANALYSIS"):
+    return {
+        "step": "prevalidation",
+        "result": result,
+        "state": state,
+        "data": {
+            "outcome": "safe",
+            "distribution": {
+                "non_sequitur": 0.02,
+                "run_out_certain": 0.05,
+                "run_out_likely": 0.15,
+                "underspecified": 0.05,
+                "safe": 0.53,
+                "ultrasafe": 0.2,
+            },
+            "off_domain": {"flag": False, "reason": ""},
+            "policy": "scope-v1",
+            "provider": "anthropic",
+            "model": "claude-haiku-4-5",
+            "usage": {"input_tokens": 2100, "output_tokens": 140},
+        },
+    }
+
+
+def test_add_pipeline_step(client):
+    project_id = client.post("/projects", json=a_project("invio-000000000000010")).json()["project_id"]
+
+    response = client.post(f"/projects/{project_id}/pipeline/steps", json=a_prevalidation_step())
+    assert response.status_code == 201
+    pipeline = response.json()["pipeline"]
+    assert pipeline["state"] == "ANALYSIS"
+    assert len(pipeline["steps"]) == 1
+    step = pipeline["steps"][0]
+    assert step["step"] == "prevalidation"
+    assert step["result"] == "passed"
+    assert step["data"]["usage"]["input_tokens"] == 2100
+    # Quando il passo è avvenuto lo decide anagraphics, non chi chiama.
+    assert step["decided_at"]
+    # `state` è dove porta il passo, non un campo del passo.
+    assert "state" not in step
+
+
+def test_add_pipeline_step_appends_in_order(client):
+    project_id = client.post("/projects", json=a_project("invio-000000000000011")).json()["project_id"]
+
+    client.post(f"/projects/{project_id}/pipeline/steps", json=a_prevalidation_step(result="failed"))
+    client.post(f"/projects/{project_id}/pipeline/steps", json=a_prevalidation_step())
+
+    steps = client.get(f"/projects/{project_id}").json()["pipeline"]["steps"]
+    assert [step["result"] for step in steps] == ["failed", "passed"]
+
+
+def test_add_pipeline_step_rejecting(client):
+    project_id = client.post("/projects", json=a_project("invio-000000000000012")).json()["project_id"]
+
+    response = client.post(
+        f"/projects/{project_id}/pipeline/steps",
+        json=a_prevalidation_step(result="rejected", state="REJECTED"),
+    )
+    assert response.json()["pipeline"]["state"] == "REJECTED"
+
+
+def test_add_pipeline_step_underspecified(client):
+    """Il passo che rimanda indietro: la richiesta resta, e i giri si contano.
+
+    È l'unico posto dove il numero dei giri esiste: chi decide quante volte si
+    può tornare indietro legge questa lista (preanalyst §16.6).
+    """
+    project_id = client.post("/projects", json=a_project("invio-000000000000014")).json()["project_id"]
+    indietro = a_prevalidation_step(result="underspecified", state="UNDERSPECIFIED")
+
+    client.post(f"/projects/{project_id}/pipeline/steps", json=indietro)
+    response = client.post(f"/projects/{project_id}/pipeline/steps", json=indietro)
+
+    pipeline = response.json()["pipeline"]
+    assert pipeline["state"] == "UNDERSPECIFIED"
+    assert [step["result"] for step in pipeline["steps"]] == ["underspecified", "underspecified"]
+
+    # Il progetto non è chiuso: riscritta, la richiesta passa.
+    response = client.post(f"/projects/{project_id}/pipeline/steps", json=a_prevalidation_step())
+    assert response.json()["pipeline"]["state"] == "ANALYSIS"
+
+
+def test_add_pipeline_step_of_unknown_project(client):
+    response = client.post("/projects/non-esiste/pipeline/steps", json=a_prevalidation_step())
+    assert response.status_code == 404
+    assert response.json() == {"error": "PROJECT_NOT_FOUND", "project_id": "non-esiste"}
+
+
+def test_add_pipeline_step_with_invented_names(client):
+    project_id = client.post("/projects", json=a_project("invio-000000000000013")).json()["project_id"]
+
+    for campo, valore in (("step", "inventato"), ("state", "BOH"), ("result", "forse")):
+        body = {**a_prevalidation_step(), campo: valore}
+        response = client.post(f"/projects/{project_id}/pipeline/steps", json=body)
+        assert response.status_code == 400, campo
+        assert response.json() == {"error": "INVALID_BODY"}
+
+    # Nessuno dei tentativi ha lasciato traccia.
+    assert client.get(f"/projects/{project_id}").json()["pipeline"]["steps"] == []
 
 
 def test_delete_project(client):

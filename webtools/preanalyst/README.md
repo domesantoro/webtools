@@ -4,9 +4,29 @@ La **pre-analisi**: la pagina da cui il cliente entra nel flusso e, in futuro, l
 Node, con **nunjucks** per le pagine e **yaml** per il front matter delle specifiche.
 
 - `POST /submit`: il form crea il progetto (anagraphics) con la sua pre-specifica .md
-  (webtools-workspaces) e manda a `/analysis/{id}`, per ora vuota.
+  (webtools-workspaces), la fa **prevalidare** e manda a `/analysis/{id}`, per ora vuota — oppure
+  a `/?rejected={id}` se la richiesta non passa il cancello.
 - `POST /upload`: una specifica .md già pronta, con il `project_id` nel front matter, per un
   progetto dell'utente.
+- `GET /projects/{id}/rejection.pdf`: i dati del form dopo un rifiuto.
+
+Il **prevalidator** (`src/prevalidator.js`) chiede a un modello se la richiesta sta dentro il
+perimetro del servizio: sei esiti con la loro probabilità, più il flag interno `off_domain`. Due
+esiti rifiutano — troppo grande, oppure roba che non potremmo costruire a nessuna dimensione — uno
+rimanda l'utente al form, tre passano; il flag dice che è software sviluppabile ma non un webtool,
+e non cambia il flusso. Il fornitore si
+raggiunge attraverso `src/ai/`, una porta sola, e si cambia dalla configurazione (`ai.provider`).
+I criteri stanno in `policies/`, copie generate da `configurator/policies/`: non si modificano qui.
+
+Serve la chiave del fornitore in `webtools/configurator/secrets/preanalyst.json` (fuori da git):
+senza, il server non parte.
+
+Provare il prevalidator senza passare dal form — **fa una chiamata vera, quindi costa**:
+
+```sh
+set -a; source ../configurator/bootstrap.env; set +a
+node scripts/prevalidate.js scripts/esempi/normale.md
+```
 
 Documentazione completa: `docs/subsystems/preanalyst/README.md` (nella root del workspace).
 
@@ -22,6 +42,7 @@ webtools/preanalyst/webtools_preanalyst.sh --stop    # ferma
   `node …/webtools/preanalyst/src/index.js`.
 - Debug in primo piano, da questa cartella: `set -a; source ../configurator/bootstrap.env; set +a; npm start` (Ctrl+C per fermarlo).
 - Dopo un `git clone` o un cambio di versione: `npm install`.
+- Test: `npm test` (`node --test`).
 
 **Servono anche anagraphics, sso e webtools-workspaces accesi**. `webtools/configurator/start.sh`
 li avvia tutti nell'ordine giusto.
@@ -99,4 +120,12 @@ nella documentazione completa (§8).
 
 ## Test
 
-Non ce ne sono ancora: è un buco noto, non una scelta. Il primo candidato è `src/driver_link.js`.
+```sh
+cd webtools/preanalyst
+npm test
+```
+
+Coprono le funzioni che **decidono**: come si legge la risposta del prevalidator e che cosa se ne
+fa (`tests/prevalidator.test.js`), e il conteggio dei giri di chi è tornato indietro
+(`tests/server.test.js`). Non chiamano il fornitore, non hanno bisogno dei server accesi e non
+costano niente. Restano scoperti `src/driver_link.js` e il resto: buco noto, non una scelta.

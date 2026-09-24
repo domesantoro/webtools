@@ -28,6 +28,23 @@
     "max_bytes": 10485760,
     "accept": ".md"
   },
+  "ai": {
+    "provider": "anthropic",
+    "timeout_ms": 20000,
+    "providers": {
+      "anthropic": {
+        "model": "claude-haiku-4-5",
+        "max_tokens": 512
+      }
+    }
+  },
+  "prevalidation": {
+    "policy": "scope-v1",
+    "reject_threshold": 0.6,
+    "max_underspecified_attempts": 100,
+    "spec_max_chars": 20000,
+    "rejection_reason_in_pdf": false
+  },
   "i18n": {
     "locales": ["en", "it"],
     "fallback_locale": "en",
