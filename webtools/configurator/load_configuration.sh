@@ -1,28 +1,30 @@
 #!/usr/bin/env bash
-# Porta nella collection `configuration` di anagraphics quello che ai sottosistemi
-# manca. Anagraphics la serve con GET /configuration/{subsystem}.
+# Brings into anagraphics' `configuration` collection whatever the subsystems are
+# missing. Anagraphics serves it with GET /configuration/{subsystem}.
 #
-#   ./load_configuration.sh                      aggiunge i campi mancanti
-#   ./load_configuration.sh --reset              riporta tutto ai file
-#   ./load_configuration.sh --reset preanalyst   riporta ai file solo quello
+#   ./load_configuration.sh                      adds the missing fields
+#   ./load_configuration.sh --reset              takes everything back to the files
+#   ./load_configuration.sh --reset preanalyst   takes only that one back
 #
-# **La configurazione che vive sta in Mongo.** I file di configuration/ sono il
-# seme — i valori con cui nasce un ambiente nuovo — e la forma attesa: dicono
-# quali campi esistono. Quello che gira può divergere, ed è normale.
+# **The configuration that lives is in Mongo.** The files in configuration/ are the
+# seed — the values a new environment is born with — and the expected shape: they
+# say which fields exist. What is running may diverge, and that is normal.
 #
-# Quindi qui si aggiungono **solo i campi che mancano**: un campo che c'è non si
-# tocca, un campo tolto da un file resta in Mongo, un sottosistema senza più un
-# file non viene cancellato. Un campo nuovo introdotto da uno sviluppo entra da
-# solo, senza interventi a mano. Per tornare ai file serve dirlo: `--reset`.
+# So here **only the missing fields** are added: a field that is there is not
+# touched, a field removed from a file stays in Mongo, a subsystem that no longer
+# has a file is not deleted. A new field introduced by a piece of work arrives by
+# itself, with no manual intervention. To go back to the files you have to say so:
+# `--reset`.
 #
-# I file di secrets/ (fuori da git: chiavi delle API) si fondono in profondità e
-# **sostituiscono sempre** il valore che trovano: una chiave ruotata deve valere.
+# The files in secrets/ (outside git: API keys) are deep-merged and **always
+# replace** the value they find: a rotated key must count.
 #
-# Lo lancia start.sh prima di avviare i servizi — ora che non sovrascrive, farlo
-# a ogni avvio non porta via niente. A mano serve per caricare senza riavviare.
+# start.sh runs it before starting the services — now that it does not overwrite,
+# doing it at every start carries nothing away. By hand it is for loading without
+# restarting.
 #
-# I sottosistemi leggono la configurazione all'avvio: dopo averla cambiata va
-# riavviato chi la usa (start.sh --restart).
+# The subsystems read the configuration at startup: after changing it, whoever uses
+# it must be restarted (start.sh --restart).
 set -euo pipefail
 
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -30,7 +32,7 @@ ANAGRAPHICS="$DIR/../anagraphics"
 PYTHON="$ANAGRAPHICS/.venv/bin/python"
 
 if [[ ! -x "$PYTHON" ]]; then
-  echo "Ambiente di anagraphics mancante: lancia prima 'uv sync' in $ANAGRAPHICS" >&2
+  echo "Anagraphics environment missing: run 'uv sync' in $ANAGRAPHICS first" >&2
   exit 1
 fi
 

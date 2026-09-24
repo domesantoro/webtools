@@ -1,43 +1,43 @@
 #!/usr/bin/env bash
-# Diffonde il JavaScript di browser comune (commons/script) nei sottosistemi che
-# rende pagine. Ogni progetto ha la sua funzione di deploy, con destinazioni
-# esplicite: la struttura dei progetti può essere diversa e non tutti lo usano.
+# Distributes the shared browser JavaScript (commons/script) to the subsystems
+# that render pages. Every project has its own deploy function, with explicit
+# targets: the projects' structure may differ and not all of them use it.
 #
-# I file finiscono fra i file statici del sottosistema, accanto a commons.css, e
-# la pagina li carica dalla radice (`/webtools_loader.js`). Le copie non si
-# modificano lì: si modifica commons/script e si rilancia questo deployer.
+# The files land among the subsystem's static files, next to commons.css, and the
+# page loads them from the root (`/webtools_loader.js`). The copies are not edited
+# there: edit commons/script and run this deployer again.
 set -euo pipefail
 
 WEBTOOLS="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 SOURCE="$WEBTOOLS/commons/script"
 
-copia_in() {
-  local destinazione="$1"
-  mkdir -p "$destinazione"
-  # Si copiano tutti i .js: quelli comuni sono pochi e servono tutti a chi rende pagine.
-  cp "$SOURCE"/*.js "$destinazione/"
+copy_into() {
+  local target="$1"
+  mkdir -p "$target"
+  # Every .js is copied: the shared ones are few and all of them are needed by whoever renders pages.
+  cp "$SOURCE"/*.js "$target/"
 }
 
-# preanalyst — il loader sull'invio del form.
+# preanalyst — the loader on the form submission.
 deploy_preanalyst() {
   echo "→ preanalyst"
-  copia_in "$WEBTOOLS/preanalyst/public"
+  copy_into "$WEBTOOLS/preanalyst/public"
 }
 
-# sso — le pagine di login e registrazione.
+# sso — the login and registration pages.
 deploy_sso() {
   echo "→ sso"
-  copia_in "$WEBTOOLS/sso/public"
+  copy_into "$WEBTOOLS/sso/public"
 }
 
-# front-gate — il sito vetrina.
+# front-gate — the showcase site.
 deploy_front_gate() {
   echo "→ front-gate"
-  copia_in "$WEBTOOLS/front-gate/public"
+  copy_into "$WEBTOOLS/front-gate/public"
 }
 
 deploy_preanalyst
 deploy_sso
 deploy_front_gate
 
-echo "Script comuni distribuiti."
+echo "Shared scripts distributed."

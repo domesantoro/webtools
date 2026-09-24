@@ -1,14 +1,15 @@
 #!/usr/bin/env bash
-# Controllo del server webtools_front_gate: --start | --stop
+# Control of the webtools_front_gate server: --start | --stop
 #
-# - --start: avvia in background (nohup), slegato dal terminale.
-#            PID in webtools_front_gate.pid, log in webtools_front_gate.log (in append).
-# - --stop:  ferma il processo indicato dal file PID, solo dopo aver verificato
-#            che quel PID sia davvero il nostro server (mai per nome o per porta).
+# - --start: starts it in the background (nohup), detached from the terminal.
+#            PID in webtools_front_gate.pid, log in webtools_front_gate.log (appended).
+# - --stop:  stops the process named by the PID file, and only after checking that
+#            that PID really is our server (never by name or by port).
 #
-# Il server non ha valori di default: prende dall'ambiente solo le variabili di
-# ../configurator/bootstrap.env (caricate qui con --start) e il resto dalla sua
-# configurazione in anagraphics. Se manca qualcosa, non parte.
+# The server has no default values: from the environment it takes only the
+# variables of ../configurator/bootstrap.env (loaded here by --start) and the rest
+# from its configuration in anagraphics. If anything is missing, it does not
+# start.
 set -euo pipefail
 
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -18,14 +19,14 @@ ENTRY="$DIR/src/index.js"
 PID_FILE="$DIR/webtools_front_gate.pid"
 LOG_FILE="$DIR/webtools_front_gate.log"
 
-# Stampa il PID se il file PID punta a un processo vivo che è il nostro server.
+# Prints the PID if the PID file points at a live process that is our server.
 running_pid() {
   [[ -f "$PID_FILE" ]] || return 1
   local pid cmd
   pid="$(cat "$PID_FILE")"
   [[ "$pid" =~ ^[0-9]+$ ]] || return 1
   cmd="$(ps -p "$pid" -o command= 2>/dev/null)" || return 1
-  # Deve essere node che esegue proprio il nostro src/index.js.
+  # It must be node running our very own src/index.js.
   [[ "$cmd" == *"node"*" $ENTRY"* ]] || return 1
   echo "$pid"
 }
@@ -33,19 +34,19 @@ running_pid() {
 start() {
   local pid
   if pid="$(running_pid)"; then
-    echo "webtools_front_gate è già in esecuzione (PID $pid)."
+    echo "webtools_front_gate is already running (PID $pid)."
     return 0
   fi
   if [[ -z "$NODE" ]]; then
-    echo "Node non trovato nel PATH." >&2
+    echo "Node not found in PATH." >&2
     return 1
   fi
   if [[ ! -f "$ENTRY" ]]; then
-    echo "File di avvio mancante: $ENTRY" >&2
+    echo "Startup file missing: $ENTRY" >&2
     return 1
   fi
   if [[ ! -f "$BOOTSTRAP" ]]; then
-    echo "File di avvio mancante: $BOOTSTRAP" >&2
+    echo "Startup file missing: $BOOTSTRAP" >&2
     return 1
   fi
   set -a
@@ -64,22 +65,22 @@ start() {
   pid=$!
   echo "$pid" > "$PID_FILE"
 
-  # Attende fino a 10 s la riga di conferma stampata da src/index.js,
-  # o che il processo muoia.
+  # Waits up to 10 s for the confirmation line printed by src/index.js, or for the
+  # process to die.
   for _ in $(seq 1 50); do
     if ! kill -0 "$pid" 2>/dev/null; then
       rm -f "$PID_FILE"
-      echo "Avvio fallito. Ultime righe del log:" >&2
+      echo "Start failed. Last lines of the log:" >&2
       tail -c +"$((log_offset + 1))" "$LOG_FILE" | tail -n 20 >&2
       return 1
     fi
-    if tail -c +"$((log_offset + 1))" "$LOG_FILE" | grep -q "webtools_front_gate in ascolto su"; then
-      echo "webtools_front_gate avviato (PID $pid). Log: $LOG_FILE"
+    if tail -c +"$((log_offset + 1))" "$LOG_FILE" | grep -q "webtools_front_gate listening on"; then
+      echo "webtools_front_gate started (PID $pid). Log: $LOG_FILE"
       return 0
     fi
     sleep 0.2
   done
-  echo "Il processo (PID $pid) è vivo ma non ha confermato l'avvio entro 10 s: controlla $LOG_FILE" >&2
+  echo "The process (PID $pid) is alive but has not confirmed the start within 10 s: check $LOG_FILE" >&2
   return 1
 }
 
@@ -87,19 +88,19 @@ stop() {
   local pid
   if ! pid="$(running_pid)"; then
     rm -f "$PID_FILE"
-    echo "webtools_front_gate non è in esecuzione."
+    echo "webtools_front_gate is not running."
     return 0
   fi
   kill -TERM "$pid"
   for _ in $(seq 1 50); do
     if ! kill -0 "$pid" 2>/dev/null; then
       rm -f "$PID_FILE"
-      echo "webtools_front_gate fermato (PID $pid)."
+      echo "webtools_front_gate stopped (PID $pid)."
       return 0
     fi
     sleep 0.2
   done
-  echo "Nessuna uscita entro 10 s dopo SIGTERM: invio SIGKILL a PID $pid." >&2
+  echo "No exit within 10 s after SIGTERM: sending SIGKILL to PID $pid." >&2
   kill -KILL "$pid" 2>/dev/null || true
   rm -f "$PID_FILE"
 }
@@ -108,7 +109,7 @@ case "${1:-}" in
   --start) start ;;
   --stop)  stop ;;
   *)
-    echo "Uso: $0 --start | --stop" >&2
+    echo "Usage: $0 --start | --stop" >&2
     exit 2
     ;;
 esac

@@ -1,11 +1,12 @@
-// Le operazioni del sso: entrare, sapere chi è entrato, uscire, cambiare lingua.
+// The sso's operations: logging in, knowing who has logged in, logging out,
+// changing language.
 //
-// Qui sta la decisione; il dato sta in anagraphics. Il client di anagraphics si
-// passa da fuori (`client`) perché queste funzioni si possano provare senza
-// avere anagraphics acceso.
+// The decision lives here; the data lives in anagraphics. The anagraphics client
+// is passed in from outside (`client`) so these functions can be tested without
+// anagraphics running.
 //
-// Ogni funzione restituisce { ok: true, body } oppure { ok: false, status, code }:
-// la traduzione in HTTP la fa il server, non questa parte.
+// Every function returns { ok: true, body } or { ok: false, status, code }: the
+// translation into HTTP is the server's job, not this part's.
 
 import * as anagraphics from "./anagraphics.js";
 import { verifyPassword } from "./credentials.js";
@@ -19,19 +20,19 @@ export const TICKET_EXPIRED = "TICKET_EXPIRED";
 export const TICKET_MISMATCH = "TICKET_MISMATCH";
 
 const unavailable = { ok: false, status: 503, code: ANAGRAPHICS_UNAVAILABLE };
-// Utente sconosciuto, utente disattivato, password mai impostata, password
-// sbagliata: all'utente si risponde sempre la stessa cosa. Sapere *quale* dei
-// quattro è vero direbbe a chi prova se un indirizzo è registrato. Il motivo
-// vero resta nel log.
+// Unknown user, deactivated user, password never set, wrong password: the user is
+// always given the same answer. Knowing *which* of the four is true would tell
+// whoever is trying whether an address is registered. The real reason stays in the
+// log.
 const refused = { ok: false, status: 401, code: INVALID_CREDENTIALS };
 
-// `locale`: la lingua in cui si stava guardando la pagina di login, se c'è.
-// Vince quella salvata nel profilo; se il profilo non ne ha, si salva questa.
+// `locale`: the language the login page was being looked at in, if there is one.
+// The one saved in the profile wins; if the profile has none, this one is saved.
 export async function login(settings, { username, password, locale = null }, client = anagraphics) {
   const userResult = await client.findUser(settings, username);
   if (!userResult.ok) {
     if (userResult.reason === "not_found") {
-      console.warn(`[sso] login rifiutato: utente sconosciuto (${username})`);
+      console.warn(`[sso] login refused: unknown user (${username})`);
       return refused;
     }
     return unavailable;
@@ -39,87 +40,87 @@ export async function login(settings, { username, password, locale = null }, cli
 
   const user = userResult.data;
   if (user.active === false) {
-    console.warn(`[sso] login rifiutato: utente disattivato (${username})`);
+    console.warn(`[sso] login refused: user deactivated (${username})`);
     return refused;
   }
 
   const credentialResult = await client.findUserCredential(settings, username);
   if (!credentialResult.ok) {
     if (credentialResult.reason === "not_found") {
-      // CREDENTIAL_NOT_SET: l'utente esiste ma non ha una password.
-      console.warn(`[sso] login rifiutato: ${credentialResult.code} (${username})`);
+      // CREDENTIAL_NOT_SET: the user exists but has no password.
+      console.warn(`[sso] login refused: ${credentialResult.code} (${username})`);
       return refused;
     }
     return unavailable;
   }
 
   if (!(await verifyPassword(password, credentialResult.data.credential))) {
-    console.warn(`[sso] login rifiutato: password sbagliata (${username})`);
+    console.warn(`[sso] login refused: wrong password (${username})`);
     return refused;
   }
 
   const sessionLocale = user.locale ?? locale;
   if (!user.locale && locale) {
-    // Se non si riesce a salvarla il login va avanti lo stesso: la lingua
-    // resta nel cookie e nella sessione.
-    const salvata = await client.setUserLocale(settings, username, locale);
-    if (!salvata.ok) console.error(`[sso] lingua non salvata nel profilo di ${username}: ${salvata.reason}`);
+    // If it cannot be saved the login goes ahead anyway: the language stays in the
+    // cookie and in the session.
+    const saved = await client.setUserLocale(settings, username, locale);
+    if (!saved.ok) console.error(`[sso] language not saved in ${username}'s profile: ${saved.reason}`);
   }
 
   const session = buildSession(user, settings.sessionTtlSeconds, new Date(), sessionLocale);
   const created = await client.createSession(settings, session);
   if (!created.ok) {
-    // Anche il 409: due token casuali da 32 byte non si scontrano, quindi un
-    // conflitto qui è un difetto, non un caso sfortunato. Va guardato.
-    console.error(`[sso] sessione non creata per ${username}: ${created.reason} ${created.code ?? ""}`);
+    // The 409 too: two random 32-byte tokens do not collide, so a conflict here is
+    // a defect, not bad luck. It is worth looking at.
+    console.error(`[sso] session not created for ${username}: ${created.reason} ${created.code ?? ""}`);
     return unavailable;
   }
 
-  console.log(`[sso] login di ${username} (uid ${user.uid})`);
+  console.log(`[sso] login of ${username} (uid ${user.uid})`);
   return { ok: true, status: 201, body: { logged: true, session: created.data } };
 }
 
 export async function readSession(settings, token, client = anagraphics) {
   const result = await client.findSession(settings, token);
   if (!result.ok) {
-    // Token sconosciuto: non è un errore, è la risposta alla domanda.
+    // Unknown token: it is not an error, it is the answer to the question.
     if (result.reason === "not_found") return { ok: true, status: 200, body: { logged: false } };
-    // Archivio irraggiungibile: qui non si può dire "non è loggato", perché non
-    // lo sappiamo. Dire di no farebbe sloggare tutti a ogni guasto di Mongo.
+    // Store unreachable: here we cannot say "not logged in", because we do not
+    // know. Saying no would log everybody out at every Mongo failure.
     return unavailable;
   }
 
   const session = result.data;
   if (isExpired(session)) {
-    // La cancellazione la fa l'indice TTL di anagraphics, non serve chiederla qui.
+    // The deletion is done by anagraphics' TTL index, there is no need to ask for it here.
     return { ok: true, status: 200, body: { logged: false } };
   }
 
   return { ok: true, status: 200, body: { logged: true, session } };
 }
 
-// Emette un biglietto per una sessione già aperta. Lo usa la pagina di login,
-// subito dopo il login e anche quando il browser è già entrato: è il solo modo
-// di passare la sessione a un indirizzo diverso da questo (vedi tickets.js).
+// Issues a ticket for a session that is already open. The login page uses it, right
+// after the login and also when the browser is already in: it is the only way to
+// hand the session to an address other than this one (see tickets.js).
 export async function issueTicket(settings, token, service, client = anagraphics) {
   const ticket = buildTicket(token, service, settings.ticketTtlSeconds);
   const created = await client.createTicket(settings, ticket);
   if (!created.ok) {
-    console.error(`[sso] biglietto non emesso per ${service}: ${created.reason} ${created.code ?? ""}`);
+    console.error(`[sso] ticket not issued for ${service}: ${created.reason} ${created.code ?? ""}`);
     return unavailable;
   }
   return { ok: true, status: 201, body: { ticket: ticket.ticket } };
 }
 
-// Lo scambio, chiamato dal sottosistema da server a server: biglietto dentro,
-// sessione fuori. Il biglietto viene cancellato nel momento in cui viene letto,
-// quindi un secondo tentativo con lo stesso biglietto non trova più niente.
+// The exchange, called by the subsystem server to server: ticket in, session out.
+// The ticket is deleted the moment it is read, so a second attempt with the same
+// ticket finds nothing.
 export async function exchangeTicket(settings, { ticket, service }, client = anagraphics) {
   const consumed = await client.consumeTicket(settings, ticket);
   if (!consumed.ok) {
     if (consumed.reason === "not_found") {
-      // Sconosciuto, già usato, o tolto dal TTL: per chi chiama è la stessa cosa.
-      console.warn(`[sso] biglietto non valido presentato da ${service}`);
+      // Unknown, already used, or removed by the TTL: to the caller it is the same thing.
+      console.warn(`[sso] invalid ticket presented by ${service}`);
       return { ok: false, status: 404, code: TICKET_NOT_FOUND };
     }
     return unavailable;
@@ -127,33 +128,33 @@ export async function exchangeTicket(settings, { ticket, service }, client = ana
 
   const record = consumed.data;
   if (ticketIsExpired(record)) {
-    console.warn(`[sso] biglietto scaduto presentato da ${service}`);
+    console.warn(`[sso] expired ticket presented by ${service}`);
     return { ok: false, status: 400, code: TICKET_EXPIRED };
   }
   if (record.service !== service) {
-    // Un biglietto emesso per un sottosistema non vale per un altro. Oggi il
-    // `service` lo dichiara chi chiama e nessuno lo verifica davvero: questo
-    // controllo ferma gli errori, non un attacco (vedi i limiti noti).
-    console.warn(`[sso] biglietto emesso per ${record.service}, presentato da ${service}`);
+    // A ticket issued for one subsystem is not good for another. Today the
+    // `service` is declared by the caller and nobody really verifies it: this check
+    // stops mistakes, not an attack (see the known limits).
+    console.warn(`[sso] ticket issued for ${record.service}, presented by ${service}`);
     return { ok: false, status: 403, code: TICKET_MISMATCH };
   }
 
-  // La sessione potrebbe essere stata chiusa nel frattempo: il biglietto è
-  // valido, ma non c'è più niente a cui dia accesso.
+  // The session may have been closed in the meantime: the ticket is valid, but
+  // there is no longer anything it gives access to.
   return readSession(settings, record.token, client);
 }
 
 export async function logout(settings, token, client = anagraphics) {
   const result = await client.deleteSession(settings, token);
   if (!result.ok && result.reason !== "not_found") return unavailable;
-  // Token sconosciuto o già scaduto: il risultato chiesto — quella sessione non
-  // esiste più — è comunque vero. Ripetere il logout non è un errore.
+  // Unknown or already expired token: the result asked for — that session no
+  // longer exists — is true anyway. Repeating the logout is not an error.
   return { ok: true, status: 200, body: { logged: false } };
 }
 
-// La lingua scelta da chi è entrato: va nella sessione e nel profilo, così il
-// login successivo la ritrova. La lingua delle pagine la decide il cookie
-// comune; questa è la memoria che sopravvive al logout.
+// The language chosen by whoever has logged in: it goes into the session and into
+// the profile, so the next login finds it again. The pages' language is decided by
+// the shared cookie; this is the memory that survives the logout.
 export async function setLocale(settings, token, locale, client = anagraphics) {
   const current = await readSession(settings, token, client);
   if (!current.ok || !current.body.logged) return current;

@@ -1,7 +1,7 @@
-"""Crea gli indici e inserisce i dati iniziali. Idempotente: si può rilanciare.
+"""Creates the indexes and inserts the initial data. Idempotent: it can be re-run.
 
-La configurazione dei sottosistemi non passa di qui: sta in
-webtools/configurator/configuration/ e la carica
+The subsystems' configuration does not come through here: it lives in
+webtools/configurator/configuration/ and is loaded by
 webtools/configurator/load_configuration.sh.
 """
 
@@ -14,9 +14,9 @@ PROJECTS = [
     {"project_id": "1f251606-bdba-40c4-bbee-bfedc6e57f70"},
 ]
 
-# `enabled`: il driver è abilitato a seguire i progetti (dopo il colloquio).
-# Uno non abilitato è comunque un driver: può essere ambassador e fare lavoro
-# autonomo, ma nessun cliente può averlo come driver.
+# `enabled`: the driver is allowed to supervise projects (after the interview).
+# A driver who is not enabled is still a driver: they can be an ambassador and do
+# autonomous work, but no client can have them as their driver.
 DRIVERS = [
     {
         "uid": "7633be3d-e701-42ca-9fea-6c6d1bb4b7d1",
@@ -24,16 +24,17 @@ DRIVERS = [
         "screen_name": "Dome",
         "enabled": True,
     },
-    # Driver di prova: serve per vedere più di un driver nella lista
-    # e per il caso "driver senza codici sconto".
+    # A test driver: it is there to see more than one driver in the list, and for
+    # the "driver with no discount codes" case.
     {
         "uid": "639718a3-ea41-4533-bdb8-73ac58b3b1b2",
         "username": "driver.prova@example.com",
         "screen_name": "Prova",
         "enabled": True,
     },
-    # Driver di prova non abilitato, con un codice sconto: serve per i casi
-    # "link di un driver non abilitato" e "sconto di un driver non abilitato".
+    # A test driver who is not enabled, with a discount code: it is there for the
+    # "link of a driver who is not enabled" and "discount of a driver who is not
+    # enabled" cases.
     {
         "uid": "f234b930-e5d0-4e10-8a4f-1a8a13814370",
         "username": "driver.nonabilitato@example.com",
@@ -42,10 +43,10 @@ DRIVERS = [
     },
 ]
 
-# Utenti del sso. `uid` è l'identità della persona, `driver_uid` la collega al suo
-# documento in `drivers` quando è anche un driver.
-# La password non si semina: si imposta a parte, costruendo il blocco `credential`
-# con `webtools_anagraphics.credentials.build_credential`.
+# The sso users. `uid` is the person's identity, `driver_uid` links them to their
+# document in `drivers` when they are also a driver.
+# The password is not seeded: it is set separately, building the `credential` block
+# with `webtools_anagraphics.credentials.build_credential`.
 USERS = [
     {
         "uid": "8ff93901-673e-44ba-b05b-56011395dcba",
@@ -63,7 +64,7 @@ USERS = [
     },
 ]
 
-# Il driver è ridondato dentro lo sconto: chi legge uno sconto non deve rileggere il driver.
+# The driver is duplicated inside the discount: whoever reads a discount need not read the driver again.
 DISCOUNTS = [
     {
         "discount_code": "e8013cf2-34eb-4bc3-8a34-b08fb24a1bf3",
@@ -100,8 +101,8 @@ def main() -> None:
             {"discount_code": discount["discount_code"]}, {"$set": discount}, upsert=True
         )
     for user in USERS:
-        # `credential` solo alla creazione: rilanciare il seed non deve
-        # cancellare una password già impostata.
+        # `credential` only at creation: re-running the seed must not wipe a
+        # password that has already been set.
         database[db.USERS].update_one(
             {"username": user["username"]},
             {"$set": user, "$setOnInsert": {"credential": None}},
@@ -109,9 +110,9 @@ def main() -> None:
         )
 
     print(
-        f"Seed completato su '{mongo_db}': "
-        f"{len(PROJECTS)} progetti, "
-        f"{len(DRIVERS)} driver, {len(DISCOUNTS)} sconti, {len(USERS)} utenti."
+        f"Seed done on '{mongo_db}': "
+        f"{len(PROJECTS)} projects, "
+        f"{len(DRIVERS)} drivers, {len(DISCOUNTS)} discounts, {len(USERS)} users."
     )
 
 

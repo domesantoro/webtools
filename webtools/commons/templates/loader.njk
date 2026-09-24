@@ -1,19 +1,19 @@
 {#
-  Il velo che copre la pagina mentre una richiesta è per strada.
+  The veil that covers the page while a request is on its way.
 
-  NON MODIFICARE LA COPIA DENTRO UN SOTTOSISTEMA.
-  L'originale è `webtools/commons/templates/loader.njk`; le copie le distribuisce
-  `webtools/configurator/template_deployer/deploy.sh`.
+  DO NOT EDIT THE COPY INSIDE A SUBSYSTEM.
+  The original is `webtools/commons/templates/loader.njk`; the copies are
+  distributed by `webtools/configurator/template_deployer/deploy.sh`.
 
-  Si usa così:
+  Used like this:
 
       {% include "commons/loader.njk" %}
 
-  e sul form che lo deve accendere si mette `data-webtools-loader`. Lo accende
-  `webtools/commons/script/webtools_loader.js`, distribuito dallo script_deployer
-  e caricato dalla pagina nel blocco `scripts`.
+  and the form that should raise it is marked `data-webtools-loader`. It is raised
+  by `webtools/commons/script/webtools_loader.js`, distributed by the
+  script_deployer and loaded by the page in the `scripts` block.
 
-  Variabili attese: `t`, la traduzione (la dà i18n.pageContext).
+  Expected variables: `t`, the translation (given by i18n.pageContext).
 #}
 <div class="webtools-loader" id="webtools-loader" role="status" aria-live="polite" aria-hidden="true">
   <div class="webtools-loader-box">

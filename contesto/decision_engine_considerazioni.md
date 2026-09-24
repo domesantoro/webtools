@@ -1,45 +1,48 @@
-# Decision Engine — considerazioni e proposta architetturale
+# The Decision Engine — considerations and an architectural proposal
 
-## Scopo
+## Purpose
 
-Questo documento raccoglie le considerazioni emerse sull'opportunità di introdurre nel progetto un sottosistema trasversale dedicato alle decisioni, provvisoriamente chiamato:
+This document collects the considerations that came up on the opportunity of introducing into the
+project a cross-cutting subsystem dedicated to decisions, provisionally called:
 
-> **Decision Engine**
+> **The Decision Engine**
 
-L'idea nasce da un fatto semplice: molti sottosistemi della piattaforma non devono generare contenuti complessi, ma devono continuamente prendere piccole decisioni operative:
+The idea comes from a simple fact: many of the platform's subsystems do not have to generate
+complex content, but do have continually to take small operative decisions:
 
-- classificare;
-- assegnare uno score;
-- scegliere un ramo del workflow;
-- decidere se proseguire;
-- stabilire se serve una review;
-- determinare quando effettuare un retry;
-- capire se un caso deve essere escalato;
-- selezionare il Driver o il processo più adatto.
+- classifying;
+- assigning a score;
+- choosing a branch of the workflow;
+- deciding whether to go on;
+- establishing whether a review is needed;
+- determining when to make a retry;
+- working out whether a case is to be escalated;
+- selecting the most suitable Driver or process.
 
-La proposta è centralizzare questo tipo di logica in un componente dedicato, utilizzabile da tutta la piattaforma.
+The proposal is to centralise this kind of logic in a dedicated component, usable by the whole
+platform.
 
 ---
 
-# 1. Idea di fondo
+# 1. The underlying idea
 
-Il Decision Engine deve essere **trasversale**.
+The Decision Engine must be **cross-cutting**.
 
-Non appartiene a una singola fase del workflow.
+It does not belong to a single phase of the workflow.
 
-Deve poter essere interrogato da:
+It must be able to be queried by:
 
-- Preanalysis;
-- Analysis;
-- Validation;
-- Driver Pool;
-- Dev Ecosystem;
-- Testing;
-- Demo;
-- Production;
-- eventuali futuri sottosistemi.
+- the Preanalysis;
+- the Analysis;
+- the Validation;
+- the Driver Pool;
+- the Dev Ecosystem;
+- the Testing;
+- the Demo;
+- the Production;
+- any future subsystems.
 
-Schema concettuale:
+A conceptual diagram:
 
 ```text
 Preanalysis ─────────┐
@@ -52,24 +55,24 @@ Demo ────────────────┤
 Production ──────────┘
 ```
 
-Il Decision Engine non sostituisce questi sottosistemi.
+The Decision Engine does not replace these subsystems.
 
-Li aiuta a **decidere cosa fare dopo**.
+It helps them **decide what to do next**.
 
 ---
 
-# 2. Ruolo
+# 2. The role
 
-Il Decision Engine dovrebbe ricevere:
+The Decision Engine should receive:
 
-1. uno stato;
-2. una domanda decisionale;
-3. eventualmente un insieme di output ammessi;
-4. criteri, policy o soglie.
+1. a state;
+2. a decision question;
+3. possibly a set of admitted outputs;
+4. criteria, policies or thresholds.
 
-E dovrebbe restituire una decisione strutturata.
+And it should return a structured decision.
 
-Esempio:
+An example:
 
 ```json
 {
@@ -78,7 +81,7 @@ Esempio:
 }
 ```
 
-Versione più ricca:
+A richer version:
 
 ```json
 {
@@ -92,25 +95,25 @@ Versione più ricca:
 }
 ```
 
-Principio:
+The principle:
 
-> **il Decision Engine decide; gli altri sottosistemi eseguono.**
+> **the Decision Engine decides; the other subsystems carry out.**
 
 ---
 
-# 3. Tipi di decisione
+# 3. Kinds of decision
 
-## Classificazione
+## Classification
 
-Esempi:
+Examples:
 
-- questo progetto è in scope?
-- che tipo di progetto è?
-- che classe di complessità presenta?
-- quale categoria di Driver serve?
-- il feedback dell'utente è un bug o una nuova richiesta?
+- is this project in scope?
+- what kind of project is it?
+- what class of complexity does it present?
+- what category of Driver is needed?
+- is the user's feedback a bug or a new request?
 
-Output possibili:
+Possible outputs:
 
 ```text
 IN_SCOPE
@@ -122,15 +125,15 @@ NEEDS_REVIEW
 
 ## Scoring
 
-Esempi:
+Examples:
 
-- quanto è completa questa analisi?
-- quanto è chiaro lo scope?
-- quanto è rischioso procedere?
-- quanto è affidabile questo test?
-- quanto è probabile che il problema sia dovuto a specifiche incomplete?
+- how complete is this analysis?
+- how clear is the scope?
+- how risky is going on?
+- how reliable is this test?
+- how probable is it that the problem is due to incomplete specifications?
 
-Output:
+The output:
 
 ```json
 {
@@ -138,30 +141,30 @@ Output:
 }
 ```
 
-Gli score possono essere usati per soglie operative.
+The scores can be used for operative thresholds.
 
-Esempio puramente illustrativo:
+A purely illustrative example:
 
 ```text
->= 0.85     → procedi automaticamente
-0.60–0.84   → escalation a modello più forte
-< 0.60      → review manuale
+>= 0.85     → go on automatically
+0.60–0.84   → escalate to a stronger model
+< 0.60      → a manual review
 ```
 
-Le soglie reali dovranno essere validate empiricamente.
+The real thresholds will have to be validated empirically.
 
 ---
 
 ## Routing
 
-Esempi:
+Examples:
 
-- quale ramo del workflow deve seguire il progetto?
-- il fallimento deve tornare allo sviluppo o all'analisi?
-- quale sottosistema deve ricevere il prossimo task?
-- quale Driver è compatibile?
+- which branch of the workflow must the project follow?
+- must the failure go back to the development or to the analysis?
+- which subsystem must receive the next task?
+- which Driver is compatible?
 
-Esempio:
+An example:
 
 ```json
 {
@@ -173,75 +176,75 @@ Esempio:
 
 ## Escalation
 
-Il Decision Engine deve anche poter decidere che **non è sicuro abbastanza da decidere automaticamente**.
+The Decision Engine must also be able to decide that it is **not sure enough to decide
+automatically**.
 
-Possibili escalation:
+Possible escalations:
 
 ```text
-modello più potente
-review manuale
-richiesta di ulteriori informazioni
-blocco del workflow
+a more powerful model
+a manual review
+a request for further information
+blocking the workflow
 ```
 
 ---
 
-## Selezione
+## Selection
 
-Esempi:
+Examples:
 
-- quale Driver è più adatto?
-- quale modello usare?
-- quale strategia di sviluppo scegliere?
-- quale test eseguire?
-- quale review attivare?
+- which Driver is the most suitable?
+- which model to use?
+- which development strategy to choose?
+- which test to run?
+- which review to activate?
 
-Il Decision Engine può quindi diventare anche un router intelligente fra risorse diverse.
+The Decision Engine can therefore also become an intelligent router between different resources.
+---
+
+# 4. What it must NOT do
+
+The Decision Engine must not become a second generalist system.
+
+In particular it should NOT:
+
+- conduct long conversations with the client;
+- write complete specifications;
+- develop code;
+- produce extended documentation;
+- carry out deep analyses;
+- correct the project directly;
+- replace the deterministic tests;
+- handle payments or deploys directly;
+- own all of the subsystems' operative logic.
+
+Its task must stay small:
+
+> **receiving a state and producing a structured decision.**
 
 ---
 
-# 4. Cosa NON deve fare
+# 5. An architectural principle: provider-agnostic
 
-Il Decision Engine non deve diventare un secondo sistema generalista.
+The rest of the platform should NOT know which technology is taking the decision.
 
-In particolare NON dovrebbe:
+The interface must stay stable.
 
-- condurre lunghe conversazioni con il cliente;
-- scrivere specifiche complete;
-- sviluppare codice;
-- produrre documentazione estesa;
-- realizzare analisi profonde;
-- correggere direttamente il progetto;
-- sostituire i test deterministici;
-- gestire direttamente pagamenti o deploy;
-- possedere tutta la logica operativa dei sottosistemi.
-
-Il suo compito deve rimanere piccolo:
-
-> **ricevere uno stato e produrre una decisione strutturata.**
-
----
-
-# 5. Principio architetturale: provider-agnostic
-
-Il resto della piattaforma NON dovrebbe sapere quale tecnologia sta prendendo la decisione.
-
-L'interfaccia deve rimanere stabile.
-
-Dietro il Decision Engine potrebbero esserci:
+Behind the Decision Engine there could be:
 
 - Jev;
 - Claude;
 - OpenAI;
 - Gemini;
-- un classificatore tradizionale;
-- regole deterministiche;
-- policy statiche;
-- una combinazione di più sistemi;
-- un ensemble;
-- un sistema costruito internamente in futuro.
+- a traditional classifier;
+- deterministic rules;
+- static policies;
+- a combination of several systems;
+- an ensemble;
+- a system built internally in the future.
 
-Schema:
+A diagram:
 
 ```text
 Analysis subsystem
@@ -255,213 +258,216 @@ Decision Engine API
         └── manual escalation
 ```
 
-Questa separazione permette di sostituire o confrontare tecnologie senza modificare tutti gli altri componenti.
+This separation makes it possible to replace or compare technologies without changing all the
+other components.
 
 ---
 
 # 6. Jev / System One
 
-Jev è interessante perché è progettato per un tipo di lavoro diverso dalla generazione libera.
+Jev is interesting because it is designed for a kind of work different from free generation.
 
-Il paradigma è orientato a:
+The paradigm is oriented towards:
 
-- classificazioni;
+- classifications;
 - choice;
 - scoring;
-- decisioni strutturate;
+- structured decisions;
 - routing;
-- valutazioni probabilistiche.
+- probabilistic evaluations.
 
-Il valore potenziale non è sostituire i modelli frontier usati per analisi, sviluppo o review complesse.
+The potential value is not replacing the frontier models used for complex analysis, development or
+review.
 
-Il valore è:
+The value is:
 
-> **evitare di usare un modello generativo costoso ogni volta che serve soltanto una piccola decisione.**
+> **avoiding using an expensive generative model every time only a small decision is needed.**
 
-Jev va quindi considerato come possibile **provider del Decision Engine**, non come fondamento obbligatorio dell'architettura.
-
----
-
-# 7. Dove potrebbe essere utile
-
-## Preanalysis
-
-Possibili decisioni:
-
-- mancano informazioni?
-- la richiesta è sufficientemente chiara?
-- quale domanda dovrebbe essere fatta dopo?
-- la richiesta è palesemente fuori scala?
-
-Non dovrebbe condurre direttamente l'intera conversazione, ma può aiutare a decidere il ramo successivo.
+Jev is therefore to be considered as a possible **provider of the Decision Engine**, not as a
+compulsory foundation of the architecture.
 
 ---
 
-## Analysis Prevalidator
+# 7. Where it could be useful
 
-Possibili controlli:
+## The Preanalysis
 
-- completezza;
-- contraddizioni;
-- compatibilità con lo scope;
-- ambiguità residue;
-- requisiti mancanti;
-- rischio eccessivo.
+Possible decisions:
+
+- is information missing?
+- is the request clear enough?
+- which question should be asked next?
+- is the request plainly out of scale?
+
+It should not conduct the whole conversation directly, but it can help decide the next branch.
 
 ---
 
-## Analysis Validation
+## The Analysis Prevalidator
 
-L'Analysis Engine produce l'analisi.
+Possible checks:
 
-Il Decision Engine può valutarla su più assi:
+- completeness;
+- contradictions;
+- compatibility with the scope;
+- residual ambiguities;
+- missing requirements;
+- excessive risk.
+
+---
+
+## The Analysis Validation
+
+The Analysis Engine produces the analysis.
+
+The Decision Engine can evaluate it on several axes:
 
 ```text
-completezza
-coerenza
-testabilità
-chiarezza
+completeness
+consistency
+testability
+clarity
 scope
-rischio
+risk
 ```
 
-Ogni asse può produrre uno score separato.
+Every axis can produce a separate score.
 
 ---
 
 ## Scope validation
 
-Caso particolarmente naturale.
+A particularly natural case.
 
-Esempio:
+An example:
 
 ```text
-scope_score = 0.94 → avanti
-scope_score = 0.71 → secondo controllo
-scope_score = 0.42 → review manuale
+scope_score = 0.94 → go on
+scope_score = 0.71 → a second check
+scope_score = 0.42 → a manual review
 ```
 
 ---
 
-## Driver Pool
+## The Driver Pool
 
-Possibili impieghi:
+Possible uses:
 
-- classificare il progetto;
-- estrarre le skill richieste;
-- valutare compatibilità Driver/progetto;
-- creare shortlist;
-- segnalare progetti che richiedono competenze particolari.
-
----
-
-## Dev Ecosystem
-
-Il Decision Engine non deve scrivere codice.
-
-Può decidere:
-
-- se un fallimento è recuperabile;
-- se effettuare retry;
-- se cambiare strategia;
-- se tornare all'Analysis;
-- se chiedere review umana;
-- se classificare il problema come out-of-scope.
+- classifying the project;
+- extracting the skills required;
+- evaluating the Driver/project compatibility;
+- creating a shortlist;
+- reporting projects that require particular competences.
 
 ---
 
-## Alpha Test
+## The Dev Ecosystem
 
-I test deterministici rimangono codice.
+The Decision Engine must not write code.
 
-Esempi:
+It can decide:
+
+- whether a failure is recoverable;
+- whether to make a retry;
+- whether to change strategy;
+- whether to go back to the Analysis;
+- whether to ask for a human review;
+- whether to classify the problem as out-of-scope.
+
+---
+
+## The Alpha Test
+
+The deterministic tests stay code.
+
+Examples:
 
 ```text
-test unitari
-test API
-test browser
-assertion
+unit tests
+API tests
+browser tests
+assertions
 schema validation
-security scan
+security scans
 ```
 
-Il Decision Engine può aiutare quando la valutazione è semantica.
+The Decision Engine can help when the evaluation is semantic.
 
-Esempio:
+An example:
 
-> “L'interfaccia prodotta soddisfa effettivamente il requisito descritto nella specifica?”
+> "Does the interface produced really satisfy the requirement described in the specification?"
 
 ---
 
-## Demo / feedback cliente
+## The Demo / the client's feedback
 
-Possibili classificazioni:
+Possible classifications:
 
 ```text
-bug
-specifica non rispettata
-richiesta nuova
-feedback estetico
-problema di ambiente
-richiesta non pertinente
+a bug
+a specification not respected
+a new request
+aesthetic feedback
+an environment problem
+a request that is not pertinent
 ```
 
-Questa distinzione è importante per evitare che la demo diventi automaticamente un ciclo di sviluppo aperto.
+This distinction is important to stop the demo automatically becoming an open development cycle.
 
 ---
 
 ## Production
 
-Possibili utilizzi:
+Possible uses:
 
-- classificazione di anomalie;
-- scelta del tipo di escalation;
-- riconoscimento di problemi di deploy;
-- distinzione fra bug applicativo e problema infrastrutturale.
+- classifying anomalies;
+- choosing the kind of escalation;
+- recognising deploy problems;
+- telling an application bug from an infrastructure problem.
 
 ---
 
-# 8. Decision Engine ibrido
+# 8. A hybrid Decision Engine
 
-Non tutte le decisioni dovrebbero essere affidate all'AI.
+Not every decision should be entrusted to the AI.
 
-Una gerarchia possibile:
+A possible hierarchy:
 
 ```text
-1. regola deterministica
-2. modello decisionale specializzato
-3. modello frontier
-4. review manuale
+1. a deterministic rule
+2. a specialised decision model
+3. a frontier model
+4. a manual review
 ```
 
-Esempio:
+An example:
 
 ```text
 if test_exit_code != 0
     → failure
 
-if failure_type è determinabile da regole
-    → route automatico
+if failure_type can be determined by rules
+    → automatic routing
 
-altrimenti
-    → Decision Engine AI
+otherwise
+    → the AI Decision Engine
 
-se confidence insufficiente
-    → frontier model
+if the confidence is not enough
+    → a frontier model
 
-se ancora insufficiente
-    → Driver
+if it is still not enough
+    → the Driver
 ```
 
-Questo evita di usare AI dove una semplice condizione è migliore.
+This avoids using AI where a simple condition is better.
 
 ---
 
 # 9. Confidence
 
-Ogni decisione non deterministica dovrebbe idealmente produrre anche una confidence.
+Every non-deterministic decision should ideally produce a confidence too.
 
-Esempio:
+An example:
 
 ```json
 {
@@ -470,7 +476,7 @@ Esempio:
 }
 ```
 
-Oppure:
+Or:
 
 ```json
 {
@@ -479,25 +485,25 @@ Oppure:
 }
 ```
 
-Nel secondo caso il sistema può scegliere di non fidarsi della decisione.
+In the second case the system can choose not to trust the decision.
 
-La confidence è un segnale operativo, non una garanzia matematica di correttezza.
+The confidence is an operative signal, not a mathematical guarantee of correctness.
 
-Va calibrata sul comportamento reale.
+It is to be calibrated on the real behaviour.
 
 ---
 
-# 10. Output tipizzati
+# 10. Typed outputs
 
-Una caratteristica desiderabile è che il Decision Engine non possa rispondere liberamente.
+A desirable characteristic is that the Decision Engine cannot answer freely.
 
-Se la domanda è:
+If the question is:
 
 ```text
-Questa richiesta è compatibile con il sistema?
+Is this request compatible with the system?
 ```
 
-gli output ammessi possono essere soltanto:
+the outputs admitted can only be:
 
 ```text
 YES
@@ -505,33 +511,33 @@ NO
 NEEDS_REVIEW
 ```
 
-Non:
+Not:
 
 ```text
-“Dipende, probabilmente sì, ma consiglierei...”
+"It depends, probably yes, but I would advise..."
 ```
 
-Gli output tipizzati:
+Typed outputs:
 
-- semplificano il workflow;
-- riducono gli errori di parsing;
-- rendono le decisioni auditabili;
-- facilitano il cambio di provider;
-- permettono test automatici.
+- simplify the workflow;
+- reduce parsing errors;
+- make the decisions auditable;
+- make changing provider easier;
+- allow automatic tests.
 
 ---
 
-# 11. API concettuale
+# 11. A conceptual API
 
-Non serve ancora scegliere framework.
+There is no need to choose a framework yet.
 
-Possibile forma:
+A possible shape:
 
 ```text
 POST /decision
 ```
 
-Input:
+The input:
 
 ```json
 {
@@ -546,7 +552,7 @@ Input:
 }
 ```
 
-Output:
+The output:
 
 ```json
 {
@@ -560,11 +566,11 @@ Output:
 
 # 12. Policies
 
-Le decisioni non dovrebbero vivere in prompt dispersi nel codice.
+The decisions should not live in prompts scattered through the code.
 
-Conviene introdurre il concetto di **policy**.
+It is worth introducing the concept of a **policy**.
 
-Esempi:
+Examples:
 
 ```text
 scope-v1
@@ -574,25 +580,25 @@ driver-matching-v1
 demo-feedback-v1
 ```
 
-Una policy può descrivere:
+A policy can describe:
 
-- domanda;
-- possibili output;
-- criteri;
-- soglie;
-- strategia di escalation;
-- provider preferito;
-- fallback.
+- the question;
+- the possible outputs;
+- the criteria;
+- the thresholds;
+- the escalation strategy;
+- the preferred provider;
+- the fallback.
 
-Questo permette di versionare il comportamento decisionale.
+This makes it possible to version the decision-making behaviour.
 
 ---
 
-# 13. Decision log
+# 13. The decision log
 
-Ogni decisione importante dovrebbe essere registrata.
+Every important decision should be recorded.
 
-Possibili dati:
+Possible data:
 
 ```text
 decision_id
@@ -605,26 +611,26 @@ confidence
 provider
 model
 timestamp
-eventuale override umano
-risultato successivo
+a human override, if any
+the subsequent result
 ```
 
-Questo permetterà di capire:
+This will make it possible to understand:
 
-- quali decisioni sbagliamo più spesso;
-- quali policy funzionano;
-- quanto spesso il Driver corregge una decisione;
-- se Jev funziona meglio o peggio di un frontier model;
-- quali confidence sono realmente affidabili;
-- quali gate sono inutili.
+- which decisions we get wrong most often;
+- which policies work;
+- how often the Driver corrects a decision;
+- whether Jev works better or worse than a frontier model;
+- which confidences are really reliable;
+- which gates are useless.
 
 ---
 
-# 14. Human override
+# 14. The human override
 
-Il Driver deve poter correggere una decisione automatica quando previsto.
+The Driver must be able to correct an automatic decision when that is foreseen.
 
-Esempio:
+An example:
 
 ```text
 Decision Engine:
@@ -634,15 +640,15 @@ Driver:
 override → IN_SCOPE
 ```
 
-L'override va registrato.
+The override is to be recorded.
 
-Questi dati possono diventare molto utili per calibrare e migliorare il sistema.
+These data can become very useful for calibrating and improving the system.
 
 ---
 
-# 15. Confronto fra provider
+# 15. Comparing providers
 
-L'interfaccia provider-agnostic permette di confrontare:
+The provider-agnostic interface makes it possible to compare:
 
 ```text
 Jev
@@ -651,206 +657,206 @@ Claude
 vs
 OpenAI
 vs
-regola deterministica
+a deterministic rule
 ```
 
-sulle stesse decisioni.
+on the same decisions.
 
-Metriche utili:
+Useful metrics:
 
-- accuratezza;
-- costo;
-- latenza;
-- tasso di escalation;
-- accordo con il Driver;
-- errori critici.
-
----
-
-# 16. Strategia consigliata per Jev
-
-Jev non dovrebbe diventare una dipendenza strutturale obbligatoria fin dall'inizio.
-
-Motivi:
-
-- tecnologia molto recente;
-- maturità da verificare;
-- comportamento reale sul nostro dominio ancora sconosciuto;
-- benchmark iniziali da validare con dati nostri.
-
-La proposta è:
-
-> progettare il Decision Engine in modo compatibile con Jev, senza progettare la piattaforma attorno a Jev.
-
-Jev può quindi essere:
-
-- sperimentato;
-- confrontato;
-- sostituito;
-- utilizzato soltanto per alcune policy.
+- accuracy;
+- cost;
+- latency;
+- the rate of escalation;
+- agreement with the Driver;
+- critical errors.
 
 ---
 
-# 17. Decisioni reversibili e irreversibili
+# 16. The strategy advised for Jev
 
-## Decisioni facilmente reversibili
+Jev should not become a compulsory structural dependency from the start.
 
-Possono avere soglie di automazione più permissive.
+The reasons:
 
-Esempi:
+- a very recent technology;
+- a maturity to be checked;
+- the real behaviour on our domain still unknown;
+- initial benchmarks to be validated with data of our own.
+The proposal is:
+
+> to design the Decision Engine in a way compatible with Jev, without designing the platform
+> around Jev.
+
+Jev can therefore be:
+
+- experimented with;
+- compared;
+- replaced;
+- used for some policies only.
+
+---
+
+# 17. Reversible and irreversible decisions
+
+## Easily reversible decisions
+
+They can have more permissive automation thresholds.
+
+Examples:
 
 ```text
-retry
-second review
-richiedi dettaglio
-seleziona test aggiuntivo
+a retry
+a second review
+ask for detail
+select an additional test
 ```
 
-## Decisioni con conseguenze forti
+## Decisions with strong consequences
 
-Richiedono confidence maggiore o intervento umano.
+They require a greater confidence or human intervention.
 
-Esempi:
+Examples:
 
 ```text
-rifiuta progetto
-approva definitivamente scope
-assegna un progetto importante
-concludi una contestazione
+refuse a project
+approve a scope definitively
+assign an important project
+conclude a dispute
 ```
 
 ---
 
-# 18. Relazione con il Driver
+# 18. The relationship with the Driver
 
-Il Driver non viene sostituito dal Decision Engine.
+The Driver is not replaced by the Decision Engine.
 
-Idealmente:
+Ideally:
 
 ```text
-decisioni banali
-    → automatiche
+trivial decisions
+    → automatic
 
-decisioni incerte
-    → modello più forte
+uncertain decisions
+    → a stronger model
 
-decisioni importanti/ambigue
-    → Driver
+important/ambiguous decisions
+    → the Driver
 ```
 
-Il Driver diventa il livello umano di escalation.
+The Driver becomes the human level of escalation.
 
 ---
 
-# 19. Relazione con i modelli frontier
+# 19. The relationship with the frontier models
 
-I modelli frontier restano fondamentali per:
+The frontier models stay fundamental for:
 
-- ragionamento complesso;
-- analisi;
-- progettazione;
-- sviluppo;
-- review semantica difficile;
-- comprensione profonda del contesto.
+- complex reasoning;
+- analysis;
+- design;
+- development;
+- difficult semantic review;
+- a deep understanding of the context.
 
-Il Decision Engine evita di usare questi modelli per ogni singolo bivio operativo.
+The Decision Engine avoids using these models for every single operative fork.
 
-Formula concettuale:
+The conceptual formula:
 
-> **modello forte produce → Decision Engine giudica/indirizza → codice esegue**
+> **a strong model produces → the Decision Engine judges/directs → the code carries out**
 
-con escalation verso modello forte o umano quando necessario.
-
----
-
-# 20. Benefici attesi
-
-## Riduzione del costo AI
-
-Molte micro-decisioni non richiedono un modello frontier.
-
-## Riduzione della latenza
-
-Decisioni semplici possono essere rapide.
-
-## Uniformità
-
-Le stesse policy possono essere applicate da sottosistemi differenti.
-
-## Auditabilità
-
-Ogni decisione può essere registrata e ricostruita.
-
-## Sostituibilità
-
-Il provider può cambiare senza riscrivere il workflow.
-
-## Testabilità
-
-Le policy diventano componenti testabili.
-
-## Evoluzione
-
-Il sistema può migliorare sulla base dei propri decision log.
+with an escalation to a strong model or a human when necessary.
 
 ---
 
-# 21. Rischi
+# 20. The benefits expected
 
-## Centralizzazione eccessiva
+## A reduction of the AI cost
 
-Il Decision Engine non deve diventare un “mega cervello” che conosce tutto.
+Many micro-decisions do not require a frontier model.
 
-Deve ricevere il minimo contesto necessario.
+## A reduction of the latency
 
-## Policy troppo generiche
+Simple decisions can be quick.
 
-Una policy del tipo:
+## Uniformity
 
-> “decidi cosa fare”
+The same policies can be applied by different subsystems.
 
-è sbagliata.
+## Auditability
 
-Meglio decisioni piccole e ben delimitate.
+Every decision can be recorded and reconstructed.
 
-## Fiducia eccessiva nella confidence
+## Replaceability
 
-La confidence va calibrata empiricamente.
+The provider can change without rewriting the workflow.
 
-## AI dove basta codice
+## Testability
 
-Se una regola deterministica risolve il problema, va usata la regola.
+The policies become testable components.
+
+## Evolution
+
+The system can improve on the basis of its own decision logs.
+
+---
+
+# 21. The risks
+
+## Excessive centralisation
+
+The Decision Engine must not become a "mega brain" that knows everything.
+
+It must receive the minimum context necessary.
+
+## Policies that are too generic
+
+A policy of the kind:
+
+> "decide what to do"
+
+is wrong.
+
+Small, well-bounded decisions are better.
+
+## Excessive trust in the confidence
+
+The confidence is to be calibrated empirically.
+
+## AI where code is enough
+
+If a deterministic rule solves the problem, the rule is to be used.
 
 ## Vendor lock-in
 
-Va evitato tramite interfaccia astratta.
+It is to be avoided through an abstract interface.
 
 ---
 
-# 22. Principio progettuale
+# 22. The design principle
 
-Il Decision Engine dovrebbe lavorare su decisioni:
+The Decision Engine should work on decisions that are:
 
-- piccole;
-- esplicite;
-- tipizzate;
-- versionate;
-- osservabili;
-- reversibili quando possibile;
-- accompagnate da confidence;
-- dotate di escalation.
+- small;
+- explicit;
+- typed;
+- versioned;
+- observable;
+- reversible where possible;
+- accompanied by a confidence;
+- provided with an escalation.
 
-Non:
+Not:
 
-> “capisci tutto e dimmi cosa fare”
+> "understand everything and tell me what to do"
 
-ma:
+but:
 
-> “dato questo stato, scegli una delle tre azioni ammesse secondo questa policy.”
+> "given this state, choose one of the three admitted actions according to this policy."
 
 ---
 
-# 23. Possibile struttura logica
+# 23. A possible logical structure
 
 ```text
 Decision Engine
@@ -861,94 +867,98 @@ Decision Engine
 ├── Provider Router
 │   ├── Jev
 │   ├── Frontier LLM
-│   └── altri provider
+│   └── other providers
 ├── Confidence / Threshold Layer
 ├── Escalation Manager
 ├── Decision Log
 └── Metrics
 ```
 
-Questa è una struttura concettuale, non una decisione implementativa.
+This is a conceptual structure, not an implementation decision.
 
 ---
 
-# 24. Collegamento con lo stack generale
+# 24. The connection with the general stack
 
-La scelta architetturale generale del progetto rimane:
+The project's general architectural choice remains:
 
-> **JavaScript/Node come spina dorsale della piattaforma, Python solo nei sottosistemi AI/agentici dove realmente utile, PostgreSQL come stato centrale condiviso.**
+> **JavaScript/Node as the platform's backbone, Python only in the AI/agentic subsystems where it
+> is really useful, PostgreSQL as the shared central state.**
 
-Il Decision Engine dovrebbe quindi poter essere esposto naturalmente al resto della piattaforma tramite JavaScript/Node.
+The Decision Engine should therefore be able to be exposed naturally to the rest of the platform
+through JavaScript/Node.
 
-L'eventuale SDK JavaScript di Jev può semplificare l'integrazione, ma non deve determinare l'architettura.
+Jev's JavaScript SDK, if there is one, can make the integration simpler, but it must not determine
+the architecture.
 
 ---
 
-# 25. Strategia di implementazione consigliata
+# 25. The implementation strategy advised
 
-## Fase 1
+## Phase 1
 
-Definire un'interfaccia astratta per le decisioni.
+Define an abstract interface for the decisions.
 
-Implementare poche policy reali.
+Implement a few real policies.
 
-Per esempio:
+For example:
 
 ```text
 scope_validation
 analysis_validation
 dev_failure_routing
+dev_failure_routing
 ```
 
-## Fase 2
+## Phase 2
 
-Usare inizialmente un provider semplice o un modello frontier.
+Use a simple provider or a frontier model to begin with.
 
-Registrare tutte le decisioni.
+Record every decision.
 
-## Fase 3
+## Phase 3
 
-Integrare Jev come provider alternativo.
+Integrate Jev as an alternative provider.
 
-Possibile shadow mode:
+A possible shadow mode:
 
 ```text
-provider principale → decisione operativa
-Jev → decisione registrata ma non applicata
+the main provider → the operative decision
+Jev → a decision recorded but not applied
 ```
 
-## Fase 4
+## Phase 4
 
-Confrontare risultati.
+Compare the results.
 
-Misurare:
+Measure:
 
 ```text
-accordo
-errori
-costo
-latenza
+agreement
+errors
+cost
+latency
 confidence
-override Driver
+the Driver's overrides
 ```
 
-## Fase 5
+## Phase 5
 
-Affidare a Jev soltanto le policy sulle quali dimostra affidabilità sufficiente.
+Entrust to Jev only the policies on which it shows enough reliability.
 
 ---
 
-# 26. Primo set di policy candidate
+# 26. A first set of candidate policies
 
 ## scope_validation
 
-Input:
+The input:
 
-- analisi;
-- requisiti;
-- vincoli.
+- the analysis;
+- the requirements;
+- the constraints.
 
-Output:
+The output:
 
 ```text
 ACCEPT
@@ -960,12 +970,12 @@ MANUAL_REVIEW
 
 ## analysis_validation
 
-Input:
+The input:
 
-- specifica prodotta;
-- contesto iniziale.
+- the specification produced;
+- the initial context.
 
-Output:
+The output:
 
 ```text
 PASS
@@ -973,7 +983,7 @@ REANALYZE
 MANUAL_REVIEW
 ```
 
-Più eventuali score:
+Plus some scores, possibly:
 
 ```text
 completeness
@@ -985,14 +995,14 @@ testability
 
 ## dev_failure_routing
 
-Input:
+The input:
 
-- errore;
-- stato progetto;
-- output test;
-- storico retry.
+- the error;
+- the project's state;
+- the tests' output;
+- the history of the retries.
 
-Output:
+The output:
 
 ```text
 RETRY
@@ -1001,33 +1011,36 @@ MANUAL_REVIEW
 OUT_OF_SCOPE
 ```
 
-Queste tre policy attraversano punti molto diversi del workflow e permettono di capire rapidamente se il concetto funziona.
+These three policies cross very different points of the workflow and make it possible to
+understand quickly whether the concept works.
 
 ---
 
-# 27. Conclusione
+# 27. Conclusion
 
-La proposta è introdurre formalmente un nuovo sottosistema trasversale:
+The proposal is to introduce formally a new cross-cutting subsystem:
 
-> **Decision Engine**
+> **the Decision Engine**
 
-Il suo compito non è produrre lavoro, ma governare i piccoli bivi del workflow.
+Its task is not to produce work, but to govern the workflow's small forks.
 
-Deve essere:
+It must be:
 
 - provider-agnostic;
-- utilizzabile da tutti i sottosistemi;
-- basato su decisioni tipizzate;
-- dotato di confidence ed escalation;
-- osservabile;
-- testabile;
-- sostituibile;
-- integrabile con regole deterministiche;
-- compatibile con modelli frontier;
-- potenzialmente compatibile con Jev/System One.
+- usable by every subsystem;
+- based on typed decisions;
+- provided with a confidence and an escalation;
+- observable;
+- testable;
+- replaceable;
+- able to be integrated with deterministic rules;
+- compatible with frontier models;
+- potentially compatible with Jev/System One.
 
-Jev appare particolarmente interessante come possibile implementazione di una parte del motore, perché il suo paradigma è vicino alle esigenze di classificazione, scoring e routing della piattaforma.
+Jev looks particularly interesting as a possible implementation of a part of the engine, because
+its paradigm is close to the platform's needs of classification, scoring and routing.
 
-La scelta architetturale consigliata è:
+The architectural choice advised is:
 
-> **costruire il Decision Engine come componente stabile della piattaforma e trattare Jev come uno dei possibili provider, non come il fondamento dell'intero sistema.**
+> **building the Decision Engine as a stable component of the platform and treating Jev as one of
+> the possible providers, not as the foundation of the whole system.**

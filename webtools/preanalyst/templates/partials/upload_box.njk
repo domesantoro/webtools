@@ -1,15 +1,16 @@
 {#
-  Il blocco per caricare un'analisi già fatta: un file .md che porta nel front
-  matter il `project_id` di un progetto di chi lo carica. Sempre visibile, anche da sloggati:
-  il conto serve al momento di caricare, non per scegliere il file: da
-  sloggati "Carica" apre la modale del login, che sta in page.njk.
+  The block for uploading an analysis that is already done: a .md file carrying in
+  its front matter the `project_id` of a project belonging to whoever uploads it.
+  Always visible, even when logged out: the account is needed at the moment of
+  uploading, not to choose the file — logged out, "Carica" opens the login modal,
+  which lives in page.njk.
 
-  Senza JavaScript resta il campo file e basta: il bottone "Carica" lo fa comparire
-  `public/upload.js`, che è anche quello che manda il file a `POST /upload`.
+  Without JavaScript only the file field is left: the "Carica" button is brought up
+  by `public/upload.js`, which is also what sends the file to `POST /upload`.
 #}
 
 {% macro render(upload) %}
-      {#- I messaggi di upload.js: il browser non ha cataloghi, li riceve da qui. #}
+      {#- The messages for upload.js: the browser has no catalogues, it gets them from here. #}
       <aside class="card upload-box" aria-labelledby="upload-box-title"
              data-upload-messages="{{ upload.messages | dump }}">
         <div class="card-head aside-head" id="upload-box-title">{{ t("preanalyst.upload.title") }}</div>
@@ -23,7 +24,7 @@
             <span class="dropzone-hint">{{ t("preanalyst.upload.limit", { mb: upload.max_mb }) }}</span>
           </label>
 
-          {#- Compare solo quando un file è stato scelto. #}
+          {#- It appears only once a file has been chosen. #}
           <div class="upload-actions" data-upload-actions hidden>
             <button class="btn btn-primary" type="button" data-upload-send>{{ t("preanalyst.upload.send") }}</button>
             <button class="btn" type="button" data-upload-clear>{{ t("preanalyst.upload.clear") }}</button>

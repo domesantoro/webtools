@@ -1,15 +1,15 @@
 #!/usr/bin/env bash
-# Diffonde lo stile generale (commons/style) nei sotto progetti che lo usano.
-# Ogni progetto ha la sua funzione di deploy, con destinazioni esplicite:
-# la struttura dei progetti può essere diversa e non tutti ricevono lo stile.
+# Distributes the general style (commons/style) to the subprojects that use it.
+# Every project has its own deploy function, with explicit targets: the projects'
+# structure may differ and not all of them receive the style.
 set -euo pipefail
 
 WEBTOOLS="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 SOURCE="$WEBTOOLS/commons/style"
 
-# front-gate — sito vetrina, pagine statiche servite da un server Node.
-# I file stanno in public/; le pagine caricano css/commons.css, che cerca i
-# font in css/fonts/.
+# front-gate — the showcase site, static pages served by a Node server. The files
+# live in public/; the pages load css/commons.css, which looks for the fonts in
+# css/fonts/.
 deploy_front_gate() {
   local css="$WEBTOOLS/front-gate/public/css"
   echo "→ front-gate"
@@ -19,9 +19,9 @@ deploy_front_gate() {
   cp -R "$SOURCE/fonts" "$css/fonts"
 }
 
-# preanalyst — preanalysis gate, pagina resa da un server Node.
-# I file statici stanno in public/, che la pagina carica dalla radice:
-# commons.css e fonts/ finiscono lì accanto a styles.css, lo stile locale.
+# preanalyst — the preanalysis gate, a page rendered by a Node server. The static
+# files live in public/, which the page loads from the root: commons.css and
+# fonts/ land there next to styles.css, the local style.
 deploy_preanalyst() {
   local public="$WEBTOOLS/preanalyst/public"
   echo "→ preanalyst"
@@ -31,8 +31,8 @@ deploy_preanalyst() {
   cp -R "$SOURCE/fonts" "$public/fonts"
 }
 
-# sso — le pagine di login e registrazione, rese da un server Node.
-# Stessa struttura di preanalyst: i file statici stanno in public/.
+# sso — the login and registration pages, rendered by a Node server. Same
+# structure as the preanalyst: the static files live in public/.
 deploy_sso() {
   local public="$WEBTOOLS/sso/public"
   echo "→ sso"
@@ -46,4 +46,4 @@ deploy_front_gate
 deploy_preanalyst
 deploy_sso
 
-echo "Stile distribuito."
+echo "Style distributed."

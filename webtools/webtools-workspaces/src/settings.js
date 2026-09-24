@@ -1,7 +1,7 @@
-// Impostazioni, lette all'avvio dalla configurazione `workspaces` in anagraphics
-// (webtools/configurator/configuration/workspaces.json). Niente valori di
-// default: se manca un campo, loadSettings lancia ConfigurationError e il server
-// non parte.
+// Settings, read at startup from the `workspaces` configuration in anagraphics
+// (webtools/configurator/configuration/workspaces.json). No default values: if a
+// field is missing, loadSettings throws ConfigurationError and the server does not
+// start.
 
 import os from "node:os";
 import path from "node:path";
@@ -13,24 +13,24 @@ export async function loadSettings() {
   return {
     host: configuration.string("listen.host"),
     port: configuration.port("listen.port"),
-    // Sottosistema interno: risponde solo a chi chiama dagli IP del pool.
-    // È un controllo sull'IP della connessione, non un'autorizzazione.
+    // An internal subsystem: it answers only callers from the pool's IPs. It is a
+    // check on the connection's IP, not an authorisation.
     allowedIps: configuration.stringList("access.allowed_ips"),
-    // La radice dei workspace. Sta fuori dal repo: sono i file dei clienti, non
-    // codice, e non devono finire in un commit.
+    // The root of the workspaces. It sits outside the repo: these are the clients'
+    // files, not code, and they must not end up in a commit.
     root: absoluteRoot(configuration.string("storage.root")),
-    // Una specifica è testo: 10 MB sono già moltissimi.
+    // A specification is text: 10 MB is already an awful lot.
     specMaxBytes: configuration.integer("storage.spec_max_bytes", { min: 1 }),
   };
 }
 
-// Il JSON non espande `~`: lo si fa qui, perché la radice sta nella home di chi
-// avvia il server. Un percorso relativo dipenderebbe dalla cartella di avvio, e
-// non si accetta.
+// JSON does not expand `~`: it is done here, because the root sits in the home of
+// whoever starts the server. A relative path would depend on the directory it was
+// started from, and is not accepted.
 function absoluteRoot(value) {
   const root = value === "~" || value.startsWith("~/") ? path.join(os.homedir(), value.slice(1)) : value;
   if (!path.isAbsolute(root)) {
-    throw new ConfigurationError(`configurazione di workspaces: storage.root deve essere assoluto o cominciare con ~/, trovato ${JSON.stringify(value)}`);
+    throw new ConfigurationError(`configuration of workspaces: storage.root must be absolute or start with ~/, found ${JSON.stringify(value)}`);
   }
   return root;
 }

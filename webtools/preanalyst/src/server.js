@@ -1,14 +1,15 @@
-// Server HTTP della pre-analisi.
+// The pre-analysis HTTP server.
 //
-//   GET  /                     la pagina con il form
-//                              con ?rejected={id}: la modale della richiesta rifiutata
-//   POST /submit               il form: nasce il progetto, la pre-specifica e la prevalidazione
-//   GET  /analysis/{id}        la pagina dell'analisi (per ora vuota)
-//   GET  /projects/{id}/rejection.pdf   i dati del form dopo un rifiuto
-//   POST /upload               una specifica già pronta, per un progetto esistente
-//   GET  /login-done, /session-fragment, /logout   il giro dell'accesso
-//   POST /locale               cambia la lingua (cookie comune) e torna alla pagina
-//   tutto il resto             i file statici di public/
+//   GET  /                     the page with the form
+//                              with ?rejected={id}: the refused-request modal
+//   POST /submit               the form: the project, the pre-specification and the prevalidation
+//   GET  /analysis/{id}        the analysis page: the specification rounds
+//   POST /analysis/{id}/messages, /turns, /turns/buy   the chat and its turns
+//   GET  /projects/{id}/rejection.pdf   the form data after a refusal
+//   POST /upload               a ready-made specification, for an existing project
+//   GET  /login-done, /session-fragment, /logout   the login round trip
+//   POST /locale               changes the language (shared cookie) and returns to the page
+//   everything else            the static files of public/
 
 import { randomUUID } from "node:crypto";
 import { createReadStream } from "node:fs";
@@ -24,7 +25,11 @@ import {
   deleteProject,
   findDriver,
   findProject,
+  findUser,
+  grantUserTurns,
   listDrivers,
+  spendUserTurns,
+  updateOpenStep,
 } from "./anagraphics.js";
 import { FrontMatterError, isProjectId, parse } from "./commons/spec_front_matter.js";
 import {
@@ -38,6 +43,7 @@ import {
 } from "./commons/sso_client.js";
 import { driverLinkOfProject, NONE, resolveDriverLink, withoutOwnLink } from "./driver_link.js";
 import {
+  mockReplies,
   renderAccessFragments,
   renderAnalysis,
   renderLoginDone,
@@ -69,60 +75,61 @@ function redirect(response, location, headers = {}) {
   response.end();
 }
 
-// Quanto manca alla scadenza della sessione. Il cookie non deve sopravvivere
-// alla sessione che rappresenta, quindi la durata non si decide qui: si legge.
+// How long is left before the session expires. The cookie must not outlive the
+// session it stands for, so the duration is not decided here: it is read.
 function secondsUntil(moment) {
-  const scadenza = Date.parse(moment ?? "");
-  if (Number.isNaN(scadenza)) return 0;
-  return Math.max(0, Math.floor((scadenza - Date.now()) / 1000));
+  const expiry = Date.parse(moment ?? "");
+  if (Number.isNaN(expiry)) return 0;
+  return Math.max(0, Math.floor((expiry - Date.now()) / 1000));
 }
 
-// `/login-done`: qui arriva la **finestra del login**, non la pagina di partenza.
-// Si scambia il biglietto, si mette il cookie e si rende una paginetta che avvisa
-// la finestra di partenza e si chiude da sola (`public/sso_popup.js`).
+// `/login-done`: the **login window** lands here, not the starting page. The
+// ticket is exchanged, the cookie is set, and a small page is rendered that
+// notifies the starting window and closes itself (`public/sso_popup.js`).
 //
-// Il ritorno non avviene sulla pagina della pre-analisi di proposito: ci
-// arriverebbe la finestra sbagliata, aprendo una seconda copia del form e
-// lasciando quella vera convinta che non sia entrato nessuno.
+// The return does not happen on the pre-analysis page on purpose: the wrong window
+// would land there, opening a second copy of the form and leaving the real one
+// convinced nobody had logged in.
 async function finishLogin(url, settings, response, ui, ticket) {
   const html = (ok) => send(response, 200, "text/html; charset=utf-8", renderLoginDone(ui, { ok }));
 
   if (!ticket) {
-    // Qualcuno è arrivato qui a mano, senza passare dal login.
+    // Somebody got here by hand, without going through the login.
     return html(false);
   }
 
   const claimed = await claimTicket(settings, ticket);
   if (!claimed.ok || !claimed.logged) {
-    console.warn("[preanalyst] biglietto non valido al ritorno dal login");
+    console.warn("[preanalyst] invalid ticket on the way back from the login");
     return html(false);
   }
 
-  const durata = secondsUntil(claimed.session.expires_at);
-  if (durata === 0) {
-    console.warn("[preanalyst] sessione già scaduta al ritorno dal login");
+  const duration = secondsUntil(claimed.session.expires_at);
+  if (duration === 0) {
+    console.warn("[preanalyst] session already expired on the way back from the login");
     return html(false);
   }
 
-  console.log(`[preanalyst] entrato ${claimed.session.username}`);
+  console.log(`[preanalyst] logged in: ${claimed.session.username}`);
   response.writeHead(200, {
     "content-type": "text/html; charset=utf-8",
     "cache-control": "no-store",
-    "set-cookie": sessionCookie(settings, claimed.session.token, durata),
+    "set-cookie": sessionCookie(settings, claimed.session.token, duration),
   });
   return response.end(renderLoginDone(ui, { ok: true }));
 }
 
-// I pezzi della pagina che dipendono da chi è entrato, già resi dai template.
-// Li chiede il browser dopo un login fatto nella finestra a parte, e li mette al
-// posto di quelli vecchi: il form non viene toccato, e non si ricarica niente.
+// The parts of the page that depend on who has logged in, already rendered by the
+// templates. The browser asks for them after a login done in the separate window,
+// and puts them in place of the old ones: the form is not touched, and nothing is
+// reloaded.
 //
-// Il browser manda anche i parametri dell'indirizzo (`?discount=`, `?driver=`)
-// perché la colonna destra dipende da quelli: dopo il login può cambiare, per
-// esempio se chi è entrato è il driver del link.
+// The browser also sends the address parameters (`?discount=`, `?driver=`) because
+// the right-hand column depends on them: after the login it can change, for
+// instance if the person who logged in is the link's driver.
 async function serveAccessFragments(request, url, settings, response, ui) {
-  const stato = await pageState(request, url, settings);
-  const body = JSON.stringify(renderAccessFragments(ui, stato.access, settings, stato));
+  const state = await pageState(request, url, settings);
+  const body = JSON.stringify(renderAccessFragments(ui, state.access, settings, state));
   response.writeHead(200, {
     "content-type": "application/json; charset=utf-8",
     "content-length": Buffer.byteLength(body),
@@ -131,43 +138,43 @@ async function serveAccessFragments(request, url, settings, response, ui) {
   response.end(body);
 }
 
-/* ------------------------------------------------------- il caricamento */
+/* ------------------------------------------------------------- the upload */
 
-// Il corpo intero, oppure `null` se supera il limite: in quel caso ha già
-// risposto `tooLarge`. Prima si risponde, poi si chiude: chiudendo subito il
-// client non leggerebbe mai il motivo, e si vedrebbe solo una connessione caduta.
+// The whole body, or `null` if it goes over the limit: in that case `tooLarge` has
+// already answered. First we answer, then we close: closing straight away, the
+// client would never read the reason and would only see a dropped connection.
 async function readBody(request, response, maxBytes, tooLarge) {
-  const pezzi = [];
-  let ricevuti = 0;
-  for await (const pezzo of request) {
-    ricevuti += pezzo.length;
-    if (ricevuti > maxBytes) {
-      // `connection: close` perché il resto, che sta ancora arrivando, non lo si
-      // vuole né leggere né aspettare.
+  const chunks = [];
+  let received = 0;
+  for await (const chunk of request) {
+    received += chunk.length;
+    if (received > maxBytes) {
+      // `connection: close`, because the rest, still on its way, is neither to be
+      // read nor waited for.
       response.once("finish", () => request.destroy());
       tooLarge();
       return null;
     }
-    pezzi.push(pezzo);
+    chunks.push(chunk);
   }
-  return Buffer.concat(pezzi);
+  return Buffer.concat(chunks);
 }
 
-// `POST /upload` — una specifica già pronta, per un progetto che esiste già.
+// `POST /upload` — a ready-made specification, for a project that already exists.
 //
-// Il file arriva **nel corpo così com'è**, con il nome in `X-File-Name`: per un
-// file solo non serve un form multipart, e senza multipart non serve niente per
-// smontarlo. Il tipo dichiarato non si guarda: si guarda il contenuto.
+// The file arrives **in the body as it is**, with its name in `X-File-Name`: a
+// single file does not need a multipart form, and without multipart nothing is
+// needed to take it apart. The declared type is not looked at: the content is.
 //
-// Il file deve essere testo UTF-8 con il `project_id` nel front matter, e il
-// progetto deve essere di chi carica. Un progetto di un altro risponde come uno
-// inesistente: così non si scopre quali id esistono. Se qualcosa non va, il
-// file non si conserva.
+// The file must be UTF-8 text with the `project_id` in the front matter, and the
+// project must belong to whoever uploads it. Another person's project answers like
+// one that does not exist: that way one cannot discover which ids exist. If
+// anything is wrong, the file is not stored.
 //
-// Le risposte seguono il contratto delle API del progetto, stato HTTP più codice
-// stabile: qui non si parla a una persona ma al JavaScript della pagina.
+// The responses follow the project's API contract, HTTP status plus a stable code:
+// here we are not speaking to a person but to the page's JavaScript.
 async function receiveUpload(request, settings, response) {
-  const rispondi = (status, payload, headers = {}) => {
+  const answer = (status, payload, headers = {}) => {
     const body = JSON.stringify(payload);
     response.writeHead(status, {
       "content-type": "application/json; charset=utf-8",
@@ -177,127 +184,127 @@ async function receiveUpload(request, settings, response) {
     });
     response.end(body);
   };
-  const errore = (status, code) => rispondi(status, { error: code });
+  const fail = (status, code) => answer(status, { error: code });
 
-  // Caricare è un'azione, non una lettura: serve essere dentro.
-  const accesso = await currentSession(settings, request);
-  if (!accesso.ok) return errore(503, "SSO_UNAVAILABLE");
-  if (!accesso.logged) return errore(401, "NOT_LOGGED");
+  // Uploading is an action, not a read: you have to be in.
+  const access = await currentSession(settings, request);
+  if (!access.ok) return fail(503, "SSO_UNAVAILABLE");
+  if (!access.logged) return fail(401, "NOT_LOGGED");
 
-  const nome = fileName(request);
-  if (!nome) return errore(400, "MISSING_FILE_NAME");
+  const name = fileName(request);
+  if (!name) return fail(400, "MISSING_FILE_NAME");
 
-  const corpo = await readBody(request, response, settings.uploadMaxBytes, () =>
-    rispondi(413, { error: "FILE_TOO_LARGE" }, { connection: "close" })
+  const body = await readBody(request, response, settings.uploadMaxBytes, () =>
+    answer(413, { error: "FILE_TOO_LARGE" }, { connection: "close" })
   );
-  if (corpo === null) return;
-  if (corpo.length === 0) return errore(400, "EMPTY_FILE");
+  if (body === null) return;
+  if (body.length === 0) return fail(400, "EMPTY_FILE");
 
-  let testo;
+  let text;
   try {
-    // `fatal`: un byte non valido è un errore, non un carattere sostituito in
-    // silenzio. Un PDF o un Word finiscono qui.
-    testo = new TextDecoder("utf-8", { fatal: true }).decode(corpo);
+    // `fatal`: an invalid byte is an error, not a character silently replaced. A
+    // PDF or a Word file ends up here.
+    text = new TextDecoder("utf-8", { fatal: true }).decode(body);
   } catch {
-    return errore(400, "NOT_UTF8");
+    return fail(400, "NOT_UTF8");
   }
 
-  let dati;
+  let data;
   try {
-    dati = parse(testo).data;
+    data = parse(text).data;
   } catch (error) {
-    if (error instanceof FrontMatterError) return errore(400, "INVALID_FRONT_MATTER");
+    if (error instanceof FrontMatterError) return fail(400, "INVALID_FRONT_MATTER");
     throw error;
   }
-  const projectId = dati?.project_id;
-  if (projectId === undefined || projectId === null) return errore(400, "MISSING_PROJECT_ID");
-  if (!isProjectId(projectId)) return errore(400, "INVALID_PROJECT_ID");
+  const projectId = data?.project_id;
+  if (projectId === undefined || projectId === null) return fail(400, "MISSING_PROJECT_ID");
+  if (!isProjectId(projectId)) return fail(400, "INVALID_PROJECT_ID");
 
-  const progetto = await findProject(settings, projectId);
-  if (!progetto.ok && progetto.reason === "not_found") return errore(404, "PROJECT_NOT_FOUND");
-  if (!progetto.ok) return errore(503, "ANAGRAPHICS_UNAVAILABLE");
-  if (progetto.data.owner_uid !== accesso.session.uid) {
+  const project = await findProject(settings, projectId);
+  if (!project.ok && project.reason === "not_found") return fail(404, "PROJECT_NOT_FOUND");
+  if (!project.ok) return fail(503, "ANAGRAPHICS_UNAVAILABLE");
+  if (project.data.owner_uid !== access.session.uid) {
     console.warn(
-      `[preanalyst] ${accesso.session.username} ha caricato una specifica per il progetto ` +
-        `di un altro (${projectId}): rifiutata`
+      `[preanalyst] ${access.session.username} uploaded a specification for somebody ` +
+        `else's project (${projectId}): refused`
     );
-    return errore(404, "PROJECT_NOT_FOUND");
+    return fail(404, "PROJECT_NOT_FOUND");
   }
 
-  // L'origine la decide il canale: un file caricato è sempre di terzi, anche se
-  // nel suo front matter dichiara altro.
-  const salvato = await storeSpec(settings, projectId, testo, {
+  // The origin is decided by the channel: an uploaded file is always third-party,
+  // even if its front matter declares otherwise.
+  const stored = await storeSpec(settings, projectId, text, {
     origin: "third_party",
-    uploadedBy: accesso.session.uid,
+    uploadedBy: access.session.uid,
   });
-  if (!salvato.ok && salvato.reason === "rejected") return errore(400, salvato.code);
-  if (!salvato.ok) return errore(503, "WORKSPACES_UNAVAILABLE");
+  if (!stored.ok && stored.reason === "rejected") return fail(400, stored.code);
+  if (!stored.ok) return fail(503, "WORKSPACES_UNAVAILABLE");
 
   console.log(
-    `[preanalyst] specifica caricata da ${accesso.session.username}: ${nome} ` +
-      `(${corpo.length} byte) → progetto ${projectId}, versione ${salvato.data.version}`
+    `[preanalyst] specification uploaded by ${access.session.username}: ${name} ` +
+      `(${body.length} bytes) → project ${projectId}, version ${stored.data.version}`
   );
-  return rispondi(201, {
+  return answer(201, {
     received: true,
-    name: nome,
+    name,
     project_id: projectId,
-    version: salvato.data.version,
+    version: stored.data.version,
   });
 }
 
-// Il nome arriva codificato nell'header, perché un header porta solo ASCII e un
-// nome di file può avere accenti. Si tiene solo l'ultima parte: un nome con dei
-// percorsi dentro è un tentativo, non un nome.
+// The name arrives encoded in the header, because a header carries ASCII only and
+// a file name can have accents. Only the last part is kept: a name with paths
+// inside it is an attempt, not a name.
 function fileName(request) {
-  const grezzo = request.headers["x-file-name"];
-  if (!grezzo) return null;
-  let nome;
+  const raw = request.headers["x-file-name"];
+  if (!raw) return null;
+  let name;
   try {
-    nome = decodeURIComponent(grezzo);
+    name = decodeURIComponent(raw);
   } catch {
     return null;
   }
-  nome = nome.split(/[/\\]/).pop().trim();
-  return nome && nome !== "." && nome !== ".." ? nome.slice(0, 200) : null;
+  name = name.split(/[/\\]/).pop().trim();
+  return name && name !== "." && name !== ".." ? name.slice(0, 200) : null;
 }
 
-// "Esci" esce da tutto: prima si toglie il cookie nostro, poi si manda il
-// browser al sso, che chiude la sessione condivisa e toglie il suo. Da lì in
-// avanti nessun sottosistema riconosce più quel token.
+// "Esci" logs out of everything: first our cookie is removed, then the browser is
+// sent to the sso, which closes the shared session and removes its own. From then
+// on no subsystem recognises that token.
 function leave(settings, response) {
   return redirect(response, logoutUrl(settings, `${settings.publicUrl}/`), {
     "set-cookie": clearSessionCookie(settings),
   });
 }
 
-/* ------------------------------------------------------- l'invio del form */
+/* ------------------------------------------------- submitting the form */
 
 function sendMessage(response, ui, status, kind) {
   send(response, status, "text/html; charset=utf-8", renderMessage(ui, kind));
 }
 
-// `POST /submit` — il form della pre-analisi.
+// `POST /submit` — the pre-analysis form.
 //
-// Nell'ordine: il progetto nasce in anagraphics, le risposte diventano la
-// pre-specifica, la pre-specifica va nel workspace del progetto, il browser va
-// alla pagina dell'analisi. Il `303` fa sì che ricaricare quella pagina non
-// rimandi il form.
+// In order: the project is born in anagraphics, the answers become the
+// pre-specification, the pre-specification goes into the project's workspace, the
+// browser goes to the analysis page. The `303` means that reloading that page does
+// not resend the form.
 //
-// Due protezioni:
-// - `submission_id`, generato quando la pagina è stata resa: lo stesso form
-//   mandato due volte (doppio clic, ricarica) trova il progetto già nato;
-// - se la pre-specifica non si riesce a scrivere, il progetto si cancella: un
-//   progetto senza pre-specifica non ha niente da cui partire.
+// Two safeguards:
+// - `submission_id`, generated when the page was rendered: the same form sent
+//   twice (double click, reload) finds the project already born;
+// - if the pre-specification cannot be written, the project is deleted: a project
+//   with no pre-specification has nothing to start from.
 async function receiveForm(request, settings, response, ui) {
-  const accesso = await currentSession(settings, request);
-  if (!accesso.ok) return sendMessage(response, ui, 503, "unavailable");
-  if (!accesso.logged) return sendMessage(response, ui, 401, "not_logged");
+  const access = await currentSession(settings, request);
+  if (!access.ok) return sendMessage(response, ui, 503, "unavailable");
+  if (!access.logged) return sendMessage(response, ui, 401, "not_logged");
 
-  const corpo = await readBody(request, response, settings.formMaxBytes, () =>
+  const body = await readBody(request, response, settings.formMaxBytes, () =>
     send(response, 413, "text/html; charset=utf-8", renderMessage(ui, "too_large"))
   );
-  if (corpo === null) return;
-  const form = new URLSearchParams(corpo.toString("utf8"));
+  if (body === null) return;
+  const form = new URLSearchParams(body.toString("utf8"));
 
   const submissionId = form.get("submission_id") ?? "";
   if (!isProjectId(submissionId)) return sendMessage(response, ui, 400, "invalid");
@@ -305,21 +312,21 @@ async function receiveForm(request, settings, response, ui) {
   const { answers, missing } = readAnswers(form, settings.answerMaxChars);
   if (missing.length > 0) return sendMessage(response, ui, 400, "missing");
 
-  // Una riscrittura: chi è tornato indietro perché serviva qualche dettaglio in
-  // più rimanda il form con l'id del suo progetto. Si riparte da quello invece
-  // di crearne un altro, così i giri restano contati in un posto solo.
-  const ripresa = await resumedProject(settings, form, accesso.session);
-  if (ripresa) {
+  // A rewrite: somebody sent back because a few more details were needed resends
+  // the form with the id of their project. We start again from that one instead of
+  // creating another, so the rounds stay counted in one place only.
+  const resumed = await resumedProject(settings, form, access.session);
+  if (resumed) {
     return await writeAndPrevalidate(settings, response, ui, {
-      projectId: ripresa.projectId,
+      projectId: resumed.projectId,
       answers,
-      session: accesso.session,
-      attempts: ripresa.attempts,
+      session: access.session,
+      attempts: resumed.attempts,
     });
   }
 
-  // Tutto ciò che arriva dai campi nascosti si ricontrolla su anagraphics.
-  const ownDriverUid = accesso.session.data?.driver_uid ?? null;
+  // Everything arriving from the hidden fields is checked again on anagraphics.
+  const ownDriverUid = access.session.data?.driver_uid ?? null;
   const autonomous = Boolean(ownDriverUid) && form.get("autonomous_work") === "yes";
   const link = await linkTermsOf(settings, form, ownDriverUid, autonomous);
   if (!link.ok) return sendMessage(response, ui, 503, "unavailable");
@@ -327,142 +334,145 @@ async function receiveForm(request, settings, response, ui) {
   if (!ambassador.ok) return sendMessage(response, ui, 503, "unavailable");
 
   const { review, billing } = projectTerms({ ownDriverUid, autonomous, link, ambassadorUid: ambassador.uid });
-  const creato = await createProject(settings, {
-    ownerUid: accesso.session.uid,
+  const created = await createProject(settings, {
+    ownerUid: access.session.uid,
     submissionId,
     review,
     billing,
   });
-  if (!creato.ok && creato.reason === "rejected") return sendMessage(response, ui, 400, "invalid");
-  if (!creato.ok) return sendMessage(response, ui, 503, "unavailable");
-  const projectId = creato.data.project_id;
+  if (!created.ok && created.reason === "rejected") return sendMessage(response, ui, 400, "invalid");
+  if (!created.ok) return sendMessage(response, ui, 503, "unavailable");
+  const projectId = created.data.project_id;
 
-  // 200 invece di 201: questo invio era già arrivato, e il progetto c'è già.
-  // La pre-specifica non si riscrive: si va dove si sarebbe andati la prima volta.
-  if (creato.status === 200) {
-    console.log(`[preanalyst] invio ripetuto da ${accesso.session.username}: progetto ${projectId}`);
+  // 200 instead of 201: this submission had already arrived, and the project is
+  // already there. The pre-specification is not rewritten: we go where we would
+  // have gone the first time.
+  if (created.status === 200) {
+    console.log(`[preanalyst] repeated submission from ${access.session.username}: project ${projectId}`);
     return redirect(response, `/analysis/${projectId}`);
   }
 
   return await writeAndPrevalidate(settings, response, ui, {
     projectId,
     answers,
-    session: accesso.session,
+    session: access.session,
     attempts: 0,
   });
 }
 
-// Il progetto da riprendere, se il form ne porta uno valido.
-//   → { projectId, attempts } oppure null
+// The project to resume, if the form carries a valid one.
+//   → { projectId, attempts } or null
 //
-// Vale solo per un progetto che esiste, è di chi manda il form ed è fermo in
-// `UNDERSPECIFIED`: un id qualunque nel campo nascosto non permette di
-// riscrivere il progetto di un altro, né di rianimarne uno già rifiutato.
+// It counts only for a project that exists, belongs to whoever sends the form and
+// is sitting in `UNDERSPECIFIED`: any old id in the hidden field does not allow
+// rewriting somebody else's project, nor reviving one already refused.
 //
-// `attempts` sono i giri già fatti, contati sui passi della pipeline: il
-// registro dei passi è l'unico posto dove quel numero esiste, e non serve
-// tenerlo da nessun'altra parte.
+// `attempts` are the rounds already done, counted on the pipeline steps: the
+// register of steps is the only place where that number exists, and there is no
+// need to keep it anywhere else.
 async function resumedProject(settings, form, session) {
   const projectId = form.get("project_id") ?? "";
   if (!isProjectId(projectId)) return null;
 
-  const progetto = await findProject(settings, projectId);
-  if (!progetto.ok) return null;
-  if (progetto.data.owner_uid !== session.uid) {
+  const project = await findProject(settings, projectId);
+  if (!project.ok) return null;
+  if (project.data.owner_uid !== session.uid) {
     console.warn(
-      `[preanalyst] ${session.username} ha riscritto il progetto di un altro (${projectId}): ignorato`
+      `[preanalyst] ${session.username} rewrote somebody else's project (${projectId}): ignored`
     );
     return null;
   }
-  if (progetto.data.pipeline?.state !== "UNDERSPECIFIED") return null;
+  if (project.data.pipeline?.state !== "UNDERSPECIFIED") return null;
 
-  return { projectId, attempts: underspecifiedAttempts(progetto.data) };
+  return { projectId, attempts: underspecifiedAttempts(project.data) };
 }
 
-// Quante volte questa richiesta è già tornata indietro per mancanza di dettagli.
-export function underspecifiedAttempts(progetto) {
-  const passi = progetto.pipeline?.steps ?? [];
-  return passi.filter((voce) => voce.result === "underspecified").length;
+// How many times this request has already come back for want of detail.
+export function underspecifiedAttempts(project) {
+  const steps = project.pipeline?.steps ?? [];
+  return steps.filter((entry) => entry.result === "underspecified").length;
 }
 
-// La pre-specifica si rende, si conserva e si prevalida. È la parte comune fra
-// il primo invio e la riscrittura di chi è tornato indietro (§16.6 del README):
-// cambia solo da quale progetto si parte e quanti giri sono già stati fatti.
+// The pre-specification is rendered, stored and prevalidated. It is the part
+// shared by the first submission and the rewrite of somebody sent back (§16.6 of
+// the README): only which project we start from and how many rounds have already
+// been done change.
 async function writeAndPrevalidate(settings, response, ui, { projectId, answers, session, attempts }) {
   const prespec = renderPrespec(projectId, answers, ui.locale);
-  const salvato = await storeSpec(settings, projectId, prespec, {
+  const stored = await storeSpec(settings, projectId, prespec, {
     origin: "system",
     uploadedBy: session.uid,
   });
-  if (!salvato.ok) {
-    // Solo al primo giro il progetto si cancella: senza pre-specifica non ha
-    // niente da cui partire. Chi ha già riscritto ha una versione buona alle
-    // spalle, e buttarla via sarebbe peggio.
+  if (!stored.ok) {
+    // Only on the first round is the project deleted: without a pre-specification
+    // it has nothing to start from. Somebody who has already rewritten has a good
+    // version behind them, and throwing it away would be worse.
     if (attempts === 0) {
-      const cancellato = await deleteProject(settings, projectId);
+      const deleted = await deleteProject(settings, projectId);
       console.error(
-        `[preanalyst] pre-specifica non scritta per il progetto ${projectId}: ` +
-          (cancellato.ok ? "progetto cancellato" : "PROGETTO RIMASTO SENZA PRE-SPECIFICA")
+        `[preanalyst] pre-specification not written for project ${projectId}: ` +
+          (deleted.ok ? "project deleted" : "PROJECT LEFT WITHOUT A PRE-SPECIFICATION")
       );
     } else {
-      console.error(`[preanalyst] riscrittura non conservata per il progetto ${projectId}`);
+      console.error(`[preanalyst] rewrite not stored for project ${projectId}`);
     }
     return sendMessage(response, ui, 503, "unavailable");
   }
 
   console.log(
-    `[preanalyst] richiesta di ${session.username}: progetto ${projectId}, ` +
-      `pre-specifica v${salvato.data.version}${attempts ? ` (giro ${attempts + 1})` : ""}`
+    `[preanalyst] request from ${session.username}: project ${projectId}, ` +
+      `pre-specification v${stored.data.version}${attempts ? ` (round ${attempts + 1})` : ""}`
   );
 
-  const esito = await runPrevalidation(settings, projectId, prespec, attempts);
+  const outcome = await runPrevalidation(settings, projectId, prespec, attempts);
 
-  if (esito === "rejected") return redirect(response, `/?rejected=${projectId}`);
-  if (esito === "underspecified") {
-    // Qui **non** si reindirizza: la pagina si rende con le risposte già dentro.
-    // Chiedere qualche dettaglio in più e restituire un form vuoto sarebbe un
-    // invito impossibile da accogliere. Il prezzo è che ricaricare rimanda il
-    // form — vedi §16.7 del README.
+  if (outcome === "rejected") return redirect(response, `/?rejected=${projectId}`);
+  if (outcome === "underspecified") {
+    // Here we do **not** redirect: the page is rendered with the answers already
+    // in it. Asking for a few more details and handing back an empty form would be
+    // an invitation impossible to accept. The price is that reloading resends the
+    // form — see §16.7 of the README.
     return await serveFormAgain(settings, response, ui, { projectId, answers, session });
   }
   return redirect(response, `/analysis/${projectId}`);
 }
 
-// Il form di nuovo, con dentro quello che l'utente aveva già scritto, perché la
-// richiesta non diceva abbastanza per essere giudicata.
+// The form again, holding what the user had already written, because the request
+// did not say enough to be judged.
 //
-// Non è un reindirizzamento: la pagina si rende qui, in risposta al POST. Un
-// `303` verso la home riporterebbe un form vuoto, e chiedere qualche dettaglio
-// in più restituendo un foglio bianco è un invito che nessuno può accogliere.
+// It is not a redirect: the page is rendered here, in answer to the POST. A `303`
+// to the home page would bring back an empty form, and asking for a few more
+// details while handing over a blank sheet is an invitation nobody can accept.
 //
-// **La pagina resta la pagina**: la colonna destra è quella di prima — il box del
-// driver, quello dell'ambassador, il blocco del lavoro autonomo per un driver, il
-// caricamento di una specifica già pronta. Chi rivede il form deve ritrovarlo
-// com'era, o sembra che qualcosa si sia rotto.
+// **The page stays the page**: the right-hand column is the one from before — the
+// driver box, the ambassador box, the autonomous work block for a driver, the
+// upload of a ready-made specification. Whoever sees the form again must find it
+// as it was, or it looks as if something has broken.
 //
-// Quello che cambia è che i box **si leggono e non si toccano**: le condizioni
-// economiche del progetto si sono decise al primo invio e questo giro non le
-// rilegge. Quindi niente campi nascosti che viaggiano col form, niente avviso
-// «questo driver verrà ignorato», e la casella del lavoro autonomo mostra quello
-// che è registrato, ferma.
+// What changes is that the boxes are **read and not touched**: the project's
+// economic terms were settled at the first submission and this round does not read
+// them again. So no hidden fields travelling with the form, no "this driver will
+// be ignored" notice, and the autonomous work checkbox shows what is recorded,
+// locked.
 //
-// I parametri dell'indirizzo qui non ci sono — è la risposta a un `POST` — ma non
-// servono: quello che portavano sta sul progetto, e da lì si rilegge
+// The address parameters are not here — this is the answer to a `POST` — but they
+// are not needed: what they carried is on the project, and it is read from there
 // (`driverLinkOfProject`).
 async function serveFormAgain(settings, response, ui, { projectId, answers, session }) {
-  // Che cosa si è deciso al primo invio. Se anagraphics non risponde si va
-  // avanti lo stesso con la pagina: un dettaglio della colonna destra non vale
-  // la richiesta dell'utente, che è già stata scritta.
-  const progetto = await findProject(settings, projectId);
-  const dati = progetto.ok ? progetto.data : null;
-  const autonomous = Boolean(dati?.billing?.autonomous_work);
+  // What was settled at the first submission. If anagraphics does not answer we go
+  // on with the page anyway: a detail of the right-hand column is not worth the
+  // user's request, which has already been written.
+  const project = await findProject(settings, projectId);
+  const data = project.ok ? project.data : null;
+  const autonomous = Boolean(data?.billing?.autonomous_work);
 
-  // In un lavoro autonomo il driver è chi sta compilando, e il box non si mostra:
-  // è quello che succede al primo invio, dove lo spegne il CSS della casella.
-  const driverLink = dati && !autonomous ? await driverLinkOfProject(settings, dati) : { state: NONE };
+  // In autonomous work the driver is whoever is filling the form in, and the box
+  // is not shown: that is what happens at the first submission, where the
+  // checkbox's CSS switches it off.
+  const driverLink = data && !autonomous ? await driverLinkOfProject(settings, data) : { state: NONE };
 
-  const ambassadorUid = dati?.billing?.ambassador_uid ?? null;
-  const invito = ambassadorUid ? await findDriver(settings, ambassadorUid) : { ok: false };
+  const ambassadorUid = data?.billing?.ambassador_uid ?? null;
+  const invitation = ambassadorUid ? await findDriver(settings, ambassadorUid) : { ok: false };
 
   const html = renderPage(ui, {
     access: { logged: true, session, ssoAvailable: true },
@@ -471,106 +481,313 @@ async function serveFormAgain(settings, response, ui, { projectId, answers, sess
     driverLink,
     showDriverBox: driverLink.state !== NONE,
     driversAvailable: true,
-    ambassador: invito.ok ? invito.data : null,
+    ambassador: invitation.ok ? invitation.data : null,
     isDriver: Boolean(session.data?.driver_uid),
-    // La casella dice com'è il progetto, e non si può più cambiare: al secondo
-    // giro nessuno rilegge `autonomous_work`, e una casella che non fa niente è
-    // peggio che una casella ferma.
+    // The checkbox says how the project stands, and it can no longer be changed: on
+    // the second round nobody reads `autonomous_work` again, and a checkbox that
+    // does nothing is worse than a locked one.
     autonomousWork: { checked: autonomous, locked: true },
-    // Un id nuovo per il giro nuovo: questo è un altro invio, e la deduplica
-    // degli invii lavora su quello.
+    // A new id for the new round: this is another submission, and the submission
+    // de-duplication works on that.
     submissionId: randomUUID(),
     answers,
     resumed: { projectId },
-    rejectedProjectId: null,
+    rejection: null,
   });
   send(response, 200, "text/html; charset=utf-8", html);
 }
 
-// Dove porta la pipeline ognuna delle tre decisioni. Il passo dice due cose —
-// com'è andato e dove si va — e chi le decide è questo cancello.
+// Where the pipeline goes for each of the three decisions. The step says two
+// things — how it went and where we go — and this gate is what decides them.
 const STATE_AFTER = {
   passed: "ANALYSIS",
   rejected: "REJECTED",
   underspecified: "UNDERSPECIFIED",
 };
 
-// Il primo cancello: la pre-specifica passa dal prevalidator e l'esito si accoda
-// alla pipeline del progetto. Restituisce che cosa si fa della richiesta —
-// "passed", "rejected", "underspecified" — oppure "failed" se il controllo non
-// è riuscito.
+// The first gate: the pre-specification goes through the prevalidator and the
+// outcome is appended to the project's pipeline. It returns what is done with the
+// request — "passed", "rejected", "underspecified" — or "failed" if the check did
+// not succeed.
 //
-// Se il controllo non riesce — fornitore giù, risposta inutilizzabile — il
-// progetto **resta**: il passo si segna `failed` e si va avanti. Una richiesta
-// valida non si butta via perché un controllo non ha funzionato; il rifiuto è
-// una decisione, non un guasto.
+// If the check does not succeed — provider down, unusable answer — the project
+// **stays**: the step is marked `failed` and we go on. A valid request is not
+// thrown away because a check did not work; a refusal is a decision, not a
+// failure.
 async function runPrevalidation(settings, projectId, prespec, attempts) {
-  const esito = await prevalidate(settings, prespec);
+  const outcome = await prevalidate(settings, prespec);
 
-  if (!esito.ok) {
-    // Se il modello ha risposto — male, ma ha risposto — i token sono stati
-    // pagati lo stesso, e finiscono sul passo insieme all'errore: il costo di un
-    // tentativo andato storto è costo, e il PoC misura quello vero. Se invece il
-    // fornitore non ha risposto affatto non c'è nessun `usage` da scrivere.
-    const { usage, model } = esito;
+  if (!outcome.ok) {
+    // If the model answered — badly, but it answered — the tokens were paid for
+    // all the same, and they go on the step together with the error: the cost of
+    // an attempt gone wrong is cost, and the PoC measures the real one. If the
+    // provider did not answer at all there is no `usage` to write.
+    const { usage, model } = outcome;
     console.error(
-      `[preanalyst] prevalidazione non riuscita per ${projectId}: ${esito.reason}` +
-        (usage ? `; ${usage.input_tokens}+${usage.output_tokens} token spesi lo stesso` : "")
+      `[preanalyst] prevalidation failed for ${projectId}: ${outcome.reason}` +
+        (usage ? `; ${usage.input_tokens}+${usage.output_tokens} tokens spent anyway` : "")
     );
     await savePipelineStep(settings, projectId, {
       step: "prevalidation",
       result: "failed",
       state: "PREVALIDATION",
-      data: { error: esito.reason, ...(usage ? { usage, model } : {}) },
+      data: { error: outcome.reason, ...(usage ? { usage, model } : {}) },
     });
     return "failed";
   }
 
-  const { outcome, distribution } = esito.data;
-  const decisione = verdict(distribution, outcome, {
+  const { outcome: verdictName, distribution } = outcome.data;
+  const decision = verdict(distribution, verdictName, {
     threshold: settings.prevalidation.rejectThreshold,
     attempts,
     maxAttempts: settings.prevalidation.maxUnderspecifiedAttempts,
   });
 
   console.log(
-    `[preanalyst] prevalidazione di ${projectId}: ${outcome} ` +
-      `(${distribution[outcome].toFixed(2)}) → ${decisione}` +
-      `${esito.data.off_domain.flag ? ", fuori dominio" : ""}; ` +
-      `${esito.data.usage.input_tokens}+${esito.data.usage.output_tokens} token`
+    `[preanalyst] prevalidation of ${projectId}: ${verdictName} ` +
+      `(${distribution[verdictName].toFixed(2)}) → ${decision}` +
+      `${outcome.data.off_domain.flag ? ", off domain" : ""}; ` +
+      `${outcome.data.usage.input_tokens}+${outcome.data.usage.output_tokens} tokens`
   );
 
   await savePipelineStep(settings, projectId, {
     step: "prevalidation",
-    result: decisione,
-    state: STATE_AFTER[decisione],
-    data: esito.data,
+    result: decision,
+    state: STATE_AFTER[decision],
+    data: outcome.data,
   });
-  return decisione;
+
+  // Past the gate the project **arrives** at the specification rounds: the step is
+  // opened here, with the included turns and an empty chat. It is an `open` step,
+  // one that has not decided anything yet and that grows; it will be closed by
+  // another step when the analysis ends.
+  if (decision === "passed") await openAnalysisStep(settings, projectId);
+  return decision;
 }
 
-// Il passo non si perde in silenzio: se anagraphics non lo prende, resta nel log.
-async function savePipelineStep(settings, projectId, step) {
-  const salvato = await addPipelineStep(settings, projectId, step);
-  if (!salvato.ok) {
+// Opens the `analysis` step: the included turns and the conversation, which starts
+// empty.
+//
+// It is called when the prevalidation passes, and again when the page is opened if
+// the step is not there — projects born before this code sit in `ANALYSIS` with no
+// open step, and without one there would be no writing and no counting.
+async function openAnalysisStep(settings, projectId) {
+  return savePipelineStep(settings, projectId, {
+    step: "analysis",
+    result: "open",
+    state: "ANALYSIS",
+    data: { turns_left: settings.analysis.maxTurns, chat: [] },
+  });
+}
+
+// The project's last open `analysis` step, or null.
+export function openAnalysisOf(project) {
+  const steps = project.pipeline?.steps ?? [];
+  return [...steps].reverse().find((entry) => entry.step === "analysis" && entry.result === "open") ?? null;
+}
+
+// The user's turn credit. If it cannot be read it counts as zero: the page will
+// show the purchase instead of the field for drawing on it, which is the lesser
+// evil — better to offer buying than to offer spending a credit we do not know is
+// there.
+async function turnsCredit(settings, username) {
+  const user = await findUser(settings, username);
+  if (!user.ok) {
+    console.error(`[preanalyst] credit of ${username} not read: ${user.reason}`);
+    return 0;
+  }
+  return Number(user.data.billing?.turns_credit ?? 0);
+}
+
+/* ------------------------------------------- the routes of the analysis chat */
+
+// These three answer the page's JavaScript, not a person: HTTP status plus a
+// stable code, as `POST /upload` does.
+function jsonReplier(response) {
+  const answer = (status, payload) => {
+    const body = JSON.stringify(payload);
+    response.writeHead(status, {
+      "content-type": "application/json; charset=utf-8",
+      "content-length": Buffer.byteLength(body),
+      "cache-control": "no-store",
+    });
+    response.end(body);
+  };
+  return { answer, fail: (status, code) => answer(status, { error: code }) };
+}
+
+// Who is calling, and the project with its open step. All the checks the three
+// routes make in the same way, in one place only.
+//
+// Somebody else's project answers like one that does not exist: that way the
+// address is of no use for discovering which ids exist.
+async function chatContext(request, projectId, settings, fail) {
+  const access = await currentSession(settings, request);
+  if (!access.ok) return fail(503, "SSO_UNAVAILABLE") ?? null;
+  if (!access.logged) return fail(401, "NOT_LOGGED") ?? null;
+  if (!isProjectId(projectId)) return fail(404, "PROJECT_NOT_FOUND") ?? null;
+
+  const project = await findProject(settings, projectId);
+  if (!project.ok && project.reason !== "not_found") return fail(503, "ANAGRAPHICS_UNAVAILABLE") ?? null;
+  if (!project.ok || project.data.owner_uid !== access.session.uid) {
+    return fail(404, "PROJECT_NOT_FOUND") ?? null;
+  }
+
+  const step = openAnalysisOf(project.data);
+  if (step === null) return fail(409, "ANALYSIS_NOT_OPEN") ?? null;
+
+  return { session: access.session, project: project.data, step };
+}
+
+// The JSON body of one of these routes. `null` if it could not be read: in that
+// case the answer has already been sent.
+async function readJsonBody(request, response, settings, fail) {
+  const raw = await readBody(request, response, settings.formMaxBytes, () => fail(413, "BODY_TOO_LARGE"));
+  if (raw === null) return null;
+  try {
+    return JSON.parse(raw.toString("utf8"));
+  } catch {
+    fail(400, "INVALID_BODY");
+    return null;
+  }
+}
+
+// `POST /analysis/{id}/messages` — one turn of the chat.
+//
+// The turn is counted by **the server**, not the browser: the conversation and the
+// remaining turns live on the project's open step, and whoever reloads the page
+// finds again what was there. A message with no turns left is not accepted.
+//
+// THE ANSWER IS STILL FAKE: `mockReplies` picks it from the language catalogue.
+// What is real is everything else — the turn spent, the chat written, the round
+// trip that survives a reload.
+async function receiveChatMessage(request, projectId, settings, response, ui) {
+  const { answer, fail } = jsonReplier(response);
+
+  const context = await chatContext(request, projectId, settings, fail);
+  if (!context) return;
+
+  const body = await readJsonBody(request, response, settings, fail);
+  if (body === null) return;
+
+  const text = String(body.message ?? "").trim().slice(0, settings.answerMaxChars);
+  if (text === "") return fail(400, "EMPTY_MESSAGE");
+
+  const left = Number(context.step.data?.turns_left ?? 0);
+  if (left <= 0) return fail(409, "NO_TURNS_LEFT");
+
+  const replies = mockReplies(ui);
+  const reply = replies.length > 0 ? replies[Math.floor(Math.random() * replies.length)] : "";
+  const now = new Date().toISOString();
+
+  // One single write: the two messages and the turn spent are the same thing seen
+  // from two sides, and must not be able to exist separately.
+  const stored = await updateOpenStep(settings, projectId, "analysis", {
+    set: { turns_left: left - 1 },
+    push: {
+      chat: [
+        { role: "client", text, at: now },
+        { role: "system", text: reply, at: now },
+      ],
+    },
+  });
+  if (!stored.ok) {
+    console.error(`[preanalyst] turn not recorded on project ${projectId}: ${stored.reason}`);
+    return fail(503, "ANAGRAPHICS_UNAVAILABLE");
+  }
+
+  console.log(`[preanalyst] chat turn on ${projectId}: ${left - 1} left`);
+  return answer(200, { reply, turns_left: left - 1 });
+}
+
+// `POST /analysis/{id}/turns` — moves turns from the user's credit to the project.
+//
+// First the credit is drawn down, then the turns are added: the credit is the part
+// that must not be spendable twice, and anagraphics checks it inside the write. If
+// the second step does not succeed the credit **is given back**, or the user would
+// have paid for nothing.
+async function receiveTurnsFromCredit(request, projectId, settings, response) {
+  const { answer, fail } = jsonReplier(response);
+
+  const context = await chatContext(request, projectId, settings, fail);
+  if (!context) return;
+
+  const body = await readJsonBody(request, response, settings, fail);
+  if (body === null) return;
+
+  const howMany = Number(body.turns);
+  if (!Number.isInteger(howMany) || howMany <= 0) return fail(400, "INVALID_TURNS");
+
+  const uid = context.session.uid;
+  const spent = await spendUserTurns(settings, uid, howMany);
+  if (!spent.ok) {
+    if (spent.code === "NOT_ENOUGH_TURNS") return fail(409, "NOT_ENOUGH_TURNS");
+    return fail(503, "ANAGRAPHICS_UNAVAILABLE");
+  }
+
+  const left = Number(context.step.data?.turns_left ?? 0) + howMany;
+  const stored = await updateOpenStep(settings, projectId, "analysis", { set: { turns_left: left } });
+  if (!stored.ok) {
     console.error(
-      `[preanalyst] passo '${step.step}' non registrato sul progetto ${projectId}: ${salvato.reason}`
+      `[preanalyst] turns drawn but not added to project ${projectId}: ${stored.reason}; giving them back`
+    );
+    const refund = await grantUserTurns(settings, uid, howMany);
+    if (!refund.ok) {
+      console.error(`[preanalyst] REFUND FAILED: ${howMany} turns lost by user ${uid}`);
+    }
+    return fail(503, "ANAGRAPHICS_UNAVAILABLE");
+  }
+
+  const credit = Number(spent.data.billing?.turns_credit ?? 0);
+  console.log(`[preanalyst] ${howMany} turns from ${uid}'s credit to project ${projectId}: now ${left}`);
+  return answer(200, { turns_left: left, credit });
+}
+
+// TODO(mock): remove when the real payment exists.
+// `POST /analysis/{id}/turns/buy` buys nothing: it grants turns to the user's
+// credit without anybody paying. It is only there so the out-of-turns page can be
+// tried from beginning to end. When the payment arrives, this route and this
+// constant go away together. It is in `contesto/todos.md`.
+const FAKE_PURCHASE_TURNS = 10;
+
+async function receiveTurnsPurchase(request, projectId, settings, response) {
+  const { answer, fail } = jsonReplier(response);
+
+  const context = await chatContext(request, projectId, settings, fail);
+  if (!context) return;
+
+  const uid = context.session.uid;
+  const granted = await grantUserTurns(settings, uid, FAKE_PURCHASE_TURNS);
+  if (!granted.ok) return fail(503, "ANAGRAPHICS_UNAVAILABLE");
+
+  const credit = Number(granted.data.billing?.turns_credit ?? 0);
+  console.warn(`[preanalyst] FAKE PURCHASE: ${FAKE_PURCHASE_TURNS} turns granted to ${uid}, credit ${credit}`);
+  return answer(200, { credit });
+}
+
+// The step is not lost in silence: if anagraphics does not take it, it stays in
+// the log.
+async function savePipelineStep(settings, projectId, step) {
+  const stored = await addPipelineStep(settings, projectId, step);
+  if (!stored.ok) {
+    console.error(
+      `[preanalyst] step '${step.step}' not recorded on project ${projectId}: ${stored.reason}`
     );
   }
-  return salvato;
+  return stored;
 }
 
-// Driver e sconti sono dati del **progetto**, non della pre-specifica: vanno in
-// `review` (chi lo supervisiona) e `billing` (i dati economici).
+// Drivers and discounts are data of the **project**, not of the pre-specification:
+// they go in `review` (who supervises it) and `billing` (the economic data).
 //
-// - Lavoro autonomo: vale solo se chi manda il form è un driver. Il driver è lui
-//   (preimpostato) e il codice sconto di un altro driver non si applica: le due
-//   cose si escludono.
-// - Altrimenti il driver del link, se c'era ed è valido, è preimpostato; senza
-//   lo assegnerà il sistema (`driver_uid: null`, `preset: false`).
+// - Autonomous work: it counts only if whoever sends the form is a driver. The
+//   driver is them (preset) and another driver's discount code does not apply: the
+//   two exclude each other.
+// - Otherwise the link's driver, if there was one and it is valid, is preset;
+//   without one the system will assign it (`driver_uid: null`, `preset: false`).
 //
-// Driver, sconto e ambassador arrivano già verificati: `linkTermsOf()` in
-// src/project_driver.js e `ambassadorOf()` in src/ambassador.js.
+// Driver, discount and ambassador arrive already checked: `linkTermsOf()` in
+// src/project_driver.js and `ambassadorOf()` in src/ambassador.js.
 function projectTerms({ ownDriverUid, autonomous, link, ambassadorUid }) {
   if (autonomous) {
     return {
@@ -592,88 +809,135 @@ function projectTerms({ ownDriverUid, autonomous, link, ambassadorUid }) {
   };
 }
 
-// `GET /projects/{id}/rejection.pdf` — quello che l'utente aveva scritto nel
-// form, da portarsi via dopo un rifiuto.
+// `GET /projects/{id}/rejection.pdf` — what the user had written in the form, to
+// take away after a refusal.
 //
-// Lo vede solo il proprietario, e solo per un progetto davvero rifiutato: un
-// progetto di un altro risponde come uno inesistente.
+// Only the owner sees it, and only for a project that really was refused:
+// somebody else's project answers like one that does not exist.
 //
-// La **motivazione estesa** del rifiuto ci finisce dentro in due casi: se la
-// configurazione dice di darla a tutti, oppure se chi scarica è un driver. È un
-// dato interno: fuori da questi due casi il PDF non lo nomina nemmeno.
+// The **extended reason** for the refusal goes into it in two cases: if the
+// configuration says to give it to everybody, or if whoever downloads it is a
+// driver. It is internal data: outside those two cases the PDF does not even
+// mention it.
 async function serveRejectionPdf(request, projectId, settings, response, ui) {
-  const accesso = await currentSession(settings, request);
-  if (!accesso.ok) return sendMessage(response, ui, 503, "unavailable");
-  if (!accesso.logged) return sendMessage(response, ui, 401, "not_logged");
+  const access = await currentSession(settings, request);
+  if (!access.ok) return sendMessage(response, ui, 503, "unavailable");
+  if (!access.logged) return sendMessage(response, ui, 401, "not_logged");
   if (!isProjectId(projectId)) return sendMessage(response, ui, 404, "not_found");
 
-  const progetto = await findProject(settings, projectId);
-  if (!progetto.ok && progetto.reason !== "not_found") return sendMessage(response, ui, 503, "unavailable");
-  if (!progetto.ok || progetto.data.owner_uid !== accesso.session.uid) {
+  const project = await findProject(settings, projectId);
+  if (!project.ok && project.reason !== "not_found") return sendMessage(response, ui, 503, "unavailable");
+  if (!project.ok || project.data.owner_uid !== access.session.uid) {
     return sendMessage(response, ui, 404, "not_found");
   }
-  if (progetto.data.pipeline?.state !== "REJECTED") return sendMessage(response, ui, 404, "not_found");
+  if (project.data.pipeline?.state !== "REJECTED") return sendMessage(response, ui, 404, "not_found");
 
-  const specifica = await latestSpec(settings, projectId);
-  if (!specifica.ok && specifica.reason === "not_found") return sendMessage(response, ui, 404, "not_found");
-  if (!specifica.ok) return sendMessage(response, ui, 503, "unavailable");
+  const spec = await latestSpec(settings, projectId);
+  if (!spec.ok && spec.reason === "not_found") return sendMessage(response, ui, 404, "not_found");
+  if (!spec.ok) return sendMessage(response, ui, 503, "unavailable");
 
-  const isDriver = Boolean(accesso.session.data?.driver_uid);
-  const mostraMotivazione = settings.prevalidation.rejectionReasonInPdf || isDriver;
+  const isDriver = Boolean(access.session.data?.driver_uid);
+  const showReason = settings.prevalidation.rejectionReasonInPdf || isDriver;
 
   return writeRejectionPdf(response, {
     t: ui.t,
-    spec: specifica.data,
-    reason: mostraMotivazione ? rejectionReasonOf(progetto.data) : null,
-    // Il nome del file: solo l'id, che è un UUID, quindi niente da ripulire.
+    spec: spec.data,
+    reason: showReason ? rejectionReasonOf(project.data) : null,
+    // The file name: just the id, which is a UUID, so there is nothing to clean.
     fileName: `webtools-${projectId}.pdf`,
   });
 }
 
-// La motivazione scritta dal prevalidator, presa dall'ultimo passo che ha
-// deciso. `off_domain.reason` si aggiunge se c'è: è l'altra metà del giudizio.
-function rejectionReasonOf(progetto) {
-  const passi = progetto.pipeline?.steps ?? [];
-  const passo = [...passi].reverse().find((voce) => voce.step === "prevalidation" && voce.data?.reason);
-  if (!passo) return null;
-  const fuoriDominio = passo.data.off_domain?.flag ? passo.data.off_domain.reason : "";
-  return [passo.data.reason, fuoriDominio].filter(Boolean).join("\n\n");
+// The reason written by the prevalidator, taken from the last step that decided.
+// `off_domain.reason` is added if it is there: it is the other half of the
+// judgement.
+function rejectionReasonOf(project) {
+  const steps = project.pipeline?.steps ?? [];
+  const step = [...steps].reverse().find((entry) => entry.step === "prevalidation" && entry.data?.reason);
+  if (!step) return null;
+  const offDomain = step.data.off_domain?.flag ? step.data.off_domain.reason : "";
+  return [step.data.reason, offDomain].filter(Boolean).join("\n\n");
 }
 
-// `GET /analysis/{id}` — la pagina dell'analisi, per ora vuota. La vede solo chi
-// possiede il progetto: per tutti gli altri il progetto non esiste.
+// `GET /analysis/{id}` — the specification rounds. Only the project's owner sees
+// it: for everybody else the project does not exist.
+//
+// Next to the chat there is the summary of what was settled at submission time —
+// driver, discount, ambassador, autonomous work. It is not read from the address,
+// which carries nothing here: it is on the project, and it is read from there just
+// as the form does when it comes back (`serveFormAgain`).
 async function serveAnalysis(request, projectId, settings, response, ui) {
-  const accesso = await currentSession(settings, request);
-  if (!accesso.ok) return sendMessage(response, ui, 503, "unavailable");
-  if (!accesso.logged) return sendMessage(response, ui, 401, "not_logged");
+  const session = await currentSession(settings, request);
+  if (!session.ok) return sendMessage(response, ui, 503, "unavailable");
+  if (!session.logged) return sendMessage(response, ui, 401, "not_logged");
   if (!isProjectId(projectId)) return sendMessage(response, ui, 404, "not_found");
 
-  const progetto = await findProject(settings, projectId);
-  if (!progetto.ok && progetto.reason !== "not_found") return sendMessage(response, ui, 503, "unavailable");
-  if (!progetto.ok || progetto.data.owner_uid !== accesso.session.uid) {
+  const project = await findProject(settings, projectId);
+  if (!project.ok && project.reason !== "not_found") return sendMessage(response, ui, 503, "unavailable");
+  if (!project.ok || project.data.owner_uid !== session.session.uid) {
     return sendMessage(response, ui, 404, "not_found");
   }
 
-  const access = { logged: true, session: accesso.session, ssoAvailable: true };
-  send(response, 200, "text/html; charset=utf-8", renderAnalysis(ui, { access, settings }));
+  // The specification-rounds step. If it is not there it is opened now: that is
+  // how projects born before this step existed get one.
+  let step = openAnalysisOf(project.data);
+  if (step === null) {
+    const opened = await openAnalysisStep(settings, projectId);
+    step = opened.ok ? openAnalysisOf(opened.data) : null;
+  }
+  // Without an open step there is no writing and no counting: the page would say
+  // something false, so it is not shown.
+  if (step === null) return sendMessage(response, ui, 503, "unavailable");
+
+  const access = { logged: true, session: session.session, ssoAvailable: true };
+  send(response, 200, "text/html; charset=utf-8", renderAnalysis(ui, {
+    access,
+    settings,
+    terms: await projectSummary(settings, project.data),
+    project_id: projectId,
+    // The conversation and the turns live on the project: reloading the page loses
+    // nothing. The credit lives on the user.
+    chat: {
+      messages: step.data?.chat ?? [],
+      turnsLeft: Number(step.data?.turns_left ?? 0),
+      credit: await turnsCredit(settings, session.session.username),
+    },
+  }));
 }
 
-// Tutto ciò che serve a disegnare la pagina: chi è entrato, da dove arriva.
-// Sta in un posto solo perché lo usano sia la pagina intera sia i frammenti che
-// il browser chiede dopo il login: le due strade devono vedere la stessa cosa.
+// The project's terms, for the summary next to the chat. If anagraphics does not
+// answer we go on with whatever could be read: an incomplete summary box is not
+// worth the page.
+//
+// In autonomous work the driver is whoever is looking, and they are not shown as
+// if they were somebody else: the autonomous work line says it, and it is there
+// for that.
+async function projectSummary(settings, project) {
+  const autonomous = Boolean(project.billing?.autonomous_work);
+  const driverLink = autonomous ? { state: NONE } : await driverLinkOfProject(settings, project);
+
+  const ambassadorUid = project.billing?.ambassador_uid ?? null;
+  const invitation = ambassadorUid ? await findDriver(settings, ambassadorUid) : { ok: false };
+
+  return { driverLink, ambassador: invitation.ok ? invitation.data : null, autonomous };
+}
+
+// Everything needed to draw the page: who has logged in, where they came from.
+// It lives in one place because both the whole page and the fragments the browser
+// asks for after the login use it: the two roads must see the same thing.
 async function pageState(request, url, settings) {
-  // Chi sta guardando la pagina. Tre esiti, e sono tre cose diverse: loggato,
-  // non loggato, oppure "non lo sappiamo" perché il sso non risponde. L'ultimo
-  // non si tratta come un logout.
-  const accesso = await currentSession(settings, request);
+  // Who is looking at the page. Three outcomes, and they are three different
+  // things: logged in, not logged in, or "we do not know" because the sso does not
+  // answer. The last one is not treated as a logout.
+  const current = await currentSession(settings, request);
   const access = {
-    logged: accesso.ok ? accesso.logged : false,
-    session: accesso.ok ? accesso.session : null,
-    ssoAvailable: accesso.ok,
+    logged: current.ok ? current.logged : false,
+    session: current.ok ? current.session : null,
+    ssoAvailable: current.ok,
   };
 
-  // Chi è entrato è anche un driver? L'uid del suo documento in `drivers` viene
-  // dalla sessione, fotografato al login.
+  // Is whoever logged in also a driver? The uid of their document in `drivers`
+  // comes from the session, photographed at login time.
   const ownDriverUid = access.logged ? (access.session.data?.driver_uid ?? null) : null;
 
   const params = {
@@ -682,11 +946,11 @@ async function pageState(request, url, settings) {
     ambassadorUid: url.searchParams.get("ambassador"),
   };
 
-  // Il box del driver si vede solo a chi è arrivato dal link di un driver.
-  // Per tutti gli altri non c'è nessuna scelta da fare, quindi non c'è box e
-  // non serve nemmeno chiedere l'elenco ad anagraphics.
+  // The driver box is seen only by somebody who arrived from a driver's link. For
+  // everybody else there is no choice to make, so there is no box and there is not
+  // even any need to ask anagraphics for the list.
   const showDriverBox = Boolean(params.discountCode || params.driverUid);
-  // L'ambassador conta solo senza link di un driver (src/ambassador.js).
+  // The ambassador counts only without a driver's link (src/ambassador.js).
   const ambassadorAsked = Boolean(params.ambassadorUid) && !showDriverBox;
 
   let drivers = [];
@@ -697,15 +961,15 @@ async function pageState(request, url, settings) {
     const driversResult = await listDrivers(settings);
     driversAvailable = driversResult.ok;
     drivers = driversResult.ok ? driversResult.data : [];
-    // Senza elenco non si può risolvere niente: il box lo dice e la pre-analisi
-    // continua lo stesso, perché scegliere il driver è facoltativo.
+    // Without the list nothing can be resolved: the box says so and the
+    // pre-analysis goes on anyway, because choosing the driver is optional.
     driverLink = driversResult.ok ? await resolveDriverLink(settings, params, drivers) : { state: NONE };
-    // Un driver non si manda un cliente da solo: il proprio sconto e il proprio
-    // link non valgono. Quelli di altri driver sì.
+    // A driver does not send a client to themselves: their own discount and their
+    // own link do not count. Other drivers' do.
     driverLink = withoutOwnLink(driverLink, ownDriverUid);
   }
 
-  // Senza elenco dei driver l'ambassador non si può verificare: il box non c'è.
+  // Without the driver list the ambassador cannot be checked: the box is not there.
   let ambassador = null;
   if (ambassadorAsked) {
     const driversResult = await listDrivers(settings);
@@ -720,49 +984,74 @@ async function pageState(request, url, settings) {
     driversAvailable,
     ambassador,
     isDriver: Boolean(ownDriverUid),
-    rejectedProjectId: await rejectedProject(request, url, settings, access),
+    rejection: await rejectedProject(request, url, settings, access),
   };
 }
 
-// `?rejected={id}` — ci arriva chi ha appena mandato il form e si è visto
-// rifiutare la richiesta. Il parametro vale solo se il progetto esiste, è di chi
-// guarda ed è davvero rifiutato: in tutti gli altri casi si ignora e la pagina è
-// quella di sempre. Così l'indirizzo non si può usare per far comparire un
-// rifiuto a qualcun altro, né per scoprire quali progetti esistono.
+// What the refusal modal says. Three cases, and they are three different things:
+//
+//   out_of_scope     `run_out_certain`: software that could be made, but not here.
+//                    "we are probably not the right tool" is true.
+//   not_software     `non_sequitur`: what was asked for is not software. Here we say
+//                    what webtools builds — small software, used in a browser — and
+//                    name a few examples of what it does not build. It is a
+//                    description of the service, not a judgement on the request.
+//   not_recognised   the rest: the `underspecified` that has run out of rounds.
+//                    There is nothing to judge, and saying we are not the right tool
+//                    would make it seem the request had been understood and set aside.
+//
+// None of the three says **why that** request was refused: the model's reason stays
+// ours and the driver's.
+const REJECTION_CASE = {
+  run_out_certain: "out_of_scope",
+  non_sequitur: "not_software",
+};
+
+export function rejectionCase(project) {
+  const steps = project.pipeline?.steps ?? [];
+  const step = [...steps].reverse().find((entry) => entry.step === "prevalidation" && entry.data?.outcome);
+  return REJECTION_CASE[step?.data.outcome] ?? "not_recognised";
+}
+
+// `?rejected={id}` — this is where somebody lands who has just sent the form and
+// had the request refused. The parameter counts only if the project exists,
+// belongs to the viewer and really was refused: in every other case it is ignored
+// and the page is the usual one. That way the address cannot be used to make a
+// refusal appear to somebody else, nor to discover which projects exist.
 async function rejectedProject(request, url, settings, access) {
   const projectId = url.searchParams.get("rejected");
   if (!projectId || !isProjectId(projectId) || !access.logged) return null;
 
-  const progetto = await findProject(settings, projectId);
-  if (!progetto.ok) return null;
-  if (progetto.data.owner_uid !== access.session.uid) return null;
-  if (progetto.data.pipeline?.state !== "REJECTED") return null;
-  return projectId;
+  const project = await findProject(settings, projectId);
+  if (!project.ok) return null;
+  if (project.data.owner_uid !== access.session.uid) return null;
+  if (project.data.pipeline?.state !== "REJECTED") return null;
+  return { project_id: projectId, case: rejectionCase(project.data) };
 }
 
 async function servePage(request, url, settings, response, ui) {
-  const stato = await pageState(request, url, settings);
-  // Un id per questo form: se lo stesso invio arriva due volte, il progetto resta uno.
-  const html = renderPage(ui, { ...stato, settings, submissionId: randomUUID() });
+  const state = await pageState(request, url, settings);
+  // An id for this form: if the same submission arrives twice, there is still one project.
+  const html = renderPage(ui, { ...state, settings, submissionId: randomUUID() });
   send(response, 200, "text/html; charset=utf-8", html);
 }
 
 async function serveStatic(pathname, response) {
-  // Solo file dentro public/: path.normalize toglie i "..".
+  // Only files inside public/: path.normalize strips the ".."..
   const relative = path.normalize(pathname).replace(/^(\.\.[/\\])+/, "").replace(/^[/\\]+/, "");
   const file = path.join(PUBLIC_DIR, relative);
   if (!file.startsWith(PUBLIC_DIR)) {
-    return send(response, 403, "text/plain; charset=utf-8", "Vietato");
+    return send(response, 403, "text/plain; charset=utf-8", "Forbidden");
   }
 
   let info;
   try {
     info = await stat(file);
   } catch {
-    return send(response, 404, "text/plain; charset=utf-8", "Non trovato");
+    return send(response, 404, "text/plain; charset=utf-8", "Not found");
   }
   if (!info.isFile()) {
-    return send(response, 404, "text/plain; charset=utf-8", "Non trovato");
+    return send(response, 404, "text/plain; charset=utf-8", "Not found");
   }
 
   response.writeHead(200, {
@@ -772,9 +1061,9 @@ async function serveStatic(pathname, response) {
   createReadStream(file).pipe(response);
 }
 
-// Il selettore della lingua, in testata su ogni pagina. Scrive il cookie comune
-// e torna alla pagina da cui è partito: gli altri sottosistemi leggono lo stesso
-// cookie, quindi cambiano lingua anche loro alla prossima pagina.
+// The language switcher, in the header of every page. It writes the shared cookie
+// and returns to the page it started from: the other subsystems read the same
+// cookie, so they change language too on the next page.
 async function changeLocale(request, settings, response) {
   const change = await settings.i18n.readChange(request);
   if (!change.ok) {
@@ -785,18 +1074,19 @@ async function changeLocale(request, settings, response) {
     });
     return response.end(body);
   }
-  // Chi è entrato la ritrova al prossimo login. Se il sso non risponde la lingua
-  // cambia lo stesso: il cookie basta per le pagine.
-  const salvata = await saveSessionLocale(settings, request, change.locale);
-  if (!salvata.ok) console.error("[preanalyst] lingua non salvata nella sessione: il sso non risponde");
+  // Whoever has logged in finds it again at the next login. If the sso does not
+  // answer the language changes anyway: the cookie is enough for the pages.
+  const saved = await saveSessionLocale(settings, request, change.locale);
+  if (!saved.ok) console.error("[preanalyst] language not saved in the session: the sso does not answer");
   return redirect(response, change.location, { "set-cookie": change.cookie });
 }
 
 export function createServer(settings) {
   return http.createServer(async (request, response) => {
     const url = new URL(request.url, `http://${request.headers.host ?? "localhost"}`);
-    // Lingua e selettore per le pagine. Le pagine rese in risposta a un POST non
-    // si riaprono con un GET: il cambio di lingua da lì torna alla pre-analisi.
+    // Language and switcher for the pages. Pages rendered in answer to a POST
+    // cannot be reopened with a GET: changing language from there goes back to the
+    // pre-analysis.
     const ui = settings.i18n.pageContext(request, url, request.method === "GET" ? {} : { returnTo: "/" });
 
     try {
@@ -809,8 +1099,20 @@ export function createServer(settings) {
       if (request.method === "POST" && url.pathname === "/locale") {
         return await changeLocale(request, settings, response);
       }
+      const message = /^\/analysis\/([^/]+)\/messages$/.exec(url.pathname);
+      if (request.method === "POST" && message) {
+        return await receiveChatMessage(request, message[1], settings, response, ui);
+      }
+      const purchase = /^\/analysis\/([^/]+)\/turns\/buy$/.exec(url.pathname);
+      if (request.method === "POST" && purchase) {
+        return await receiveTurnsPurchase(request, purchase[1], settings, response);
+      }
+      const turns = /^\/analysis\/([^/]+)\/turns$/.exec(url.pathname);
+      if (request.method === "POST" && turns) {
+        return await receiveTurnsFromCredit(request, turns[1], settings, response);
+      }
       if (request.method !== "GET") {
-        return send(response, 405, "text/plain; charset=utf-8", "Metodo non ammesso");
+        return send(response, 405, "text/plain; charset=utf-8", "Method not allowed");
       }
 
       if (url.pathname === "/") {
@@ -825,19 +1127,19 @@ export function createServer(settings) {
       if (url.pathname === "/logout") {
         return leave(settings, response);
       }
-      const analisi = /^\/analysis\/([^/]+)$/.exec(url.pathname);
-      if (analisi) {
-        return await serveAnalysis(request, analisi[1], settings, response, ui);
+      const analysis = /^\/analysis\/([^/]+)$/.exec(url.pathname);
+      if (analysis) {
+        return await serveAnalysis(request, analysis[1], settings, response, ui);
       }
-      const rigetto = /^\/projects\/([^/]+)\/rejection\.pdf$/.exec(url.pathname);
-      if (rigetto) {
-        return await serveRejectionPdf(request, rigetto[1], settings, response, ui);
+      const rejection = /^\/projects\/([^/]+)\/rejection\.pdf$/.exec(url.pathname);
+      if (rejection) {
+        return await serveRejectionPdf(request, rejection[1], settings, response, ui);
       }
       return await serveStatic(url.pathname, response);
     } catch (error) {
-      console.error(`[preanalyst] errore su ${url.pathname}: ${error.stack ?? error}`);
+      console.error(`[preanalyst] error on ${url.pathname}: ${error.stack ?? error}`);
       if (!response.headersSent) {
-        send(response, 500, "text/plain; charset=utf-8", "Errore interno");
+        send(response, 500, "text/plain; charset=utf-8", "Internal error");
       }
     }
   });

@@ -50,3 +50,21 @@ webtools_workspaces in ascolto su http://127.0.0.1:9400 (radice: /Users/domenico
 [workspaces] d97cbb60-a0b7-4b3a-9088-0bd2bb063e94: specifica v2 (system, 1517 byte) da 8ff93901-673e-44ba-b05b-56011395dcba
 [workspaces] 69b378ed-9257-4abd-9f2b-945d918477fd: specifica v1 (system, 1517 byte) da 8ff93901-673e-44ba-b05b-56011395dcba
 [workspaces] 180bc425-c481-4999-855c-71efb8e0f3b1: specifica v1 (system, 1517 byte) da 8ff93901-673e-44ba-b05b-56011395dcba
+=== start 2026-09-24 14:42:02 ===
+webtools_workspaces in ascolto su http://127.0.0.1:9400 (radice: /Users/domenico/webtools_data/workspaces)
+[workspaces] a83b243f-cba9-4031-b718-4e0a88088fad: specifica v1 (system, 1421 byte) da 8ff93901-673e-44ba-b05b-56011395dcba
+[workspaces] 376d43fa-674b-4d46-8c23-47fcafc9119f: specifica v1 (system, 1679 byte) da 8ff93901-673e-44ba-b05b-56011395dcba
+[workspaces] 4ad66240-05e6-4813-ba2b-5b323a824a5b: specifica v1 (system, 1421 byte) da 8ff93901-673e-44ba-b05b-56011395dcba
+[workspaces] 4ad66240-05e6-4813-ba2b-5b323a824a5b: specifica v2 (system, 1679 byte) da 8ff93901-673e-44ba-b05b-56011395dcba
+[workspaces] 1e5589c4-58df-4ca7-ac06-b7e1be1b2fec: specifica v1 (system, 1670 byte) da 8ff93901-673e-44ba-b05b-56011395dcba
+[workspaces] 3cb62448-6e79-474b-be1b-fc9bb8ea9ebe: specifica v1 (system, 1670 byte) da 8ff93901-673e-44ba-b05b-56011395dcba
+=== start 2026-09-24 16:18:17 ===
+webtools_workspaces in ascolto su http://127.0.0.1:9400 (radice: /Users/domenico/webtools_data/workspaces)
+=== start 2026-09-24 16:29:30 ===
+webtools_workspaces listening on http://127.0.0.1:9400 (radice: /Users/domenico/webtools_data/workspaces)
+=== start 2026-09-24 16:44:13 ===
+webtools_workspaces listening on http://127.0.0.1:9400 (radice: /Users/domenico/webtools_data/workspaces)
+=== start 2026-09-24 16:51:39 ===
+webtools_workspaces listening on http://127.0.0.1:9400 (root: /Users/domenico/webtools_data/workspaces)
+=== start 2026-09-24 17:05:48 ===
+webtools_workspaces listening on http://127.0.0.1:9400 (root: /Users/domenico/webtools_data/workspaces)

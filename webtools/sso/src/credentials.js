@@ -1,17 +1,17 @@
-// Verifica di una password contro il blocco `credential` conservato in anagraphics.
+// Verifying a password against the `credential` block stored in anagraphics.
 //
-// Il formato lo scrive anagraphics (`webtools_anagraphics/credentials.py`), qui si
-// legge soltanto:
+// The format is written by anagraphics (`webtools_anagraphics/credentials.py`);
+// here it is only read:
 //
 //   { algorithm: "scrypt", params: { n, r, p, dklen }, salt: <base64>, hash: <base64> }
 //
-// I parametri si prendono dal documento, non da costanti di qui: il giorno che si
-// alzano, le password vecchie restano verificabili con i propri.
+// The parameters are taken from the document, not from constants here: the day
+// they are raised, old passwords stay verifiable with their own.
 
 import { scrypt, timingSafeEqual } from "node:crypto";
 
 const SCRYPT = "scrypt";
-// 128 * n * r con n=16384 e r=8 fa 16 MB: il default di Node non basta.
+// 128 * n * r with n=16384 and r=8 makes 16 MB: Node's default is not enough.
 const MAXMEM = 64 * 1024 * 1024;
 
 function scryptAsync(password, salt, keylen, options) {
@@ -23,18 +23,18 @@ function scryptAsync(password, salt, keylen, options) {
   });
 }
 
-// true solo se la password corrisponde. Qualunque cosa non torni — algoritmo
-// sconosciuto, parametri assenti, base64 rotto — è false, mai un'eccezione:
-// un documento malfatto non deve far entrare nessuno, e nemmeno rompere il login.
+// true only if the password matches. Anything that does not add up — unknown
+// algorithm, missing parameters, broken base64 — is false, never an exception: a
+// badly made document must let nobody in, and must not break the login either.
 export async function verifyPassword(password, credential) {
   if (!credential || credential.algorithm !== SCRYPT) {
-    console.error(`[credentials] algoritmo non gestito: ${credential?.algorithm ?? "assente"}`);
+    console.error(`[credentials] algorithm not handled: ${credential?.algorithm ?? "missing"}`);
     return false;
   }
 
   const { n, r, p, dklen } = credential.params ?? {};
   if (![n, r, p, dklen].every((value) => Number.isInteger(value) && value > 0)) {
-    console.error("[credentials] parametri scrypt mancanti o non validi");
+    console.error("[credentials] scrypt parameters missing or invalid");
     return false;
   }
 
@@ -44,11 +44,11 @@ export async function verifyPassword(password, credential) {
     salt = Buffer.from(credential.salt, "base64");
     expected = Buffer.from(credential.hash, "base64");
   } catch {
-    console.error("[credentials] salt o hash non decodificabili");
+    console.error("[credentials] salt or hash cannot be decoded");
     return false;
   }
   if (salt.length === 0 || expected.length !== dklen) {
-    console.error("[credentials] salt vuoto o hash di lunghezza inattesa");
+    console.error("[credentials] empty salt or hash of unexpected length");
     return false;
   }
 
@@ -56,11 +56,11 @@ export async function verifyPassword(password, credential) {
   try {
     derived = await scryptAsync(password, salt, dklen, { N: n, r, p, maxmem: MAXMEM });
   } catch (error) {
-    console.error(`[credentials] scrypt fallito: ${error.message}`);
+    console.error(`[credentials] scrypt failed: ${error.message}`);
     return false;
   }
 
-  // Confronto a tempo costante: la durata della risposta non deve dire
-  // quanti byte dell'hash erano giusti.
+  // Constant-time comparison: how long the answer takes must not say how many
+  // bytes of the hash were right.
   return timingSafeEqual(derived, expected);
 }

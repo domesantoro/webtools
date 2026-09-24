@@ -1,14 +1,14 @@
 {#
-  Le parti della pagina che riguardano l'accesso.
+  The parts of the page that concern logging in.
 
-  `header` è lo stato in testata. Serve in due momenti: quando la pagina viene
-  resa, e quando il browser lo richiede aggiornato dopo un login fatto nella
-  finestra a parte (`GET /session-fragment`). È l'**interno** del contenitore:
-  chi lo riceve rimpiazza l'innerHTML.
+  `header` is the state shown in the header. It is needed at two moments: when the
+  page is rendered, and when the browser asks for it again after a login done in
+  the separate window (`GET /session-fragment`). It is the **inside** of the
+  container: whoever receives it replaces the innerHTML.
 
-  `dialog` è la finestra modale che si apre quando da sloggati si prova a fare
-  qualcosa che richiede un conto (mandare la richiesta, caricare un file). Non
-  compare da sola: la apre il clic su quell'azione.
+  `dialog` is the modal window that opens when, while logged out, somebody tries to
+  do something that requires an account (sending the request, uploading a file). It
+  does not appear by itself: the click on that action opens it.
 #}
 
 {% macro header(access) %}
@@ -23,9 +23,9 @@
 {%- endif %}
 {%- endmacro %}
 
-{#- `id` lo usa chi la apre; `lead` dice che cosa serve e perché; `hint` che cosa
-    succede dopo il login. Senza sso raggiungibile non c'è niente da proporre:
-    lo si dice e basta. #}
+{#- `id` is used by whoever opens it; `lead` says what is needed and why; `hint`
+    what happens after the login. With the sso unreachable there is nothing to
+    offer: that is said, and nothing else. #}
 {% macro dialog(access, id, lead, hint) %}
       <dialog class="card login-dialog" id="{{ id }}" aria-labelledby="{{ id }}-title">
         <div class="card-head login-dialog-head" id="{{ id }}-title">{{ t("preanalyst.dialogs.title") }}</div>

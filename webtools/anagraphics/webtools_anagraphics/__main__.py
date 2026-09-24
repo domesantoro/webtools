@@ -1,11 +1,13 @@
-"""Avvio del server.
+"""Starting the server.
 
-In background: `./webtools_anagraphics.sh --start` (dalla cartella webtools/anagraphics).
-In primo piano, per debug, con le variabili di webtools/configurator/bootstrap.env
-nell'ambiente: `uv run python -m webtools_anagraphics`.
+In the background: `./webtools_anagraphics.sh --start` (from webtools/anagraphics).
+In the foreground, for debugging, with the variables of
+webtools/configurator/bootstrap.env in the environment:
+`uv run python -m webtools_anagraphics`.
 
-Indirizzo e porta vengono da WEBTOOLS_ANAGRAPHICS_URL, il resto dalla
-configurazione in Mongo (vedi settings.py). Se manca qualcosa il server non parte.
+Host and port come from WEBTOOLS_ANAGRAPHICS_URL, everything else from the
+configuration in Mongo (see settings.py). If anything is missing the server does
+not start.
 """
 
 import sys
@@ -18,13 +20,13 @@ if __name__ == "__main__":
     try:
         from webtools_anagraphics.main import app, settings
     except ConfigurationError as error:
-        print(f"webtools_anagraphics non parte: {error}", file=sys.stderr)
+        print(f"webtools_anagraphics is not starting: {error}", file=sys.stderr)
         sys.exit(1)
     uvicorn.run(
         app,
         host=settings.host,
         port=settings.port,
-        # Il pool di IP deve vedere l'IP reale della connessione:
-        # niente riscrittura da X-Forwarded-For / X-Forwarded-Proto.
+        # The IP pool must see the connection's real IP: no rewriting from
+        # X-Forwarded-For / X-Forwarded-Proto.
         proxy_headers=False,
     )

@@ -1,13 +1,14 @@
 {#-
-  Il selettore della lingua: sta nel piè di pagina, fuori dalla testata e dai
-  menu, perché non è una voce di navigazione.
+  The language switcher: it lives in the footer, outside the header and the menus,
+  because it is not a navigation item.
 
-  NON MODIFICARE LA COPIA DENTRO UN SOTTOSISTEMA: l'originale è
-  `webtools/commons/templates/locale_switch.njk`, distribuito dal template_deployer.
+  DO NOT EDIT THE COPY INSIDE A SUBSYSTEM: the original is
+  `webtools/commons/templates/locale_switch.njk`, distributed by the
+  template_deployer.
 
-  Mostra i codici (IT / EN); il nome della lingua, scritto nella lingua stessa,
-  sta in `title` e `aria-label`. Ogni tasto manda `POST /locale`, che scrive il
-  cookie comune e torna alla pagina. Vuole `t` e `locale_switch` da
+  It shows the codes (IT / EN); the name of the language, written in that language,
+  is in `title` and `aria-label`. Each button sends `POST /locale`, which writes the
+  shared cookie and returns to the page. It needs `t` and `locale_switch` from
   `i18n.pageContext` (webtools/commons/i18n/webtools_i18n.js).
 -#}
 <form class="locale-switch" method="post" action="{{ locale_switch.action }}" aria-label="{{ t('common.locale.label') }}">

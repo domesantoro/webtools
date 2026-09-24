@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
-# Diffonde il modulo del front matter delle specifiche (commons/specs) nei
-# sottosistemi che leggono o scrivono specifiche. Ogni progetto ha la sua
-# funzione di deploy, con destinazioni esplicite.
+# Distributes the specifications' front matter module (commons/specs) to the
+# subsystems that read or write specifications. Every project has its own deploy
+# function, with explicit targets.
 set -euo pipefail
 
 WEBTOOLS="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 SOURCE="$WEBTOOLS/commons/specs"
 
-# preanalyst — legge il project_id dalle specifiche caricate.
+# preanalyst — reads the project_id from uploaded specifications.
 deploy_preanalyst() {
   local commons="$WEBTOOLS/preanalyst/src/commons"
   echo "→ preanalyst"
@@ -16,7 +16,7 @@ deploy_preanalyst() {
   cp "$SOURCE/spec_front_matter.js" "$commons/spec_front_matter.js"
 }
 
-# webtools-workspaces — timbra la chiave riservata prima di conservare il file.
+# webtools-workspaces — stamps the reserved key before storing the file.
 deploy_workspaces() {
   local commons="$WEBTOOLS/webtools-workspaces/src/commons"
   echo "→ webtools-workspaces"
@@ -28,4 +28,4 @@ deploy_workspaces() {
 deploy_preanalyst
 deploy_workspaces
 
-echo "Modulo delle specifiche distribuito."
+echo "Specifications module distributed."

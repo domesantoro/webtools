@@ -1,5 +1,5 @@
-{#- L'header di tutte le pagine. `page` dice quale voce è quella corrente. -#}
-{%- set voci = [
+{#- The header of every page. `page` says which item is the current one. -#}
+{%- set items = [
   ["che-cos-e", "front_gate.nav.what"],
   ["esempi", "front_gate.nav.examples"],
   ["come-funziona", "front_gate.nav.how"],
@@ -13,8 +13,8 @@
       <span class="brand-stack">webtools<small>{{ t("common.brand.tagline") }}</small></span>
     </a>
     <nav class="main-nav" aria-label="{{ t("front_gate.nav.label") }}">
-      {%- for voce in voci %}
-      <a href="{{ voce[0] }}.html"{% if page == voce[0] %} aria-current="page"{% endif %}>{{ t(voce[1]) }}</a>
+      {%- for item in items %}
+      <a href="{{ item[0] }}.html"{% if page == item[0] %} aria-current="page"{% endif %}>{{ t(item[1]) }}</a>
       {%- endfor %}
       {% include "partials/start.njk" %}
     </nav>

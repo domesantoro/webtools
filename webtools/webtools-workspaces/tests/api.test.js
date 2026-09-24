@@ -1,4 +1,4 @@
-// Le rotte, provate per intero su una radice temporanea.
+// The routes, tested end to end on a temporary root.
 
 import assert from "node:assert/strict";
 import { mkdtemp, readdir, rm } from "node:fs/promises";
@@ -41,7 +41,7 @@ async function expectError(response, status, code) {
   assert.deepEqual(await response.json(), { error: code });
 }
 
-test("upload e lettura dell'ultima versione", async () => {
+test("upload and reading of the last version", async () => {
   const response = await upload(PROJECT, `---\nproject_id: ${PROJECT}\n---\n# Spec\n`);
   assert.equal(response.status, 201);
   assert.deepEqual(await response.json(), { project_id: PROJECT, version: 1 });
@@ -55,7 +55,7 @@ test("upload e lettura dell'ultima versione", async () => {
   assert.match(text, /# Spec\n$/);
 });
 
-test("richieste sbagliate: nessun file scritto", async () => {
+test("bad requests: no file written", async () => {
   const project = "2c3d4e5f-6a7b-4c8d-9e0f-1a2b3c4d5e6f";
   await expectError(await upload("non-un-uuid", "x"), 400, "INVALID_PROJECT_ID");
   await expectError(await upload("..%2F..%2Fetc", "x"), 400, "INVALID_PROJECT_ID");
@@ -68,7 +68,7 @@ test("richieste sbagliate: nessun file scritto", async () => {
   await assert.rejects(readdir(path.join(root, project)), { code: "ENOENT" });
 });
 
-test("ultima versione di un progetto senza specifiche", async () => {
+test("last version of a project with no specifications", async () => {
   await expectError(
     await fetch(`${base}/projects/3d4e5f6a-7b8c-4d9e-8f0a-1b2c3d4e5f6a/specs/latest`),
     404,
@@ -76,12 +76,12 @@ test("ultima versione di un progetto senza specifiche", async () => {
   );
 });
 
-test("rotte e metodi sconosciuti", async () => {
+test("unknown routes and methods", async () => {
   await expectError(await fetch(`${base}/nope`), 404, "ROUTE_NOT_FOUND");
   await expectError(await fetch(`${base}/projects/${PROJECT}/specs`), 405, "METHOD_NOT_ALLOWED");
 });
 
-test("IP fuori dal pool", async () => {
+test("IP outside the pool", async () => {
   const closed = createServer({ allowedIps: ["10.0.0.1"], root, specMaxBytes: 1024 });
   await new Promise((resolve) => closed.listen(0, "127.0.0.1", resolve));
   const response = await fetch(`http://127.0.0.1:${closed.address().port}/nope`);

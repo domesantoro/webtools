@@ -1,7 +1,7 @@
 {
   "name": "webtools_workspaces",
   "version": "0.1.0",
-  "description": "I file dei progetti: conserva le specifiche nel workspace di ogni progetto.",
+  "description": "The projects' files: it keeps the specifications in each project's workspace.",
   "private": true,
   "type": "module",
   "main": "src/index.js",

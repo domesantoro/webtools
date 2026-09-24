@@ -1,14 +1,14 @@
-// Client HTTP verso webtools-workspaces, che conserva i file dei progetti.
+// HTTP client towards webtools-workspaces, which stores the project files.
 //
-// Stesso contratto del client di anagraphics: niente eccezioni verso il
-// chiamante, ma { ok: true, data } oppure { ok: false, reason, code }.
+// Same contract as the anagraphics client: no exceptions towards the caller, but
+// { ok: true, data } or { ok: false, reason, code }.
 //
-//   reason "rejected"     → 400 o 413: il file non va bene, riprovare non serve
-//   reason "unavailable"  → servizio irraggiungibile, timeout, 5xx, 403, JSON rotto
+//   reason "rejected"     → 400 or 413: the file is no good, retrying does not help
+//   reason "unavailable"  → service unreachable, timeout, 5xx, 403, broken JSON
 
 // POST /projects/{id}/specs → { project_id, version }.
-// L'origine la decide chi chiama, dal canale da cui il file è arrivato: il
-// servizio la scrive nel front matter sopra a quello che il file dichiara.
+// The origin is decided by the caller, from the channel the file arrived through:
+// the service writes it into the front matter, over whatever the file declares.
 export async function storeSpec(settings, projectId, text, { origin, uploadedBy }) {
   const path = `/projects/${encodeURIComponent(projectId)}/specs`;
   let response;
@@ -33,7 +33,7 @@ export async function storeSpec(settings, projectId, text, { origin, uploadedBy 
   try {
     body = await response.json();
   } catch {
-    console.error(`[workspaces] POST ${path}: risposta non JSON (HTTP ${response.status})`);
+    console.error(`[workspaces] POST ${path}: response is not JSON (HTTP ${response.status})`);
     return { ok: false, reason: "unavailable" };
   }
 
@@ -45,10 +45,10 @@ export async function storeSpec(settings, projectId, text, { origin, uploadedBy 
   return { ok: false, reason: "unavailable", code: body?.error };
 }
 
-// GET /projects/{id}/specs/latest → il .md dell'ultima specifica conservata.
-// Serve a chi deve rileggere quello che l'utente ha mandato: la pagina del
-// rigetto ne fa un PDF. Chi chiama ha già verificato di chi è il progetto:
-// workspaces conserva e non decide.
+// GET /projects/{id}/specs/latest → the .md of the last specification stored.
+// It is for whoever has to read again what the user sent: the rejection page
+// turns it into a PDF. The caller has already checked whose project it is:
+// workspaces stores and does not decide.
 export async function latestSpec(settings, projectId) {
   const path = `/projects/${encodeURIComponent(projectId)}/specs/latest`;
   let response;

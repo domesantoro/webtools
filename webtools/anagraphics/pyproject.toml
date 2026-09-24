@@ -1,7 +1,7 @@
 [project]
 name = "anagraphics"
 version = "0.1.0"
-description = "Sottosistema interno: configurazioni dei sottosistemi e anagrafica dei progetti (sola lettura)."
+description = "An internal subsystem: the subsystems' configurations and the projects' records."
 requires-python = ">=3.12"
 dependencies = [
     "fastapi>=0.115",

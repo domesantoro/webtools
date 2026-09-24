@@ -1,16 +1,16 @@
-"""Impostazioni, lette all'avvio. Niente valori di default: se manca qualcosa il
-server non parte.
+"""Settings, read at startup. No default values: if anything is missing the server
+does not start.
 
-Dall'ambiente arriva solo quello che serve a raggiungere la configurazione
+Only what is needed to reach the configuration comes from the environment
 (webtools/configurator/bootstrap.env):
 
-    WEBTOOLS_ANAGRAPHICS_URL            il nostro indirizzo: ci si mette in ascolto lì
-    WEBTOOLS_CONFIGURATION_TIMEOUT_MS   quanto aspettare Mongo per leggere la configurazione
+    WEBTOOLS_ANAGRAPHICS_URL            our address: this is where we listen
+    WEBTOOLS_CONFIGURATION_TIMEOUT_MS   how long to wait for Mongo when reading the configuration
     WEBTOOLS_MONGO_URI, WEBTOOLS_MONGO_DB
 
-Il resto è il documento `anagraphics` della collection `configuration`, lo
-stesso posto da cui gli altri sottosistemi leggono la loro: anagraphics lo legge
-direttamente da Mongo, perché è lui a servirlo.
+The rest is the `anagraphics` document of the `configuration` collection, the very
+place the other subsystems read theirs from: anagraphics reads it straight from
+Mongo, because it is the one serving it.
 """
 
 import os
@@ -24,7 +24,7 @@ SUBSYSTEM = "anagraphics"
 
 
 class ConfigurationError(Exception):
-    """Configurazione assente o sbagliata: il server non deve partire."""
+    """Configuration missing or wrong: the server must not start."""
 
 
 @dataclass(frozen=True)
@@ -40,15 +40,15 @@ class Settings:
 def _env(name: str) -> str:
     value = os.environ.get(name)
     if not value:
-        raise ConfigurationError(f"variabile d'ambiente {name} mancante")
+        raise ConfigurationError(f"environment variable {name} is missing")
     return value
 
 
 def _positive_int(name: str, value: object) -> int:
-    # bool è un int per Python: `true` nel JSON non deve passare per 1.
+    # bool is an int for Python: `true` in the JSON must not pass as 1.
     if isinstance(value, int) and not isinstance(value, bool) and value > 0:
         return value
-    raise ConfigurationError(f"{name} deve essere un intero positivo, trovato {value!r}")
+    raise ConfigurationError(f"{name} must be a positive integer, found {value!r}")
 
 
 def _field(document: dict, path: str) -> object:
@@ -56,7 +56,7 @@ def _field(document: dict, path: str) -> object:
     for key in path.split("."):
         value = value.get(key) if isinstance(value, dict) else None
     if value is None:
-        raise ConfigurationError(f"configurazione di {SUBSYSTEM}: {path} mancante")
+        raise ConfigurationError(f"configuration of {SUBSYSTEM}: {path} is missing")
     return value
 
 
@@ -64,7 +64,7 @@ def _listen_address(url: str) -> tuple[str, int]:
     parts = urlsplit(url)
     if parts.scheme != "http" or not parts.hostname or not parts.port:
         raise ConfigurationError(
-            f"WEBTOOLS_ANAGRAPHICS_URL deve essere http://host:porta, trovato {url!r}"
+            f"WEBTOOLS_ANAGRAPHICS_URL must be http://host:port, found {url!r}"
         )
     return parts.hostname, parts.port
 
@@ -74,19 +74,19 @@ def read_configuration(mongo_uri: str, mongo_db: str, timeout_ms: int) -> dict:
     try:
         document = client[mongo_db]["configuration"].find_one({"subsystem": SUBSYSTEM}, {"_id": 0})
     except PyMongoError as error:
-        raise ConfigurationError(f"MongoDB non risponde ({mongo_uri}): {error}") from error
+        raise ConfigurationError(f"MongoDB does not answer ({mongo_uri}): {error}") from error
     finally:
         client.close()
     if document is None:
         raise ConfigurationError(
-            f"nessuna configurazione '{SUBSYSTEM}' in {mongo_db}.configuration: "
-            "lancia webtools/configurator/load_configuration.sh"
+            f"no '{SUBSYSTEM}' configuration in {mongo_db}.configuration: "
+            "run webtools/configurator/load_configuration.sh"
         )
     return document
 
 
 def mongo_target() -> tuple[str, str]:
-    """(uri, database) dall'ambiente: serve anche agli script, che non leggono la configurazione."""
+    """(uri, database) from the environment: the scripts need it too, and they do not read the configuration."""
     return _env("WEBTOOLS_MONGO_URI"), _env("WEBTOOLS_MONGO_DB")
 
 
@@ -96,7 +96,7 @@ def load_settings() -> Settings:
     timeout_raw = _env("WEBTOOLS_CONFIGURATION_TIMEOUT_MS")
     if not timeout_raw.isdigit():
         raise ConfigurationError(
-            f"WEBTOOLS_CONFIGURATION_TIMEOUT_MS deve essere un intero positivo, trovato {timeout_raw!r}"
+            f"WEBTOOLS_CONFIGURATION_TIMEOUT_MS must be a positive integer, found {timeout_raw!r}"
         )
     timeout_ms = _positive_int("WEBTOOLS_CONFIGURATION_TIMEOUT_MS", int(timeout_raw))
 
@@ -109,8 +109,8 @@ def load_settings() -> Settings:
         or not all(isinstance(ip, str) and ip for ip in allowed_ips)
     ):
         raise ConfigurationError(
-            f"configurazione di {SUBSYSTEM}: access.allowed_ips deve essere un elenco "
-            f"non vuoto di stringhe, trovato {allowed_ips!r}"
+            f"configuration of {SUBSYSTEM}: access.allowed_ips must be a non-empty "
+            f"list of strings, found {allowed_ips!r}"
         )
 
     return Settings(

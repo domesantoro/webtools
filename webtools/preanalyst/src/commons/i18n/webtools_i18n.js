@@ -1,49 +1,50 @@
-// Le lingue delle pagine: cataloghi, scelta della lingua, traduzione.
+// The languages of the pages: catalogues, language choice, translation.
 //
-// ORIGINALE in webtools/commons/i18n/. Nei sottosistemi ce n'è una copia
-// generata dal deployer (webtools/configurator/deploy.sh i18n), insieme a
-// **tutti** i cataloghi: si modifica qui e si rilancia il deployer, mai la copia.
+// THE ORIGINAL is in webtools/commons/i18n/. Each subsystem has a copy generated
+// by the deployer (webtools/configurator/deploy.sh i18n), together with **all**
+// the catalogues: edit here and run the deployer again, never the copy.
 //
-// Tutti i testi di tutti i sottosistemi stanno in `locales/<lingua>.json`, e solo
-// lì: chi traduce o aggiunge una lingua lavora su un file per lingua, senza
-// cercare chiavi nei sottosistemi. Le chiavi sono in inglese, a punti, divise per
-// area (`common.*`, `sso.*`, `preanalyst.*`, `front_gate.*`); i file sono oggetti
-// JSON annidati con la stessa struttura.
+// Every text of every subsystem lives in `locales/<language>.json`, and only
+// there: whoever translates or adds a language works on one file per language,
+// without hunting for keys inside the subsystems. The keys are in English, dotted,
+// grouped by area (`common.*`, `sso.*`, `preanalyst.*`, `front_gate.*`); the files
+// are nested JSON objects with the same structure.
 //
-// Si traduce solo quello che vede l'utente: codici, dati, API e log restano in
-// inglese.
+// Only what the user sees is translated: codes, data, API and logs stay in
+// English.
 //
-// La lingua:
-// - sta nel cookie `i18n.cookie_name`, comune a tutti i sottosistemi: i cookie
-//   ignorano la porta, quindi quello scritto da un sottosistema lo leggono tutti,
-//   a ogni richiesta;
-// - senza cookie, si prende la prima lingua disponibile di `Accept-Language`;
-// - altrimenti `i18n.fallback_locale`.
-// Una chiave che manca nella lingua scelta si prende dalla lingua di riserva.
+// The language:
+// - lives in the `i18n.cookie_name` cookie, shared by every subsystem: cookies
+//   ignore the port, so the one written by a subsystem is read by all of them, on
+//   every request;
+// - without a cookie, the first available language of `Accept-Language` is taken;
+// - otherwise `i18n.fallback_locale`.
+// A key missing from the chosen language is taken from the fallback language.
 //
-// Configurazione, nel file del sottosistema (niente valori di default):
+// Configuration, in the subsystem's file (no default values):
 //   "i18n": {
-//     "locales": ["en", "it"],          lingue offerte, ognuna con il suo catalogo
-//     "fallback_locale": "en",          lingua di riserva, deve essere tra le offerte
+//     "locales": ["en", "it"],          languages offered, each with its catalogue
+//     "fallback_locale": "en",          fallback language, must be among those offered
 //     "cookie_name": "webtools_locale",
 //     "cookie_max_age_seconds": 31536000,
-//     "body_max_bytes": 1024            corpo massimo di POST /locale
+//     "body_max_bytes": 1024            maximum body of POST /locale
 //   }
 //
-// Nei template (vedi `pageContext`):
+// In the templates (see `pageContext`):
 //   {{ t("sso.login.title") }}
-//   {{ t("preanalyst.upload.limit", { mb: 10 }) }}   → "… {mb} …" diventa "… 10 …"
+//   {{ t("preanalyst.upload.limit", { mb: 10 }) }}   → "… {mb} …" becomes "… 10 …"
 //   {{ euro(40000) }}                                → "400 €" / "€400"
-//   {% if has("preanalyst.questions.fields.need.hint") %}…   chiavi facoltative
-// Il testo di `t` passa dall'autoescape come ogni altro valore.
+//   {% if has("preanalyst.questions.fields.need.hint") %}…   optional keys
+// The text of `t` goes through autoescaping like any other value.
 //
-// Quando una frase ha dentro un pezzo marcato (un nome in grassetto, un codice),
-// il testo del catalogo contiene l'HTML e si usa `t_html`:
+// When a sentence has a marked-up piece inside it (a name in bold, a code), the
+// catalogue text contains the HTML and `t_html` is used:
 //   "driver_disabled": "Il driver <strong>{name}</strong> non è abilitato."
 //   {{ t_html("preanalyst.driver_box.driver_disabled", { name: driver.screen_name }) }}
-// I cataloghi sono nostri e il loro HTML si stampa così com'è; i valori invece
-// arrivano da fuori, e `t_html` li ripulisce uno per uno. Un valore già marcato
-// come sicuro (`| safe`, per un pezzo di HTML reso dal template) resta com'è.
+// The catalogues are ours and their HTML is printed as it is; the values, on the
+// other hand, come from outside, and `t_html` cleans them one by one. A value
+// already marked as safe (`| safe`, for a piece of HTML rendered by the template)
+// is left alone.
 
 import { existsSync, readFileSync } from "node:fs";
 
@@ -53,9 +54,9 @@ import { ConfigurationError } from "../configuration_client.js";
 
 const LOCALES_DIR = new URL("./locales/", import.meta.url);
 
-// Il percorso di ritorno dopo il cambio di lingua: solo un percorso di questo
-// stesso server. `//altro.sito` o `/\altro.sito` il browser li legge come un
-// altro indirizzo, e gli spazi (compresi gli a capo) non stanno in un header.
+// The return path after a language change: only a path of this same server. The
+// browser reads `//other.site` or `/\other.site` as another address, and spaces
+// (newlines included) do not belong in a header.
 const SAFE_PATH = /^\/(?![/\\])\S*$/;
 
 export const INVALID_LOCALE = "INVALID_LOCALE";
@@ -64,16 +65,16 @@ export const BODY_TOO_LARGE = "BODY_TOO_LARGE";
 function readCatalog(locale) {
   const file = new URL(`${locale}.json`, LOCALES_DIR);
   if (!existsSync(file)) {
-    throw new ConfigurationError(`i18n: la lingua ${locale} è in configurazione ma non ha il catalogo ${file.pathname}`);
+    throw new ConfigurationError(`i18n: language ${locale} is in the configuration but has no catalogue at ${file.pathname}`);
   }
   let catalog;
   try {
     catalog = JSON.parse(readFileSync(file, "utf8"));
   } catch (error) {
-    throw new ConfigurationError(`i18n: catalogo ${locale} non leggibile: ${error.message}`);
+    throw new ConfigurationError(`i18n: catalogue ${locale} cannot be read: ${error.message}`);
   }
   if (catalog === null || typeof catalog !== "object" || Array.isArray(catalog)) {
-    throw new ConfigurationError(`i18n: il catalogo ${locale} deve essere un oggetto JSON`);
+    throw new ConfigurationError(`i18n: catalogue ${locale} must be a JSON object`);
   }
   return catalog;
 }
@@ -96,7 +97,7 @@ function escapeHtml(value) {
   return nunjucks.lib.escape(String(value ?? ""));
 }
 
-// `it-IT,it;q=0.9,en;q=0.8` → ["it", "it", "en"], in ordine di preferenza.
+// `it-IT,it;q=0.9,en;q=0.8` → ["it", "it", "en"], in order of preference.
 function acceptedLanguages(header) {
   if (!header) return [];
   return header
@@ -115,9 +116,9 @@ function readCookie(request, name) {
   const header = request.headers.cookie;
   if (!header) return null;
   for (const piece of header.split(";")) {
-    const separatore = piece.indexOf("=");
-    if (separatore === -1) continue;
-    if (piece.slice(0, separatore).trim() === name) return piece.slice(separatore + 1).trim();
+    const separator = piece.indexOf("=");
+    if (separator === -1) continue;
+    if (piece.slice(0, separator).trim() === name) return piece.slice(separator + 1).trim();
   }
   return null;
 }
@@ -130,50 +131,50 @@ export class I18n {
     this.cookieMaxAgeSeconds = cookieMaxAgeSeconds;
     this.bodyMaxBytes = bodyMaxBytes;
     this.catalogs = catalogs;
-    // Le chiavi mancanti anche nella lingua di riserva si segnalano una volta sola.
+    // Keys missing from the fallback language too are reported only once.
     this.missing = new Set();
   }
 
-  // La lingua di questa richiesta: cookie, poi Accept-Language, poi la riserva.
+  // The language of this request: cookie, then Accept-Language, then the fallback.
   localeOf(request) {
-    const scelta = readCookie(request, this.cookieName);
-    if (scelta && this.locales.includes(scelta)) return scelta;
-    const accettata = acceptedLanguages(request.headers["accept-language"]).find((l) => this.locales.includes(l));
-    return accettata ?? this.fallbackLocale;
+    const chosen = readCookie(request, this.cookieName);
+    if (chosen && this.locales.includes(chosen)) return chosen;
+    const accepted = acceptedLanguages(request.headers["accept-language"]).find((l) => this.locales.includes(l));
+    return accepted ?? this.fallbackLocale;
   }
 
   #text(locale, key) {
     return lookup(this.catalogs[locale] ?? {}, key) ?? lookup(this.catalogs[this.fallbackLocale], key);
   }
 
-  // C'è un testo per `key`, nella lingua o in quella di riserva?
+  // Is there a text for `key`, in this language or in the fallback one?
   has(locale, key) {
     return this.#text(locale, key) !== undefined;
   }
 
-  // Il testo di `key` in `locale`; se manca, quello della lingua di riserva; se
-  // manca anche lì, la chiave stessa, che in pagina si nota subito.
+  // The text of `key` in `locale`; if missing, the fallback language's; if missing
+  // there too, the key itself, which is immediately visible on the page.
   translate(locale, key, vars) {
     const text = this.#text(locale, key);
     if (text === undefined) {
       if (!this.missing.has(key)) {
         this.missing.add(key);
-        console.warn(`[i18n] chiave mancante anche in ${this.fallbackLocale}: ${key}`);
+        console.warn(`[i18n] key missing from ${this.fallbackLocale} as well: ${key}`);
       }
       return key;
     }
     return interpolate(text, vars);
   }
 
-  // Come `translate`, per i testi del catalogo che contengono HTML: il testo si
-  // stampa così com'è, i valori si ripuliscono.
+  // Like `translate`, for catalogue texts that contain HTML: the text is printed
+  // as it is, the values are cleaned.
   translateHtml(locale, key, vars) {
     const text = this.#text(locale, key);
     if (text === undefined) return this.translate(locale, key);
     return new nunjucks.runtime.SafeString(interpolate(text, vars, escapeHtml));
   }
 
-  // 40000 → "400 €" in italiano, "€400" in inglese: i decimali solo se ci sono centesimi.
+  // 40000 → "400 €" in Italian, "€400" in English: decimals only if there are cents.
   euro(locale, cents) {
     const decimals = cents % 100 === 0 ? 0 : 2;
     return new Intl.NumberFormat(locale, {
@@ -184,8 +185,8 @@ export class I18n {
     }).format(cents / 100);
   }
 
-  // Il nome di ogni lingua nella lingua stessa (`common.locale.name`): chi non
-  // legge la lingua corrente deve comunque riconoscere la propria.
+  // The name of each language in that language (`common.locale.name`): somebody
+  // who cannot read the current language must still recognise their own.
   choices(current) {
     return this.locales.map((code) => ({
       code,
@@ -194,11 +195,11 @@ export class I18n {
     }));
   }
 
-  // Tutto quello che serve ai template: la lingua, `t`, `t_html`, `has`, `euro`
-  // e il selettore.
-  // `returnTo` è dove torna il browser dopo il cambio di lingua: di solito la
-  // pagina stessa; chi rende una pagina in risposta a un POST ne indica una che
-  // si possa riaprire con un GET.
+  // Everything the templates need: the language, `t`, `t_html`, `has`, `euro` and
+  // the switcher.
+  // `returnTo` is where the browser goes after a language change: usually the page
+  // itself; whoever renders a page in answer to a POST names one that can be
+  // reopened with a GET.
   pageContext(request, url, { returnTo } = {}) {
     const locale = this.localeOf(request);
     return {
@@ -219,19 +220,19 @@ export class I18n {
     return `${this.cookieName}=${locale}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${this.cookieMaxAgeSeconds}`;
   }
 
-  // `POST /locale` con `locale` e `return_to` in un form. Non risponde: dice a chi
-  // chiama che cosa rispondere, così ogni server usa le sue risposte.
-  //   → { ok: true, locale, cookie, location }   303 verso location, con il cookie
-  //   → { ok: false, status, code }               errore del contratto API
+  // `POST /locale` with `locale` and `return_to` in a form. It does not answer: it
+  // tells the caller what to answer, so every server uses its own responses.
+  //   → { ok: true, locale, cookie, location }   303 to location, with the cookie
+  //   → { ok: false, status, code }              an API-contract error
   async readChange(request) {
-    const pezzi = [];
-    let ricevuti = 0;
-    for await (const pezzo of request) {
-      ricevuti += pezzo.length;
-      if (ricevuti > this.bodyMaxBytes) return { ok: false, status: 413, code: BODY_TOO_LARGE };
-      pezzi.push(pezzo);
+    const chunks = [];
+    let received = 0;
+    for await (const chunk of request) {
+      received += chunk.length;
+      if (received > this.bodyMaxBytes) return { ok: false, status: 413, code: BODY_TOO_LARGE };
+      chunks.push(chunk);
     }
-    const form = new URLSearchParams(Buffer.concat(pezzi).toString("utf8"));
+    const form = new URLSearchParams(Buffer.concat(chunks).toString("utf8"));
     const locale = form.get("locale");
     if (!locale || !this.locales.includes(locale)) return { ok: false, status: 400, code: INVALID_LOCALE };
     const returnTo = form.get("return_to") ?? "";
@@ -244,13 +245,14 @@ export class I18n {
   }
 }
 
-// Legge la sezione `i18n` della configurazione e i cataloghi delle lingue
-// offerte. Lancia ConfigurationError: senza lingue il sottosistema non parte.
+// Reads the `i18n` section of the configuration and the catalogues of the
+// languages offered. Throws ConfigurationError: without languages the subsystem
+// does not start.
 export function loadI18n(configuration) {
   const locales = configuration.stringList("i18n.locales");
   const fallbackLocale = configuration.string("i18n.fallback_locale");
   if (!locales.includes(fallbackLocale)) {
-    throw new ConfigurationError(`i18n: fallback_locale ${fallbackLocale} non è tra le lingue offerte (${locales.join(", ")})`);
+    throw new ConfigurationError(`i18n: fallback_locale ${fallbackLocale} is not among the languages offered (${locales.join(", ")})`);
   }
   const catalogs = Object.fromEntries(locales.map((locale) => [locale, readCatalog(locale)]));
   return new I18n({

@@ -1,22 +1,22 @@
-// Server HTTP del sso: le rotte per i programmi, le pagine per le persone.
+// The sso's HTTP server: the routes for programs, the pages for people.
 //
-// Per i programmi (JSON, chiamate da server a server):
+// For programs (JSON, server-to-server calls):
 //   POST /login              { username, password }         → 201 { logged, session }
 //   GET  /session            Authorization: Bearer <token>  → 200 { logged, session? }
 //   POST /logout             Authorization: Bearer <token>  → 200 { logged: false }
 //   POST /tickets/exchange   { ticket, service }            → 200 { logged, session? }
 //   POST /session/locale     Authorization: Bearer <token>, { locale } → 200 { logged, session? }
 //
-// Per le persone (HTML, aperte dal browser):
-//   GET  /ui/login?next=…    la pagina con username e password
-//   POST /ui/login           il form di sopra
-//   GET  /ui/logout?next=…   chiude la sessione e torna indietro
-//   GET  /ui/register?next=… la registrazione, che non è ancora attiva
-//   POST /locale             cambia la lingua (cookie comune) e torna alla pagina
+// For people (HTML, opened by the browser):
+//   GET  /ui/login?next=…    the page with username and password
+//   POST /ui/login           the form above
+//   GET  /ui/logout?next=…   closes the session and goes back
+//   GET  /ui/register?next=… registration, which is not active yet
+//   POST /locale             changes the language (shared cookie) and returns to the page
 //
-// Gli errori delle rotte JSON seguono il contratto del progetto: stato HTTP
-// corretto e codice stabile, { "error": "<CODICE>" }. Le pagine invece parlano
-// alle persone, quindi rispondono con HTML anche quando qualcosa va storto.
+// The JSON routes' errors follow the project's contract: correct HTTP status and a
+// stable code, { "error": "<CODE>" }. The pages, on the other hand, speak to
+// people, so they answer with HTML even when something goes wrong.
 
 import { createReadStream } from "node:fs";
 import { stat } from "node:fs/promises";
@@ -53,7 +53,7 @@ function sendJson(response, status, payload, headers = {}) {
   response.writeHead(status, {
     "content-type": "application/json; charset=utf-8",
     "content-length": Buffer.byteLength(body),
-    // Le risposte del sso non si conservano da nessuna parte.
+    // The sso's responses are not cached anywhere.
     "cache-control": "no-store",
     ...headers,
   });
@@ -81,14 +81,14 @@ function redirect(response, location, headers = {}) {
 
 /* -------------------------------------------------------------- cookie */
 
-// Il cookie del sso dice che *questo browser* è già entrato. Serve perché il
-// secondo sottosistema non richieda la password: è la parte "single" del
-// single sign-on.
+// The sso's cookie says that *this browser* has already logged in. It is what
+// keeps the second subsystem from asking for the password: it is the "single" part
+// of single sign-on.
 //
-// HttpOnly: il JavaScript di una pagina non può leggerlo.
-// SameSite=Lax: non viene allegato alle richieste che partono da un altro sito,
-// tranne la normale navigazione con un link.
-// Niente Secure perché su localhost non c'è HTTPS: fuori di qui va aggiunto.
+// HttpOnly: a page's JavaScript cannot read it.
+// SameSite=Lax: it is not attached to requests starting from another site, except
+// ordinary navigation through a link.
+// No Secure because there is no HTTPS on localhost: outside here it must be added.
 function setCookie(name, value, maxAgeSeconds) {
   return `${name}=${value}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${Math.max(0, maxAgeSeconds)}`;
 }
@@ -112,9 +112,9 @@ function readCookie(request, name) {
 
 /* ------------------------------------------------------------- richiesta */
 
-// Legge il corpo della richiesta. Restituisce { ok, raw } e non lancia.
-// Un corpo di login sano sta in poche centinaia di byte: oltre `maxBytes`
-// (limits.body_max_bytes della configurazione) si chiude.
+// Reads the request body. It returns { ok, raw } and does not throw. A sane login
+// body fits in a few hundred bytes: past `maxBytes` (limits.body_max_bytes of the
+// configuration) the connection is closed.
 async function readBody(request, maxBytes) {
   const chunks = [];
   let size = 0;
@@ -139,15 +139,15 @@ async function readJsonBody(request, maxBytes) {
   }
 }
 
-// Il form HTML manda i campi come `a=1&b=2`, non come JSON.
+// The HTML form sends the fields as `a=1&b=2`, not as JSON.
 async function readFormBody(request, maxBytes) {
   const body = await readBody(request, maxBytes);
   if (!body.ok) return { ok: false };
   return { ok: true, data: Object.fromEntries(new URLSearchParams(body.raw)) };
 }
 
-// Il token sta nell'header `Authorization: Bearer <token>`, non nell'URL: un URL
-// finisce nei log dei proxy e nella cronologia, un header no.
+// The token is in the `Authorization: Bearer <token>` header, not in the URL: a
+// URL ends up in proxy logs and in the history, a header does not.
 function bearerToken(request) {
   const header = request.headers.authorization ?? "";
   const match = /^Bearer (\S+)$/.exec(header.trim());
@@ -159,7 +159,7 @@ function reply(response, result) {
   return sendError(response, result.status, result.code);
 }
 
-/* --------------------------------------------------- rotte per i programmi */
+/* ------------------------------------------------- routes for programs */
 
 async function handleLogin(request, response, settings, client) {
   const body = await readJsonBody(request, settings.bodyMaxBytes);
@@ -175,8 +175,8 @@ async function handleLogin(request, response, settings, client) {
 
 async function handleSession(request, response, settings, client) {
   const token = bearerToken(request);
-  // Senza token non c'è una domanda a cui rispondere: è la chiamata a essere
-  // fatta male, non la sessione a essere assente.
+  // With no token there is no question to answer: it is the call that is badly
+  // made, not the session that is missing.
   if (!token) return sendError(response, 400, MISSING_TOKEN);
   return reply(response, await readSession(settings, token, client));
 }
@@ -199,8 +199,8 @@ async function handleExchange(request, response, settings, client) {
   return reply(response, await exchangeTicket(settings, { ticket, service }, client));
 }
 
-// Il selettore della lingua di un altro sottosistema, per chi è entrato: la
-// lingua va nella sessione e nel profilo. Solo le lingue offerte.
+// Another subsystem's language switcher, for whoever has logged in: the language
+// goes into the session and into the profile. Only the languages offered.
 async function handleSessionLocale(request, response, settings, client) {
   const token = bearerToken(request);
   if (!token) return sendError(response, 400, MISSING_TOKEN);
@@ -213,11 +213,11 @@ async function handleSessionLocale(request, response, settings, client) {
   return reply(response, await setLocale(settings, token, locale, client));
 }
 
-/* ----------------------------------------------------- pagine per le persone */
+/* --------------------------------------------------- pages for people */
 
-// Sessione aperta più indirizzo di ritorno: emette il biglietto e rimanda
-// indietro il browser. È il punto in cui la sessione passa da questo indirizzo
-// a quello del sottosistema.
+// An open session plus a return address: it issues the ticket and sends the
+// browser back. It is the point at which the session passes from this address to
+// the subsystem's.
 async function returnWithTicket(response, settings, client, ui, token, next, cookieHeader) {
   const service = serviceOf(next);
   const issued = await issueTicket(settings, token, service, client);
@@ -233,12 +233,12 @@ async function showLoginPage(request, response, settings, client, url) {
   const next = safeNext(settings, url.searchParams.get("next"));
   const ui = settings.i18n.pageContext(request, url, { returnTo: `/ui/login?next=${encodeURIComponent(next)}` });
 
-  // Già entrato da un altro sottosistema: non si richiede la password, si emette
-  // il biglietto e si torna indietro. Questa è la parte "single" del sign-on.
+  // Already logged in from another subsystem: the password is not asked for again,
+  // the ticket is issued and we go back. This is the "single" part of the sign-on.
   const token = readCookie(request, settings.cookieName);
   if (token) {
-    const stato = await readSession(settings, token, client);
-    if (stato.ok && stato.body.logged) {
+    const state = await readSession(settings, token, client);
+    if (state.ok && state.body.logged) {
       return returnWithTicket(response, settings, client, ui, token, next, null);
     }
   }
@@ -252,8 +252,9 @@ async function handleLoginForm(request, response, settings, client, url) {
   const next = safeNext(settings, campi.next ?? url.searchParams.get("next"));
   const username = typeof campi.username === "string" ? campi.username : "";
   const password = typeof campi.password === "string" ? campi.password : "";
-  // Il cambio di lingua riapre la pagina con un GET: il `next` va nell'indirizzo,
-  // perché qui arrivava nel corpo del form. Sempre quello già verificato.
+  // Changing language reopens the page with a GET: the `next` goes into the
+  // address, because here it arrived in the form's body. Always the one already
+  // checked.
   const ui = settings.i18n.pageContext(request, url, {
     returnTo: `/ui/login?next=${encodeURIComponent(next)}`,
   });
@@ -262,17 +263,17 @@ async function handleLoginForm(request, response, settings, client, url) {
     return sendHtml(response, 400, renderLoginPage(ui, { next, username, error: "invalid_credentials" }));
   }
 
-  // La lingua della pagina di login: se il profilo non ne ha una, diventa la sua.
+  // The login page's language: if the profile has none, it becomes theirs.
   const locale = settings.i18n.localeOf(request);
   const entrato = await login(settings, { username, password, locale }, client);
   if (!entrato.ok) {
     const error = entrato.status === 401 ? "invalid_credentials" : "unavailable";
-    // Lo username resta scritto, la password no: si ridigita.
+    // The username stays written, the password does not: it is typed again.
     return sendHtml(response, entrato.status, renderLoginPage(ui, { next, username, error }));
   }
 
-  // Due cookie: la sessione del sso e la lingua della sessione, che può essere
-  // quella del profilo e quindi diversa da quella con cui si è arrivati.
+  // Two cookies: the sso session and the session's language, which may be the
+  // profile's and therefore different from the one we arrived with.
   const session = entrato.body.session;
   const cookies = [setCookie(settings.cookieName, session.token, settings.sessionTtlSeconds)];
   if (session.data?.locale) cookies.push(settings.i18n.cookie(session.data.locale));
@@ -284,13 +285,13 @@ async function handleLogoutPage(request, response, settings, client, url) {
   const token = readCookie(request, settings.cookieName);
 
   if (token) {
-    // Chiude la sessione condivisa: da qui in avanti nessun sottosistema
-    // riconosce più quel token. "Esci" deve far uscire davvero.
+    // It closes the shared session: from here on no subsystem recognises that
+    // token any more. "Esci" must really log you out.
     const uscito = await logout(settings, token, client);
     if (!uscito.ok) {
-      // Archivio giù: il cookie lo togliamo lo stesso, ma la sessione resta viva
-      // fino alla scadenza. Va guardato, non nascosto.
-      console.error("[sso] logout senza archivio: la sessione resta aperta fino alla scadenza");
+      // Store down: we remove the cookie anyway, but the session stays alive until
+      // it expires. It is to be looked at, not hidden.
+      console.error("[sso] logout with no store: the session stays open until it expires");
     }
   }
 
@@ -303,18 +304,18 @@ function showRegisterPage(request, response, settings, client, url) {
   return sendHtml(response, 200, renderRegisterPage(ui, { next }));
 }
 
-// Il selettore della lingua, in testata su ogni pagina. Scrive il cookie comune
-// e torna alla pagina da cui è partito: gli altri sottosistemi leggono lo stesso
-// cookie, quindi cambiano lingua anche loro alla prossima pagina.
+// The language switcher, in the header of every page. It writes the shared cookie
+// and returns to the page it started from: the other subsystems read the same
+// cookie, so they change language too on the next page.
 async function handleLocale(request, response, settings, client) {
   const change = await settings.i18n.readChange(request);
   if (!change.ok) return sendError(response, change.status, change.code);
-  // Chi è entrato se la ritrova al prossimo login. Se l'archivio non risponde
-  // la lingua cambia lo stesso: il cookie basta per le pagine.
+  // Whoever has logged in finds it again at the next login. If the store does not
+  // answer the language changes anyway: the cookie is enough for the pages.
   const token = readCookie(request, settings.cookieName);
   if (token) {
-    const salvata = await setLocale(settings, token, change.locale, client);
-    if (!salvata.ok) console.error("[sso] lingua non salvata nella sessione e nel profilo");
+    const saved = await setLocale(settings, token, change.locale, client);
+    if (!saved.ok) console.error("[sso] language not saved in the session and in the profile");
   }
   return redirect(response, change.location, { "set-cookie": change.cookie });
 }
@@ -322,11 +323,11 @@ async function handleLocale(request, response, settings, client) {
 /* --------------------------------------------------------------- statici */
 
 async function serveStatic(pathname, response) {
-  // Solo file dentro public/: path.normalize toglie i "..".
+  // Only files inside public/: path.normalize strips the "..".
   const relative = path.normalize(pathname).replace(/^(\.\.[/\\])+/, "").replace(/^[/\\]+/, "");
   const file = path.join(PUBLIC_DIR, relative);
-  // Tentativo di uscire da public/ con dei "..": per chi chiama è come se il
-  // file non esistesse.
+  // An attempt to escape public/ with "..": to the caller it is as if the file did
+  // not exist.
   if (!file.startsWith(PUBLIC_DIR)) return sendError(response, 404, ROUTE_NOT_FOUND);
 
   let info;
@@ -344,7 +345,7 @@ async function serveStatic(pathname, response) {
   createReadStream(file).pipe(response);
 }
 
-/* ----------------------------------------------------------------- rotte */
+/* ---------------------------------------------------------------- routes */
 
 const ROUTES = {
   "/login": { POST: handleLogin },
@@ -358,18 +359,18 @@ const ROUTES = {
   "/locale": { POST: handleLocale },
 };
 
-// `client` si passa solo nei test, per non dipendere da anagraphics acceso.
+// `client` is passed only in the tests, so as not to depend on anagraphics running.
 export function createServer(settings, client) {
   return http.createServer(async (request, response) => {
     const url = new URL(request.url, `http://${request.headers.host ?? "localhost"}`);
 
-    // Il pool di IP sta prima di tutto: chi non è nel pool non impara nemmeno
-    // quali rotte esistono. Conta solo l'IP della connessione.
-    // In ascolto su IPv6 lo stesso indirizzo arriva come "::ffff:127.0.0.1":
-    // è lo stesso IP scritto in un altro modo, non un altro chiamante.
+    // The IP pool comes before everything: somebody not in the pool does not even
+    // learn which routes exist. Only the connection's IP counts.
+    // Listening on IPv6 the same address arrives as "::ffff:127.0.0.1": it is the
+    // same IP written another way, not another caller.
     const remote = (request.socket.remoteAddress ?? "").replace(/^::ffff:/, "");
     if (!settings.allowedIps.includes(remote)) {
-      console.warn(`[sso] richiesta da IP fuori dal pool: ${remote}`);
+      console.warn(`[sso] request from an IP outside the pool: ${remote}`);
       return sendError(response, 403, IP_NOT_ALLOWED);
     }
 
@@ -381,11 +382,11 @@ export function createServer(settings, client) {
         return await handler(request, response, settings, client, url);
       }
 
-      // Non è una rotta: può essere uno dei file statici delle pagine.
+      // Not a route: it may be one of the pages' static files.
       if (request.method !== "GET") return sendError(response, 405, METHOD_NOT_ALLOWED);
       return await serveStatic(url.pathname, response);
     } catch (error) {
-      console.error(`[sso] errore su ${request.method} ${url.pathname}: ${error.stack ?? error}`);
+      console.error(`[sso] error on ${request.method} ${url.pathname}: ${error.stack ?? error}`);
       if (!response.headersSent) sendError(response, 500, INTERNAL_ERROR);
     }
   });

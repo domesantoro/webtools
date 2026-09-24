@@ -41,7 +41,8 @@
       "eyebrow": "Primo passo",
       "heading": "Raccontaci che cosa ti serve.",
       "lead": "Da qui comincia la pre-analisi: ci racconti il tuo problema e noi capiamo se è una cosa che possiamo risolvere, e come. Non serve sapere nulla di informatica: rispondi con parole tue, e quello che non sai lascialo in bianco.",
-      "submit": "Manda la richiesta"
+      "submit": "Manda la richiesta",
+      "autonomous_appeared": "Sei registrato come driver: prima di mandare, scegli qui accanto se questo è un lavoro autonomo."
     },
     "dialogs": {
       "title": "Serve un account",
@@ -151,7 +152,58 @@
       "text": "Da quello che hai scritto non si capisce ancora che cosa deve fare lo strumento. Aggiungi qualche dettaglio nelle risposte qui sotto e manda di nuovo la richiesta: quello che avevi scritto è rimasto."
     },
     "analysis": {
-      "title": "Analisi"
+      "title": "Analisi",
+      "eyebrow": "Secondo passo",
+      "heading": "Mettiamo a fuoco la richiesta.",
+      "lead": "Una domanda alla volta, per completare quello che la richiesta non dice ancora. Rispondi con parole tue; quello che non sai, dillo.",
+      "opening": "Ho letto la tua richiesta. Ti faccio qualche domanda per completarla, una alla volta.",
+      "you": "Tu",
+      "system": "webtools",
+      "label": "Il tuo messaggio",
+      "placeholder": "Scrivi la risposta",
+      "hint": "Invio manda il messaggio, Maiusc+Invio va a capo.",
+      "send": "Manda",
+      "waiting": "Sto scrivendo",
+      "summary": {
+        "title": "Il progetto",
+        "empty": "Nessuna condizione particolare: il driver lo assegniamo noi.",
+        "driver": "Driver",
+        "ambassador": "Invitato da",
+        "discount": "Sconto",
+        "discount_value": "{percentage}%",
+        "autonomous": "Lavoro autonomo",
+        "autonomous_value": "Attivo",
+        "download": "Scarica la conversazione",
+        "go": "Va bene così, procediamo!"
+      },
+      "turns": {
+        "label": "Turni usati",
+        "value": "<span data-chat-used>{used}</span> di <span data-chat-total>{max}</span>",
+        "warning": "Turni ancora disponibili: <span data-chat-left>{left}</span> su <span data-chat-warn-total>{max}</span>. Esauriti i turni non sarà più possibile scrivere in questa pagina: le informazioni mancanti vanno indicate ora. In seguito sarà possibile acquistare turni aggiuntivi oppure proseguire con quanto già raccolto."
+      },
+      "exhausted": {
+        "title": "Turni esauriti",
+        "lead": "I {max} turni di domande e risposte compresi nella pre-analisi sono esauriti. Per proseguire la conversazione è possibile acquistare turni aggiuntivi.",
+        "buy": "Acquista turni aggiuntivi",
+        "optional": "L'acquisto non è necessario: la richiesta può proseguire con le informazioni già raccolte. Il pulsante «Va bene così, procediamo!» è ora attivo.",
+        "download_hint": "Il download della conversazione produce un file con tutte le informazioni raccolte sin qui. Il file può essere sottoposto a un assistente AI esterno — per esempio ChatGPT o Claude — per completare la descrizione senza consumare turni, e caricato in seguito dalla pagina della pre-analisi, nel riquadro «Analisi già pronta».",
+        "credit_label": "Turni da aggiungere",
+        "credit_available": "Credito disponibile: <span data-chat-credit-value>{credit}</span>.",
+        "credit_none": "Non hai turni in credito.",
+        "use_credit": "Aggiungi al progetto"
+      },
+      "mock": {
+        "notice": "Pagina di prova: le risposte sono finte, prese a caso da un elenco fisso. Dietro non c'è nessuna analisi.",
+        "replies": {
+          "1": "Chi userà lo strumento oltre a te? Serve sapere se tutti vedono le stesse cose o se ognuno deve vedere solo la sua parte.",
+          "2": "Quando registri una voce, quali informazioni scrivi ogni volta? Elencale come ti vengono, anche in disordine.",
+          "3": "Queste informazioni le tieni già da qualche parte — un foglio, un quaderno, un altro programma? Se sì, dimmi che forma hanno: cambia se si parte da zero o da dati che esistono già.",
+          "4": "Hai detto che vuoi cercare: cerchi per nome, per data, per categoria? E ti serve trovare la singola voce o l'elenco di quelle che le somigliano?",
+          "5": "Che cosa succede a una voce quando è chiusa? Sparisce dall'elenco, resta con un segno, o finisce in uno storico che si guarda a parte?",
+          "6": "C'è qualcosa che lo strumento non deve fare? Ogni cosa che escludi ora è un giro di domande in meno."
+        }
+      },
+      "error": "Non è stato possibile completare l'operazione. Riprova."
     },
     "login_done": {
       "title": "Accesso",
@@ -286,8 +338,18 @@
       }
     },
     "rejection": {
-      "title": "Non possiamo proseguire con questa richiesta",
-      "lead": "Da quello che hai descritto, webtools probabilmente non è lo strumento adatto a questo bisogno.",
+      "out_of_scope": {
+        "title": "Non possiamo proseguire con questa richiesta",
+        "lead": "Da quello che hai descritto, webtools probabilmente non è lo strumento adatto a questo bisogno."
+      },
+      "not_software": {
+        "title": "Non è una richiesta di software",
+        "lead": "webtools analizza e costruisce soltanto software di piccole dimensioni: strumenti che si usano da un browser. Non produce altro — per esempio una moodboard grafica, dei testi o delle traduzioni, un parere professionale."
+      },
+      "not_recognised": {
+        "title": "Non abbiamo riconosciuto la richiesta",
+        "lead": "Siamo spiacenti, ma il tool di analisi non riesce a decifrare la tua richiesta."
+      },
       "pdf_hint": "Quello che hai scritto nel form puoi conservarlo:",
       "pdf_link": "scaricalo in PDF",
       "ok": "Ok",

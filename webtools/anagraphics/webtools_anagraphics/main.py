@@ -1,9 +1,10 @@
-"""API interna: configurazioni dei sottosistemi, progetti, driver e loro codici
-sconto, utenti e sessioni.
+"""The internal API: subsystem configurations, projects, drivers and their
+discount codes, users and sessions.
 
-Si scrivono le sessioni, i biglietti, i progetti e la lingua di utenti e sessioni. Qui si conservano e si restituiscono:
-il token, la scadenza e la decisione su chi è autenticato appartengono al sso.
-Anagraphics non verifica password e non giudica se una sessione è ancora valida.
+Sessions, tickets, projects and the language of users and sessions are written
+here. They are stored and returned here: the token, the expiry and the decision
+about who is authenticated belong to the sso. Anagraphics does not verify
+passwords and does not judge whether a session is still valid.
 """
 
 from datetime import datetime, timezone
@@ -26,9 +27,9 @@ errors.install_error_handlers(app)
 
 @app.middleware("http")
 async def allow_only_known_ips(request: Request, call_next):
-    # Si usa solo l'IP della connessione. Va avviato con `python -m webtools_anagraphics`
-    # (proxy_headers=False), altrimenti uvicorn riscrive client.host
-    # a partire da X-Forwarded-For per le richieste da localhost.
+    # Only the connection's IP is used. It must be started with
+    # `python -m webtools_anagraphics` (proxy_headers=False), otherwise uvicorn
+    # rewrites client.host from X-Forwarded-For for requests from localhost.
     host = request.client.host if request.client else None
     if host not in settings.allowed_ips:
         return errors.error_response(403, errors.IP_NOT_ALLOWED)
@@ -52,11 +53,11 @@ def get_project(project_id: str) -> dict:
 
 
 class Review(BaseModel):
-    """Chi supervisiona il progetto.
+    """Who supervises the project.
 
-    `preset` distingue il driver preimpostato (arrivato col link di un driver, o
-    il driver stesso in un lavoro autonomo) da quello assegnato dal sistema.
-    Alla creazione un driver c'è solo se è preimpostato.
+    `preset` tells the preset driver (the one who arrived with a driver's link, or
+    the driver themselves in autonomous work) from the one assigned by the system.
+    At creation there is a driver only if it is preset.
     """
 
     driver_uid: str | None = None
@@ -64,36 +65,36 @@ class Review(BaseModel):
 
 
 class Billing(BaseModel):
-    """I dati economici del progetto, così come li ha visti il form.
+    """The project's economic data, as the form saw it.
 
-    Si conservano soltanto: il calcolo del prezzo non si fa qui.
+    They are only stored: the price is not worked out here.
     """
 
-    # Il codice sconto del link di un driver, se c'era.
+    # The discount code of a driver's link, if there was one.
     discount_code: str | None = None
-    # Lavoro autonomo: il driver porta il progetto per sé.
+    # Autonomous work: the driver brings the project for themselves.
     autonomous_work: bool = False
-    # Il driver che ha invitato l'utente a lavorare con noi, se c'era.
+    # The driver who invited the user to work with us, if there was one.
     ambassador_uid: str | None = None
 
 
 class ProjectToCreate(BaseModel):
     owner_uid: str = Field(min_length=1)
-    # L'id dell'invio del form: se arriva due volte, il progetto resta uno.
+    # The form submission id: if it arrives twice, there is still one project.
     submission_id: str = Field(min_length=16)
     review: Review = Field(default_factory=Review)
     billing: Billing = Field(default_factory=Billing)
 
 
-# Gli stati della pipeline e i suoi passi. Sono un contratto: chi li scrive e chi
-# li legge devono chiamarli allo stesso modo, e un nome inventato non deve poter
-# entrare nel database. Il percorso è quello del flusso principale (vedi
-# `contesto/02. contesto_aggiornato.md`); REJECTED è il capolinea di ogni cancello.
+# The pipeline states and its steps. They are a contract: whoever writes them and
+# whoever reads them must call them the same way, and an invented name must not be
+# able to get into the database. The path is that of the main flow (see
+# `contesto/02. contesto_aggiornato.md`); REJECTED is the terminus of every gate.
 PipelineState = Literal[
     "PREANALYSIS",
     "PREVALIDATION",
-    # La richiesta è tornata all'utente: non si riesce a giudicarla, servono più
-    # dettagli. Non è un rifiuto, e da qui si riparte riscrivendo.
+    # The request has gone back to the user: it cannot be judged, more detail is
+    # needed. It is not a refusal, and from here one starts again by rewriting.
     "UNDERSPECIFIED",
     "ANALYSIS",
     "DRIVER_VALIDATION",
@@ -118,36 +119,42 @@ PipelineStepName = Literal[
 
 
 class PipelineStep(BaseModel):
-    """Un passo compiuto sulla pipeline del progetto.
+    """A step taken on the project's pipeline.
 
-    `result` dice com'è andato il passo, `state` dove porta la pipeline: sono due
-    cose diverse, perché lo stesso esito può portare in posti diversi a seconda
-    del cancello. `data` è quello che il passo ha prodotto, e la sua forma la
-    decide chi lo compie: qui si conserva, non si interpreta.
+    `result` says how the step went, `state` where it takes the pipeline: two
+    different things, because the same outcome can lead to different places
+    depending on the gate. `data` is what the step produced, and its shape is
+    decided by whoever takes the step: here it is stored, not interpreted.
 
-    `underspecified` è un passo compiuto che rimanda indietro senza chiudere
-    niente: sta fra `passed` e `rejected`, e si conta — chi decide quante volte
-    si può tornare indietro guarda quanti ce ne sono già.
+    `underspecified` is a step taken that sends the request back without closing
+    anything: it sits between `passed` and `rejected`, and it is counted — whoever
+    decides how many times one may go back looks at how many there already are.
+
+    `open` is the only one that has **not** decided anything: the step has begun
+    and lasts. It is the case of the analysis chat, which opens when the project
+    reaches `ANALYSIS` and grows with every turn. While it is open its `data` can
+    be updated (`PATCH .../steps/{step}`); when it closes it takes one of the other
+    results and from then on is never touched again, like every other step.
     """
 
     step: PipelineStepName
-    result: Literal["passed", "rejected", "underspecified", "failed"]
+    result: Literal["open", "passed", "rejected", "underspecified", "failed"]
     state: PipelineState
     data: dict = Field(default_factory=dict)
 
 
 @app.post("/projects", status_code=201)
 def create_project(project: ProjectToCreate, response: Response) -> dict:
-    # L'id del progetto nasce qui, dove il progetto si conserva: chi chiama non
-    # può sceglierlo, quindi non può nemmeno scontrarsi con uno che esiste.
+    # The project id is born here, where the project is stored: the caller cannot
+    # choose it, so it cannot collide with one that already exists.
     document = {
         "project_id": str(uuid4()),
         "owner_uid": project.owner_uid,
         "submission_id": project.submission_id,
         "created_at": datetime.now(timezone.utc),
-        # Dove sta il progetto lungo il flusso, e che cosa gli è successo finora.
-        # `steps` è una lista in ordine, non una mappa: un passo può ripetersi, e
-        # la lista è il registro delle decisioni prese sul progetto.
+        # Where the project is along the flow, and what has happened to it so far.
+        # `steps` is an ordered list, not a map: a step can repeat, and the list is
+        # the register of the decisions taken on the project.
         "pipeline": {"state": "PREANALYSIS", "steps": []},
         "review": project.review.model_dump(),
         "billing": project.billing.model_dump(),
@@ -155,11 +162,11 @@ def create_project(project: ProjectToCreate, response: Response) -> dict:
     try:
         db.insert_project(database, document)
     except DuplicateKeyError:
-        # Lo stesso invio, di nuovo: si restituisce il progetto già nato.
-        # 200 e non 201, perché questa volta non si è creato niente.
+        # The same submission again: the project already born is returned.
+        # 200 and not 201, because this time nothing was created.
         existing = db.find_project_by_submission(database, project.submission_id)
         if existing is None or existing.get("owner_uid") != project.owner_uid:
-            # Un submission_id già usato da un altro: non si rivela il suo progetto.
+            # A submission_id already used by somebody else: their project is not revealed.
             raise errors.ApiError(409, errors.SUBMISSION_EXISTS)
         response.status_code = 200
         return existing
@@ -168,10 +175,10 @@ def create_project(project: ProjectToCreate, response: Response) -> dict:
 
 @app.post("/projects/{project_id}/pipeline/steps", status_code=201)
 def add_pipeline_step(project_id: str, step: PipelineStep) -> dict:
-    """Accoda un passo alla pipeline e porta il progetto nello stato che il passo dice.
+    """Appends a step to the pipeline and moves the project to the state the step says.
 
-    `decided_at` lo mette qui, dove il passo si conserva: chi chiama non sceglie
-    quando è successo. Restituisce il progetto aggiornato.
+    `decided_at` is set here, where the step is stored: the caller does not choose
+    when it happened. Returns the updated project.
     """
     document = db.append_pipeline_step(
         database,
@@ -184,10 +191,89 @@ def add_pipeline_step(project_id: str, step: PipelineStep) -> dict:
     return document
 
 
+class StepDataToUpdate(BaseModel):
+    """The fields of `data` to update on an open step.
+
+    `set` rewrites a field, `push` appends to a list. They can be used together:
+    the chat appends two messages and rewrites the remaining turns at the same
+    moment, and they are the same thing seen from two sides.
+    """
+
+    set: dict = Field(default_factory=dict)
+    push: dict[str, list] = Field(default_factory=dict)
+
+
+@app.patch("/projects/{project_id}/pipeline/steps/{step_name}")
+def update_pipeline_step(project_id: str, step_name: PipelineStepName, body: StepDataToUpdate) -> dict:
+    """Updates the data of the **last open step** with that name.
+
+    `open` only: a step that has decided something is not rewritten, because the
+    list of steps is the register of those decisions. If there is no open step with
+    that name the answer is `404`, and nothing is created: the step is opened by
+    whoever runs that phase, not by whoever writes inside it.
+    """
+    document = None
+    if body.set:
+        document = db.update_open_step(database, project_id, step_name, body.set)
+        if document is None:
+            raise errors.ApiError(404, errors.OPEN_STEP_NOT_FOUND, project_id=project_id, step=step_name)
+    for field, values in body.push.items():
+        document = db.push_to_open_step(database, project_id, step_name, field, values)
+        if document is None:
+            raise errors.ApiError(404, errors.OPEN_STEP_NOT_FOUND, project_id=project_id, step=step_name)
+    if document is None:
+        # Neither `set` nor `push`: there is nothing to do, but the project must be
+        # returned as it is, or the caller would not know what they are holding.
+        document = db.find_project(database, project_id)
+        if document is None:
+            raise errors.ApiError(404, errors.PROJECT_NOT_FOUND, project_id=project_id)
+    return document
+
+
+class TurnsToMove(BaseModel):
+    """How many turns are moved. Always positive: the direction is said by the
+    route, not by the sign, or a `0` or a `-3` would become a way of saying
+    something else."""
+
+    turns: int = Field(gt=0)
+
+
+@app.post("/users/{uid}/billing/turns/spend")
+def spend_turns(uid: str, body: TurnsToMove) -> dict:
+    """Draws turns from the user's credit.
+
+    The check that the credit is enough lives **inside** the write, not in an
+    earlier read: two requests at once cannot spend the same credit twice. If it is
+    not enough, `409`, and nothing was drawn.
+    """
+    document = db.spend_user_turns(database, uid, body.turns)
+    if document is None:
+        # Not enough credit, or no such user: for the caller the fact is the same —
+        # they did not get the turns — but the two cases are told apart, because one
+        # is an answer to the user and the other is a failure.
+        if db.find_user_by_uid(database, uid) is None:
+            raise errors.ApiError(404, errors.USER_NOT_FOUND, uid=uid)
+        raise errors.ApiError(409, errors.NOT_ENOUGH_TURNS, uid=uid)
+    return document
+
+
+@app.post("/users/{uid}/billing/turns/grant")
+def grant_turns(uid: str, body: TurnsToMove) -> dict:
+    """Adds turns to the user's credit.
+
+    This is where the payment will arrive: today only the preanalyst's fake
+    purchase arrives here, granting turns without anybody paying anything.
+    """
+    document = db.grant_user_turns(database, uid, body.turns)
+    if document is None:
+        raise errors.ApiError(404, errors.USER_NOT_FOUND, uid=uid)
+    return document
+
+
 @app.delete("/projects/{project_id}", status_code=204)
 def remove_project(project_id: str) -> Response:
-    # Serve a chi ha creato un progetto e non è riuscito a completarlo (la
-    # pre-specifica non si è potuta scrivere): meglio nessun progetto che uno vuoto.
+    # For whoever created a project and could not complete it (the
+    # pre-specification could not be written): better no project than an empty one.
     if not db.delete_project(database, project_id):
         raise errors.ApiError(404, errors.PROJECT_NOT_FOUND, project_id=project_id)
     return Response(status_code=204)
@@ -208,8 +294,8 @@ def get_driver(uid: str) -> dict:
 
 @app.get("/drivers/{uid}/discounts")
 def get_discounts_of_driver(uid: str) -> dict:
-    # Un driver esistente senza sconti risponde 200 con lista vuota;
-    # un driver inesistente risponde 404, non una lista vuota.
+    # A driver who exists but has no discounts answers 200 with an empty list;
+    # a driver who does not exist answers 404, not an empty list.
     if db.find_driver(database, uid) is None:
         raise errors.ApiError(404, errors.DRIVER_NOT_FOUND, uid=uid)
     return {"uid": uid, "discounts": db.find_discounts_of_driver(database, uid)}
@@ -225,8 +311,8 @@ def get_discount(discount_code: str) -> dict:
 
 @app.get("/users/{username}")
 def get_user(username: str) -> dict:
-    # L'utente senza il blocco `credential`: questa è la lettura normale,
-    # quella che possono fare tutti i sottosistemi del pool.
+    # The user without the `credential` block: this is the ordinary read, the one
+    # every subsystem in the pool may do.
     document = db.find_user(database, username)
     if document is None:
         raise errors.ApiError(404, errors.USER_NOT_FOUND, username=username)
@@ -235,21 +321,21 @@ def get_user(username: str) -> dict:
 
 @app.get("/users/{username}/credential")
 def get_user_credential(username: str) -> dict:
-    # La sola lettura che tira fuori algoritmo, salt e hash. Serve al sso per
-    # verificare una password: il confronto lo fa lui, qui non si decide niente.
-    # Non c'è nessun elenco degli utenti: le credenziali si leggono una per una.
+    # The only read that brings out algorithm, salt and hash. The sso needs it to
+    # verify a password: the comparison is its job, nothing is decided here. There
+    # is no list of users: credentials are read one at a time.
     document = db.find_user_credential(database, username)
     if document is None:
         raise errors.ApiError(404, errors.USER_NOT_FOUND, username=username)
     if not document.get("credential"):
-        # Utente senza password impostata: esiste, ma non si può autenticare.
+        # User with no password set: they exist, but cannot authenticate.
         raise errors.ApiError(404, errors.CREDENTIAL_NOT_SET, username=username)
     return document
 
 
 class LocaleToStore(BaseModel):
-    """La lingua scelta. Quali lingue esistono lo sa chi chiama (il sso, dalla
-    sua configurazione): qui si controlla solo che sia un codice di lingua."""
+    """The chosen language. Which languages exist is known by the caller (the sso,
+    from its own configuration): here we only check that it is a language code."""
 
     locale: str = Field(pattern=r"^[a-z]{2,3}$")
 
@@ -263,12 +349,12 @@ def set_user_locale(username: str, body: LocaleToStore) -> dict:
 
 
 class SessionToStore(BaseModel):
-    """Il documento di sessione, costruito dal sso.
+    """The session document, built by the sso.
 
-    I campi obbligatori sono quelli che servono a ritrovare la sessione e a
-    sapere di chi è e fino a quando vale. Tutto il resto sta in `data`, che
-    resta libero: i dati di sessione dei sottosistemi cambieranno, il contratto
-    di questa API no.
+    The required fields are the ones needed to find the session again and to know
+    whose it is and how long it is good for. Everything else lives in `data`, which
+    stays free: the subsystems' session data will change, the contract of this API
+    will not.
     """
 
     token: str = Field(min_length=16)
@@ -285,16 +371,17 @@ def create_session(session: SessionToStore) -> dict:
     try:
         db.insert_session(database, document)
     except DuplicateKeyError:
-        # Token già presente: il sso lo genera casuale, quindi o è un doppio
-        # invio o è un difetto di chi lo genera. In entrambi i casi non si sovrascrive.
+        # Token already present: the sso generates it at random, so it is either a
+        # double submission or a defect in whoever generates it. In both cases
+        # nothing is overwritten.
         raise errors.ApiError(409, errors.SESSION_EXISTS, token=session.token)
     return document
 
 
 @app.get("/sessions/{token}")
 def get_session(token: str) -> dict:
-    # Restituisce anche una sessione scaduta, finché il TTL non l'ha rimossa:
-    # decidere se vale ancora è compito del sso.
+    # It also returns an expired session, until the TTL has removed it: deciding
+    # whether it is still good is the sso's job.
     document = db.find_session(database, token)
     if document is None:
         raise errors.ApiError(404, errors.SESSION_NOT_FOUND)
@@ -318,20 +405,20 @@ def remove_session(token: str) -> Response:
 
 
 class TicketToStore(BaseModel):
-    """Il biglietto usa-e-getta con cui il sso passa una sessione a un sottosistema.
+    """The single-use ticket with which the sso hands a session to a subsystem.
 
-    Serve perché un cookie non attraversa due indirizzi diversi: il sso non può
-    mettere il cookie di preanalyst. Allora manda il browser da preanalyst con un
-    biglietto nell'indirizzo, e preanalyst lo scambia da dietro con la sessione.
-    Il biglietto vive un minuto e vale una volta sola, quindi finire in un log o
-    nella cronologia non fa danno; il token della sessione, che dura ore, non
-    passa mai dall'indirizzo.
+    It is needed because a cookie does not cross two different addresses: the sso
+    cannot set the preanalyst's cookie. So it sends the browser to the preanalyst
+    with a ticket in the address, and the preanalyst exchanges it from behind for
+    the session. The ticket lives one minute and is good once, so ending up in a
+    log or in the history does no harm; the session token, which lasts hours, never
+    travels through the address.
     """
 
     ticket: str = Field(min_length=16)
     token: str = Field(min_length=16)
-    # A chi è stato dato: serve a non far scambiare a un sottosistema un
-    # biglietto emesso per un altro (§ sicurezza, non ancora imposto).
+    # Who it was given to: it keeps a subsystem from exchanging a ticket issued
+    # for another one (§ security, not enforced yet).
     service: str
     issued_at: datetime
     expires_at: datetime
@@ -349,9 +436,9 @@ def create_ticket(ticket: TicketToStore) -> dict:
 
 @app.delete("/tickets/{ticket}")
 def consume_ticket(ticket: str) -> dict:
-    # Cancellazione che restituisce quello che ha cancellato: è il consumo del
-    # biglietto. Chi arriva secondo trova 404, ed è esattamente quello che deve
-    # succedere a un biglietto già usato.
+    # A delete that returns what it deleted: this is the consumption of the
+    # ticket. Whoever comes second gets a 404, which is exactly what must happen to
+    # a ticket already used.
     document = db.consume_ticket(database, ticket)
     if document is None:
         raise errors.ApiError(404, errors.TICKET_NOT_FOUND)
@@ -360,8 +447,8 @@ def consume_ticket(ticket: str) -> dict:
 
 @app.delete("/sessions")
 def remove_sessions_of_user(uid: str) -> dict:
-    # `DELETE /sessions?uid=…`: chiude tutte le sessioni di un utente. Non è
-    # sotto /users/{username} perché qui si indica l'uid, non lo username.
-    # Vale anche per un uid inesistente: la richiesta è "non deve restarne
-    # nessuna", e il risultato è quello.
+    # `DELETE /sessions?uid=…`: closes all of a user's sessions. It is not under
+    # /users/{username} because here the uid is given, not the username. It holds
+    # for a non-existent uid too: the request is "none must be left", and that is
+    # the result.
     return {"uid": uid, "deleted": db.delete_sessions_of_user(database, uid)}

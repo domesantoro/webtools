@@ -1,135 +1,138 @@
 # ftab — webtools
 
-## Scopo
+## Purpose
 
-Una piccola "fabbrica" di **software su misura per problemi piccoli e concreti**: tracker,
-classifiche, piccoli archivi, strumenti di organizzazione, sostituti di fogli Excel o di
-procedure manuali.
+A small "factory" of **bespoke software for small, concrete problems**: trackers, leaderboards,
+little archives, organising tools, replacements for spreadsheets or manual routines.
 
-Principio guida: **problemi piccoli → soluzioni piccole**. Scope definito, niente progetti
-eterni, niente cicli infiniti di feedback, automazione forte del lavoro interno, intervento
-umano concentrato su decisioni ed eccezioni, cliente proprietario dei propri account e
-ambienti.
+Guiding principle: **small problems → small solutions**. Defined scope, no endless projects, no
+infinite feedback cycles, strong automation of internal work, human effort concentrated on
+decisions and exceptions, the client owning their own accounts and environments.
 
-### Che cos'è un webtool
+### What a webtool is
 
-**Uno strumento piccolo per un'esigenza specifica**: qualcuno ha qualcosa da fare, quella cosa
-torna, e il webtool è ciò con cui la fa. L'esigenza è sua — il suo lavoro, la sua associazione,
-la sua casa — e lo strumento si costruisce intorno a quella invece di essere un prodotto
-generale a cui adattarsi. Nel dubbio si guarda **che cosa sta facendo la persona davanti allo
-schermo**: se porta a termine qualcosa di suo (preparare, registrare, decidere, cercare,
-ordinare, mandare) è un webtool; se viene informata, intrattenuta o servita come cliente, non
-lo è — un sito vetrina, un gioco, un negozio.
+**A small tool for one specific need**: somebody has something to get done, it comes back, and the
+webtool is what they do it with. The need is their own — their work, their club, their household —
+and the tool is built around it instead of being a general product they have to adapt to. When in
+doubt, look at **what the person in front of the screen is doing**: if they are getting something of
+their own done (preparing, recording, deciding, finding, sorting, sending) it is a webtool; if they
+are being informed, entertained or served as a customer, it is not — a showcase site, a game, a shop.
 
-Tracker, classifiche, archivi e sostituti di Excel sono **esempi**, non il perimetro: una
-richiesta che non somiglia a nessuno di essi può benissimo essere un webtool. Tre cose non
-c'entrano con questo giudizio: **chi può usarlo** (un webtool può essere usato dai clienti o
-dai soci del cliente, e stare su internet senza login: l'uso interno è frequente, non un
-requisito), **com'è fatto fuori** (può aver bisogno di venire bello: il design fa parte di
-tutto quello che costruiamo) e **quanto è grande** (è una domanda a parte).
+Trackers, leaderboards, archives and spreadsheet replacements are **examples, not the perimeter**: a
+request that resembles none of them can perfectly well be a webtool. Three things have nothing to do
+with this judgement: **who may use it** (a webtool may be used by the client's customers or members,
+and may sit on the open internet with no login: internal use is common, not a requirement), **how it
+looks from outside** (it may need to look good: design is part of everything we build) and **how big
+it is** (that is a separate question).
 
 ## Overview
 
-Il cliente arriva dal sito vetrina e formula il suo bisogno in una **pre-analisi**. Un
-**prevalidator** controlla che lo scope sia accettabile, un **analysis engine** produce
-l'analisi, che viene validata prima da un **driver** (la figura umana che supervisiona i
-progetti) e poi dal cliente. Un **developer AI** sviluppa, il driver supervisiona l'α-test,
-la **demo** viene pubblicata. Il cliente accetta o rifiuta la demo; se accetta, si paga.
-In ogni cancello il rifiuto porta la richiesta in REJECTED.
+The client arrives from the showcase site and states their need in a **pre-analysis**. A
+**prevalidator** checks that the scope is acceptable, an **analysis engine** produces the analysis,
+which is validated first by a **driver** (the human who supervises projects) and then by the client.
+An **AI developer** builds it, the driver supervises the α-test, the **demo** is published. The
+client accepts or refuses the demo; if they accept, they pay. At every gate a refusal takes the
+request to REJECTED.
 
-Il prezzo ha un **tier standard** garantito e un **tier a consumo**, scelto dal cliente
-all'inizio, il cui prezzo viene calcolato alla demo sui consumi reali più la quota del driver.
+The price has a guaranteed **standard tier** and a **metered tier**, chosen by the client at the
+start, whose price is worked out at the demo from actual consumption plus the driver's share.
 
-I driver si registrano da **Lavora con noi**: solo quelli **abilitati** (dopo un colloquio)
-seguono progetti di clienti; ogni driver può essere **ambassador** (invita clienti, prende metà
-della fee) e fare **lavoro autonomo** (progetti suoi, pagati con i suoi token più la fee).
+Drivers sign up from **Work with us**: only **enabled** ones (after an interview) supervise client
+projects; every driver can be an **ambassador** (inviting clients, taking half the fee) and do
+**autonomous work** (their own projects, paid with their own tokens plus the fee).
 
-Siamo nella fase di **PoC**: si costruisce un perimetro ridotto della pipeline per misurare
-il costo AI reale di un webtool, l'accettazione delle demo e i turni reali di una pre-analisi.
-**PoC limita il perimetro, non la qualità**: stessi standard di un sistema reale.
+We are in the **PoC** phase: a reduced slice of the pipeline is being built, to measure the real AI
+cost of a webtool, how often demos are accepted, and how many turns a pre-analysis really takes.
+**The PoC limits the perimeter, not the quality**: same standards as a real system.
 
-Il dettaglio — attori, architettura, flusso, modello di prezzo, domande aperte — sta in
-`contesto/02. contesto_aggiornato.md`, che è il documento corrente (quello in
-`contesto/outdated/` non va usato). Il riferimento visivo del flusso è
-`struttura/design/Sequence.drawio.pdf`.
+The detail — actors, architecture, flow, pricing model, open questions — is in
+`contesto/02. contesto_aggiornato.md`, which is the current document (the one in `contesto/outdated/`
+is not to be used). The visual reference for the flow is `struttura/design/Sequence.drawio.pdf`.
 
-## Regole generali
+## General rules
 
-- **Il servizio si chiama "webtools"** (marchio, titoli, testi: «usare webtools»). "webtool" è
-  solo il nome comune del prodotto: «un webtool», «il webtool viene sviluppato».
-- **Niente nomi generici** per pacchetti, moduli, processi e servizi: prefisso `webtools_`
-  (es. `webtools_anagraphics`, mai `app` o `anagraphics` da solo).
-- **Avvio e arresto sicuri**: file PID con verifica della riga di comando. Mai `pkill -f` con
-  pattern generici, mai fermare un processo individuato dalla porta: su questa macchina girano
-  altri progetti. Prima di fare prove, controllare se c'è già un'istanza dell'utente attiva e
-  non toccarla.
-- **Errori delle API**: stato HTTP corretto e codice stabile, `{"error": "<CODICE>"}`. Mai
-  testi discorsivi da interpretare.
-- **Parti comuni**: l'originale sta in `webtools/commons/`, dentro i sottosistemi ci sono
-  **copie generate** dai deployer (`webtools/configurator/deploy.sh`). Una copia non si
-  modifica dov'è: si modifica l'originale e si rilancia il deployer.
-- **Configurazione dal sottosistema di configurazione.** Ogni dato configurabile (indirizzi,
-  porte, pool di IP, durate, limiti, prezzi, nomi di cookie…) lo serve anagraphics
-  (`GET /configuration/{subsystem}`), mai scritto dentro il sottosistema: né costanti nel
-  codice, né variabili d'ambiente, né **valori di default**. Il sottosistema la legge all'avvio
-  e, se manca un campo, non parte. Dall'ambiente arriva solo il bootstrap
-  (`webtools/configurator/bootstrap.env`). Vale per ogni sviluppo nuovo.
-- **La configurazione che vive sta in Mongo**, nella collection `configuration`. I file di
-  `webtools/configurator/configuration/<sottosistema>.json` sono il **seme** — i valori con cui
-  nasce un ambiente nuovo — e la **forma attesa**: dicono quali campi esistono. Quello che gira
-  può divergere dal file, ed è normale: un limite alzato in esercizio o una soglia corretta
-  restano dove sono. `load_configuration.sh` aggiunge **solo i campi mancanti** e non cancella
-  niente, così un campo nuovo entra da solo a ogni avvio senza portare via quello che è stato
-  cambiato. Per riportare un sottosistema al file bisogna chiederlo:
-  `./load_configuration.sh --reset [sottosistema]`. Un campo nuovo si aggiunge sempre anche al
-  file, o l'ambiente successivo nascerà senza.
-- **Configurazioni strutturate, non piatte.** I file di configurazione si organizzano in oggetti
-  JSON annidati per argomento (`listen`, `access`, `subsystems_infos`, `session`, `limits`, …),
-  quando rende la configurazione più leggibile e ordinata: è la scelta da preferire.
-- **Anche quello che non è JSON sta nel configuratore.** Un artefatto che dice *che cosa il sistema
-  considera accettabile* o *che forma hanno i documenti che produce* è configurazione, anche se è
-  un `.md` o un `.njk`: sta in `webtools/configurator/` (`policies/`, `documents/`) e nei
-  sottosistemi ci vanno **copie generate** da un deployer. La configurazione JSON dice *quale* si
-  usa; il file dice *che cosa* chiede. Un prompt, una rubrica, il modello di un documento non sono
-  codice e non stanno dentro il sottosistema.
-- **Le chiavi e le credenziali stanno in `webtools/configurator/secrets/`**, fuori da git, e
-  `load_configuration.sh` le fonde in profondità sulla configurazione: il sottosistema ne legge una
-  sola e non sa che un pezzo era segreto. Mai una chiave in `configuration/`, che è in git.
-- **HTML nei template, mai dentro il codice**: le pagine si scrivono in file `.njk` resi con
-  nunjucks, con l'autoescape acceso. Comporre HTML con stringhe nel JavaScript rende l'escape
-  una questione di memoria di chi scrive, e i valori arrivano quasi sempre da fuori.
-- **Testi rivolti all'utente solo nei cataloghi delle lingue**: `webtools/commons/i18n/locales/
-  <lingua>.json`, chiavi inglesi per area, mai testo nei template o nel codice e mai cataloghi
-  locali. Solo chiavi/valori, niente template per lingua. Riserva: l'inglese. La lingua sta nel
-  cookie comune (e, per chi è entrato, in sessione e profilo), mai nell'URL. La lingua interna
-  del sistema (codici, dati, API, pre-specifica, log) resta l'inglese.
-- **Testi rivolti all'utente: asciutti e funzionali.** Una frase dice che cosa fare, a che
-  cosa serve o che cosa succede. Niente toni motivazionali, niente frasi che celebrano il
-  cliente o il nostro metodo, niente linguaggio da pubblicità. Se una frase si può togliere
-  senza perdere informazione, si toglie. Un'affermazione si fa solo se è verificabile: «ogni
-  cosa che escludi è un giro di domande in meno» si può controllare, «la domanda più utile di
-  tutte» no. **Nessun testo non richiesto**: una frase in più si aggiunge se serve a chi legge,
-  mai per riempire, e non deve dare per scontato da dove arriva l'utente — la stessa pagina la
-  raggiungono strade diverse.
-- **Niente che si apra da solo.** Una finestra, una scheda o un'azione che parte senza che
-  l'utente l'abbia chiesta è un errore, anche quando è comoda: prima si dice che cosa sta per
-  succedere, poi si aspetta che lo chieda.
-- **Importi in centesimi di euro**, interi, in tutto il progetto: dati, API, configurazioni
-  (`40000` = 400 €). I nomi dei campi finiscono in `_cents`. Si converte in euro solo per
-  mostrarli.
-- **Stime economiche: sempre il caso peggiore** — tutte le mancate conversioni dopo la demo,
-  quindi 5 pipeline complete per vendita, e le ore contate su tutti i progetti dell'imbuto,
-  non solo sulle vendite. Salvo richiesta esplicita diversa.
+- **Everything internal is written in English.** Code (identifiers, comments, docstrings),
+  commit messages, log lines, API routes and fields, error codes, data, the pre-specification, and
+  all documentation — `docs/`, the subsystem `README.md` files, `contesto/`, this file. **The only
+  Italian in the repository is in the language catalogues** (`webtools/commons/i18n/locales/it.json`),
+  because that is the product speaking to its user, not the system speaking to itself, and in what
+  is already closed and is kept as it was written — `contesto/sessions/`, `contesto/outdated/` and
+  `workbench/`: a minute of a meeting is not translated. A comment or a log line in Italian is a
+  defect like any other. Quoting an Italian text — a catalogue value, a sentence the page shows —
+  inside an English document or comment is not a defect: it is the quotation of a product text.
+- **The service is called "webtools"** (trademark, titles, copy: «usare webtools»). "webtool" is only
+  the common noun for the product: «un webtool», «il webtool viene sviluppato».
+- **No generic names** for packages, modules, processes and services: prefix `webtools_`
+  (e.g. `webtools_anagraphics`, never `app` or `anagraphics` on its own).
+- **Safe start and stop**: PID files with a check on the command line. Never `pkill -f` with generic
+  patterns, never stop a process found by its port: other projects run on this machine. Before
+  testing, check whether an instance of the user's is already running and leave it alone.
+- **API errors**: correct HTTP status and a stable code, `{"error": "<CODE>"}`. Never prose to be
+  interpreted.
+- **Shared parts**: the original lives in `webtools/commons/`, and inside the subsystems there are
+  **generated copies** made by the deployers (`webtools/configurator/deploy.sh`). A copy is not
+  edited where it sits: the original is edited and the deployer is run again.
+- **Configuration comes from the configuration subsystem.** Every configurable value (addresses,
+  ports, IP pools, durations, limits, prices, cookie names…) is served by anagraphics
+  (`GET /configuration/{subsystem}`), never written inside the subsystem: no constants in the code,
+  no environment variables, and no **default values**. The subsystem reads it at startup and, if a
+  field is missing, does not start. Only the bootstrap comes from the environment
+  (`webtools/configurator/bootstrap.env`). This holds for every new piece of work.
+- **The configuration that lives is in Mongo**, in the `configuration` collection. The files in
+  `webtools/configurator/configuration/<subsystem>.json` are the **seed** — the values a new
+  environment is born with — and the **expected shape**: they say which fields exist. What is running
+  may diverge from the file, and that is normal: a limit raised in operation, or a threshold
+  corrected, stays where it is. `load_configuration.sh` adds **only the missing fields** and deletes
+  nothing, so a new field arrives by itself at the next startup without carrying away what has been
+  changed. Taking a subsystem back to the file has to be asked for:
+  `./load_configuration.sh --reset [subsystem]`. A new field is always added to the file as well, or
+  the next environment will be born without it.
+- **Structured configuration, not flat.** Configuration files are organised into nested JSON objects
+  by subject (`listen`, `access`, `subsystems_infos`, `session`, `limits`, …) whenever that makes the
+  configuration more readable and more orderly: that is the choice to prefer.
+- **What is not JSON belongs in the configurator too.** An artefact that says *what the system
+  considers acceptable* or *what shape the documents it produces have* is configuration, even when it
+  is a `.md` or a `.njk`: it lives in `webtools/configurator/` (`policies/`, `documents/`) and the
+  subsystems get **generated copies** from a deployer. The JSON configuration says *which* one is
+  used; the file says *what* it asks for. A prompt, a rubric, the model of a document are not code
+  and do not live inside the subsystem.
+- **Keys and credentials live in `webtools/configurator/secrets/`**, outside git, and
+  `load_configuration.sh` deep-merges them onto the configuration: the subsystem reads one
+  configuration and does not know that part of it was secret. Never a key in `configuration/`, which
+  is in git.
+- **HTML in templates, never inside the code**: pages are written in `.njk` files rendered with
+  nunjucks, with autoescape on. Composing HTML from strings in JavaScript makes escaping a matter of
+  the writer's memory, and the values almost always come from outside.
+- **Text addressed to the user only in the language catalogues**:
+  `webtools/commons/i18n/locales/<language>.json`, English keys grouped by area, never text in the
+  templates or in the code and never local catalogues. Keys and values only, no per-language
+  templates. The fallback is English. The language lives in the shared cookie (and, for whoever has
+  logged in, in the session and the profile), never in the URL.
+- **Text addressed to the user: dry and functional.** A sentence says what to do, what something is
+  for, or what happens. No motivational tone, no sentences celebrating the client or our method, no
+  advertising language. If a sentence can be removed without losing information, it is removed. A
+  claim is made only if it can be checked: «ogni cosa che escludi è un giro di domande in meno» can
+  be checked, «la domanda più utile di tutte» cannot. **No unrequested text**: an extra sentence is
+  added if it helps the reader, never as filler, and it must not assume where the user came from —
+  the same page is reached by different routes.
+- **Nothing that opens by itself.** A window, a tab or an action that starts without the user having
+  asked for it is a defect, even when it is convenient: first say what is about to happen, then wait
+  to be asked.
+- **Amounts in euro cents**, integers, throughout the project: data, API, configuration
+  (`40000` = 400 €). Field names end in `_cents`. Conversion to euro happens only for display.
+- **Cost estimates: always the worst case** — every conversion lost after the demo, so 5 full
+  pipelines per sale, and hours counted across every project in the funnel, not only the sales.
+  Unless explicitly asked otherwise.
 
-## Modo di lavorare
+## How we work
 
-- Si procede per **richieste puntuali**. Niente lavoro in autonomia, niente piani grandi non
-  richiesti, niente modifiche oltre quanto chiesto.
-- Quando l'utente dice **"stop"** o "fermo", ci si ferma subito.
-- **Risposte brevi e concrete.** Una sessione per argomento, per contenere il contesto.
-- Le decisioni e lo stato di fine giornata si annotano in `contesto/sessions/`. Il checkpoint è
-  **uno per giornata**, non uno per sessione: se il file del giorno esiste già, alla chiusura
-  della sessione successiva **si aggiunge**, senza riscrivere né cancellare ciò che c'è.
-- **Manutenzione di questo file**: si aggiorna a fine sessione, e solo se sono emerse
-  questioni davvero **generali**. Le questioni locali di un sottoprogetto restano nella sua
-  documentazione; lo stato di avanzamento resta nei checkpoint.
+- Work proceeds by **specific requests**. No working on one's own initiative, no large unrequested
+  plans, no changes beyond what was asked.
+- When the user says **"stop"** or "fermo", stop immediately.
+- **Short, concrete answers.** One session per subject, to keep the context small.
+- Decisions and the state at the end of the day are recorded in `contesto/sessions/`. There is **one
+  checkpoint per day**, not one per session: if the day's file already exists, the next session
+  **appends** to it at closing time, without rewriting or deleting what is there.
+- **Maintaining this file**: it is updated at the end of a session, and only if genuinely **general**
+  matters have come up. Matters local to a subproject stay in its own documentation; progress stays
+  in the checkpoints.

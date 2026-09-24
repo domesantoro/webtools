@@ -1,63 +1,63 @@
-// Il PDF che si può scaricare quando una richiesta viene rifiutata.
+// The PDF that can be downloaded when a request is refused.
 //
-// Contiene quello che l'utente aveva scritto nel form, perché tornando alla
-// pagina il form è vuoto e quel testo altrimenti è perso. La fonte è la
-// pre-specifica conservata in workspaces: è il documento che è stato davvero
-// prodotto, non una ricostruzione.
+// It contains what the user had written in the form, because on the way back the
+// form is empty and that text would otherwise be lost. The source is the
+// pre-specification stored in workspaces: it is the document that was really
+// produced, not a reconstruction.
 //
-// La pre-specifica è markdown, e qui si impagina così com'è: titoli, elenchi,
-// citazioni. Non si interpreta niente, non si traduce niente — le domande
-// restano in inglese, come nel documento.
+// The pre-specification is markdown, and here it is laid out as it is: headings,
+// lists, quotations. Nothing is interpreted, nothing is translated — the questions
+// stay in English, as in the document.
 //
-// La motivazione estesa del rifiuto si aggiunge in fondo, e **solo** quando chi
-// chiama lo dice (vedi `src/server.js`): è un dato interno, e chi lo vede lo
-// decide la configurazione, non questo modulo.
+// The extended reason for the refusal is added at the end, and **only** when the
+// caller says so (see `src/server.js`): it is internal data, and who sees it is
+// decided by the configuration, not by this module.
 
 import PDFDocument from "pdfkit";
 
-// Il front matter non si stampa: sono codici per i programmi, e in un documento
-// per una persona sarebbero rumore.
+// The front matter is not printed: those are codes for programs, and in a
+// document meant for a person they would be noise.
 function bodyOf(spec) {
   const match = /^---[ \t]*\r?\n[\s\S]*?\r?\n---[ \t]*(?:\r?\n|$)/.exec(spec);
   return match ? spec.slice(match[0].length) : spec;
 }
 
-// Il markdown della pre-specifica, riga per riga. Sono le sole forme che
-// `prespec.md.njk` produce: titoli, elenchi, citazioni, paragrafi.
+// The pre-specification's markdown, line by line. These are the only shapes
+// `prespec.md.njk` produces: headings, lists, quotations, paragraphs.
 function writeBody(doc, spec) {
-  for (const riga of bodyOf(spec).split("\n")) {
-    const testo = riga.trimEnd();
+  for (const line of bodyOf(spec).split("\n")) {
+    const text = line.trimEnd();
 
-    if (testo === "") {
+    if (text === "") {
       doc.moveDown(0.4);
-    } else if (testo.startsWith("### ")) {
-      doc.moveDown(0.6).font("Helvetica-Bold").fontSize(11).text(testo.slice(4));
+    } else if (text.startsWith("### ")) {
+      doc.moveDown(0.6).font("Helvetica-Bold").fontSize(11).text(text.slice(4));
       doc.moveDown(0.2);
-    } else if (testo.startsWith("## ")) {
-      doc.moveDown(1).font("Helvetica-Bold").fontSize(14).text(testo.slice(3));
+    } else if (text.startsWith("## ")) {
+      doc.moveDown(1).font("Helvetica-Bold").fontSize(14).text(text.slice(3));
       doc.moveDown(0.3);
-    } else if (testo.startsWith("# ")) {
-      doc.moveDown(0.4).font("Helvetica-Bold").fontSize(18).text(testo.slice(2));
+    } else if (text.startsWith("# ")) {
+      doc.moveDown(0.4).font("Helvetica-Bold").fontSize(18).text(text.slice(2));
       doc.moveDown(0.5);
-    } else if (testo.startsWith("> ")) {
-      doc.font("Helvetica-Oblique").fontSize(10).text(testo.slice(2), { indent: 18 });
-    } else if (testo === ">") {
+    } else if (text.startsWith("> ")) {
+      doc.font("Helvetica-Oblique").fontSize(10).text(text.slice(2), { indent: 18 });
+    } else if (text === ">") {
       doc.moveDown(0.3);
-    } else if (testo.startsWith("- ")) {
-      doc.font("Helvetica").fontSize(10).text(`•  ${testo.slice(2)}`, { indent: 12 });
+    } else if (text.startsWith("- ")) {
+      doc.font("Helvetica").fontSize(10).text(`•  ${text.slice(2)}`, { indent: 12 });
     } else {
-      doc.font("Helvetica").fontSize(10).text(testo);
+      doc.font("Helvetica").fontSize(10).text(text);
     }
   }
 }
 
-// Scrive il PDF direttamente nella risposta HTTP. `reason` è la motivazione
-// estesa: se è `null` il capitolo non c'è proprio, e il documento non lascia
-// capire che esista.
+// Writes the PDF straight into the HTTP response. `reason` is the extended
+// reason: if it is `null` the chapter is simply not there, and the document does
+// not let on that it exists.
 export function writeRejectionPdf(response, { t, spec, reason, fileName }) {
   response.writeHead(200, {
     "content-type": "application/pdf",
-    // `attachment`: il browser lo salva invece di aprirlo al posto della pagina.
+    // `attachment`: the browser saves it instead of opening it in place of the page.
     "content-disposition": `attachment; filename="${fileName}"`,
     "cache-control": "no-store",
   });

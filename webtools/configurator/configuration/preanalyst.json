@@ -1,5 +1,8 @@
 {
-  "listen": { "host": "127.0.0.1", "port": 9200 },
+  "listen": {
+    "host": "127.0.0.1",
+    "port": 9200
+  },
   "public_url": "http://127.0.0.1:9200",
   "subsystems_infos": {
     "anagraphics": {
@@ -45,8 +48,15 @@
     "spec_max_chars": 20000,
     "rejection_reason_in_pdf": false
   },
+  "analysis": {
+    "max_turns": 30,
+    "warn_from_turn": 20
+  },
   "i18n": {
-    "locales": ["en", "it"],
+    "locales": [
+      "en",
+      "it"
+    ],
     "fallback_locale": "en",
     "cookie_name": "webtools_locale",
     "cookie_max_age_seconds": 31536000,

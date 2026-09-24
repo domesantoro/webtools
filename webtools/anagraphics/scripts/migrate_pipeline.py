@@ -1,20 +1,20 @@
-"""Migrazione: `state` piatto → oggetto `pipeline` sui progetti.
+"""Migration: flat `state` → the `pipeline` object on projects.
 
     set -a; source ../configurator/bootstrap.env; set +a
     .venv/bin/python -m scripts.migrate_pipeline [--dry-run]
 
-(dalla cartella anagraphics: Mongo lo dicono le variabili del bootstrap, come per
+(from the anagraphics directory: Mongo is named by the bootstrap variables, as for
 load_configuration.sh)
 
-Prima il progetto aveva un solo campo `state` ("PREANALYSIS") e nessuna traccia di
-che cosa gli fosse successo. Adesso ha:
+Before, a project had a single `state` field ("PREANALYSIS") and no trace of what
+had happened to it. Now it has:
 
-    pipeline: { state: "<lo stesso valore>", steps: [] }
+    pipeline: { state: "<the same value>", steps: [] }
 
-`steps` nasce vuota: dei progetti già esistenti non sappiamo quali passi abbiano
-attraversato, e inventarli sarebbe peggio che non averli.
+`steps` is born empty: of the projects that already exist we do not know which
+steps they went through, and inventing them would be worse than not having them.
 
-Idempotente: i progetti che hanno già `pipeline` non si toccano.
+Idempotent: projects that already have `pipeline` are left alone.
 """
 
 import sys
@@ -32,23 +32,23 @@ def main() -> int:
     client = MongoClient(mongo_uri, serverSelectionTimeoutMS=5000)
     projects = client[mongo_db][db.PROJECTS]
 
-    da_migrare = list(projects.find({"pipeline": {"$exists": False}}, {"_id": 0}))
-    if not da_migrare:
-        print(f"Niente da migrare in '{mongo_db}': tutti i progetti hanno già `pipeline`.")
+    to_migrate = list(projects.find({"pipeline": {"$exists": False}}, {"_id": 0}))
+    if not to_migrate:
+        print(f"Nothing to migrate in '{mongo_db}': every project already has `pipeline`.")
         return 0
 
-    for progetto in da_migrare:
-        # Un progetto senza `state` non dovrebbe esistere; se c'è, parte dall'inizio.
-        stato = progetto.get("state") or "PREANALYSIS"
-        print(f"  {progetto['project_id']}: state={stato!r} → pipeline.state")
+    for project in to_migrate:
+        # A project without `state` should not exist; if there is one, it starts from the beginning.
+        state = project.get("state") or "PREANALYSIS"
+        print(f"  {project['project_id']}: state={state!r} → pipeline.state")
         if not dry_run:
             projects.update_one(
-                {"project_id": progetto["project_id"]},
-                {"$set": {"pipeline": {"state": stato, "steps": []}}, "$unset": {"state": ""}},
+                {"project_id": project["project_id"]},
+                {"$set": {"pipeline": {"state": state, "steps": []}}, "$unset": {"state": ""}},
             )
 
-    verbo = "da migrare" if dry_run else "migrati"
-    print(f"{len(da_migrare)} progetti {verbo} in '{mongo_db}'.")
+    verb = "to migrate" if dry_run else "migrated"
+    print(f"{len(to_migrate)} projects {verb} in '{mongo_db}'.")
     return 0
 
 

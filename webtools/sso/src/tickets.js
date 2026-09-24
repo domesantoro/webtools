@@ -1,20 +1,21 @@
-// Il biglietto: come si passa una sessione da un indirizzo a un altro.
+// The ticket: how a session is handed from one address to another.
 //
-// Il problema che risolve. Un cookie appartiene a un indirizzo: il sso, che sta
-// su `127.0.0.1:9300`, non può mettere un cookie per conto di preanalyst, che sta
-// su un altro. E il token della sessione non può viaggiare nell'indirizzo, perché
-// l'indirizzo finisce nella cronologia del browser, nei log dei proxy e nei link
-// che la gente si passa: uno scontrino che vale otto ore non si lascia in giro.
+// The problem it solves. A cookie belongs to one address: the sso, which sits on
+// `127.0.0.1:9300`, cannot set a cookie on behalf of the preanalyst, which sits on
+// another. And the session token cannot travel in the address, because the address
+// ends up in the browser's history, in proxy logs and in links people pass around:
+// a receipt good for eight hours is not left lying about.
 //
-// La soluzione è un secondo scontrino, fatto apposta per essere lasciato in giro:
+// The solution is a second receipt, made to be left lying about:
 //
-//   1. il sso crea un biglietto che punta alla sessione, e vive un minuto;
-//   2. manda il browser da preanalyst con il biglietto nell'indirizzo;
-//   3. preanalyst lo scambia **da dietro**, da server a server, e riceve la sessione;
-//   4. il biglietto viene cancellato nello stesso momento in cui viene letto.
+//   1. the sso creates a ticket pointing at the session, and it lives one minute;
+//   2. it sends the browser to the preanalyst with the ticket in the address;
+//   3. the preanalyst exchanges it **from behind**, server to server, and receives
+//      the session;
+//   4. the ticket is deleted at the very moment it is read.
 //
-// Quindi anche chi legge il biglietto in un log trova qualcosa di scaduto e già
-// consumato. Il token vero non è mai passato dall'indirizzo.
+// So even somebody reading the ticket in a log finds something expired and already
+// consumed. The real token never travelled through the address.
 
 import { randomBytes } from "node:crypto";
 
@@ -28,8 +29,8 @@ export function buildTicket(token, service, ttlSeconds, now = new Date()) {
   return {
     ticket: newTicket(),
     token,
-    // A chi è stato dato. Serve a non far scambiare a un sottosistema un
-    // biglietto emesso per un altro.
+    // Who it was given to. It keeps a subsystem from exchanging a ticket issued
+    // for another one.
     service,
     issued_at: new Date(now.getTime()).toISOString(),
     expires_at: new Date(now.getTime() + ttlSeconds * 1000).toISOString(),
@@ -42,9 +43,9 @@ export function isExpired(ticket, now = new Date()) {
   return expiresAt <= now.getTime();
 }
 
-// Il sottosistema che riceve il biglietto: `http://127.0.0.1:9200` da
-// `http://127.0.0.1:9200/qualcosa?x=1`. È la parte che si confronta con il
-// `service` scritto dentro il biglietto.
+// The subsystem receiving the ticket: `http://127.0.0.1:9200` from
+// `http://127.0.0.1:9200/something?x=1`. It is the part compared with the
+// `service` written inside the ticket.
 export function serviceOf(url) {
   try {
     return new URL(url).origin;
@@ -53,8 +54,8 @@ export function serviceOf(url) {
   }
 }
 
-// Aggiunge il biglietto all'indirizzo di ritorno, senza perdere i parametri
-// che c'erano già (per esempio `?discount=` di preanalyst).
+// Adds the ticket to the return address, without losing the parameters that were
+// already there (the preanalyst's `?discount=`, for instance).
 export function withTicket(next, ticket) {
   const url = new URL(next);
   url.searchParams.set("ticket", ticket);

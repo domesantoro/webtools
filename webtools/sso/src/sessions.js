@@ -1,36 +1,37 @@
-// La sessione: come si costruisce, quando è scaduta, che cosa se ne mostra.
+// The session: how it is built, when it has expired, what is shown of it.
 //
-// Il documento conservato in anagraphics è questo, e non ce n'è un altro dentro
-// il sso: chi risponde a `GET /session` legge esattamente quello che c'è nel
-// database, così un secondo processo del sso vede le stesse sessioni del primo.
+// The document stored in anagraphics is this one, and there is no other inside the
+// sso: whoever answers `GET /session` reads exactly what is in the database, so a
+// second sso process sees the same sessions as the first.
 //
 //   {
-//     token:      stringa casuale, l'unico segreto che gira
-//     uid:        identità della persona
-//     username:   quello che ha digitato al login
-//     issued_at:  quando è entrata
-//     expires_at: quando smette di valere
-//     data:       dati di sessione, liberi. Oggi contiene la fotografia
-//                 dell'utente al momento del login (screen_name, driver_uid),
-//                 così leggere una sessione non costa una seconda lettura, e
-//                 la lingua (locale), che cambia con il selettore delle pagine.
+//     token:      a random string, the only secret going around
+//     uid:        the person's identity
+//     username:   what they typed at the login
+//     issued_at:  when they came in
+//     expires_at: when it stops counting
+//     data:       session data, free. Today it holds the photograph of the user at
+//                 login time (screen_name, driver_uid), so reading a session does
+//                 not cost a second read, and the language (locale), which changes
+//                 with the pages' switcher.
 //   }
 //
-// La fotografia invecchia: se cambia lo `screen_name`, le sessioni già aperte
-// continuano a mostrare quello vecchio fino al login successivo. È lo stesso
-// compromesso già fatto per il driver dentro i codici sconto.
+// The photograph ages: if the `screen_name` changes, sessions already open go on
+// showing the old one until the next login. It is the same trade-off already made
+// for the driver inside the discount codes.
 
 import { randomBytes } from "node:crypto";
 
-// 32 byte casuali: il token non contiene informazioni, non si può indovinare e
-// non dice niente di sé. Chi lo ha, ha la sessione; chi la vuole leggere, chiede qui.
+// 32 random bytes: the token holds no information, cannot be guessed and says
+// nothing about itself. Whoever has it has the session; whoever wants to read it
+// asks here.
 const TOKEN_BYTES = 32;
 
 export function newToken() {
   return randomBytes(TOKEN_BYTES).toString("base64url");
 }
 
-// `locale`: la lingua della sessione, già decisa da chi fa il login.
+// `locale`: the session's language, already decided by whoever performs the login.
 export function buildSession(user, ttlSeconds, now = new Date(), locale = null) {
   const issuedAt = new Date(now.getTime());
   const expiresAt = new Date(now.getTime() + ttlSeconds * 1000);
@@ -48,8 +49,8 @@ export function buildSession(user, ttlSeconds, now = new Date(), locale = null) 
   };
 }
 
-// Una sessione senza scadenza leggibile è scaduta: se non si sa fino a quando
-// vale, non vale.
+// A session with no readable expiry has expired: if we do not know how long it is
+// good for, it is not good.
 export function isExpired(session, now = new Date()) {
   const expiresAt = Date.parse(session?.expires_at ?? "");
   if (Number.isNaN(expiresAt)) return true;

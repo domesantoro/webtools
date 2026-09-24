@@ -1,23 +1,23 @@
 {#
-  Il blocco del lavoro autonomo: lo vede **solo un driver**, sotto il box del
-  driver, perché governa quello che c'è lì sopra.
+  The autonomous work block: **only a driver** sees it, under the driver box,
+  because it governs what sits above it.
 
-  Un driver che compila la pre-analisi può star portando un lavoro suo. In quel
-  caso al prezzo non si aggiunge la quota del driver, e gli eventuali sconti o
-  link di **altri** driver non contano più: un progetto lo porta una persona sola.
+  A driver filling in the pre-analysis may be bringing work of their own. In that
+  case the driver's share is not added to the price, and any discounts or links of
+  **other** drivers no longer count: a project is brought in by one person only.
 
-  Il link porta alla pagina "Lavora con noi" del sito vetrina in una scheda
-  nuova: chi lo segue sta compilando un form, e nella stessa scheda perderebbe
-  le risposte.
+  The link goes to the showcase site's "Work with us" page in a new tab: whoever
+  follows it is filling in a form, and in the same tab would lose their answers.
 
-  La casella non fa nulla da sé: il CSS legge `#autonomous-work:checked` (regola
-  `:has()` in styles.css) e spegne il box qui sopra, facendo comparire l'avviso.
-  Nessun JavaScript, nessun giro sul server.
+  The checkbox does nothing by itself: the CSS reads `#autonomous-work:checked`
+  (the `:has()` rule in styles.css) and switches off the box above, bringing up the
+  notice. No JavaScript, no round trip to the server.
 
-  Quando il form si ripresenta — la richiesta è tornata indietro per mancanza di
-  dettagli — la casella dice com'è il progetto ed è **ferma**: quella scelta si è
-  fatta al primo invio e il secondo giro non la rilegge. Una casella che si può
-  muovere senza che muoversi serva a qualcosa è peggio di una ferma.
+  When the form comes back — the request was sent back for want of detail — the
+  checkbox says how the project stands and is **locked**: that choice was made at
+  the first submission and the second round does not read it again. A checkbox that
+  can be moved without the moving being good for anything is worse than a locked
+  one.
 #}
 
 {% macro render(work) %}

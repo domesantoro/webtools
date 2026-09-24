@@ -1,24 +1,34 @@
 {#
-  La modale che compare quando la richiesta è stata rifiutata.
+  The modal that appears when the request has been refused.
 
-  Un solo bottone, «ok», che porta alla home del sito vetrina: il form non si usa
-  più, quindi da qui non c'è nient'altro da fare. Il PDF è un **link** dentro il
-  testo, non un'azione da mettere alla pari con l'uscita.
+  A single button, "ok", which goes to the showcase site's home page: the form is
+  no longer in use, so there is nothing else to do from here. The PDF is a **link**
+  inside the text, not an action to be put on a par with leaving.
 
-  Il testo non dice **perché** è stato rifiutato: quel giudizio è nostro e del
-  driver. Dice che probabilmente non siamo lo strumento giusto, e basta.
+  The text does not say **why** it was refused: that judgement is ours and the
+  driver's. It says one thing, and it is one of three depending on the case
+  (`rejection.case`, decided by `rejectionCase()` in src/server.js):
 
-  Si apre da sé al caricamento (`rejection.js`), perché è la risposta all'invio
-  che l'utente ha appena fatto: non è una finestra che compare senza che abbia
-  chiesto niente.
+    out_of_scope     we are probably not the right tool. It holds for a request
+                     that was understood and is too big for us.
+    not_software     what was asked for is not software. Here we say what webtools
+                     builds, and name a few examples of what it does not.
+    not_recognised   the system did not recognise the request as a valid one. It
+                     holds when there was nothing to judge: telling the user we are
+                     not the right tool would make them believe their request had
+                     been read and set aside.
+
+  It opens by itself when the page loads (`rejection.js`), because it is the answer
+  to the submission the user has just made: it is not a window appearing without
+  their having asked for anything.
 #}
 
 {% macro render(rejection) %}
       <dialog class="card login-dialog" id="rejection-dialog" aria-labelledby="rejection-dialog-title"
               data-rejection-dialog data-home="{{ rejection.home_url }}">
-        <div class="card-head login-dialog-head" id="rejection-dialog-title">{{ t("preanalyst.rejection.title") }}</div>
+        <div class="card-head login-dialog-head" id="rejection-dialog-title">{{ t("preanalyst.rejection." ~ rejection.case ~ ".title") }}</div>
         <div class="login-dialog-body">
-          <p class="login-dialog-lead">{{ t("preanalyst.rejection.lead") }}</p>
+          <p class="login-dialog-lead">{{ t("preanalyst.rejection." ~ rejection.case ~ ".lead") }}</p>
           <p class="login-dialog-hint">
             {{ t("preanalyst.rejection.pdf_hint") }}
             <a class="text-link" href="{{ rejection.pdf_url }}">{{ t("preanalyst.rejection.pdf_link") }}</a>

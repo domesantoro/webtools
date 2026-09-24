@@ -1,11 +1,10 @@
 #!/usr/bin/env bash
-# Diffonde il client della configurazione (commons/configuration) nei
-# sottosistemi Node, che lo usano all'avvio per leggere la propria
-# configurazione da anagraphics. Ogni progetto ha la sua funzione di deploy,
-# con destinazioni esplicite.
+# Distributes the configuration client (commons/configuration) to the Node
+# subsystems, which use it at startup to read their own configuration from
+# anagraphics. Every project has its own deploy function, with explicit targets.
 #
-# Anagraphics NON riceve niente da qui: è lui a servire la configurazione, e la
-# propria la legge direttamente da MongoDB.
+# Anagraphics receives NOTHING from here: it is the one serving the configuration,
+# and it reads its own straight from MongoDB.
 set -euo pipefail
 
 WEBTOOLS="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
@@ -48,4 +47,4 @@ deploy_workspaces
 deploy_preanalyst
 deploy_front_gate
 
-echo "Client della configurazione distribuito."
+echo "Configuration client distributed."

@@ -1,39 +1,39 @@
-# Sottosistema `preanalyst` (preanalysis gate)
+# Subsystem `preanalyst` (the preanalysis gate)
 
-Documentazione completa della **pre-analisi**: la pagina da cui il cliente entra nel flusso, e il
-sottosistema che ospiterà la chat di analisi. Oggi contiene:
-- il form delle domande, che all'invio crea il progetto con la sua pre-specifica;
-- il caricamento di una specifica già pronta per un progetto esistente;
-- la provenienza dal link di un driver;
-- l'accesso;
-- la **prevalidazione** dello scope, il primo cancello del flusso (§16);
-- la pagina dell'analisi, ancora vuota.
+Full documentation of the **pre-analysis**: the page the client enters the flow from, and the
+subsystem that holds the specification rounds. Today it contains:
+- the form of questions, which on submission creates the project with its pre-specification;
+- the upload of a ready-made specification for an existing project;
+- the provenance from a driver's link;
+- logging in;
+- the **prevalidation** of the scope, the first gate of the flow (§16);
+- the analysis page, with the specification rounds (§14.3).
 
-> Ultimo aggiornamento: 2026-09-23 · versione del sottosistema: `0.17.0`.
+> Last updated: 2026-09-24 · subsystem version: `0.23.0`.
 
-Codice: `webtools/preanalyst/`. Guida breve: `webtools/preanalyst/README.md`.
+Code: `webtools/preanalyst/`. Short guide: `webtools/preanalyst/README.md`.
 
 ---
 
-## 0. Scheda rapida
+## 0. Quick sheet
 
-| Voce | Valore |
+| Item | Value |
 |---|---|
-| Cosa fa | La pagina della pre-analisi (form, provenienza da `discount` o `driver`, accesso), l'invio del form (§14), il caricamento di una specifica (§14.4), la pagina dell'analisi |
-| Stack | Node 23 · modulo `node:http` · **nunjucks** per le pagine e la pre-specifica · **yaml** per il front matter · **@anthropic-ai/sdk** per il prevalidator · **pdfkit** per il PDF del rifiuto |
-| Codice | `webtools/preanalyst/` |
-| Avvio (background, slegato dal terminale) | `webtools/preanalyst/webtools_preanalyst.sh --start` |
-| Arresto | `webtools/preanalyst/webtools_preanalyst.sh --stop` |
-| Processo | `…/node …/webtools/preanalyst/src/index.js` |
+| What it does | The pre-analysis page (form, provenance from `discount` or `driver`, logging in), the form submission (§14), the upload of a specification (§14.4), the analysis page |
+| Stack | Node 23 · the `node:http` module · **nunjucks** for the pages and the pre-specification · **yaml** for the front matter · **@anthropic-ai/sdk** for the prevalidator · **pdfkit** for the refusal PDF |
+| Code | `webtools/preanalyst/` |
+| Start (background, detached from the terminal) | `webtools/preanalyst/webtools_preanalyst.sh --start` |
+| Stop | `webtools/preanalyst/webtools_preanalyst.sh --stop` |
+| Process | `…/node …/webtools/preanalyst/src/index.js` |
 | PID / Log | `webtools/preanalyst/webtools_preanalyst.pid` / `webtools/preanalyst/webtools_preanalyst.log` |
-| Indirizzo | `http://127.0.0.1:9200` |
-| Dipende da | `webtools_anagraphics` (9100), `webtools_sso` (9300), `webtools-workspaces` (9400) |
-| Database | Nessuno: non ha stato proprio |
-| Accesso | La pagina è pubblica e si compila anche da sloggati. Il conto serve per **proseguire** (§7) |
-| Test | `npm test` (`node --test`): 6 sul prevalidator (§11) |
-| Stato | Invio, caricamento e prevalidazione collegati. La pagina dell'analisi è vuota |
+| Address | `http://127.0.0.1:9200` |
+| Depends on | `webtools_anagraphics` (9100), `webtools_sso` (9300), `webtools-workspaces` (9400) |
+| Database | None: it has no state of its own |
+| Access | The page is public and can be filled in while logged out. The account is needed to **go on** (§7) |
+| Tests | `npm test` (`node --test`): 16 tests (§11) |
+| State | Submission, upload and prevalidation connected. The analysis page counts the turns and stores the chat on the project; **fake** are the model's answer and the purchase of turns (§14.3.2) |
 
-Prova veloce, con i due server accesi:
+Quick check, with the servers running:
 ```sh
 open http://127.0.0.1:9200/
 open "http://127.0.0.1:9200/?discount=e8013cf2-34eb-4bc3-8a34-b08fb24a1bf3"
@@ -42,643 +42,808 @@ open "http://127.0.0.1:9200/?driver=7633be3d-e701-42ca-9fea-6c6d1bb4b7d1"
 
 ---
 
-## 1. Scopo e ruolo nel sistema
+## 1. Purpose and role in the system
 
-Nel flusso (`contesto/02. contesto_aggiornato.md`, `struttura/design/Sequence.drawio.pdf`) il
-cliente arriva dal sito vetrina `front-gate` e entra nel **preanalysis ecosystem**: formula il
-proprio bisogno, da solo con il *self analysis prompt* oppure con il form assistito dalla nostra AI.
-`preanalyst` è la porta d'ingresso di quel pezzo.
+In the flow (`contesto/02. contesto_aggiornato.md`,
+`struttura/design/Sequence.drawio.pdf`) the client arrives from the showcase site `front-gate` and
+enters the **preanalysis ecosystem**: they state their need, on their own with the *self analysis
+prompt* or with the form assisted by our AI. `preanalyst` is the front door of that piece.
 
-Di tutto questo oggi c'è solo il primo pezzo: **chi è il driver di riferimento**. Se il cliente
-arriva dal link di un driver — con un **codice sconto** oppure col solo **uid del driver** — la
-scelta è già fatta e non si tocca.
+Of all this, today there is only the first part: **who the reference driver is**. If the client
+arrives from a driver's link — with a **discount code** or with the **driver's uid** alone — the
+choice is already made and is not touched.
 
-Non è ancora collegato al `front-gate`: il bottone "Inizia" del sito vetrina non porta qui.
-
----
-
-## 2. Scelte funzionali
-
-- **La pagina è resa dal server.** Il browser riceve l'HTML già completo: la tendina arriva piena e
-  lo stato dello sconto è già deciso. Non c'è JavaScript lato client.
-- **Il browser non parla mai con `anagraphics`.** Le letture partono da questo server. Anagraphics
-  accetta solo chiamate da IP noti (`access.allowed_ips` della sua configurazione): se le facesse il browser, funzionerebbe finché
-  tutto sta sullo stesso Mac e si romperebbe il giorno del primo deploy vero. In più i dati interni
-  dei driver non finiscono in una pagina pubblica.
-- **Due modi di arrivare da un driver, un solo effetto sulla pagina.** `?discount=` e `?driver=`
-  bloccano tutti e due la tendina; il primo porta con sé uno sconto, il secondo no. La logica è
-  la stessa, il messaggio all'utente cambia.
-- **Il driver non si sceglie.** O lo porta il link con cui il cliente è arrivato, o lo assegniamo
-  noi: non c'è nessun campo da compilare e nessun modo di cambiarlo dalla pagina.
-- **Il box del driver si vede solo a chi arriva dal link di un driver**, cioè con `?discount=` o
-  `?driver=` nell'URL. Per tutti gli altri non c'è niente da dire: niente box, una colonna sola,
-  e nessuna chiamata ad anagraphics.
-- **Niente ferma la pre-analisi.** Sconto scaduto, driver sparito, elenco dei driver irraggiungibile:
-  in ogni caso storto il form resta lì e si può compilare. Un campo facoltativo non può bloccare
-  una pagina, quindi `GET /` risponde **sempre `200`**.
-- **Quello che arriva nell'URL non si perde.** `discount` e `driver` restano attaccati al form come
-  campi nascosti anche quando non si sono potuti risolvere: se il guasto è nostro, non deve
-  pagarlo l'utente con lo sconto perduto.
-- **Un solo avviso per volta**, sopra il campo, in italiano corrente e senza codici d'errore.
-- **Testi asciutti.** Le domande e gli avvisi dicono che cosa scrivere e a che cosa serve, e
-  nient'altro: niente toni motivazionali, niente complimenti al cliente, niente pubblicità del
-  metodo. Le affermazioni sono verificabili — «ogni cosa che escludi qui è un giro di domande in
-  meno» sì, «la domanda più utile di tutte» no. La regola sta in cima a `src/questions.js` e in
-  `CLAUDE.md`.
+It is not connected to the `front-gate` yet: the showcase site's "Inizia" button does not lead
+here.
 
 ---
 
-## 3. Scelte tecnologiche
+## 2. Functional choices
 
-- **Node con una sola dipendenza, nunjucks.** La pagina è una sola e il server fa tre cose: leggere due URL, comporre
-  HTML, servire file statici. `node:http` basta. Niente `npm install`, niente `node_modules`,
-  niente catena di pacchetti da aggiornare. `package.json` esiste per dichiarare nome, `type:
-  module` e la versione minima di Node, e ha `dependencies` vuoto **di proposito**.
-- **`fetch` globale** (Node ≥ 18) con `AbortSignal.timeout`.
-- **Nessun motore di template**: l'HTML si compone con template literal in `src/page.js`. Ogni
-  valore che viene dal database o dall'URL passa per `escape()`.
+- **The page is rendered by the server.** The browser receives the HTML already complete: the
+  driver box arrives filled in and the discount's state is already decided.
+- **The browser never talks to `anagraphics`.** The reads start from this server. Anagraphics only
+  accepts calls from known IPs (`access.allowed_ips` of its configuration): if the browser made
+  them, it would work while everything sits on the same Mac and would break on the day of the
+  first real deploy. On top of that, the drivers' internal data does not end up in a public page.
+- **Two ways of arriving from a driver, one effect on the page.** `?discount=` and `?driver=` both
+  lock the choice; the first carries a discount, the second does not. The logic is the same, the
+  message to the user changes.
+- **The driver is not chosen.** Either the link the client arrived with brings one, or we assign
+  one: there is no field to fill in and no way of changing it from the page.
+- **The driver box is seen only by whoever arrives from a driver's link**, that is, with
+  `?discount=` or `?driver=` in the URL. For everybody else there is nothing to say: no box, a
+  single column, and not even a call to anagraphics.
+- **Nothing stops the pre-analysis.** An expired discount, a vanished driver, an unreachable
+  driver list: in every crooked case the form stays there and can be filled in. An optional field
+  cannot block a page, so `GET /` **always** answers `200`.
+- **What arrives in the URL is not lost.** `discount` and `driver` stay attached to the form as
+  hidden fields even when they could not be resolved: if the failure is ours, the user must not
+  pay for it with a lost discount.
+- **One notice at a time**, above the field, in plain language and with no error codes.
+- **Dry texts.** The questions and the notices say what to write and what it is for, and nothing
+  else: no motivational tone, no compliments to the client, no advertising of the method. The
+  claims can be checked — «ogni cosa che escludi qui è un giro di domande in meno» yes, «la
+  domanda più utile di tutte» no. The rule is at the top of `src/questions.js` and in `CLAUDE.md`.
 
 ---
 
-## 4. Architettura
+## 3. Technological choices
 
-### 4.1 Mappa dei file
+- **Node with `node:http`**, no framework: the routes are few and the server does a handful of
+  things — reading a few URLs, rendering templates, serving static files.
+- **nunjucks** for the pages and for the pre-specification, with autoescape on for the HTML and
+  **off** for the markdown of the pre-specification, which is not HTML (§14.2). The HTML does not
+  live in the code: see §4.1 and §2 of `src/page.js`.
+- **yaml** for the specifications' front matter, **pdfkit** for the refusal PDF,
+  **@anthropic-ai/sdk** for the prevalidator's provider (§16.1).
+- **Global `fetch`** (Node ≥ 18) with `AbortSignal.timeout` towards anagraphics, the sso and
+  workspaces.
+
+---
+
+## 4. Architecture
+
+### 4.1 File map
 
 ```
 webtools/preanalyst/
-├── package.json       # nome webtools_preanalyst, type=module, dipendenze: nunjucks, yaml, pdfkit, @anthropic-ai/sdk
-├── README.md          # guida breve
-├── webtools_preanalyst.sh    # CONTROLLO: --start / --stop (nohup + file PID verificato)
-├── webtools_preanalyst.pid   # generato da --start, rimosso da --stop
-├── webtools_preanalyst.log   # generato da --start (append)
+├── package.json       # name webtools_preanalyst, type=module, dependencies: nunjucks, yaml, pdfkit, @anthropic-ai/sdk
+├── README.md          # short guide
+├── webtools_preanalyst.sh    # CONTROL: --start / --stop (nohup + a verified PID file)
+├── webtools_preanalyst.pid   # generated by --start, removed by --stop
+├── webtools_preanalyst.log   # generated by --start (appended)
 ├── src/
-│   ├── index.js       # AVVIO: legge la configurazione (o esce con 1), listen, riga di conferma, SIGTERM/SIGINT
-│   ├── settings.js    # loadSettings(): la configurazione `preanalyst` da anagraphics → impostazioni del server
-│   ├── anagraphics.js # client HTTP: driver, sconti, progetti, passi della pipeline; mai eccezioni al chiamante
-│   ├── workspaces.js  # client HTTP verso webtools-workspaces: storeSpec(), latestSpec()
-│   ├── prespec.js     # le risposte del form → la pre-specifica .md (§14.2)
-│   ├── prevalidator.js   # IL PRIMO CANCELLO: legge la risposta del modello e decide (§16)
-│   ├── rejection_pdf.js  # il PDF dei dati del form dopo un rifiuto (§16.5)
-│   ├── driver_link.js    # i sei stati della provenienza: resolveDriverLink(), isResolved()
-│   ├── project_driver.js # driver e sconto ricontrollati all'invio (§14.5)
-│   ├── ambassador.js     # ?ambassador=: resolveAmbassador() per la pagina, ambassadorOf() per l'invio
-│   ├── questions.js   # LE DOMANDE del form, come dati: è il file da rifinire
-│   ├── page.js        # prepara i DATI della pagina; l'HTML sta in templates/
-│   ├── server.js      # routing: le rotte di §7
+│   ├── index.js       # STARTUP: reads the configuration (or exits with 1), listen, the confirmation line, SIGTERM/SIGINT
+│   ├── settings.js    # loadSettings(): the `preanalyst` configuration from anagraphics → the server's settings
+│   ├── anagraphics.js # HTTP client: drivers, discounts, projects, pipeline steps, users; never exceptions to the caller
+│   ├── workspaces.js  # HTTP client towards webtools-workspaces: storeSpec(), latestSpec()
+│   ├── prespec.js     # the form's answers → the .md pre-specification (§14.2)
+│   ├── prevalidator.js   # THE FIRST GATE: reads the model's answer and decides (§16)
+│   ├── rejection_pdf.js  # the PDF of the form data after a refusal (§16.5)
+│   ├── driver_link.js    # the states of the provenance: resolveDriverLink(), isResolved()
+│   ├── project_driver.js # driver and discount checked again at submission time (§14.5)
+│   ├── ambassador.js     # ?ambassador=: resolveAmbassador() for the page, ambassadorOf() for the submission
+│   ├── questions.js   # THE QUESTIONS of the form, as data: this is the file to refine
+│   ├── page.js        # prepares the page's DATA; the HTML lives in templates/
+│   ├── server.js      # routing: the routes of §7
 │   ├── ai/
-│   │   ├── webtools_ai.js         # la porta verso i fornitori: decide() (§16.1)
-│   │   └── providers/anthropic.js # il provider Anthropic, con l'SDK ufficiale
+│   │   ├── webtools_ai.js         # the door towards the providers: decide() (§16.1)
+│   │   └── providers/anthropic.js # the Anthropic provider, with the official SDK
 │   └── commons/
-│       ├── configuration_client.js # COPIA generata dal deployer: non modificare qui
-│       ├── sso_client.js   # COPIA generata dal deployer: non modificare qui
-│       ├── spec_front_matter.js # COPIA generata dal deployer: non modificare qui
-│       └── i18n/           # COPIA generata dal deployer: motore e cataloghi delle lingue
+│       ├── configuration_client.js # a COPY generated by the deployer: do not edit here
+│       ├── sso_client.js   # a COPY generated by the deployer: do not edit here
+│       ├── spec_front_matter.js # a COPY generated by the deployer: do not edit here
+│       └── i18n/           # a COPY generated by the deployer: the languages engine and the catalogues
 ├── policies/
-│   └── scope-v1.md    # COPIA generata dal deployer: l'originale è in configurator/policies/
+│   └── scope-v1.md    # a COPY generated by the deployer: the original is in configurator/policies/
 ├── templates/
-│   ├── page.njk            # la pagina
-│   ├── login_done.njk      # la paginetta che chiude la finestra del login
-│   ├── analysis.njk        # la pagina dell'analisi, vuota
-│   ├── message.njk         # una pagina con un messaggio: gli esiti andati storti
-│   ├── macros/fields.njk   # i campi, disegnati dai dati di questions.js, con dentro le risposte già date
-│   ├── partials/driver_box.njk  # il box del driver
-│   ├── partials/access.njk # testata e modale del login, come macro
-│   ├── partials/driver_work.njk # il blocco del lavoro autonomo
-│   ├── partials/ambassador_box.njk # il box dell'ambassador
-│   ├── partials/upload_box.njk  # il blocco del caricamento di una specifica
-│   ├── partials/rejection_dialog.njk # la modale del rifiuto (§16.4)
-│   ├── fragments/          # testata e colonna del driver, da sole, per /session-fragment
-│   └── commons/            # COPIE generate dal deployer: base.njk, loader.njk, locale_switch.njk
-│       └── prespec.md.njk  # la pre-specifica (markdown, senza autoescape); l'originale è in configurator/documents/
+│   ├── page.njk            # the page
+│   ├── login_done.njk      # the small page that closes the login window
+│   ├── analysis.njk        # the analysis page: the specification rounds
+│   ├── message.njk         # a page with a message: the outcomes that went wrong
+│   ├── macros/fields.njk   # the fields, drawn from the data of questions.js, holding the answers already given
+│   ├── partials/driver_box.njk  # the driver box
+│   ├── partials/access.njk # the header and the login modal, as macros
+│   ├── partials/driver_work.njk # the autonomous work block
+│   ├── partials/ambassador_box.njk # the ambassador box
+│   ├── partials/upload_box.njk  # the block for uploading a specification
+│   ├── partials/rejection_dialog.njk # the refusal modal (§16.4)
+│   ├── fragments/          # the header and the driver column, on their own, for /session-fragment
+│   └── commons/            # COPIES generated by the deployer: base.njk, loader.njk, locale_switch.njk
+│       └── prespec.md.njk  # the pre-specification (markdown, with no autoescape); the original is in configurator/documents/
 ├── scripts/
-│   ├── prevalidate.js      # prova una policy su un file: fa una chiamata vera, quindi costa (§16.8)
-│   └── esempi/             # cinque pre-specifiche, una per esito e una per il flag
+│   ├── prevalidate.js      # tries a policy on a file: it makes a real call, so it costs (§16.8)
+│   └── examples/           # five pre-specifications, one per outcome and one for the flag
 ├── tests/
-│   ├── prevalidator.test.js # come si legge la risposta del modello e che cosa se ne fa
-│   └── server.test.js       # il conteggio dei giri di chi è tornato indietro
+│   ├── prevalidator.test.js # how the model's answer is read and what is done with it
+│   └── server.test.js       # the counting of the rounds of whoever has been sent back
 └── public/
-    ├── styles.css     # stile LOCALE di questa pagina
-    ├── gate.js        # il cancello dell'invio: da sloggati apre la modale del login
-    ├── upload.js      # il caricamento di una specifica già pronta
-    ├── rejection.js   # apre la modale del rifiuto
-    ├── sso_popup.js   # COPIA generata dal deployer: non modificare qui
-    ├── webtools_loader.js # COPIA generata dal deployer: non modificare qui
-    ├── commons.css    # COPIA generata dal deployer: non modificare qui
-    ├── fonts/         # COPIA generata dal deployer: non modificare qui
+    ├── styles.css     # the LOCAL style of these pages
+    ├── gate.js        # the submission gate: logged out it opens the login modal, and once the login is done it sends
+    ├── analysis.js    # the specification-rounds chat (§14.3)
+    ├── upload.js      # the upload of a ready-made specification
+    ├── rejection.js   # opens the refusal modal
+    ├── sso_popup.js   # a COPY generated by the deployer: do not edit here
+    ├── webtools_loader.js # a COPY generated by the deployer: do not edit here
+    ├── commons.css    # a COPY generated by the deployer: do not edit here
+    ├── fonts/         # a COPY generated by the deployer: do not edit here
     └── assets/
-        └── mark.svg   # copiato a mano da front-gate/assets/ (il marchio non è nel deployer)
+        └── mark.svg   # copied by hand from front-gate/assets/ (the brand is not in the deployer)
 ```
 
-### 4.2 Percorso di una richiesta a `/`
+### 4.2 The path of a request to `/`
 
-0. Se nell'indirizzo c'è `?ticket=…`, il browser sta tornando dal login: si scambia il biglietto
-   con il sso, si mette il cookie di sessione e si rimanda il browser allo stesso indirizzo senza
-   il biglietto (§6.1). Altrimenti si legge il cookie e si chiede al sso chi è.
-1. `server.js` accetta solo `GET` (gli altri metodi ricevono `405`).
-2. Se **non** c'è né `discount` né `driver`, si salta tutto: niente box, nessuna chiamata ad
-   anagraphics, si compone la pagina con il solo form.
-3. Altrimenti `listDrivers()` chiama `GET /drivers` su anagraphics.
-   - Se fallisce, la tendina sparisce, il box lo dice e il form resta: la pagina è comunque `200`.
-4. `resolveDriverLink()` guarda i parametri dell'URL e decide lo stato (§5).
-   - Con `?discount=<codice>` fa una **seconda lettura**, `GET /discounts/{codice}`.
-   - Con `?driver=<uid>` **non legge niente**: l'elenco dei driver è già in mano e li contiene
-     tutti, quindi basta cercare l'uid lì dentro.
-5. `renderPage()` compone l'HTML e il server risponde `200`.
+0. If the address holds `?ticket=…`, the browser is coming back from the login: the ticket is
+   exchanged with the sso, the session cookie is set and the browser is sent back to the same
+   address without the ticket (§6.1). Otherwise the cookie is read and the sso is asked who it is.
+1. `server.js` accepts only `GET` (the other methods get a `405`).
+2. If there is **neither** `discount` nor `driver`, everything is skipped: no box, no call to
+   anagraphics, the page is composed with the form alone.
+3. Otherwise `listDrivers()` calls `GET /drivers` on anagraphics.
+   - If it fails, the box says so and the form stays: the page is `200` all the same.
+4. `resolveDriverLink()` looks at the URL parameters and decides the state (§5).
+   - With `?discount=<code>` it makes a **second read**, `GET /discounts/{code}`.
+   - With `?driver=<uid>` it **reads nothing**: the driver list is already in hand and holds all
+     of them, so it is enough to look the uid up in there.
+5. `renderPage()` composes the HTML and the server answers `200`.
 
 ---
 
-## 5. La provenienza nell'URL
+## 5. The provenance in the URL
 
-Un driver può mandare un cliente qui in due modi, e sono due parametri diversi:
+A driver can send a client here in two ways, and they are two different parameters:
 
-| Parametro | Che cos'è | Sconto |
+| Parameter | What it is | Discount |
 |---|---|---|
-| `?discount=<codice>` | Un **codice sconto**: l'UUID `discount_code` della collection `discounts` | Sì, quello del codice |
-| `?driver=<uid>` | L'**uid** di un driver: l'UUID `uid` della collection `drivers` | **No**, nessuno |
+| `?discount=<code>` | A **discount code**: the `discount_code` UUID of the `discounts` collection | Yes, the code's |
+| `?driver=<uid>` | A driver's **uid**: the `uid` UUID of the `drivers` collection | **No**, none |
 
-In tutti e due i casi, se il driver si trova, la tendina arriva **già scelta e bloccata**. Quello
-che cambia è lo sconto a valle e il messaggio all'utente.
+In both cases, if the driver is found, the choice arrives **already made and locked**. What
+changes is the discount downstream and the message to the user.
 
-Gli stati possibili sono definiti in `src/driver_link.js`:
+The possible states are defined in `src/driver_link.js`:
 
-| Stato | Quando | Cosa vede l'utente |
+| State | When | What the user sees |
 |---|---|---|
-| `none` | Nessuno dei due parametri | Nessun box |
-| `discount_applied` | Sconto letto **e** il suo driver esiste ed è abilitato | Il **nome** del driver, e l'avviso verde con la percentuale |
-| `discount_expired` | La lettura dello sconto **fallisce** | "Non è applicabile: con ogni probabilità è scaduto. Vai avanti lo stesso: il driver lo assegniamo noi" |
-| `discount_driver_missing` | Sconto letto, ma il suo `driver.uid` non si trova | "Il driver non si trova più. Contattalo per un codice nuovo" |
-| `discount_driver_disabled` | Sconto letto, ma il suo driver ha `enabled` diverso da `true` | "Il driver a cui è collegato, X, non è abilitato a seguire progetti, e con lui non possiamo proseguire. Contattalo". Il codice sconto **non** viaggia col form |
-| `driver_applied` | `?driver=` con un uid che esiste, driver abilitato | Il **nome** del driver, e nient'altro: non c'è nessun avviso |
-| `own_link` | Lo sconto o il link sono di **chi ha fatto il login** | Nessun box: a spiegarlo è il blocco del lavoro autonomo (§6.3) |
-| `driver_unknown` | `?driver=` con un uid che non esiste | "Il driver di questo link non si trova più. Contattalo" |
-| `driver_disabled` | `?driver=` con un driver non abilitato | "Il driver di questo link, X, non è abilitato a seguire progetti, e con lui non possiamo proseguire. Contattalo" |
+| `none` | Neither of the two parameters | No box |
+| `discount_applied` | The discount was read **and** its driver exists and is enabled | The driver's **name**, and the green notice with the percentage |
+| `discount_expired` | Reading the discount **fails** | "It cannot be applied: in all likelihood it has expired. Go on anyway: we will assign the driver" |
+| `discount_driver_missing` | The discount was read, but its `driver.uid` cannot be found | "The driver can no longer be found. Contact them for a new code" |
+| `discount_driver_disabled` | The discount was read, but its driver has `enabled` other than `true` | "The driver it is linked to, X, is not enabled to supervise projects, and we cannot go on with them. Contact them". The discount code does **not** travel with the form |
+| `driver_applied` | `?driver=` with a uid that exists, driver enabled | The driver's **name**, and nothing else: there is no notice |
+| `own_link` | The discount or the link belong to **whoever logged in** | No box: the autonomous work block explains it (§6.3) |
+| `driver_unknown` | `?driver=` with a uid that does not exist | "This link's driver can no longer be found. Contact them" |
+| `driver_disabled` | `?driver=` with a driver who is not enabled | "This link's driver, X, is not enabled to supervise projects, and we cannot go on with them. Contact them" |
 
-Negli stati `discount_applied` e `driver_applied` il driver è **riconosciuto**: c'è un nome da
-mostrare e un `uid` che viaggia col form come campo nascosto. L'insieme è la costante `RESOLVED`
-in `driver_link.js`, e la pagina chiede `isResolved()` invece di elencare gli stati a mano.
-Negli altri casi non si manda nessun driver: lo assegniamo noi leggendo la richiesta.
+In the `discount_applied` and `driver_applied` states the driver is **recognised**: there is a name
+to show and a `uid` travelling with the form as a hidden field. The set is the `RESOLVED` constant
+in `driver_link.js`, and the page asks `isResolved()` instead of listing the states by hand. In the
+other cases no driver is sent: we assign one after reading the request.
 
-### 5.1 Se arrivano tutti e due i parametri
+### 5.1 If both parameters arrive
 
-Vince **`discount`**, e `driver` viene ignorato.
+**`discount`** wins, and `driver` is ignored.
 
-È l'unico dei due che porta con sé un effetto economico: seguire `driver` toglierebbe all'utente
-uno sconto a cui ha diritto, mentre il contrario, al massimo, gli dà lo sconto del link da cui è
-arrivato davvero. Un link con entrambi i parametri è però quasi sempre un errore di chi l'ha
-costruito, quindi il caso finisce nel log:
-
-```
-[preanalyst] link con discount e driver insieme: vince discount (discount=…, driver=…)
-```
-
-### 5.2 `driver_unknown` non costa una lettura in più
-
-`?driver=` non interroga `GET /drivers/{uid}`: l'elenco dei driver è già stato caricato per
-riempire la tendina e li contiene **tutti**, quindi l'uid o è lì dentro o non esiste. Una seconda
-lettura darebbe la stessa risposta più tardi.
-
-Ne segue che `driver_unknown` non distingue "driver cancellato" da "uid inventato": per la pagina
-sono la stessa cosa, e il messaggio è lo stesso.
-
-### 5.3 Perché `discount_expired` copre anche il guasto tecnico
-
-`discount_expired` scatta sia sul `404 DISCOUNT_NOT_FOUND` (il codice non esiste) sia sul guasto tecnico
-(anagraphics spento, Mongo giù, timeout, `403`, `500`). All'utente si dice comunque "probabilmente
-è scaduto".
-
-È una **semplificazione voluta**, chiesta esplicitamente: per chi sta davanti allo schermo il
-risultato non cambia, lo sconto non si applica, e non ha senso spiegargli che un servizio interno
-non risponde. Ma le due cose **non sono la stessa cosa**, quindi la differenza resta nel log:
+It is the only one of the two carrying an economic effect: following `driver` would take away a
+discount the user is entitled to, while the opposite, at worst, gives them the discount of the link
+they really arrived from. A link with both parameters is almost always a mistake by whoever built
+it, though, so the case goes in the log:
 
 ```
-[anagraphics] /discounts/xxx: HTTP 404 DISCOUNT_NOT_FOUND     ← codice inesistente
-[anagraphics] /discounts/xxx: TypeError fetch failed          ← servizio irraggiungibile
+[preanalyst] link with discount and driver together: discount wins (discount=…, driver=…)
 ```
 
-Va rivisto quando lo sconto avrà un valore economico reale: dire "scaduto" mentre il servizio è
-giù fa perdere uno sconto valido a chi ne aveva diritto (§13).
+### 5.2 `driver_unknown` does not cost an extra read
 
-### 5.4 Il nome del driver quando non si trova
+`?driver=` does not query `GET /drivers/{uid}`: the driver list has already been loaded to fill the
+box and holds **all** of them, so the uid is either in there or does not exist. A second read would
+give the same answer later.
 
-Il nome mostrato viene dalla **copia ridondata dentro lo sconto** (`driver.screen_name`), non dalla
-collection `drivers`: se il driver non è più in elenco, quella copia è l'unico appiglio rimasto per
-far capire all'utente chi deve contattare. Se manca anche quella, l'avviso si limita a dire che il
-driver non si trova.
+It follows that `driver_unknown` does not tell "a deleted driver" from "an invented uid": to the
+page they are the same thing, and the message is the same.
+### 5.3 Why `discount_expired` also covers the technical failure
 
-### 5.5 Come viaggia il driver
+`discount_expired` fires both on the `404 DISCOUNT_NOT_FOUND` (the code does not exist) and on the
+technical failure (anagraphics down, Mongo down, a timeout, a `403`, a `500`). The user is told
+"in all likelihood it has expired" in either case.
 
-Quando il driver è riconosciuto, il suo `uid` viene messo in un `<input type="hidden"
-name="driver">` agganciato al form con `form="gate-form"`. Non c'è nessun controllo visibile da
-compilare: il box è informativo, il dato viaggia nascosto.
+It is a **deliberate simplification**, explicitly asked for: for whoever is in front of the screen
+the outcome does not change, the discount does not apply, and there is no point in explaining that
+an internal service is not answering. But the two things **are not the same**, so the difference
+stays in the log:
 
-All'invio il valore **si ricontrolla sul server** (`linkTermsOf()` in `src/project_driver.js`):
-un campo nascosto non impedisce a nessuno di mandare quello che vuole. Lo sconto si rilegge
-(`GET /discounts/{code}`) e il driver del progetto diventa quello dello sconto; il driver si
-rilegge (`GET /drivers/{uid}`) e vale solo se esiste, è `enabled: true` e non è chi compila. Se
-non vale, driver e sconto cadono insieme e il driver lo assegna il sistema. Se anagraphics non
-risponde l'invio non si registra (`503`).
+```
+[anagraphics] /discounts/xxx: HTTP 404 DISCOUNT_NOT_FOUND     ← a code that does not exist
+[anagraphics] /discounts/xxx: TypeError fetch failed          ← the service is unreachable
+```
 
-### 5.6 L'ambassador (`?ambassador=<uid>`)
+It is to be revisited once the discount has a real economic value: saying "expired" while the
+service is down makes whoever was entitled to a valid discount lose it (§13).
 
-L'ambassador è un driver che ha invitato l'utente a usare webtools: se il progetto va a buon fine
-gli spetta metà della fee di sistema. Il box **Invito** mostra il suo nome e la frase «Ti ha
-invitato a usare webtools.», e compare solo se:
+### 5.4 The driver's name when they cannot be found
 
-- nell'URL non c'è `?discount=` né `?driver=` (con uno dei due, `ambassador` si ignora);
-- l'uid è quello di un driver, cercato nell'elenco di `GET /drivers` (abilitato o no: per invitare
-  basta essere registrati come driver);
-- chi ha fatto il login non è quel driver;
-- la casella del lavoro autonomo non è segnata: segnata, il box sparisce
-  (`:has(#autonomous-work:checked)`, senza JavaScript).
+The name shown comes from the **copy duplicated inside the discount** (`driver.screen_name`), not
+from the `drivers` collection: if the driver is no longer in the list, that copy is the only thing
+left for making the user understand who they must contact. If that is missing too, the notice
+limits itself to saying that the driver cannot be found.
 
-In ogni altro caso, compreso l'elenco dei driver irraggiungibile, il box non c'è e la pagina non
-dice niente. L'uid viaggia nel campo nascosto `ambassador`.
+### 5.5 How the driver travels
 
-**All'invio si ricontrolla** (`ambassadorOf()`): stesse condizioni, con lavoro autonomo, link e
-proprio uid letti dal form e dalla sessione, e il driver cercato con `GET /drivers/{uid}`. Se esiste,
-il suo uid va in `billing.ambassador_uid`; se non esiste, `null`. Se anagraphics non risponde
-l'invio non si registra (`503`), invece di perdere l'ambassador.
+When the driver is recognised, their `uid` is put in an `<input type="hidden" name="driver">`
+attached to the form with `form="gate-form"`. There is no visible control to fill in: the box is
+informative, the datum travels hidden.
+
+On submission the value **is checked again on the server** (`linkTermsOf()` in
+`src/project_driver.js`): a hidden field does not stop anybody from sending whatever they like. The
+discount is read again (`GET /discounts/{code}`) and the project's driver becomes the discount's;
+the driver is read again (`GET /drivers/{uid}`) and counts only if they exist, are `enabled: true`
+and are not the person filling the form in. If it does not count, the driver and the discount fall
+together and the system assigns the driver. If anagraphics does not answer, the submission is not
+recorded (`503`).
+
+### 5.6 The ambassador (`?ambassador=<uid>`)
+
+The ambassador is a driver who invited the user to use webtools: if the project goes through, half
+of the system fee is theirs. The **Invito** box shows their name and the sentence «Ti ha invitato a
+usare webtools.», and appears only if:
+
+- there is neither `?discount=` nor `?driver=` in the URL (with either of them, `ambassador` is
+  ignored);
+- the uid is a driver's, looked up in the list of `GET /drivers` (enabled or not: to invite, being
+  registered as a driver is enough);
+- whoever logged in is not that driver;
+- the autonomous work checkbox is not ticked: ticked, the box disappears
+  (`:has(#autonomous-work:checked)`, with no JavaScript).
+
+In every other case, the unreachable driver list included, the box is not there and the page says
+nothing. The uid travels in the hidden `ambassador` field.
+
+**On submission it is checked again** (`ambassadorOf()`): the same conditions, with the autonomous
+work, the link and one's own uid read from the form and from the session, and the driver looked up
+with `GET /drivers/{uid}`. If they exist, their uid goes into `billing.ambassador_uid`; if they do
+not, `null`. If anagraphics does not answer the submission is not recorded (`503`), instead of
+losing the ambassador.
 
 ---
 
-## 6. L'accesso
+## 6. Access
 
-La pre-analisi si compila **anche da sloggati**: chi arriva dal sito vetrina non ha un conto e non
-gli si chiede di farselo per rispondere a delle domande. Il conto serve al passo dopo, per
-proseguire, e lì viene chiesto.
+The pre-analysis is filled in **while logged out too**: whoever arrives from the showcase site has
+no account, and we do not ask them to make one in order to answer some questions. The account is
+needed at the next step, to go on, and that is where it is asked for.
 
-### 6.1 Che cosa vede l'utente
+### 6.1 What the user sees
 
-| Dove | Da sloggato | Da loggato |
+| Where | Logged out | Logged in |
 |---|---|---|
-| Testata | "Entra", che apre il login **in una finestra a parte** | Il nome della persona e "Esci" |
-| "Manda la richiesta" | Il form non parte: si apre una **modale** "Per mandare la richiesta serve un account", con "Entra" e "Registrati" | Il form parte |
-| "Carica" (analisi già pronta) | Il file non parte: si apre una **modale** "Per caricare un'analisi serve un account"; a login finito il file parte da solo | Il file parte |
+| Header | "Entra", which opens the login **in a separate window** | The person's name and "Esci" |
+| "Manda la richiesta" | The form does not go: a **modal** opens, "Per mandare la richiesta serve un account", with "Entra" and "Registrati"; once the login is done the request goes by itself | The form goes |
+| "Carica" (an analysis already prepared) | The file does not go: a **modal** opens, "Per caricare un'analisi serve un account"; once the login is done the file goes by itself | The file goes |
 
-Nessun avviso fisso nella pagina: la modale compare solo al clic su un'azione che richiede il
-conto, e la finestra del login si apre solo dai suoi link. Senza JavaScript il form parte comunque
-e il server risponde che serve l'accesso.
+No fixed notice in the page: the modal appears only on a click on an action that requires the
+account, and the login window opens only from its links. Without JavaScript the form goes anyway
+and the server answers that access is needed.
 
-**Il login si apre in una finestra a parte, e questa pagina non si ricarica mai.** Se il login
-sostituisse la pagina, tutto quello che è stato scritto nel form andrebbe perso: non c'è nessuna
-bozza salvata da nessuna parte. Finito il login la finestra **si chiude da sola** e la pagina di
-partenza **si aggiorna sul posto**: cambiano la testata e la colonna del driver, la modale si
-chiude, il form resta esattamente com'era.
+**The login opens in a separate window, and this page never reloads.** If the login replaced the
+page, everything written in the form would be lost: there is no draft saved anywhere. Once the
+login is done the window **closes by itself** and the starting page **updates in place**: the
+header and the driver column change, the modal closes, the form stays exactly as it was.
 
-Se il sso non risponde, la testata e la modale lo dicono e il form resta compilabile: **niente
-ferma la pre-analisi**, com'è già per il box del driver.
+**After the login the submission starts again by itself** (`public/gate.js`), as the upload of a
+file already does. Whoever pressed "Manda la richiesta" had already asked to send it: the login was
+an interruption, not a change of mind, and leaving the page still after the modal closes makes it
+look as though something broke. Closing the modal without entering cancels the wait: nothing goes
+from there any more.
 
-### 6.2 Come funziona, sotto
+**One exception, and one only**: if the login makes the **autonomous work** block appear — it is
+there only for drivers, and before entering we did not know that whoever is filling the form in was
+one — the submission does not start, and above the button a notice lights up saying why. It is a
+choice that appeared at that moment, and sending would take it out of their hands without their
+having seen it. The rest of the right-hand column does not raise the problem: the driver is not
+chosen, those boxes are only read.
 
-Il giro del sso è quello descritto in `docs/subsystems/sso/README.md` §1.1; questo sottosistema
-non ne scrive una riga a mano, usa le **copie generate** del client condiviso:
-`src/commons/sso_client.js` sul server e `public/sso_popup.js` nel browser (originali in
-`webtools/commons/sso/`, distribuiti da `webtools/configurator/deploy.sh sso`).
+The notice is already in the page, off (`templates/page.njk`, `[data-autonomous-notice]`):
+`gate.js` lights it up and writes no text, which lives in the catalogues
+(`preanalyst.page.autonomous_appeared`).
 
-1. Su ogni caricamento della pagina, `currentSession()` legge il cookie e chiede al sso chi è.
-   Tre esiti, e sono tre cose diverse: loggato, non loggato, oppure **non lo sappiamo** perché il
-   sso non risponde. L'ultimo non si tratta come un logout.
-2. "Entra" apre con `window.open()` il login del sso, con
-   `next=<nostro indirizzo>/login-done` — **non** la pagina di partenza (§6.4).
-3. Finito il login, il sso rimanda quella finestra a `GET /login-done?ticket=…`. Il server scambia
-   il biglietto da dietro (`claimTicket`), mette il **proprio** cookie e rende una paginetta che
-   porta il marcatore `data-sso-login-done`.
-4. Lo script vede il marcatore, avvisa con `postMessage` la finestra che l'ha aperta e **chiude**
-   la propria.
-5. La pagina di partenza riceve il messaggio e chiede `GET /session-fragment`: riceve i pezzi
-   **già resi dai template** e li mette al posto di quelli vecchi. Non si ricarica niente, il form
-   non viene toccato.
-6. La durata del cookie non è decisa qui: si legge da `expires_at` della sessione. Il cookie non
-   deve sopravvivere alla sessione che rappresenta.
-7. `GET /logout` toglie il nostro cookie e manda il browser a `/ui/logout` del sso, che chiude la
-   sessione condivisa. **"Esci" esce da tutto**, non solo da questa pagina.
+If the sso does not answer, the header and the modal say so and the form stays fillable: **nothing
+stops the pre-analysis**, as is already the case for the driver box.
 
-**Senza JavaScript funziona lo stesso**: i link hanno un `href` vero, il login si apre in una
-scheda normale e finisce sulla paginetta di `/login-done`, che dice di tornare alla pre-analisi e
-ricaricarla. Si perde la chiusura automatica e l'aggiornamento sul posto, non l'accesso.
+### 6.2 How it works, underneath
 
-**L'HTML dei due pezzi non è scritto nel JavaScript**: i macro di
-`templates/partials/access.njk` servono sia la pagina sia `/session-fragment`, quindi la versione
-appena caricata e quella aggiornata non possono divergere. Lo script sposta nodi, non compone
-markup.
+The sso round trip is the one described in `docs/subsystems/sso/README.md` §1.1; this subsystem
+does not write a line of it by hand, it uses the **generated copies** of the shared client:
+`src/commons/sso_client.js` on the server and `public/sso_popup.js` in the browser (the originals
+are in `webtools/commons/sso/`, distributed by `webtools/configurator/deploy.sh sso`).
 
-### 6.5 Perché il ritorno non è sulla pagina di partenza
+1. On every load of the page, `currentSession()` reads the cookie and asks the sso who it is.
+   Three outcomes, and they are three different things: logged in, not logged in, or **we do not
+   know** because the sso does not answer. The last one is not treated as a logout.
+2. "Entra" opens the sso's login with `window.open()`, with
+   `next=<our address>/login-done` — **not** the starting page (§6.4).
+3. Once the login is done, the sso sends that window back to `GET /login-done?ticket=…`. The server
+   exchanges the ticket from behind (`claimTicket`), sets **its own** cookie and renders a small
+   page carrying the `data-sso-login-done` marker.
+4. The script sees the marker, notifies the window that opened it with `postMessage` and **closes**
+   its own.
+5. The starting page receives the message and asks for `GET /session-fragment`: it receives the
+   pieces **already rendered by the templates** and puts them in place of the old ones. Nothing is
+   reloaded, the form is not touched.
+6. The cookie's lifetime is not decided here: it is read from the session's `expires_at`. The
+   cookie must not outlive the session it represents.
+7. `GET /logout` removes our cookie and sends the browser to the sso's `/ui/logout`, which closes
+   the shared session. **"Esci" exits everything**, not just this page.
 
-Perché il `next` è la finestra del login, non quella di prima. Mandandolo alla pre-analisi si
-aprirebbe una **seconda copia del form** dentro la finestra sbagliata, mentre quella vera —
-quella con le risposte scritte — resterebbe convinta che non sia entrato nessuno. `/login-done`
-esiste per chiudere il giro nel posto giusto.
+**Without JavaScript it works all the same**: the links have a real `href`, the login opens in an
+ordinary tab and ends on the small `/login-done` page, which says to go back to the pre-analysis
+and reload it. What is lost is the automatic closing and the in-place update, not access.
 
-### 6.3 Quando chi compila è un driver
+**The HTML of the two pieces is not written in the JavaScript**: the macros of
+`templates/partials/access.njk` serve both the page and `/session-fragment`, so the version just
+loaded and the updated one cannot diverge. The script moves nodes, it does not compose markup.
 
-Un driver può usare la pre-analisi per un lavoro suo. Allora valgono due regole.
+### 6.5 Why the return is not to the starting page
 
-**Il proprio link non si applica.** Se lo sconto o l'uid nell'indirizzo puntano al driver che ha
-fatto il login, vengono ignorati: sarebbe uno sconto che si fa da solo. Il box del driver non
-compare affatto, e a dirlo è il blocco qui sotto — «il link che hai usato è tuo». I campi nascosti
-non partono: quel codice non viaggia con la richiesta.
+Because the `next` is the login window, not the one from before. Sending it to the pre-analysis
+would open a **second copy of the form** inside the wrong window, while the real one — the one with
+the answers written in it — would stay convinced that nobody had entered. `/login-done` exists to
+close the round trip in the right place.
 
-Il confronto si fa sull'**uid** del driver (`session.data.driver_uid` contro l'uid del driver dello
-sconto o del link), non sullo username: l'uid non cambia mai, lo username sì.
+### 6.3 When whoever is filling the form in is a driver
 
-**I link di altri driver restano validi.** Quello è lavoro portato da loro, e il box li mostra come
-sempre.
+A driver can use the pre-analysis for work of their own. Then two rules hold.
 
-**Il blocco "Lavoro autonomo"** compare sotto il box del driver, e solo a chi è un driver: una
-casella, «è un lavoro che porto io», e l'informativa: nel lavoro autonomo al prezzo non si
-aggiunge la quota del driver, lo si paga a consumo con i token del driver più la fee di sistema.
-Il link «Vuoi saperne di più?» apre in una **nuova scheda** la sezione
-`lavora-con-noi.html#lavoro-autonomo` del front-gate, il
-cui indirizzo è `subsystems_infos.front_gate.url`: nella stessa scheda il driver perderebbe le
-risposte già scritte. Segnata la casella, il box del driver qui sopra si **spegne** — in grigio, meno
-contrasto — e compare la riga che dice che il sistema non terrà conto di quello che c'è lì.
+**One's own link does not apply.** If the discount or the uid in the address point to the driver
+who logged in, they are ignored: it would be a discount they give themselves. The driver box does
+not appear at all, and what says so is the block below — «il link che hai usato è tuo». The hidden
+fields do not go: that code does not travel with the request.
 
-Lo spegnimento non passa da JavaScript né dal server: il CSS legge lo stato della casella con
-`:has(#autonomous-work:checked)`. La riga dell'avviso è già nella pagina, nascosta.
+The comparison is made on the driver's **uid** (`session.data.driver_uid` against the uid of the
+discount's or the link's driver), not on the username: the uid never changes, the username does.
 
-I campi nascosti dell'altro driver **restano nel form** anche con la casella segnata: la
-dichiarazione vale più di loro, e a decidere sarà chi legge la richiesta. Toglierli dal form
-vorrebbe dire perdere l'informazione che quel link c'era.
+**Other drivers' links stay valid.** That is work they brought in, and the box shows them as
+always.
 
-### 6.4 Il nome del cookie
+**The "Lavoro autonomo" block** appears below the driver box, and only to whoever is a driver: a
+checkbox, «è un lavoro che porto io», and the notice: in autonomous work the driver's share is not
+added to the price, it is paid by consumption with the driver's tokens plus the system fee. The
+«Vuoi saperne di più?» link opens the front-gate's `lavora-con-noi.html#lavoro-autonomo` section in
+a **new tab**, its address being `subsystems_infos.front_gate.url`: in the same tab the driver
+would lose the answers already written. With the box ticked, the driver box above **dims** — grey,
+less contrast — and the line appears saying that the system will not take into account what is in
+there.
 
-Il nostro cookie si chiama `webtools_preanalyst`, quello del sso `webtools_sso`. Devono essere
-diversi: i cookie **ignorano la porta**, quindi su `127.0.0.1` finiscono tutti nello stesso mucchio
-e due cookie con lo stesso nome si sovrascriverebbero a vicenda. È un errore che su questa macchina
-si vedrebbe come "entro in un posto ed esco da un altro".
+The dimming goes neither through JavaScript nor through the server: the CSS reads the checkbox's
+state with `:has(#autonomous-work:checked)`. The notice's line is already in the page, hidden.
+
+The other driver's hidden fields **stay in the form** even with the box ticked: the declaration
+counts for more than they do, and whoever reads the request will decide. Taking them out of the
+form would mean losing the information that that link was there.
+
+### 6.4 The cookie's name
+
+Our cookie is called `webtools_preanalyst`, the sso's `webtools_sso`. They must be different:
+cookies **ignore the port**, so on `127.0.0.1` they all end up in the same heap and two cookies
+with the same name would overwrite each other. It is a mistake that on this machine would look
+like "I enter in one place and I am logged out of another".
 
 ---
 
-## 7. Rotte
+## 7. Routes
 
-| Rotta | Risposta |
+| Route | Response |
 |---|---|
-| `GET /` | La pagina. Sempre `200`: nessun guasto di anagraphics o del sso la ferma |
-| `GET /login-done?ticket=…` | Il ritorno dal login, dentro la finestra del login: scambia il biglietto, mette il cookie e rende la paginetta che si chiude da sola. Sempre `200`, anche quando il biglietto non vale |
-| `GET /session-fragment` | `200` JSON `{logged, header, gate, aside}`: i pezzi della pagina già resi, per il browser che aggiorna senza ricaricare. Accetta gli stessi `?discount=`, `?driver=` e `?ambassador=` della pagina, perché la colonna destra dipende da quelli |
-| `GET /logout` | `303` verso `/ui/logout` del sso, togliendo il nostro cookie |
-| `POST /submit` | L'invio del form (§14.1): `303` verso `/analysis/{id}`, oppure una pagina di messaggio con `400`/`401`/`413`/`503` |
-| `GET /analysis/{id}` | La pagina dell'analisi, solo per il proprietario del progetto. Altrimenti `401` (sloggato) o `404` (inesistente o di un altro) |
-| `POST /upload` | Una specifica già pronta (§14.4): API JSON con codici stabili |
-| `POST /locale` | Il selettore della lingua in testata (`locale`, `return_to`): scrive il cookie comune e torna alla pagina (`303`). Per chi è entrato salva la lingua anche nella sessione e nel profilo, tramite il sso. `400 INVALID_LOCALE`, `413 BODY_TOO_LARGE` |
-| `GET /<file>` | Un file di `public/` col suo content-type; `404` se non esiste |
-| Altri metodi | `405` |
-| Errore imprevisto | `500`, con lo stack nel log |
+| `GET /` | The page. Always `200`: no failure of anagraphics or of the sso stops it |
+| `GET /login-done?ticket=…` | The return from the login, inside the login window: it exchanges the ticket, sets the cookie and renders the small page that closes by itself. Always `200`, even when the ticket is no good |
+| `GET /session-fragment` | `200` JSON `{logged, header, gate, aside}`: the pieces of the page already rendered, for the browser that updates without reloading. It accepts the same `?discount=`, `?driver=` and `?ambassador=` as the page, because the right-hand column depends on them |
+| `GET /logout` | `303` towards the sso's `/ui/logout`, removing our cookie |
+| `POST /submit` | The form's submission (§14.1): `303` towards `/analysis/{id}`, or a message page with `400`/`401`/`413`/`503` |
+| `GET /analysis/{id}` | The analysis page, only for the project's owner. Otherwise `401` (logged out) or `404` (non-existent or somebody else's) |
+| `POST /analysis/{id}/messages` | A turn of the chat: the two messages and the turn taken off (§14.3.1). A JSON API with stable codes |
+| `POST /analysis/{id}/turns` | Moves turns from the user's credit to the project (§14.3.1) |
+| `POST /analysis/{id}/turns/buy` | **A fake purchase**: it gives the user credit (§14.3.2) |
+| `POST /upload` | A specification already prepared (§14.4): a JSON API with stable codes |
+| `POST /locale` | The language switcher in the header (`locale`, `return_to`): it writes the shared cookie and returns to the page (`303`). For whoever has entered it also saves the language in the session and in the profile, through the sso. `400 INVALID_LOCALE`, `413 BODY_TOO_LARGE` |
+| `GET /<file>` | A file of `public/` with its content-type; `404` if it does not exist |
+| Other methods | `405` |
+| An unexpected error | `500`, with the stack in the log |
 
-I percorsi statici vengono normalizzati e verificati: un percorso che uscirebbe da `public/`
-(`/../package.json`) riceve `404`/`403`, non il file.
+Static paths are normalised and checked: a path that would leave `public/`
+(`/../package.json`) gets a `404`/`403`, not the file.
 
-Gli errori delle pagine **non** hanno un codice stabile in JSON: sono pagine per un browser. Fa
-eccezione `POST /upload`, che risponde al JavaScript della pagina e segue il contratto a codici.
+The pages' errors do **not** have a stable code in JSON: they are pages for a browser. The
+exception is `POST /upload`, which answers the page's JavaScript and follows the contract of codes.
 
 ---
 
-## 8. Configurazione
+## 8. Configuration
 
-Il server legge la sua configurazione **all'avvio** da anagraphics, `GET /configuration/preanalyst`. La fonte è `webtools/configurator/configuration/preanalyst.json`; la carica in Mongo `webtools/configurator/load_configuration.sh` (lo fa già `start.sh`). Nessun default: se manca il documento, un campo, o un campo è del tipo sbagliato, il server scrive `webtools_preanalyst non parte: …` con il percorso del campo ed esce con 1. Dopo una modifica: `webtools/configurator/start.sh --restart`.
+The server reads its configuration **at startup** from anagraphics, `GET /configuration/preanalyst`. The source is `webtools/configurator/configuration/preanalyst.json`; `webtools/configurator/load_configuration.sh` loads it into Mongo (`start.sh` already does that). No defaults: if the document is missing, or a field is, or a field is of the wrong type, the server writes `webtools_preanalyst is not starting: …` with the field's path and exits with 1. After a change: `webtools/configurator/start.sh --restart`.
 
-Dall'ambiente arrivano solo `WEBTOOLS_ANAGRAPHICS_URL` e `WEBTOOLS_CONFIGURATION_TIMEOUT_MS`, che `--start` carica da `webtools/configurator/bootstrap.env`. `WEBTOOLS_ANAGRAPHICS_URL` è anche l'indirizzo di anagraphics per tutte le altre chiamate.
+Only `WEBTOOLS_ANAGRAPHICS_URL` and `WEBTOOLS_CONFIGURATION_TIMEOUT_MS` come from the environment, and `--start` loads them from `webtools/configurator/bootstrap.env`. `WEBTOOLS_ANAGRAPHICS_URL` is also anagraphics' address for every other call.
 
-| Campo | Oggi | A che serve |
+| Field | Today | What it is for |
 |---|---|---|
-| `listen.host` | `127.0.0.1` | Interfaccia di ascolto |
-| `listen.port` | `9200` | Porta. `9100` è di anagraphics |
-| `public_url` | `http://127.0.0.1:9200` | Il nostro indirizzo visto da fuori: ci torna il browser dopo il login, ed è quello che dichiariamo al sso allo scambio del biglietto |
-| `subsystems_infos.anagraphics.timeout_ms` | `5000` | Taglio delle chiamate verso anagraphics |
-| `subsystems_infos.sso.url` | `http://127.0.0.1:9300` | Dove sta il sso |
-| `subsystems_infos.sso.timeout_ms` | `5000` | Taglio delle chiamate verso il sso |
-| `subsystems_infos.workspaces.url` | `http://127.0.0.1:9400` | Dove sta webtools-workspaces |
-| `subsystems_infos.workspaces.timeout_ms` | `5000` | Taglio delle chiamate verso workspaces |
-| `subsystems_infos.front_gate.url` | `http://127.0.0.1:9000` | Il sito vetrina: il blocco del lavoro autonomo rimanda alla sua pagina `lavora-con-noi.html`. Solo `http`/`https`: finisce in un `href` |
-| `session.cookie_name` | `webtools_preanalyst` | Il **nostro** cookie di sessione. Deve restare diverso da quello del sso |
-| `form.body_max_bytes` | `524288` | Dimensione massima dell'invio del form |
-| `form.answer_max_chars` | `20000` | Oltre, una risposta aperta si tronca |
-| `upload.max_bytes` | `10485760` | Dimensione massima di una specifica caricata |
-| `upload.accept` | `.md` | Quello che la finestra di scelta del browser propone. Non è un controllo |
-| `ai.provider` | `anthropic` | Quale fornitore di modelli si usa (§16.1) |
-| `ai.timeout_ms` | `20000` | Taglio della chiamata al fornitore |
-| `ai.providers.anthropic.model` | `claude-haiku-4-5` | Il modello della prevalidazione |
-| `ai.providers.anthropic.max_tokens` | `512` | Tetto dell'uscita: è una classificazione, non una conversazione |
-| `ai.providers.anthropic.api_key` | (segreto) | La chiave, che sta in `configurator/secrets/preanalyst.json`, fuori da git |
-| `prevalidation.policy` | `scope-v1` | Quale policy giudica la richiesta (§16.2) |
-| `prevalidation.reject_threshold` | `0.6` | Sopra questa probabilità di `run_out_certain` si rifiuta |
-| `prevalidation.max_underspecified_attempts` | `100` | Quante volte la stessa richiesta può tornare indietro per mancanza di dettagli. Oltre, si rifiuta (§16.6) |
-| `prevalidation.spec_max_chars` | `20000` | Quanta pre-specifica si manda al modello |
-| `prevalidation.rejection_reason_in_pdf` | `false` | Se la motivazione estesa del rifiuto finisce nel PDF anche per chi non è un driver (§16.5) |
-| `i18n.locales` | `["en", "it"]` | Le lingue offerte: ognuna ha il suo catalogo in `commons/i18n/locales/` |
-| `i18n.fallback_locale` | `en` | La lingua di riserva, e quella da cui si prendono le chiavi che mancano in un'altra |
-| `i18n.cookie_name` | `webtools_locale` | Il cookie della lingua, **uguale in tutti i sottosistemi** |
-| `i18n.cookie_max_age_seconds` | `31536000` (un anno) | Quanto dura la scelta della lingua nel browser |
-| `i18n.body_max_bytes` | `1024` | Il corpo più grande accettato da `POST /locale` |
+| `listen.host` | `127.0.0.1` | The listening interface |
+| `listen.port` | `9200` | The port. `9100` is anagraphics' |
+| `public_url` | `http://127.0.0.1:9200` | Our address as seen from outside: the browser comes back to it after the login, and it is what we declare to the sso when exchanging the ticket |
+| `subsystems_infos.anagraphics.timeout_ms` | `5000` | The cut-off of the calls towards anagraphics |
+| `subsystems_infos.sso.url` | `http://127.0.0.1:9300` | Where the sso is |
+| `subsystems_infos.sso.timeout_ms` | `5000` | The cut-off of the calls towards the sso |
+| `subsystems_infos.workspaces.url` | `http://127.0.0.1:9400` | Where webtools-workspaces is |
+| `subsystems_infos.workspaces.timeout_ms` | `5000` | The cut-off of the calls towards workspaces |
+| `subsystems_infos.front_gate.url` | `http://127.0.0.1:9000` | The showcase site: the autonomous work block points to its `lavora-con-noi.html` page. `http`/`https` only: it ends up in an `href` |
+| `session.cookie_name` | `webtools_preanalyst` | **Our** session cookie. It must stay different from the sso's |
+| `form.body_max_bytes` | `524288` | The largest form submission accepted |
+| `form.answer_max_chars` | `20000` | Beyond that, an open answer is truncated |
+| `upload.max_bytes` | `10485760` | The largest specification that can be uploaded |
+| `upload.accept` | `.md` | What the browser's file chooser proposes. It is not a check |
+| `ai.provider` | `anthropic` | Which model provider is used (§16.1) |
+| `ai.timeout_ms` | `20000` | The cut-off of the call to the provider |
+| `ai.providers.anthropic.model` | `claude-haiku-4-5` | The prevalidation's model |
+| `ai.providers.anthropic.max_tokens` | `512` | The output's ceiling: it is a classification, not a conversation |
+| `ai.providers.anthropic.api_key` | (a secret) | The key, which lives in `configurator/secrets/preanalyst.json`, outside git |
+| `prevalidation.policy` | `scope-v1` | Which policy judges the request (§16.2) |
+| `prevalidation.reject_threshold` | `0.6` | Above this probability of `run_out_certain` the request is refused |
+| `prevalidation.max_underspecified_attempts` | `100` | How many times the same request can come back for lack of detail. Beyond that, it is refused (§16.6) |
+| `prevalidation.spec_max_chars` | `20000` | How much pre-specification is sent to the model |
+| `prevalidation.rejection_reason_in_pdf` | `false` | Whether the extended reason for the refusal ends up in the PDF for whoever is not a driver too (§16.5) |
+| `analysis.max_turns` | `30` | How many turns of the chat are included. A turn is a question and its answer. Once they are over, the field for writing disappears (§14.3) |
+| `analysis.warn_from_turn` | `20` | From this turn on the page warns that they are about to run out. Before that it says nothing |
+| `i18n.locales` | `["en", "it"]` | The languages offered: each has its catalogue in `commons/i18n/locales/` |
+| `i18n.fallback_locale` | `en` | The fallback language, and the one the keys missing from another are taken from |
+| `i18n.cookie_name` | `webtools_locale` | The language cookie, **the same in every subsystem** |
+| `i18n.cookie_max_age_seconds` | `31536000` (a year) | How long the choice of language lasts in the browser |
+| `i18n.body_max_bytes` | `1024` | The largest body accepted by `POST /locale` |
 
-Il timeout è **più corto** dei 30 s con cui anagraphics aspetta Mongo: se Mongo è giù, l'utente
-vede la pagina in 5 secondi invece di restare fermo mezzo minuto.
+The timeout is **shorter** than the 30 s anagraphics waits for Mongo: if Mongo is down, the user
+sees the page in 5 seconds instead of sitting still for half a minute.
 
 ---
 
-## 9. Comandi operativi
+## 9. Operating commands
 
-### 9.1 Avvio e arresto
+### 9.1 Start and stop
 ```sh
 webtools/preanalyst/webtools_preanalyst.sh --start
 webtools/preanalyst/webtools_preanalyst.sh --stop
 ```
-- `--start` non fa nulla se il server è già su, e aspetta fino a 10 s la riga di conferma
-  `webtools_preanalyst in ascolto su …`. Se il processo muore, stampa le ultime righe del log.
-- `--stop` ferma **solo** il processo del file PID, e solo dopo aver verificato con `ps` che quel
-  PID sia davvero `node …/src/index.js`. Mai per nome, mai per porta.
-- Debug in primo piano, dalla cartella del progetto: `set -a; source ../configurator/bootstrap.env; set +a; npm start` (Ctrl+C per fermarlo).
+- `--start` does nothing if the server is already up, and waits up to 10 s for the confirmation
+  line `webtools_preanalyst listening on …`. If the process dies, it prints the last lines of the
+  log.
+- `--stop` stops **only** the process of the PID file, and only after checking with `ps` that that
+  PID really is `node …/src/index.js`. Never by name, never by port.
+- Debugging in the foreground, from the project's directory: `set -a; source ../configurator/bootstrap.env; set +a; npm start` (Ctrl+C to stop it).
 
-Servono anche anagraphics, sso e workspaces accesi: `webtools/configurator/start.sh` li avvia
-tutti nell'ordine giusto.
+anagraphics, the sso and workspaces need to be up too: `webtools/configurator/start.sh` starts them
+all in the right order.
 
-### 9.2 Stile e client condivisi
-Alcuni file di questo sottosistema sono **copie generate** e non si modificano qui:
-`public/commons.css` (più `public/fonts/`), `src/commons/sso_client.js`, `public/sso_popup.js`,
-`src/commons/spec_front_matter.js` e `templates/commons/base.njk`. Si modificano gli
-originali in `webtools/commons/` e si rilancia il deployer:
+### 9.2 Style and shared clients
+Some files of this subsystem are **generated copies** and are not edited here:
+`public/commons.css` (plus `public/fonts/`), `src/commons/sso_client.js`, `public/sso_popup.js`,
+`src/commons/spec_front_matter.js` and `templates/commons/base.njk`. The originals in
+`webtools/commons/` are edited and the deployer is run again:
 
 ```sh
-webtools/configurator/deploy.sh          # stile + client del sso
-webtools/configurator/deploy.sh style    # solo lo stile
-webtools/configurator/deploy.sh sso      # solo il client del sso
-webtools/configurator/deploy.sh specs    # solo il modulo del front matter
+webtools/configurator/deploy.sh          # style + the sso's client
+webtools/configurator/deploy.sh style    # the style only
+webtools/configurator/deploy.sh sso      # the sso's client only
+webtools/configurator/deploy.sh specs    # the front matter module only
 ```
 
-Lo stile **locale** è `public/styles.css`, e quello si modifica a mano.
+The **local** style is `public/styles.css`, and that is edited by hand.
 
 ---
 
-## 10. Stile della pagina
+## 10. The page's style
 
-- Da `commons.css`: font, token dei colori, `.container`, `.site-header`, `.brand*`, `.card`,
-  `.card-head`, `.eyebrow`, `.reveal`, i campi (`.field`, `.field-label`, `.field-hint`,
-  `.required`, `.input`) e gli avvisi `.notice` nelle due varianti `notice-ok` (verde salvia) e
-  `notice-warn` (giallo nota).
-- Da `public/styles.css`, solo roba di questa pagina: impaginazione `.gate*`, sezioni del form,
-  scelte `.choice*`, colonna destra, blocchi del driver e del caricamento.
-- La tendina bloccata si vede: sfondo spento, niente ombra, niente freccia, cursore `not-allowed`.
+- From `commons.css`: the font, the colour tokens, `.container`, `.site-header`, `.brand*`,
+  `.card`, `.card-head`, `.eyebrow`, `.reveal`, the fields (`.field`, `.field-label`,
+  `.field-hint`, `.required`, `.input`) and the `.notice` notices in the two variants `notice-ok`
+  (sage green) and `notice-warn` (note yellow).
+- From `public/styles.css`, only things belonging to this page: the `.gate*` layout, the form's
+  sections, the `.choice*` choices, the right-hand column, the driver and upload blocks.
+- A locked dropdown can be seen: a dimmed background, no shadow, no arrow, a `not-allowed` cursor.
 
 ---
 
-## 11. Test
+## 11. Tests
 
-`npm test` (`node --test tests/*.test.js`), **16 test**, nessun server acceso e nessuna chiamata al
-fornitore:
+`npm test` (`node --test tests/*.test.js`), **16 tests**, no server up and no call to the provider:
 
-| File | Che cosa copre |
+| File | What it covers |
 |---|---|
-| `tests/prevalidator.test.js` | La lettura della risposta del modello (`normalize`), il rifiuto a due condizioni e a due esiti (`rejects`) e il verdetto con il tetto dei giri (`verdict`) |
-| `tests/server.test.js` | Il conteggio dei giri già fatti, letto dai passi della pipeline |
+| `tests/prevalidator.test.js` | How the model's answer is read (`normalize`), the refusal on two conditions and two outcomes (`rejects`) and the verdict with the ceiling on the rounds (`verdict`) |
+| `tests/server.test.js` | The counting of the rounds already made, read from the pipeline's steps |
 
-Sono le funzioni che **decidono**: quelle che possono sbagliare in silenzio. La chiamata al
-fornitore non si prova — costa e non è ripetibile. `driver_link.js` resta scoperto ed è il prossimo
-candidato.
+They are the functions that **decide**: the ones that can go wrong silently. The call to the
+provider is not tested — it costs and it is not repeatable. `driver_link.js` stays uncovered and is
+the next candidate.
 
-Verificato a mano il 2026-09-20, con i due server accesi:
+Checked by hand on 2026-09-20, with the two servers up:
 
-| Caso | Esito |
+| Case | Outcome |
 |---|---|
-| `/` senza parametro | `200`, nessun box del driver, form a colonna singola, e nessuna chiamata ad anagraphics |
-| `?discount=e8013cf2-…` | `200`, avviso verde, `<select disabled>`, hidden col `uid` di Dome |
-| `?discount=non-esiste` | `200`, avviso "probabilmente scaduto", tendina libera |
-| Sconto con driver fuori elenco (dato temporaneo, poi cancellato) | `200`, avviso "il driver non si trova", col nome dalla copia ridondata |
-| `?driver=7633be3d-…` | `200`, nome "Dome" nel box, nessun avviso, hidden col suo `uid` |
-| `?driver=00000000-…` | `200`, avviso "il driver di questo link non si trova", con l'uid in chiaro |
-| `?discount=…&driver=…` insieme | `200`, vince lo sconto, e nel log la riga che segnala il link malfatto |
-| Anagraphics irraggiungibile dopo l'avvio (spento mentre preanalyst è acceso) | `200`, form presente, box con l'avviso "non riusciamo a dirti chi è il driver", e nel log `TypeError fetch failed` |
-| Idem, ma con `?discount=…&driver=…` nel link | `200`, i due valori restano come campi nascosti e l'avviso dice che il link non va perso |
-| `/commons.css`, `/styles.css`, `/fonts/inter.woff2`, `/assets/mark.svg` | `200` col content-type giusto |
+| `/` with no parameter | `200`, no driver box, a single-column form, and no call to anagraphics |
+| `?discount=e8013cf2-…` | `200`, a green notice, `<select disabled>`, a hidden field with Dome's `uid` |
+| `?discount=does-not-exist` | `200`, the "in all likelihood expired" notice, the dropdown free |
+| A discount whose driver is not in the list (temporary data, deleted afterwards) | `200`, the "the driver cannot be found" notice, with the name from the duplicated copy |
+| `?driver=7633be3d-…` | `200`, the name "Dome" in the box, no notice, a hidden field with their `uid` |
+| `?driver=00000000-…` | `200`, the "this link's driver cannot be found" notice, with the uid in plain sight |
+| `?discount=…&driver=…` together | `200`, the discount wins, and in the log the line reporting the malformed link |
+| anagraphics unreachable after startup (switched off while preanalyst is up) | `200`, the form there, the box with the "we cannot tell you who the driver is" notice, and `TypeError fetch failed` in the log |
+| The same, but with `?discount=…&driver=…` in the link | `200`, the two values stay as hidden fields and the notice says the link is not lost |
+| `/commons.css`, `/styles.css`, `/fonts/inter.woff2`, `/assets/mark.svg` | `200` with the right content-type |
 | `/../package.json` | `404` |
 
 ---
 
 ## 12. Troubleshooting
 
-| Sintomo | Causa probabile | Cosa fare |
+| Symptom | Likely cause | What to do |
 |---|---|---|
-| Box con "non riusciamo a dirti chi è il driver" | Anagraphics spento | `webtools/anagraphics/webtools_anagraphics.sh --start` |
-| Idem, ma anagraphics è acceso | `access.allowed_ips` di anagraphics non contiene l'IP di questo server, oppure Mongo è giù | Log: `HTTP 403 IP_NOT_ALLOWED` o `HTTP 503 DATABASE_UNAVAILABLE` |
-| Tendina vuota, senza avvisi | Nessun driver nel database | `uv run python -m scripts.seed` in `webtools/anagraphics/` |
-| Ogni sconto risulta "scaduto" | Anagraphics risponde ma non trova i codici | `mongosh webtools --eval 'db.discounts.find({}, {_id:0}).toArray()'` |
-| Pagina senza stile o font | Deployer mai lanciato dopo aver creato `public/` | `webtools/configurator/style_deployer/deploy.sh` |
-| `--start` dice "già in esecuzione" ma non risponde | PID riciclato da un altro processo | Il controllo su `ps` lo esclude: guarda il log |
-| `EADDRINUSE` nel log | Porta 9200 occupata da altro | Cambiare `listen.port` (e `public_url`) in `configurator/configuration/preanalyst.json`, più gli indirizzi che puntano qui negli altri file (`sso.json`, `front-gate.json`); poi `start.sh --restart` |
+| The box with "we cannot tell you who the driver is" | anagraphics is off | `webtools/anagraphics/webtools_anagraphics.sh --start` |
+| The same, but anagraphics is on | anagraphics' `access.allowed_ips` does not hold this server's IP, or Mongo is down | The log: `HTTP 403 IP_NOT_ALLOWED` or `HTTP 503 DATABASE_UNAVAILABLE` |
+| An empty dropdown, with no notices | No driver in the database | `uv run python -m scripts.seed` in `webtools/anagraphics/` |
+| Every discount comes out "expired" | anagraphics answers but does not find the codes | `mongosh webtools --eval 'db.discounts.find({}, {_id:0}).toArray()'` |
+| A page with no style or font | The deployer was never run after creating `public/` | `webtools/configurator/style_deployer/deploy.sh` |
+| `--start` says "already running" but nothing answers | A PID recycled by another process | The check on `ps` rules it out: look at the log |
+| `EADDRINUSE` in the log | Port 9200 taken by something else | Change `listen.port` (and `public_url`) in `configurator/configuration/preanalyst.json`, plus the addresses pointing here in the other files (`sso.json`, `front-gate.json`); then `start.sh --restart` |
 
 ---
 
-## 13. Limiti noti e debito tecnico
+## 13. Known limits and technical debt
 
-- I test coprono le funzioni che decidono, non le rotte: il giro dal browser si prova a mano (§11).
-- La pagina che torna indietro per mancanza di dettagli è la risposta a un `POST`: ricaricarla
-  chiede al browser di **rimandare il form**, e con esso di fare un'altra prevalidazione, che
-  costa (§16.7).
-- Il tetto dei giri si conta sui passi `underspecified` del progetto, quindi vale per progetto e
-  non per utente: chi ricomincia da zero con un invio nuovo riparte da zero anche di giri.
-- Se l'invio fallisce dopo la creazione del progetto e anche la cancellazione fallisce, il
-  progetto resta **senza pre-specifica**. Succede solo se anagraphics cade in quel preciso
-  momento, e nel log c'è la riga `PROGETTO RIMASTO SENZA PRE-SPECIFICA`.
-- Un invio che non passa i controlli del server (può succedere solo aggirando quelli del
-  browser) finisce su una pagina di messaggio: le risposte si recuperano solo con "indietro".
-- La pagina dell'analisi è vuota.
-- **Quello che si scrive nel form non è salvato da nessuna parte**: se si chiude la pagina, si
-  perde. Il login si apre in una scheda nuova proprio per questo (§6.1). Una bozza lato server
-  sarebbe la soluzione vera, e non è stata fatta.
-- Se il browser **blocca le finestre**, il login si apre in una scheda normale e finisce sulla
-  paginetta di `/login-done`: da lì si torna a mano, come senza JavaScript.
-- Lo script del browser non ha test automatici: il giro è stato provato a mano.
-- Il logout dipende dal sso: se è giù, il nostro cookie viene tolto comunque e la pagina torna
-  sloggata, ma la sessione condivisa resta aperta fino alla scadenza.
-- `discount_expired` non distingue "scaduto" da "servizio giù" (§5.3).
-- `driver_unknown` non distingue "driver cancellato" da "uid inventato" (§5.2).
-- Nessuno dei due parametri viene validato come UUID: un valore storto finisce in una lettura a
-  vuoto (`discount`) o in una ricerca che non trova niente (`driver`), che è l'esito giusto, ma
-  per la ragione sbagliata.
-- Nessuna validazione lato server del driver scelto: servirà quando ci sarà l'invio (§5.5).
-- Nessuna cache: ogni caricamento rilegge i driver da anagraphics. Va bene finché i driver sono
-  pochi e le visite anche.
-- `node_modules/` non è gestito da nessuno script: dopo un clone o un cambio di versione serve `npm install` a mano.
-- Nessun rate limiting, TLS, `/health` o metriche. Il cookie di sessione non ha `Secure`, perché su localhost non c'è HTTPS.
-- Nessuna gestione come servizio (launchd): non riparte da solo, e il log cresce senza rotazione.
-- `public/assets/mark.svg` è una copia a mano di quello del front-gate: se il marchio cambia, va
-  ricopiato. Il deployer distribuisce solo lo stile.
-- Non è collegato al `front-gate`.
+- The tests cover the functions that decide, not the routes: the round trip from the browser is
+  tried by hand (§11).
+- The page that comes back for lack of detail is the answer to a `POST`: reloading it asks the
+  browser to **send the form again**, and with it to make another prevalidation, which costs
+  (§16.7).
+- The ceiling on the rounds is counted on the project's `underspecified` steps, so it holds per
+  project and not per user: whoever starts again from scratch with a new submission starts again
+  from zero rounds too.
+- If the submission fails after the project has been created and the deletion fails too, the
+  project is left **with no pre-specification**. It happens only if anagraphics falls over at that
+  precise moment, and in the log there is the line `PROJECT LEFT WITHOUT A PRE-SPECIFICATION`.
+- A submission that does not pass the server's checks (which can only happen by going around the
+  browser's) ends up on a message page: the answers can be recovered only with "back".
+- In the analysis page the model's answer and the purchase of turns are still fake (§14.3.2).
+- **What is written in the form is not saved anywhere**: if the page is closed, it is lost. The
+  login opens in a new tab for exactly this reason (§6.1). A draft on the server would be the real
+  solution, and it has not been done.
+- If the browser **blocks windows**, the login opens in an ordinary tab and ends on the small
+  `/login-done` page: from there one goes back by hand, as without JavaScript.
+- The browser's script has no automatic tests: the round trip was tried by hand.
+- The logout depends on the sso: if it is down, our cookie is removed anyway and the page goes back
+  to logged out, but the shared session stays open until it expires.
+- `discount_expired` does not tell "expired" from "the service is down" (§5.3).
+- `driver_unknown` does not tell "a deleted driver" from "an invented uid" (§5.2).
+- Neither of the two parameters is validated as a UUID: a crooked value ends up in a read that
+  finds nothing (`discount`) or in a search that finds nothing (`driver`), which is the right
+  outcome, but for the wrong reason.
+- No server-side validation of the chosen driver: it will be needed when there is a submission
+  (§5.5).
+- No cache: every load reads the drivers from anagraphics again. That is fine as long as the
+  drivers are few and the visits are too.
+- `node_modules/` is not managed by any script: after a clone or a version change `npm install` is
+  needed by hand.
+- No rate limiting, TLS, `/health` or metrics. The session cookie has no `Secure`, because on
+  localhost there is no HTTPS.
+- No management as a service (launchd): it does not restart by itself, and the log grows with no
+  rotation.
+- `public/assets/mark.svg` is a hand-made copy of the front-gate's: if the brand changes, it has to
+  be copied again. The deployer distributes the style only.
+- It is not connected to the `front-gate`.
 
 ---
 
-## 14. L'invio del form e le specifiche
+## 14. The form's submission and the specifications
 
 ### 14.1 `POST /submit`
 
-Il form si manda a `/submit` come `application/x-www-form-urlencoded`. Nell'ordine:
+The form is sent to `/submit` as `application/x-www-form-urlencoded`. In order:
 
-1. serve l'accesso: da sloggati `401`, col sso giù `503`;
-2. `submission_id` deve essere un UUID, generato quando la pagina è stata resa;
-3. le risposte si ripuliscono (`readAnswers` in `src/prespec.js`): codici non previsti scartati,
-   testi rifilati e tagliati a `form.answer_max_chars` caratteri (oggi 20.000); `need` è obbligatoria;
-4. `POST /projects` in anagraphics con `owner_uid`, `submission_id`, `review` e `billing`
-   (§14.5): driver e sconti sono dati del **progetto**, non della pre-specifica;
-5. la pre-specifica si rende e va a workspaces con `X-Spec-Origin: system`;
-6. `303` verso `/analysis/{project_id}`. Il `303` fa sì che ricaricare la pagina dell'analisi non
-   rimandi il form.
+1. access is needed: logged out `401`, with the sso down `503`;
+2. `submission_id` must be a UUID, generated when the page was rendered;
+3. the answers are cleaned up (`readAnswers` in `src/prespec.js`): unforeseen codes are discarded,
+   texts are trimmed and cut to `form.answer_max_chars` characters (today 20,000); `need` is
+   mandatory;
+4. `POST /projects` on anagraphics with `owner_uid`, `submission_id`, `review` and `billing`
+   (§14.5): the driver and the discounts are data of the **project**, not of the pre-specification;
+5. the pre-specification is rendered and goes to workspaces with `X-Spec-Origin: system`;
+6. `303` towards `/analysis/{project_id}`. The `303` means that reloading the analysis page does
+   not send the form again.
 
-Due protezioni:
-- **invio ripetuto**: lo stesso `submission_id` fa rispondere ad anagraphics `200` col progetto già
-  nato. In quel caso la pre-specifica non si riscrive e si va direttamente alla pagina dell'analisi;
-- **pre-specifica non scritta**: se workspaces non risponde, il progetto si cancella
-  (`DELETE /projects/{id}`) e l'utente vede che la richiesta non è stata registrata.
+Two safeguards:
+- **a repeated submission**: the same `submission_id` makes anagraphics answer `200` with the
+  project already born. In that case the pre-specification is not written again and one goes
+  straight to the analysis page;
+- **a pre-specification not written**: if workspaces does not answer, the project is deleted
+  (`DELETE /projects/{id}`) and the user sees that the request was not recorded.
 
-Il bottone d'invio sta dentro il cancello dell'accesso (`partials/access.njk`): è abilitato solo
-per chi è entrato, e dopo un login nella finestra a parte il browser lo riceve abilitato insieme
-al resto del frammento. Il form non ha più `novalidate`: i campi obbligatori li controlla il
-browser, e il server li ricontrolla.
+The submit button sits inside the access gate (`partials/access.njk`): it is enabled only for
+whoever has entered, and after a login in the separate window the browser receives it enabled
+together with the rest of the fragment. The form no longer has `novalidate`: the browser checks the
+mandatory fields, and the server checks them again.
 
-### 14.2 La pre-specifica
+### 14.2 The pre-specification
 
-Template `templates/commons/prespec.md.njk`, reso da `src/prespec.js` con un ambiente nunjucks
-**senza autoescape**: è markdown, e l'escape dell'HTML trasformerebbe `&` e `<` del cliente in
-entità.
+The template is `templates/commons/prespec.md.njk`, rendered by `src/prespec.js` with a nunjucks
+environment **with no autoescape**: it is markdown, and escaping the HTML would turn the client's
+`&` and `<` into entities.
 
-Il template è una **copia generata**: la forma della pre-specifica è configurazione, quindi
-l'originale sta in `webtools/configurator/documents/prespec.md.njk` e lo distribuisce
-`configurator/documents_deployer/deploy.sh`. Non si modifica la copia. Si può cambiare la forma del
-documento, **non** inventare campi che `src/prespec.js` non passa.
+The template is a **generated copy**: the pre-specification's shape is configuration, so the
+original lives in `webtools/configurator/documents/prespec.md.njk` and
+`configurator/documents_deployer/deploy.sh` distributes it. The copy is not edited. The document's
+shape can be changed, but fields `src/prespec.js` does not pass **cannot** be invented.
 
-- **Front matter**: `project_id`, `kind: prespec`, `template: prespec/1`, `language` (la lingua della pagina, es. `it`), e in
-  `answers` i **codici** delle risposte chiuse (`today`, `users`, `devices`, `volume`,
-  `personal_data`, `existing_data`). Un programma li legge senza interpretare niente. Mai testo
-  scritto dall'utente, quindi niente chiavi YAML iniettate.
-- **Le skill non vanno nel front matter.** L'elenco delle caselle è aperto e ha accanto un campo
-  libero: un codice da solo racconterebbe metà della risposta.
-- **Corpo in inglese**, sezione per sezione, con la domanda e la risposta chiusa in chiaro.
-- **Le risposte aperte restano testuali**, nella lingua del cliente, dentro un blockquote: un
-  `## titolo` scritto dal cliente resta testo e non diventa una sezione.
-- I campi vuoti si scrivono `Not provided.`.
-- **Open points**: i campi vuoti e le risposte `unknown`. Le skill e il loro "Altro" contano come
-  una risposta sola (`group` in `questions.js`) e mancano solo se mancano tutte e due.
-- Niente nome, email, sconto o driver: il documento va a un fornitore AI.
-- La chiave `webtools:` (origine, versione, chi, quando) la timbra workspaces al salvataggio.
+- **Front matter**: `project_id`, `kind: prespec`, `template: prespec/1`, `language` (the page's
+  language, e.g. `it`), and in `answers` the **codes** of the closed answers (`today`, `users`,
+  `devices`, `volume`, `personal_data`, `existing_data`). A program reads them without interpreting
+  anything. Never text written by the user, so no injected YAML keys.
+- **The skills do not go in the front matter.** The list of checkboxes is open and has a free field
+  next to it: a code on its own would tell half of the answer.
+- **The body is in English**, section by section, with the question and the closed answer in plain
+  sight.
+- **The open answers stay textual**, in the client's language, inside a blockquote: a `## title`
+  written by the client stays text and does not become a section.
+- Empty fields are written `Not provided.`.
+- **Open points**: the empty fields and the `unknown` answers. The skills and their "Other" count as
+  a single answer (`group` in `questions.js`) and are missing only if both are.
+- No name, email, discount or driver: the document goes to an AI provider.
+- The `webtools:` key (the origin, the version, who, when) is stamped by workspaces on saving.
 
-Le etichette inglesi stanno in `questions.js` (`spec`), e le opzioni sono
-`[codice, testo per la pre-specifica]`. I testi per il cliente (domande, spiegazioni, esempi,
-risposte) stanno nei cataloghi delle lingue, sotto `preanalyst.questions.*`. I codici sono in
-inglese e non cambiano quando si riscrive il testo.
+The English labels live in `questions.js` (`spec`), and the options are
+`[code, text for the pre-specification]`. The texts for the client (questions, explanations,
+examples, answers) live in the language catalogues, under `preanalyst.questions.*`. The codes are
+in English and do not change when the text is rewritten.
 
-`language` nel front matter è la lingua della pagina da cui è partito l'invio: è quella in cui il
-cliente ha scritto le risposte aperte.
+`language` in the front matter is the language of the page the submission set off from: it is the
+one the client wrote the open answers in.
 
-### 14.3 La pagina dell'analisi
+### 14.3 The analysis page
 
-`GET /analysis/{id}`: la vede solo chi possiede il progetto (`owner_uid` uguale all'`uid` della
-sessione). Un progetto inesistente o di un altro risponde `404` con lo stesso messaggio. Per ora
-c'è solo il guscio, con chi è entrato in testata: qui arriverà la chat.
+`GET /analysis/{id}`: only whoever owns the project sees it (`owner_uid` equal to the session's
+`uid`). A non-existent project, or somebody else's, answers `404` with the same message.
 
-Ci si arriva quando la prevalidazione **non** rifiuta (§16). Una richiesta rifiutata va invece a
-`/?rejected={id}`, con la modale del rifiuto (§16.4).
+One arrives here when the prevalidation does **not** refuse (§16). A refused request goes instead
+to `/?rejected={id}`, with the refusal modal (§16.4).
+
+The **specification rounds** live here: a message is written, the answer is waited for, and on it
+goes. The chat and the turns are on the project and the server counts them (§14.3.1); still fake
+are the model's answer and the purchase of turns (§14.3.2).
+
+- `templates/analysis.njk`: the header, the conversation's register, the wait, the field, and
+  **two `<template>`** with the markup of a message. The browser clones the model and fills
+  `.chat-text` with `textContent`: the HTML is not composed with strings, and the text is written
+  by the user.
+- `public/analysis.js`: the behaviour only — one message at a time, the field that locks until the
+  answer has arrived, Enter that sends and Shift+Enter that goes to a new line, the field that
+  grows with what it holds.
+- The texts live in the catalogues under `preanalyst.analysis.*`; the fake answers, grouped on
+  purpose, under `preanalyst.analysis.mock.*`. They are numbered keys and not a list because `t`
+  reads strings only.
+- The message's limit is `form.answer_max_chars`, the same as the form's answers: a message is an
+  answer like any other.
+
+**The summary**, in the right-hand column. It shows what was decided when the request set off —
+the **driver**, the **discount**, the **ambassador**, the **autonomous work** — and only what is
+there is shown: with none of all this, a line is left saying that we assign the driver. It is not
+read again from the address, which here carries no parameters: it sits on the project, and
+`projectSummary()` in `src/server.js` reads it back from there with `driverLinkOfProject()`,
+exactly as the form does when it comes back (§16.6). In autonomous work the driver is whoever is
+looking, and is not shown as though they were somebody else: the autonomous work line says so. It
+is read and not touched: these conditions are not changed here.
+
+Below the summary there are two buttons, **both with no effect for now**: «Scarica la
+conversazione» and «Va bene così, procediamo!». The download is above, because it is the one that
+can be wanted while writing; the go is the end of the round and still has to be specified.
+
+**The go is born off and lights up when the turns run out.** As long as one can write, it is not a
+choice to put in front of anybody; when the field disappears it becomes the other road as against
+buying more turns, and the box of the exhausted turns names it.
+
+**The turns.** A turn is a question and its answer, and it is counted **when the answer has
+arrived**: a message that has not been answered is not a turn spent. Two numbers, in the
+configuration:
+
+| | | |
+|---|---|---|
+| `analysis.max_turns` | `30` | how many turns are included |
+| `analysis.warn_from_turn` | `20` | from where it warns that they are about to run out |
+
+- The counter is in the summary, below the conditions: `0 di 5`. The **used** are the rounds
+  already made, the **total** is the used plus the remaining — not `max_turns`, which with bought
+  turns is no longer the total of anything.
+- When few are left, a **small** notice appears below the field with how many they are, and the
+  number is updated at every turn. The threshold in the configuration is stated from the other end
+  ("from the twentieth of the thirty"), but what holds with bought turns too is **how many are
+  left**: the page warns below `max_turns - warn_from_turn`. Before that it says nothing: a
+  counter that alarms from the first message makes people write less, which is the opposite of
+  what is needed here.
+- At `max_turns` the field for writing **is removed** — not switched off: it is not a pause — and
+  in its place a box appears proposing to buy more turns, with a button that for now does nothing.
+  The box says two other things besides the proposal, and both at length, because whoever reads
+  them does not already know what is being talked about:
+  - **it is not compulsory**: the request can go on with what has already been written, and from
+    that moment «Va bene così, procediamo!» is active — the text says so;
+  - **the download is for going on alone**: one gets a file with all the questions and answers of
+    the chat, gives it to any AI assistant (the names are written out: ChatGPT, Claude) to settle
+    the description without using up turns, and when it is ready uploads it from the pre-analysis
+    page, in the «Analisi già pronta» box (§14.4).
+
+  **To be checked when the download really exists**: `POST /upload` demands the `project_id` in the
+  front matter, so the downloaded file must carry it, or that round breaks at the last step.
+
+The numbers that change sit in marked `<span>`s (`[data-chat-used]`, `[data-chat-total]`,
+`[data-chat-left]`, `[data-chat-credit-value]`) put there by the catalogue with `t_html`: the
+JavaScript writes a number inside them and does not compose sentences, which stay where they
+belong.
+
+### 14.3.1 Where the chat and the turns live
+
+**On the project, not in the browser.** When the prevalidation passes, an `analysis` step is opened
+with `result: "open"` (§16.3), and its `data` are the conversation and the turns that are left:
+
+```json
+{ "step": "analysis", "result": "open",
+  "data": { "turns_left": 5,
+            "chat": [ { "role": "client", "text": "…", "at": "…" },
+                      { "role": "system", "text": "…", "at": "…" } ] } }
+```
+
+`open` means a step that has begun and has not yet decided anything: while it is so its data are
+updated (anagraphics' `PATCH`, §6.20 of its documentation), and the closed steps stay untouchable.
+The step is also opened when the page is opened if it is not there: the projects born before this
+code sit in `ANALYSIS` without one, and without one neither writing nor counting would be possible.
+
+**The server counts the turn.** The browser sends the message and updates itself with the numbers
+the server returns: reloading the page loses nothing, and whoever opens two tabs does not have two
+different counts. Three routes, all with the contract of the project's APIs (an HTTP status plus a
+stable code):
+
+| Route | What it does | Its own errors |
+|---|---|---|
+| `POST /analysis/{id}/messages` | a turn: it writes the two messages and takes `turns_left` down, in **a single write** — the two messages and the turn spent are the same thing seen from two sides | `400 EMPTY_MESSAGE`, `409 NO_TURNS_LEFT` |
+| `POST /analysis/{id}/turns` | moves turns from the user's credit to the project | `400 INVALID_TURNS`, `409 NOT_ENOUGH_TURNS` |
+| `POST /analysis/{id}/turns/buy` | **a fake purchase** (see below) | — |
+
+All three: `401 NOT_LOGGED`, `404 PROJECT_NOT_FOUND` (for somebody else's project too, so that the
+address is of no use for discovering which ids exist), `409 ANALYSIS_NOT_OPEN`.
+
+**The credit sits on the user**, in `billing.turns_credit` (§5.5 of anagraphics). When the
+project's turns run out, a few can be moved onto the project from the box: first the credit is
+taken down, then the turns are credited. The order is not accidental — the credit is the part that
+must not be able to be spent twice, and anagraphics checks it inside the write. If the second step
+does not succeed, **the credit is given back**, or the user would have paid for nothing; if the
+giving back fails too, a line of log is left saying so in plain words.
+
+In the box, the credit and the purchase are **never there together**: with credit the field for
+moving it is shown and the purchase is hidden, with no credit the field is off and the purchase is
+shown.
+
+**If the turns come back, the field comes back.** The composer is hidden, not destroyed: adding
+turns from the credit or buying some puts the page back as it was, and «Va bene così, procediamo!»
+goes off again. It is not an end, it is an interruption.
+
+### 14.3.2 The two mocks still standing
+
+They are in `contesto/todos.md` because they are to be dismantled, not fixed:
+
+- **The answer**: `POST .../messages` counts the turn, writes the chat and takes the credit down
+  for real, but the answer is picked at random from `preanalyst.analysis.mock.replies.*`. When the
+  model is there, the `mock.*` keys and `mockReplies()` in `src/page.js` go away together.
+- **The purchase**: `POST .../turns/buy` makes nobody buy anything, it gives 10 turns to the credit
+  (`FAKE_PURCHASE_TURNS` in `src/server.js`). It is only there to try the round of the exhausted
+  turns from beginning to end. The payment engine will go in its place.
+
+Without JavaScript the header, the first message and the field are left, but nothing is sent: the
+conversation lives in the browser. It is a limit of the mock, not a choice for what will come.
 
 ### 14.4 `POST /upload`
 
-Una specifica già pronta: un `.md` con il `project_id` nel front matter.
+A specification already prepared: an `.md` with the `project_id` in the front matter.
 
 ```markdown
 ---
@@ -687,197 +852,220 @@ project_id: 1f251606-bdba-40c4-bbee-bfedc6e57f70
 # …
 ```
 
-| Caso | Risposta |
+| Case | Response |
 |---|---|
-| Valido, progetto dell'utente | `201 {"received":true,"name":…,"project_id":…,"version":N}` |
-| Sloggato | `401 NOT_LOGGED` |
-| Senza `X-File-Name` | `400 MISSING_FILE_NAME` |
-| Corpo vuoto | `400 EMPTY_FILE` |
-| Oltre `upload.max_bytes` | `413 FILE_TOO_LARGE` |
-| Non UTF-8 (un PDF, un Word) | `400 NOT_UTF8` |
-| Front matter rotto | `400 INVALID_FRONT_MATTER` |
-| Senza `project_id` | `400 MISSING_PROJECT_ID` |
-| `project_id` non UUID | `400 INVALID_PROJECT_ID` |
-| Progetto inesistente **o di un altro utente** | `404 PROJECT_NOT_FOUND` (stessa risposta: non si scopre quali id esistono) |
-| sso, anagraphics o workspaces giù | `503 SSO_UNAVAILABLE` / `ANAGRAPHICS_UNAVAILABLE` / `WORKSPACES_UNAVAILABLE` |
+| Valid, the user's project | `201 {"received":true,"name":…,"project_id":…,"version":N}` |
+| Logged out | `401 NOT_LOGGED` |
+| With no `X-File-Name` | `400 MISSING_FILE_NAME` |
+| An empty body | `400 EMPTY_FILE` |
+| Beyond `upload.max_bytes` | `413 FILE_TOO_LARGE` |
+| Not UTF-8 (a PDF, a Word) | `400 NOT_UTF8` |
+| Broken front matter | `400 INVALID_FRONT_MATTER` |
+| With no `project_id` | `400 MISSING_PROJECT_ID` |
+| A `project_id` that is not a UUID | `400 INVALID_PROJECT_ID` |
+| A non-existent project **or another user's** | `404 PROJECT_NOT_FOUND` (the same answer: which ids exist is not discovered) |
+| The sso, anagraphics or workspaces down | `503 SSO_UNAVAILABLE` / `ANAGRAPHICS_UNAVAILABLE` / `WORKSPACES_UNAVAILABLE` |
 
-In ogni caso d'errore **il file non si conserva**. Se è valido va a workspaces con
-`X-Spec-Origin: third_party`: l'origine la decide il canale, e un file caricato che dichiara
-`origin: system` viene salvato come `third_party`.
+In every error case **the file is not kept**. If it is valid it goes to workspaces with
+`X-Spec-Origin: third_party`: the origin is decided by the channel, and an uploaded file declaring
+`origin: system` is saved as `third_party`.
 
-### 14.5 `review` e `billing` del progetto
+### 14.5 The project's `review` and `billing`
 
-`projectTerms()` in `src/server.js`, con driver, sconto e ambassador già ricontrollati
-(§5.5, §5.6):
+`projectTerms()` in `src/server.js`, with the driver, the discount and the ambassador already
+checked again (§5.5, §5.6):
 
-| Caso | `review` | `billing` |
+| Case | `review` | `billing` |
 |---|---|---|
-| Nessun link | `{driver_uid: null, preset: false}` (lo assegnerà il sistema) | nessuno sconto; `ambassador_uid` se c'era un ambassador valido (§5.6) |
-| Link di un driver abilitato (`?driver=` o `?discount=`) | il driver del link, `preset: true` | `discount_code` del link, se c'era |
-| Link di un driver non abilitato, inesistente o proprio | `{driver_uid: null, preset: false}` | nessuno sconto |
-| Lavoro autonomo (solo se chi invia è un driver) | il driver stesso, `preset: true` | `autonomous_work: true`, `discount_code: null`, `ambassador_uid: null` |
+| No link | `{driver_uid: null, preset: false}` (the system will assign one) | no discount; `ambassador_uid` if there was a valid ambassador (§5.6) |
+| An enabled driver's link (`?driver=` or `?discount=`) | the link's driver, `preset: true` | the link's `discount_code`, if there was one |
+| The link of a driver who is not enabled, does not exist, or is oneself | `{driver_uid: null, preset: false}` | no discount |
+| Autonomous work (only if whoever submits is a driver) | the driver themselves, `preset: true` | `autonomous_work: true`, `discount_code: null`, `ambassador_uid: null` |
 
-Il codice sconto del link e il lavoro autonomo **si escludono**. Il proprio link non arriva mai
-qui: la pagina non emette i campi nascosti quando il link è del driver che compila. Un
-`autonomous_work` mandato da chi non è driver si ignora.
-
----
-
-## 15. Prossimi passi
-
-1. Test di `driver_link.js` e di `prespec.js` con `node --test`.
-2. La chat di analisi, nella pagina `/analysis/{id}`: che cosa succede dopo una prevalidazione
-   passata è ancora da specificare.
-3. Collegare il bottone "Inizia" del `front-gate` a questa pagina.
-4. Decidere cosa fa davvero il codice sconto: chi lo emette, su cosa si applica, quando scade.
-   Oggi `discounts` ha una percentuale che nessuno usa, e "scaduto" è un messaggio senza una
-   data dietro.
-5. Decidere se il link `?driver=` deve lasciare traccia a valle: oggi sceglie il driver e basta,
-   ma è anche l'unico modo per sapere che un progetto arriva da lui senza passare da uno sconto.
+The link's discount code and the autonomous work **exclude each other**. One's own link never
+arrives here: the page does not emit the hidden fields when the link belongs to the driver filling
+it in. An `autonomous_work` sent by somebody who is not a driver is ignored.
 
 ---
 
-## 16. La prevalidazione
+## 15. Next steps
 
-Il **primo cancello** del flusso: la pre-specifica appena scritta passa da un modello, che dice se
-la richiesta sta dentro il perimetro del servizio. Se non ci sta, la richiesta va in REJECTED e
-l'utente lo scopre subito.
+1. Tests of `driver_link.js` and of `prespec.js` with `node --test`.
+2. The analysis chat, in the `/analysis/{id}` page: what happens after a prevalidation that passes
+   is still to be specified.
+3. Connecting the `front-gate`'s "Inizia" button to this page.
+4. Deciding what the discount code really does: who issues it, what it applies to, when it
+   expires. Today `discounts` has a percentage nobody uses, and "expired" is a message with no date
+   behind it.
+5. Deciding whether the `?driver=` link must leave a trace downstream: today it chooses the driver
+   and that is all, but it is also the only way of knowing that a project comes from them without
+   going through a discount.
 
-Il cancello ha una terza uscita oltre al passaggio e al rifiuto: una richiesta che dice **troppo
-poco** per essere giudicata torna all'utente, che la riscrive (§16.6). Non è un rifiuto e non
-consuma il progetto: è un giro in più.
+---
 
-### 16.1 Il modulo IA
+## 16. The prevalidation
 
-`src/ai/` è la porta verso i fornitori di modelli, e il resto del sottosistema non sa quale ci sia
-dietro:
+The **first gate** of the flow: the pre-specification just written passes through a model, which
+says whether the request sits inside the service's perimeter. If it does not, the request goes to
+REJECTED and the user finds out at once.
+
+The gate has a third exit besides passing and refusing: a request that says **too little** to be
+judged goes back to the user, who rewrites it (§16.6). It is not a refusal and it does not use the
+project up: it is one more round.
+
+### 16.1 The AI module
+
+`src/ai/` is the door towards the model providers, and the rest of the subsystem does not know
+which one is behind it:
 
 ```
 src/ai/webtools_ai.js          decide({ instructions, document, schema })
-src/ai/providers/anthropic.js  il provider Anthropic
+src/ai/providers/anthropic.js  the Anthropic provider
 ```
 
-`decide()` segue il contratto degli altri client — `{ ok: true, data }` oppure
-`{ ok: false, reason }` — con `reason` fra `unavailable` (il fornitore non risponde), `rejected`
-(ha risposto, ma non una cosa usabile) e `unknown_provider`. In `data`: `output`, `model` e
-`usage`, i token consumati.
+`decide()` follows the other clients' contract — `{ ok: true, data }` or `{ ok: false, reason }` —
+with `reason` among `unavailable` (the provider does not answer), `rejected` (it answered, but not
+with something usable) and `unknown_provider`. In `data`: `output`, `model` and `usage`, the tokens
+consumed.
 
-Aggiungere un fornitore — Jev, per esempio — è un file in `providers/` più il valore di
-`ai.provider` nella configurazione: il prevalidator non si tocca. È la Fase 1-2 della strategia in
+Adding a provider — Jev, for instance — is a file in `providers/` plus the value of `ai.provider`
+in the configuration: the prevalidator is not touched. It is Phase 1-2 of the strategy in
 `contesto/decision_engine_considerazioni.md` §25.
 
-Il provider Anthropic usa l'SDK ufficiale, non `fetch` a mano, e fa tre cose per tenere bassa la
-spesa e alta la prevedibilità:
+The Anthropic provider uses the official SDK, not `fetch` by hand, and does three things to keep
+the spending low and the predictability high:
 
-- **uscita vincolata** con `output_config.format` e uno schema JSON: il modello non può rispondere
-  in prosa (§10 del documento sul decision engine, output tipizzati);
-- **niente thinking**, `max_tokens` basso: è una classificazione, non una conversazione;
-- la policy nel `system` con `cache_control`: non cambia mai, e dalla seconda chiamata si paga meno.
+- **a constrained output** with `output_config.format` and a JSON schema: the model cannot answer
+  in prose (§10 of the document on the decision engine, typed outputs);
+- **no thinking**, a low `max_tokens`: it is a classification, not a conversation;
+- the policy in the `system` with `cache_control`: it never changes, and from the second call on it
+  costs less.
 
-Con `claude-haiku-4-5` una prevalidazione costa **qualche millesimo di euro**. I token consumati si
-conservano sul passo della pipeline (§16.3): il costo si ricava da lì, ed è la misura che il PoC
-cerca.
+With `claude-haiku-4-5` a prevalidation costs **a few thousandths of a euro**. The tokens consumed
+are kept on the pipeline's step (§16.3): the cost is worked out from there, and it is the measure
+the PoC is after.
 
-### 16.2 La policy e i sei esiti
+### 16.2 The policy and the six outcomes
 
-I criteri non stanno nel codice: stanno in `policies/scope-v1.md`, **copia generata**
-dall'originale in `webtools/configurator/policies/`. La configurazione dice quale policy si usa
-(`prevalidation.policy`), il file dice che cosa chiede. La copia porta in testa un commento HTML
-messo dal deployer, che `src/prevalidator.js` toglie prima di mandarla al modello.
+The criteria are not in the code: they are in `policies/scope-v1.md`, a **generated copy** of the
+original in `webtools/configurator/policies/`. The configuration says which policy is used
+(`prevalidation.policy`), the file says what it asks. The copy carries at its head an HTML comment
+put there by the deployer, which `src/prevalidator.js` strips before sending it to the model.
 
-Il modello restituisce una probabilità per ciascuno di sei esiti, più una motivazione:
+The model returns a probability for each of six outcomes, plus a reason:
 
-| Esito | Che cosa dice | Dove porta |
+| Outcome | What it says | Where it leads |
 |---|---|---|
-| `non_sequitur` | Non è roba che questa pipeline possa costruire, a nessuna dimensione | rifiuto |
-| `run_out_certain` | È software, ma non ci sta: fuori dal perimetro, e nessuna lettura ragionevole la riporta dentro | rifiuto |
-| `run_out_likely` | Probabilmente non ci sta: parti troppo grandi, o incognite larghe | passa |
-| `underspecified` | Non si riesce a dire: la richiesta ha detto troppo poco per essere messa da qualche parte | torna indietro |
-| `safe` | Ci sta: lavoro ordinario per questo servizio | passa |
-| `ultrasafe` | Ci sta con facilità: piccola, chiara, delimitata | passa |
+| `non_sequitur` | It is not something this pipeline can build, at any size | a refusal |
+| `run_out_certain` | It is software, but it does not fit: outside the perimeter, and no reasonable reading brings it back inside | a refusal |
+| `run_out_likely` | It probably does not fit: parts that are too big, or wide unknowns | it passes |
+| `underspecified` | It cannot be said: the request has said too little to be put anywhere | it goes back |
+| `safe` | It fits: ordinary work for this service | it passes |
+| `ultrasafe` | It fits easily: small, clear, bounded | it passes |
 
-Quattro esiti stanno sull'**asse della dimensione**. Gli altri due no, per ragioni opposte:
+Four outcomes sit on the **axis of size**. The other two do not, for opposite reasons:
 
-- `underspecified` dice che su quell'asse la richiesta non si riesce a mettere, perché ha detto
-  troppo poco. Non è una via di mezzo fra grande e piccolo, ed è per questo che non porta a un
-  rifiuto ma a un giro in più (§16.6). La policy lo delimita apposta: **le risposte che mancano non
-  sono una richiesta sottospecificata**. Che al form manchi qualcosa è normale — i campi vuoti
-  finiscono negli «Open points» della pre-specifica e li chiederà la chat di analisi.
-  `underspecified` riguarda quello che il cliente **ha detto**, non quello che il form non ha
-  raccolto.
-- `non_sequitur` dice che su quell'asse la richiesta non ci sta per principio, perché non c'è
-  nessun software da misurare: un logo, dei testi, un parere su che prodotto comprare, una
-  consulenza, un intervento su macchine fisiche. Il **developer non potrebbe costruirla a nessuna
-  dimensione**, quindi si rifiuta come una richiesta che non ci sta. La domanda che la policy fa
-  porre è una sola: un developer potrebbe scrivere questa cosa come applicazione web, grande quanto
-  si vuole? Se la risposta è sì, l'esito non è questo.
+- `underspecified` says that the request cannot be put on that axis, because it has said too
+  little. It is not a middle ground between big and small, and that is why it leads not to a
+  refusal but to one more round (§16.6). The policy bounds it on purpose: **the answers that are
+  missing are not an underspecified request**. That something is missing from the form is normal —
+  the empty fields end up in the pre-specification's «Open points» and the analysis chat will ask
+  for them. `underspecified` is about what the client **has said**, not about what the form did
+  not collect.
 
-Le sei probabilità si **normalizzano** dopo la lettura: il modello dichiara sei numeri e quasi mai
-sommano a uno, e rifiutare una risposta buona per un errore di aritmetica sarebbe uno spreco.
-L'esito è il più probabile; a parità vince il primo dell'elenco, cioè il più prudente.
+  **Length has nothing to do with it**, in either direction. The policy says so by name because
+  the first of its signals used to be «it is one line long», which was wrong: one line can be a
+  whole request — *«una pagina dove i miei clienti prenotano un tavolo, e io vedo le prenotazioni
+  del giorno»* says what the tool does, who opens it and what comes out of it — and pages of text
+  can say nothing usable, if they tell a situation and never get to the work the tool has to do.
+  There is one question only: **does the request say what the tool has to do?** Not how it is
+  written, not how long it is.
+- `non_sequitur` says that the request does not sit on that axis as a matter of principle, because
+  there is no software to measure: a logo, some texts, an opinion on what product to buy, a piece
+  of consultancy, work on physical machines. The **developer could not build it at any size**, so
+  it is refused like a request that does not fit. The question the policy makes one ask is one
+  only: could a developer write this thing as a web application, as big as one likes? If the
+  answer is yes, this is not the outcome.
 
-**Il rifiuto ha due condizioni, non una**: l'esito più probabile deve essere `run_out_certain`
-oppure `non_sequitur` *e* deve superare `prevalidation.reject_threshold` (oggi 0,6). Un
-`run_out_certain` al 35%, pur essendo il più alto dei sei, non è una certezza di niente. La soglia è
-la stessa per tutti e due: chi rifiuta lo fa alle stesse condizioni.
+**Emptiness is `underspecified`, not `non_sequitur`.** It is the rule of precedence between the
+two, and the policy now writes it out by name. `non_sequitur` needs **something said** that cannot
+be built: a logo, an opinion, a repair. An empty form, a single letter, a line of nonsense say
+nothing — there is not even the logo to refuse — and so they are `underspecified`. Emptiness is not
+the proof that the request is not serious: it is the absence of proof.
 
-**Perché `non_sequitur` è un esito e non un flag.** Quello che mancava era un posto nella
-distribuzione per la richiesta che non è software. Senza, davanti a un logo il modello metteva
-**tutte le probabilità a zero** — «nessuno di questi esiti si applica» — e una distribuzione che
-somma a zero non dà nessun esito: il passo finiva `failed` e la richiesta proseguiva. Il caso che il
-prevalidator riconosceva meglio era l'unico che non riusciva a registrare. Ora ha il suo esito, e la
-policy vieta esplicitamente la distribuzione di zeri.
+The reason the rule matters is that the two outcomes **do not cost the same**: `underspecified`
+sends the request back to the client with what they had written inside it, `non_sequitur` refuses
+it for ever and with no appeal. When one cannot even tell what has been asked for, the outcome that
+asks again is chosen. The endless round is not a risk:
+`prevalidation.max_underspecified_attempts` exists for that (§16.6).
 
-#### Il flag `off_domain`
+The six probabilities are **normalised** after the reading: the model declares six numbers and they
+almost never add up to one, and refusing a good answer over an arithmetic error would be a waste.
+The outcome is the most probable one; on a tie the first of the list wins, that is, the most
+cautious.
 
-Resta, ed è una cosa diversa dagli esiti. Gli esiti dicono quanto è grande la richiesta e se
-software ce n'è; il flag dice **se quel software è un webtool**.
+**The refusal has two conditions, not one**: the most probable outcome must be `run_out_certain` or
+`non_sequitur` *and* it must pass `prevalidation.reject_threshold` (today 0.6). A `run_out_certain`
+at 35%, although the highest of the six, is not a certainty of anything. The threshold is the same
+for both: whoever refuses does so on the same conditions.
 
-Si alza per una richiesta che si potrebbe sviluppare — il developer la scriverebbe, a una qualche
-dimensione — ma che non è uno strumento per un'esigenza specifica. Il criterio è uno solo:
-**nessuno lo apre per sbrigare qualcosa di suo**. Il valore sta nell'essere visto, letto, giocato o
-venduto: un sito vetrina, un gioco, un negozio o un portale che è esso stesso il prodotto, un
-plugin dentro il prodotto di un altro, una libreria per sviluppatori, uno script che gira da solo.
+**Why `non_sequitur` is an outcome and not a flag.** What was missing was a place in the
+distribution for the request that is not software. Without it, faced with a logo the model put
+**every probability at zero** — «none of these outcomes applies» — and a distribution adding up to
+zero gives no outcome: the step ended `failed` and the request went on. The case the prevalidator
+recognised best was the only one it could not record. Now it has its outcome, and the policy
+explicitly forbids the distribution of zeros.
 
-Tre cose **non** mettono una richiesta fuori dominio, e la policy lo dice esplicitamente perché il
-modello ci cascava:
+#### The `off_domain` flag
 
-- **chi può usarla.** Un webtool può essere usato dai clienti, dai soci, dai fornitori o dagli
-  ospiti del cliente, e può stare su internet senza login. «Pubblico», «utenti esterni», «non è per
-  uso interno» non sono ragioni: l'uso interno è una caratteristica frequente di questi strumenti,
-  non un requisito;
-- **com'è fatta fuori.** Un webtool può aver bisogno di venire bello, di portare il nome del
-  cliente, di reggere il confronto con quello di un altro. Il design fa parte di tutto quello che
-  costruiamo;
-- **quanto è grande.** La dimensione è affare della distribuzione, non del flag.
+It stays, and it is a different thing from the outcomes. The outcomes say how big the request is
+and whether there is any software in it; the flag says **whether that software is a webtool**.
 
-Nel dubbio, la policy fa guardare **che cosa sta facendo la persona davanti allo schermo**: se sta
-portando a termine qualcosa di suo — preparare, registrare, decidere, cercare, ordinare, mandare —
-è un webtool, chiunque essa sia; se viene informata, intrattenuta o servita come cliente, non lo è.
+It is raised for a request that could be developed — the developer would write it, at some size —
+but that is not a tool for a specific need. There is one criterion only: **nobody opens it to get
+something of their own done**. The value lies in being seen, read, played or sold: a showcase site,
+a game, a shop or a portal that is itself the product, a plugin inside somebody else's product, a
+library for developers, a script that runs by itself.
 
-Il flag è **indipendente dalla dimensione** — un sito vetrina piccolo è `ultrasafe` *e* fuori
-dominio — e non decide niente da solo: non rifiuta, non ferma, non cambia dove va l'utente. Non
-compare in nessun testo mostrato al cliente: è un dato interno, che arriverà al driver quando ci
-sarà l'area driver. La sua motivazione sta in `off_domain.reason`, separata da `reason`, che parla
-di dimensione.
+Three things do **not** put a request out of domain, and the policy says so explicitly because the
+model kept falling for it:
 
-Con `non_sequitur` il flag non aggiunge niente, perché software da collocare non ce n'è: resta
-falso, e il perché sta in `reason`.
+- **who can use it.** A webtool can be used by the client's customers, members, suppliers or
+  guests, and it can sit on the internet with no login. «Public», «external users», «it is not for
+  internal use» are not reasons: internal use is a frequent characteristic of these tools, not a
+  requirement;
+- **what it looks like outside.** A webtool may need to come out beautiful, to carry the client's
+  name, to stand comparison with somebody else's. Design is part of everything we build;
+- **how big it is.** Size is the distribution's business, not the flag's.
 
-**Il perimetro non si insegna per esempi.** La prima versione della policy diceva soltanto che
-webtools costruisce «tracker, classifiche, piccoli archivi, strumenti di organizzazione, sostituti
-di fogli Excel» — l'elenco del documento di contesto — e il modello ha fatto l'unica cosa che
-poteva: ha generalizzato dagli esempi. Ne è uscita una definizione che non è la nostra («webtools
-are internal tools for tracking and organising»), con due conseguenze — un sito vetrina finiva in
-`non_sequitur` invece che fuori dominio, e la cura estetica veniva contata come un rischio di
-scope. Ora la policy dà prima il **criterio** — uno strumento piccolo per un'esigenza specifica,
-qualcosa che qualcuno deve fare e che torna — e solo dopo gli esempi, dicendo che illustrano e non
-delimitano. Verificato su cinque casi: una richiesta che non somiglia a nessuno degli esempi (un
-tool che prepara i preventivi di un elettricista) è riconosciuta come `safe` e dentro dominio.
+In doubt, the policy makes one look at **what the person in front of the screen is doing**: if they
+are getting something of their own done — preparing, recording, deciding, searching, ordering,
+sending — it is a webtool, whoever they are; if they are being informed, entertained or served as a
+customer, it is not.
 
-### 16.3 Dove finisce l'esito
+The flag is **independent of size** — a small showcase site is `ultrasafe` *and* out of domain —
+and it decides nothing on its own: it does not refuse, it does not stop anything, it does not
+change where the user goes. It appears in no text shown to the client: it is an internal datum,
+which will reach the driver when there is a driver area. Its reason lives in `off_domain.reason`,
+separate from `reason`, which talks about size.
 
-Sul progetto, come passo della pipeline (`POST /projects/{id}/pipeline/steps` di anagraphics):
+With `non_sequitur` the flag adds nothing, because there is no software to place: it stays false,
+and the why is in `reason`.
+
+**The perimeter is not taught by examples.** The policy's first version said only that webtools
+builds «tracker, classifiche, piccoli archivi, strumenti di organizzazione, sostituti di fogli
+Excel» — the context document's list — and the model did the only thing it could: it generalised
+from the examples. Out of it came a definition that is not ours («webtools are internal tools for
+tracking and organising»), with two consequences — a showcase site ended up in
+`non_sequitur` instead of out of domain, and aesthetic care was counted as a scope risk. Now the
+policy gives the **criterion** first — a small tool for a specific need, something somebody has to
+do and that comes round again — and only afterwards the examples, saying that they illustrate and
+do not bound. Checked on five cases: a request that resembles none of the examples (a tool that
+prepares an electrician's quotes) is recognised as `safe` and inside the domain.
+
+### 16.3 Where the outcome ends up
+
+On the project, as a step of the pipeline (anagraphics' `POST /projects/{id}/pipeline/steps`):
 
 ```
 pipeline: {
@@ -891,185 +1079,216 @@ pipeline: {
 }
 ```
 
-Quattro esiti possibili per il passo:
+Four possible outcomes for the step:
 
-| Caso | `result` | `pipeline.state` | Dove va l'utente |
+| Case | `result` | `pipeline.state` | Where the user goes |
 |---|---|---|---|
-| Passa | `passed` | `ANALYSIS` | `/analysis/{id}` |
-| Rifiutata | `rejected` | `REJECTED` | `/?rejected={id}`, con la modale |
-| Dice troppo poco | `underspecified` | `UNDERSPECIFIED` | il form, riempito com'era (§16.6) |
-| Controllo non riuscito | `failed` | `PREVALIDATION` | `/analysis/{id}` |
+| It passes | `passed` | `ANALYSIS` | `/analysis/{id}` |
+| Refused | `rejected` | `REJECTED` | `/?rejected={id}`, with the modal |
+| It says too little | `underspecified` | `UNDERSPECIFIED` | the form, filled in as it was (§16.6) |
+| The check did not succeed | `failed` | `PREVALIDATION` | `/analysis/{id}` |
 
-`result` dice com'è andato il passo, `state` dove porta la pipeline: due cose diverse, e la seconda
-la decide il cancello. Il passo `underspecified` **si conta**: è l'unico posto dove esiste il numero
-dei giri già fatti (§16.6).
+`result` says how the step went, `state` where it takes the pipeline: two different things, and the
+gate decides the second. The `underspecified` step **is counted**: it is the only place where the
+number of rounds already made exists (§16.6).
 
-**Se il controllo non riesce il progetto resta.** Fornitore giù, risposta fuori schema, chiave
-sbagliata: il passo si segna `failed` e si va avanti. Una richiesta valida non si butta via perché
-un controllo non ha funzionato — a differenza della pre-specifica, che se non si scrive non lascia
-niente da cui partire. Nel log resta la riga dell'errore.
+**If the check does not succeed the project stays.** A provider down, an answer outside the schema,
+a wrong key: the step is marked `failed` and things go on. A valid request is not thrown away
+because a check did not work — unlike the pre-specification, which if it is not written leaves
+nothing to start from. The error's line is left in the log.
 
-**Un tentativo andato storto costa comunque**, e il passo `failed` lo registra: se il modello ha
-risposto — troncato, fuori schema, con una distribuzione inutilizzabile — quei token sono stati
-pagati, e `data` porta `{error, usage, model}` invece del solo `error`. Un costo che non si scrive
-da nessuna parte non si misura, e il costo reale è quello che il PoC deve sapere. L'unico caso senza
-`usage` è il fornitore che non ha risposto affatto: lì non si è speso niente.
+**An attempt that went wrong costs all the same**, and the `failed` step records it: if the model
+answered — truncated, outside the schema, with an unusable distribution — those tokens were paid
+for, and `data` carries `{error, usage, model}` instead of `error` alone. A cost that is written
+nowhere is not measured, and the real cost is what the PoC has to know. The only case with no
+`usage` is the provider that did not answer at all: nothing was spent there.
 
-### 16.4 La modale del rifiuto
+### 16.4 The refusal modal
 
-`GET /?rejected={id}` rende la pagina del form con la modale aperta. Il parametro vale **solo** se
-il progetto esiste, è di chi guarda ed è davvero rifiutato: altrimenti si ignora e la pagina è
-quella di sempre. Così l'indirizzo non si può usare per far comparire un rifiuto a qualcun altro,
-né per scoprire quali progetti esistono.
+`GET /?rejected={id}` renders the form's page with the modal open. The parameter counts **only** if
+the project exists, belongs to whoever is looking and really is refused: otherwise it is ignored
+and the page is the usual one. That way the address cannot be used to make a refusal appear to
+somebody else, nor to discover which projects exist.
 
-La modale ha **un solo bottone**, «ok», che porta alla home del front-gate: il form non si usa più,
-quindi da qui non c'è nient'altro da fare. Il PDF è un **link** dentro il testo, non un'azione alla
-pari con l'uscita.
+The modal has **a single button**, «ok», which leads to the front-gate's home page: the form is not
+used any more, so there is nothing else to do from here. The PDF is a **link** inside the text, not
+an action on a par with leaving.
 
-Il testo **non dice perché**: dice che webtools probabilmente non è lo strumento adatto a quel
-bisogno, e basta. Non nomina la dimensione, non nomina il dominio, non cambia in base alla
-configurazione né a chi guarda. Il giudizio è nostro e del driver.
+The text is not one: there are **three**, and they say three different things. `rejectionCase()` in
+`src/server.js` reads the outcome from the project's last `prevalidation` step and chooses.
 
-La modale si apre al caricamento (`public/rejection.js`) perché è la risposta all'invio che l'utente
-ha appena fatto: ci si arriva solo dal `303` di `/submit`. Alla chiusura — «ok», Esc, clic fuori —
-si va alla home del front-gate. Senza JavaScript la modale resta chiusa: limite noto (§13).
+| Case | When | What it says |
+|---|---|---|
+| `out_of_scope` | `run_out_certain` | webtools is in all likelihood not the right tool for that need |
+| `not_software` | `non_sequitur` | webtools builds only small software, to be used in a browser, and produces nothing else — with three examples: a graphic moodboard, texts or translations, a professional opinion |
+| `not_recognised` | the rest: the `underspecified` that ran out of rounds | the analysis tool cannot decipher the request |
 
-### 16.5 Il PDF
+Why there are three and not one. «We are not the right tool» is true for a request that has been
+**understood** and is too big for us; on a `non_sequitur` it would make one believe that it had
+been read and set aside on the merits, when on the merits there was no software to read; and on a
+request that after many rounds was never understood it would say something nobody was able to
+check.
 
-`GET /projects/{id}/rejection.pdf`, riservato al proprietario di un progetto rifiutato. Legge la
-pre-specifica da workspaces (`GET /projects/{id}/specs/latest`) e la impagina con pdfkit: è il
-documento che è stato davvero prodotto, non una ricostruzione.
+`not_software` is the only one talking about the service instead of about the request: it says
+what webtools builds and names a few examples of what it does not build. It is for whoever asked
+for a logo or for a piece of consultancy and would otherwise not know what they had run into — it
+is not the model's judgement, which stays ours and the driver's.
 
-Serve perché tornando alla pagina **il form è vuoto**, e quello che l'utente aveva scritto sarebbe
-perso.
+None of the three names the estimated size or the domain, and none changes according to the
+configuration or to who is looking. The texts live in the catalogues under
+`preanalyst.rejection.<case>.title` and `.lead`.
 
-La **motivazione estesa** del rifiuto (`reason` più `off_domain.reason`, se c'è) finisce nel PDF in
-due casi soltanto: se `prevalidation.rejection_reason_in_pdf` è `true`, oppure se chi scarica è un
-driver (`session.data.driver_uid`). Fuori da questi due casi il documento non la nomina nemmeno.
+The modal opens on load (`public/rejection.js`) because it is the answer to the submission the user
+has just made: one arrives there only from `/submit`'s `303`. On closing — «ok», Esc, a click
+outside — one goes to the front-gate's home page. Without JavaScript the modal stays closed: a
+known limit (§13).
 
-Le domande nel PDF restano **in inglese**, perché la pre-specifica è scritta così.
+### 16.5 The PDF
 
-### 16.6 Il ritorno indietro
+`GET /projects/{id}/rejection.pdf`, reserved for the owner of a refused project. It reads the
+pre-specification from workspaces (`GET /projects/{id}/specs/latest`) and lays it out with pdfkit:
+it is the document that was really produced, not a reconstruction.
 
-Quando l'esito è `underspecified` la richiesta **non** si rifiuta: il progetto resta, va in
-`UNDERSPECIFIED` e l'utente rivede il form con dentro tutto quello che aveva scritto, più un avviso
-in testa che dice che serve qualche dettaglio in più.
+It is needed because on going back to the page **the form is empty**, and what the user had written
+would be lost.
 
-Il giro, passo per passo:
+The refusal's **extended reason** (`reason` plus `off_domain.reason`, if there is one) ends up in
+the PDF in two cases only: if `prevalidation.rejection_reason_in_pdf` is `true`, or if whoever
+downloads it is a driver (`session.data.driver_uid`). Outside these two cases the document does not
+even name it.
 
-1. `POST /submit` → prevalidazione → esito `underspecified`;
-2. il passo si accoda alla pipeline (`result: "underspecified"`, `state: "UNDERSPECIFIED"`);
-3. la pagina si rende **in risposta al POST**, con le risposte già dentro e un campo nascosto
-   `project_id`;
-4. l'utente corregge e rimanda; il `project_id` fa ripartire dallo stesso progetto, e la
-   pre-specifica si conserva come una **versione nuova** dello stesso progetto (v2, v3, …);
-5. la nuova pre-specifica si prevalida di nuovo, e da qui si esce da una delle altre porte.
+The questions in the PDF stay **in English**, because that is how the pre-specification is written.
 
-**Perché la pagina si rende invece di reindirizzare.** Un `303` verso la home riporterebbe un form
-vuoto: chiedere qualche dettaglio in più e restituire un foglio bianco è un invito che nessuno può
-accogliere, e quello che l'utente aveva scritto sarebbe perso. Il prezzo è il limite di §16.7.
+### 16.6 Going back
 
-**Il `project_id` del campo nascosto non ci si fida.** Si ricontrolla su anagraphics: il progetto
-deve esistere, essere **di chi manda il form** ed essere fermo in `UNDERSPECIFIED`. Un id qualunque
-non permette di riscrivere il progetto di un altro, né di rianimare un progetto già rifiutato; se il
-controllo non passa, l'invio vale come un invio nuovo e il progetto nasce da zero.
+When the outcome is `underspecified` the request is **not** refused: the project stays, it goes to
+`UNDERSPECIFIED` and the user sees the form again with everything they had written inside it, plus
+a notice at the top saying that a few more details are needed.
 
-**I giri sono contati**, e il numero non è conservato da nessuna parte: si contano i passi
-`underspecified` nella pipeline del progetto, che è l'unico registro dove quel numero esiste.
-Sopra `prevalidation.max_underspecified_attempts` non si chiede più e la richiesta si rifiuta:
-continuare a rimandare indietro qualcuno che ha già riscritto tante volte non è un invito, è un
-muro. Il tetto vale **solo** per `underspecified`: una richiesta che nel frattempo diventa chiara
-passa, qualunque sia il numero di giri già fatti.
+The round, step by step:
 
-**La pagina resta la pagina**, colonna destra compresa: il box del driver, quello dell'ambassador,
-il blocco del lavoro autonomo per un driver e il caricamento di una specifica già pronta. Chi rivede
-il form deve ritrovarlo com'era, o sembra che si sia rotto qualcosa.
+1. `POST /submit` → the prevalidation → the `underspecified` outcome;
+2. the step is appended to the pipeline (`result: "underspecified"`, `state: "UNDERSPECIFIED"`);
+3. the page is rendered **in answer to the POST**, with the answers already inside and a hidden
+   `project_id` field;
+4. the user corrects it and sends it again; the `project_id` makes it start again from the same
+   project, and the pre-specification is kept as a **new version** of the same project (v2, v3, …);
+5. the new pre-specification is prevalidated again, and from here one leaves through one of the
+   other doors.
 
-I parametri dell'indirizzo qui non ci sono — è la risposta a un `POST` — ma non servono: quello che
-portavano è stato registrato sul progetto al primo invio, e da lì si rilegge.
-`driverLinkOfProject()` in `src/driver_link.js` ricostruisce il link dal progetto —
-`review.driver_uid` con `preset`, più `billing.discount_code` per la percentuale — e
-`billing.ambassador_uid` ridà il box dell'invito. Gli stati sono solo quelli riconosciuti: un driver
-che nel frattempo non si trova più o è stato disabilitato non è un problema di chi sta scrivendo, e
-il progetto è già assegnato.
+**Why the page is rendered instead of redirecting.** A `303` towards the home page would bring back
+an empty form: asking for a few more details and handing back a blank sheet is an invitation nobody
+can accept, and what the user had written would be lost. The price is the limit of §16.7.
 
-Quello che cambia è che i box **si leggono e non si toccano**, perché le condizioni economiche si
-sono decise al primo invio e questo giro non le rilegge:
+**The hidden field's `project_id` is not trusted.** It is checked again on anagraphics: the project
+must exist, must belong to **whoever is sending the form** and must be sitting in `UNDERSPECIFIED`.
+Any old id does not allow somebody else's project to be rewritten, nor a project already refused to
+be revived; if the check does not pass, the submission counts as a new submission and the project
+is born from scratch.
 
-- nessun campo nascosto viaggia col form — né `driver`, né `discount`, né `ambassador`;
-- l'avviso «questo driver verrà ignorato» non compare: non c'è più niente da ignorare;
-- la casella del lavoro autonomo mostra quello che il progetto ha registrato
-  (`billing.autonomous_work`) ed è `disabled`, con una riga che dice che la scelta è stata fatta.
-  Una casella che si muove senza che muoversi serva a qualcosa è peggio di una ferma;
-- in un lavoro autonomo il box del driver non si mostra, com'è al primo invio, dove a spegnerlo è
-  il CSS della casella.
+**The rounds are counted**, and the number is kept nowhere: the `underspecified` steps in the
+project's pipeline are counted, which is the only register where that number exists. Above
+`prevalidation.max_underspecified_attempts` nothing more is asked and the request is refused:
+going on sending back somebody who has already rewritten so many times is not an invitation, it is
+a wall. The ceiling holds **only** for `underspecified`: a request that becomes clear in the
+meantime passes, whatever the number of rounds already made.
 
-### 16.7 Limite: ricaricare la pagina rimanda il form
+**The page stays the page**, the right-hand column included: the driver box, the ambassador's, the
+autonomous work block for a driver and the upload of a specification already prepared. Whoever sees
+the form again must find it as it was, or it looks as though something broke.
 
-La pagina del ritorno indietro è la risposta a un `POST`, quindi ricaricarla (F5) chiede al browser
-di rimandare il form, e con esso di fare un'altra prevalidazione — che costa. Il caso è conosciuto e
-accettato: l'alternativa è perdere le risposte, oppure conservarle da qualche parte per rileggerle
-dopo un reindirizzamento, che al momento non vale la spesa. Il progetto in ogni caso resta uno: è il
-campo nascosto `project_id` a tenerlo insieme, e i giri restano contati.
+The address' parameters are not here — it is the answer to a `POST` — but they are not needed: what
+they carried was recorded on the project at the first submission, and it is read back from there.
+`driverLinkOfProject()` in `src/driver_link.js` rebuilds the link from the project —
+`review.driver_uid` with `preset`, plus `billing.discount_code` for the percentage — and
+`billing.ambassador_uid` gives the invitation box back. The states are only the recognised ones: a
+driver who in the meantime can no longer be found or has been disabled is not a problem for
+whoever is writing, and the project is already assigned.
 
-### 16.8 Provarla a mano
+What changes is that the boxes **are read and not touched**, because the economic conditions were
+decided at the first submission and this round does not read them again:
+
+- no hidden field travels with the form — neither `driver`, nor `discount`, nor `ambassador`;
+- the «this driver will be ignored» notice does not appear: there is nothing left to ignore;
+- the autonomous work checkbox shows what the project recorded (`billing.autonomous_work`) and is
+  `disabled`, with a line saying that the choice has been made. A checkbox that moves without its
+  moving being of any use is worse than one that is still;
+- in autonomous work the driver box is not shown, as at the first submission, where what dims it is
+  the checkbox's CSS.
+
+### 16.7 A limit: reloading the page sends the form again
+
+The page of the going back is the answer to a `POST`, so reloading it (F5) asks the browser to send
+the form again, and with it to make another prevalidation — which costs. The case is known and
+accepted: the alternative is losing the answers, or keeping them somewhere to read them back after
+a redirect, which at the moment is not worth the expense. The project stays one in any case: it is
+the hidden `project_id` field that holds it together, and the rounds stay counted.
+
+### 16.8 Trying it by hand
 
 ```sh
 cd webtools/preanalyst
 set -a; source ../configurator/bootstrap.env; set +a
-node scripts/prevalidate.js scripts/esempi/normale.md
+node scripts/prevalidate.js scripts/examples/ordinary.md
 ```
 
-Stampa distribuzione, esito, verdetto, flag, motivazione e token consumati. **Fa una chiamata
-vera**, quindi costa. In `scripts/esempi/` ci sono quattro pre-specifiche, una per esito:
+It prints the distribution, the outcome, the verdict, the flag, the reason and the tokens
+consumed. **It makes a real call**, so it costs. In `scripts/examples/` there are five
+pre-specifications, one per outcome:
 
-| File | Che cosa dovrebbe uscirne |
+| File | What should come out of it |
 |---|---|
-| `troppo-grande.md` | `run_out_certain` — 40 punti vendita, tre livelli di permessi, SAP, corrieri, fatture |
-| `normale.md` | `safe` — le presenze agli allenamenti di una squadra di pallavolo |
-| `non-sequitur.md` | `non_sequitur` — un logo, i testi del sito, un parere su che gestionale comprare, i PC da riparare |
-| `fuori-dominio.md` | `ultrasafe` **e il flag `off_domain`** — il sito di un agriturismo: software piccolo e fattibile, ma nessuno lo apre per sbrigare qualcosa di suo |
-| `vago.md` | `underspecified` — «qualcosa per il magazzino», senza mai dire che cosa deve fare |
+| `too-big.md` | `run_out_certain` — 40 points of sale, three levels of permissions, SAP, couriers, invoices |
+| `ordinary.md` | `safe` — the attendances at a volleyball team's training sessions |
+| `non-sequitur.md` | `non_sequitur` — a logo, the site's texts, an opinion on what management software to buy, the PCs to repair |
+| `out-of-domain.md` | `ultrasafe` **and the `off_domain` flag** — a farm holiday's website: small, feasible software, but nobody opens it to get something of their own done |
+| `vague.md` | `underspecified` — «qualcosa per il magazzino», without ever saying what it has to do |
 
-Il verdetto è quello che prenderebbe il server **al primo giro**: qui non c'è un progetto, quindi
-non ci sono giri già fatti da contare, e `vago.md` esce come `UNDERSPECIFIED` e non come rifiuto.
+The verdict is the one the server would take **at the first round**: there is no project here, so
+there are no rounds already made to count, and `vague.md` comes out as `UNDERSPECIFIED` and not as
+a refusal.
 
-I due che si somigliano sono `non-sequitur.md` e `fuori-dominio.md`, ed è apposta: sono il confine
-fra l'esito che rifiuta e il flag che non decide niente. Nel primo non resta niente da costruire una
-volta tolto quello che non facciamo; nel secondo il software c'è, è pure facile, e il giudizio sulla
-dimensione va dato per intero — è il flag a dire che non è dei nostri.
+The two that resemble each other are `non-sequitur.md` and `out-of-domain.md`, and it is on
+purpose: they are the border between the outcome that refuses and the flag that decides nothing.
+In the first, nothing is left to build once what we do not do has been taken away; in the second
+the software is there, it is even easy, and the judgement on the size has to be given in full — it
+is the flag that says it is not one of ours.
 
-**Tutti e cinque sono generati dal codice vero**, non scritti a mano: un form compilato passa da
-`readAnswers()` e `renderPrespec()`, che è esattamente quello che fa `/submit`. Quindi hanno il
-front matter con i codici che il form manda davvero, il corpo completo con le domande in inglese e
-la sezione «Open points» — che è un segnale che il prevalidator legge. Un esempio scritto a mano
-prova la policy su un testo *simile* a una pre-specifica; questi la provano sul documento che il
-sistema produce. Lo script che li ha generati non è conservato: si rifanno da `prespec.js` quando
-le domande cambiano.
+**All five are generated by the real code**, not written by hand: a filled-in form goes through
+`readAnswers()` and `renderPrespec()`, which is exactly what `/submit` does. So they have the front
+matter with the codes the form really sends, the complete body with the questions in English and
+the «Open points» section — which is a signal the prevalidator reads. An example written by hand
+tests the policy on a text *similar* to a pre-specification; these test it on the document the
+system produces. The script that generated them is not kept: they are remade from `prespec.js`
+when the questions change.
 
 ---
 
 ## 17. Changelog
 
-| Data | Versione | Modifica |
+| Date | Version | Change |
 |---|---|---|
-| 2026-09-23 | 0.19.0 | **`non_sequitur`**, sesto esito della prevalidazione (§16.2): quello che la pipeline non potrebbe costruire a nessuna dimensione — un logo, dei testi, un parere, una consulenza, un intervento su macchine fisiche — si rifiuta come una richiesta troppo grande, con la stessa soglia. Nasce dal caso visto in prova: senza un posto nella distribuzione per ciò che non è software, il modello alzava `off_domain` e azzerava tutte le probabilità, e il passo finiva `failed`. La policy ora vieta la distribuzione di zeri. Il flag **`off_domain` resta** e prende il suo significato preciso: software che si potrebbe sviluppare ma non è un webtool, indipendente dalla dimensione e senza effetti sul flusso (§16.2). **La policy insegna il perimetro con un criterio invece che con un elenco**: un webtool è uno strumento piccolo per un'esigenza specifica, qualcosa che qualcuno deve fare e che torna; gli esempi illustrano e non delimitano. Prima il modello generalizzava dall'elenco del documento di contesto e ne ricavava «internal tools for tracking», mandando un sito vetrina in `non_sequitur` e contando la cura estetica come rischio di scope. Tre cose che non mettono fuori dominio sono ora scritte per nome: chi può usare lo strumento, com'è fatto fuori, quanto è grande. **I token di un tentativo andato storto non si perdono più**: se il modello ha risposto, `usage` e `model` finiscono sul passo `failed` insieme all'errore (§16.3). Gli esempi di `scripts/esempi/` sono rigenerati dal codice vero (`readAnswers` + `renderPrespec`), non più scritti a mano, e diventano cinque: `fuori-dominio.md` — il vecchio — prende il nome `non-sequitur.md`, che è l'esito che gli tocca, e il nome liberato va a un esempio nuovo per il **flag**, il sito di un agriturismo, che passa come `ultrasafe` con `off_domain` alzato (§16.8). Test da 14 a 16. |
-| 2026-09-23 | 0.18.0 | **Il ritorno indietro** (§16.6). Quinto esito della prevalidazione, `underspecified`: una richiesta che dice troppo poco per essere giudicata non si rifiuta, torna al form riempito com'era, con un avviso in testa e il progetto in `UNDERSPECIFIED`. Il `project_id` viaggia in un campo nascosto e si ricontrolla su anagraphics (proprietario e stato); i giri si contano sui passi della pipeline e oltre `prevalidation.max_underspecified_attempts` si rifiuta. `verdict()` in `src/prevalidator.js` decide fra i tre esiti; anagraphics accetta il nuovo stato e il nuovo `result`. Testi nei cataloghi (`preanalyst.underspecified.*`), avviso `.form-notice`, campi del form che si riportano dietro la risposta già data. Configurazione nuova: `prevalidation.max_underspecified_attempts`. Test da 6 a 14. |
-| 2026-09-23 | 0.17.0 | **La prevalidazione** (§16), primo cancello del flusso. Nuovo modulo IA `src/ai/` (interfaccia unica più il provider Anthropic con l'SDK ufficiale, uscita vincolata a uno schema JSON), `src/prevalidator.js` con la policy `scope-v1` che arriva dal configurator, quattro esiti con la loro probabilità e il flag interno `off_domain`. L'esito si accoda alla **pipeline** del progetto in anagraphics; se il controllo non riesce il progetto resta. Rifiuto → `/?rejected={id}` con la modale a un bottone e il link al PDF dei dati del form (`GET /projects/{id}/rejection.pdf`, pdfkit; la motivazione estesa solo ai driver o se lo dice la configurazione). **Loader comune** sull'invio (`commons/script/webtools_loader.js` + `commons/templates/loader.njk`, nuovo script_deployer). Il template della pre-specifica diventa una copia generata: l'originale è in `configurator/documents/`. Configurazione nuova: `ai`, `prevalidation`; la chiave del fornitore sta nei segreti (`configurator/secrets/`, fuori da git). Primi test del sottosistema: 6. |
-| 2026-09-22 | 0.16.0 | **Lingue.** Tutti i testi della pagina, delle domande, dei messaggi e di `upload.js` nei cataloghi comuni (`commons/i18n/locales/`, chiavi `preanalyst.*`); `questions.js` tiene solo struttura e testi inglesi della pre-specifica, e le opzioni diventano `[codice, testo per la pre-specifica]`. Id delle sezioni in inglese. Selettore della lingua e `POST /locale`, che per chi è entrato salva la lingua nella sessione e nel profilo. `language` della pre-specifica = lingua della pagina. Configurazione: sezione `i18n`. |
-| 2026-09-22 | 0.15.0 | Allineamento alla pagina "Lavora con noi". **Driver e sconto ricontrollati all'invio** (`src/project_driver.js`): valgono solo con un driver esistente, abilitato e diverso da chi compila; lo sconto porta il suo driver. Box ambassador: «Ti ha invitato a usare webtools.». Informativa del lavoro autonomo: a consumo con i token, più la fee di sistema; il link porta a `#lavoro-autonomo`. |
-| 2026-09-22 | 0.14.0 | **Driver abilitati**: con `?driver=` o `?discount=` il driver trovato deve avere `enabled: true`. Nuovi stati `driver_disabled` e `discount_driver_disabled`: l'utente legge che con quel driver non si prosegue e che va contattato; il progetto lo assegniamo noi, e lo sconto di un driver non abilitato non viaggia col form. L'ambassador non richiede l'abilitazione. |
-| 2026-09-22 | 0.13.0 | **Ambassador** (§5.6): `?ambassador=<uid di un driver>` mostra il box "Invito" se non ci sono link di un driver né lavoro autonomo; all'invio l'uid, ricontrollato con `GET /drivers/{uid}`, va in `billing.ambassador_uid`. Nuovi `src/ambassador.js`, `partials/ambassador_box.njk`, `findDriver()` in `anagraphics.js`. |
-| 2026-09-22 | 0.12.0 | **Via lo sconto sulla fee del lavoro autonomo**: dalla pagina, dalla configurazione (`billing.autonomous_fee_discount_percent`) e da `billing` del progetto. Il blocco "Lavoro autonomo" dice che non c'è la quota del driver e che si paga a consumo più la fee di sistema, con il link «Vuoi saperne di più?» alla pagina "Lavora con noi" del front-gate, in una nuova scheda (senza scritte che lo annuncino). Configurazione nuova: `subsystems_infos.front_gate.url`. |
-| 2026-09-21 | 0.11.0 | **Configurazione dal sottosistema di configurazione.** All'avvio si legge `GET /configuration/preanalyst` da anagraphics (client comune `commons/configuration/configuration_client.js`, copia in `src/commons/`); via tutte le variabili d'ambiente e tutti i default, tranne il bootstrap `WEBTOOLS_*`. Senza configurazione il server non parte. Il taglio delle risposte aperte (prima la costante `MAX_TEXT_LENGTH` in `prespec.js`) diventa `form.answer_max_chars`. |
-| 2026-09-21 | 0.10.0 | **L'invio è collegato** (§14). `POST /submit` crea il progetto in anagraphics, scrive la pre-specifica in webtools-workspaces e manda a `/analysis/{id}`, pagina vuota riservata al proprietario. `submission_id` contro i doppi invii; driver e sconti nel progetto, in `review` e `billing`; cancellazione del progetto se la pre-specifica non si scrive. `POST /upload` accetta solo un `.md` con `project_id` nel front matter, verifica progetto e proprietario e lo conserva come `third_party`. Codici delle opzioni in inglese (`mobile`, `unknown`, …) con etichette inglesi per la pre-specifica. Il bottone d'invio sta nel cancello dell'accesso e si abilita col login. Nuova dipendenza `yaml`. `referral.js` rinominato **`driver_link.js`** (`resolveDriverLink`, `withoutOwnLink`): legge il link di un driver per il box, e non va confuso con i dati del progetto. |
-| 2026-09-21 | 0.9.0 | Le regole per il driver che compila: il proprio sconto o link viene ignorato (stato `own_link` in `referral.js`), quelli di altri driver restano validi; blocco **Lavoro autonomo** sotto il box del driver, con lo sconto del 20% sulla fee, che spegne il box con `:has()` e mostra l'avviso. La colonna destra diventa un contenitore aggiornabile (`data-sso-aside`), incluso nel frammento. |
-| 2026-09-21 | 0.8.0 | Il login si apre in una **finestra** che si chiude da sola: `GET /login-done` chiude il giro, `GET /session-fragment` restituisce i due pezzi resi dai template e il browser li rimpiazza sul posto (`public/sso_popup.js`). Prima riga di JavaScript lato browser del sottosistema. Niente più ritorno del biglietto sulla pagina di partenza, che apriva una seconda copia del form nella finestra sbagliata. |
-| 2026-09-21 | 0.7.0 | L'HTML esce dal JavaScript: `templates/page.njk`, `macros/fields.njk`, `partials/driver_box.njk` resi con **nunjucks** (autoescape), guscio comune da `commons/templates/base.njk`. `src/page.js` prepara solo i dati. Prima dipendenza npm del sottosistema. |
-| 2026-09-21 | 0.6.0 | L'accesso: stato in testata, riquadro "per proseguire serve un account" sotto il bottone, `GET /logout`, ritorno dal login con `?ticket=` e cookie `webtools_preanalyst`. Tutto il dialogo col sso passa da `src/commons/sso_client.js`, copia generata dal nuovo deployer. La pagina resta usabile da sloggati e anche col sso spento. |
-| 2026-09-20 | 0.1.0 | Creazione: pagina unica resa dal server, tendina dei driver letta da anagraphics, quattro stati del codice sconto, file statici, script `--start`/`--stop` con PID verificato, `deploy_preanalyst` nel deployer dello stile. |
-| 2026-09-21 | 0.5.1 | Tolto l'avviso "questo link non porta con sé nessuno sconto": era inutile e fuorviante, faceva pensare che un altro link avrebbe dovuto portarne uno. Con `?driver=` il box mostra solo il nome. |
-| 2026-09-21 | 0.5.0 | Tolta la tendina di scelta del driver e ogni riferimento alla possibilità di cambiarlo. Il box mostra il nome del driver quando il link lo porta, altrimenti dice perché no; l'`uid` viaggia come campo nascosto. `isLocked()` diventa `isResolved()`. |
-| 2026-09-21 | 0.4.0 | Il box del driver compare **solo** con `?discount=` o `?driver=` nell'URL. Senza, la pagina è a colonna singola e non chiama anagraphics. |
-| 2026-09-20 | 0.3.0 | La pagina si divide in due: blocco principale col testo e il form della pre-analisi (domande in `src/questions.js`, 5 sezioni e 14 campi), box del driver autonomo a destra, agganciato al form con `form="gate-form"`. La scelta del driver è dichiarata **facoltativa** nei testi. `GET /` risponde sempre `200`: se l'elenco dei driver non arriva, il form resta e i parametri dell'URL viaggiano come campi nascosti. |
-| 2026-09-20 | 0.2.0 | Aggiunto il parametro `?driver=<uid>`, con la stessa logica di `?discount=` ma senza sconto. `discount.js` diventa `referral.js`, con sei stati al posto di quattro; se arrivano entrambi i parametri vince `discount`. |
+| 2026-09-24 | 0.23.0 | **The chat and the turns sit on the project** (§14.3.1), no longer in the browser. When the prevalidation passes, an `analysis` step is opened with `result: "open"` and `{turns_left, chat}` inside it; it is also opened when the page is opened if it is missing, for the projects born before. **The server counts the turn**: three new routes — `POST /analysis/{id}/messages` (the two messages and the turn taken off in a single write), `POST .../turns` (moves turns from the user's credit, with a refund if crediting the project does not succeed) and `POST .../turns/buy` (a fake purchase). Reloading the page no longer loses anything. The user's **credit** sits in `billing.turns_credit` on anagraphics: in the box of the exhausted turns, with credit the field for moving it is shown and the purchase is hidden, with no credit the field is off and the purchase is shown. If the turns come back, the field for writing comes back and the go goes off again. The counter shows the used and the total (used + remaining), not `max_turns`, which with bought turns is no longer the total of anything. It requires anagraphics 0.10.0. |
+| 2026-09-24 | 0.22.0 | **The summary and the turns** in the analysis page (§14.3). The page goes to two columns: the conversation and, next to it, a box that reads back from the project what was decided at submission time — the driver, the discount, the ambassador, the autonomous work — showing only what is there (`projectSummary()` in `src/server.js`, with `driverLinkOfProject()`). In the box, the **turn counter** and two buttons with no effect: «Scarica la conversazione» above and «Va bene così, procediamo!» `disabled`. **A turn is a question and its answer**, counted when the answer arrives. From `analysis.warn_from_turn` a small notice appears below the field with how many are left; at `analysis.max_turns` the field **is removed** and in its place comes a box proposing to buy more — with the button that for now does nothing — and saying that it is not compulsory and that by downloading the conversation, the chat included, one can go on alone with one's own AI agent. New configuration: `analysis.max_turns` (30) and `analysis.warn_from_turn` (20); there was no limit on the turns before. The count lives in the browser only: when the turns are real it will go on the pipeline's steps, like the `underspecified` rounds. |
+| 2026-09-24 | 0.21.0 | **An almost empty form is no longer refused.** A request with «a» inside it came back `non_sequitur` at 95% and ended up in REJECTED, final and with no appeal: the policy listed «an empty form» among the cases of `non_sequitur` and did not say which outcome won when the request says nothing. Now `scope-v1` writes the **precedence** out: `non_sequitur` requires something said that cannot be built, emptiness is `underspecified`, and between the two the one that asks again is chosen, because they do not cost the same (§16.2). **A revision of `underspecified`**: out goes the signal of length — «it is one line long» meant nothing, one line can be a whole request and pages of text can say none of it. One question is left: does the request say what the tool has to do? **The refusal modal has three texts** (§16.4): `out_of_scope` for `run_out_certain` («we are in all likelihood not the right tool»), `not_software` for `non_sequitur` — the only one talking about the service instead of about the request: webtools builds only small software, to be used in a browser, and not a moodboard, texts or an opinion — and `not_recognised` for the `underspecified` that ran out of rounds («the analysis tool cannot decipher your request»). A single text on a `non_sequitur` would make one believe that the request had been read and set aside on the merits. `rejectionCase()` in `src/server.js` reads the outcome from the last step. **After the login the submission starts again by itself** (`public/gate.js`, §6.1), like the upload: before, the modal closed and the page stayed still saying nothing. It does not start again if the login made the **autonomous work** choice appear, and in that case a notice lights up above the button. Checked: the same pre-specification that had been refused now gives `underspecified` at 1.00, and the five examples of `scripts/examples/` hold their outcome. |
+| 2026-09-24 | 0.20.0 | **The analysis page is no longer empty** (§14.3): the specification rounds, one message at a time. It is a **graphic mock** and it says so in the page — the answers are fake, the browser picks them at random from `preanalyst.analysis.mock.replies.*` and they arrive after a random wait; the provider is not called, nothing is written, and on reloading nothing is left. It is there to look at the interaction before deciding who leads the rounds, where the turns end up and what closes them. New `public/analysis.js` and the `.chat-*` style; `templates/analysis.njk` carries the markup of a message in two `<template>`s, which the browser clones filling `.chat-text` with `textContent`. The texts are in the catalogues (`preanalyst.analysis.*`). No new field in the configuration: the message's limit is `form.answer_max_chars`. |
+| 2026-09-23 | 0.19.0 | **`non_sequitur`**, the prevalidation's sixth outcome (§16.2): what the pipeline could not build at any size — a logo, some texts, an opinion, a piece of consultancy, work on physical machines — is refused like a request that is too big, with the same threshold. It comes from the case seen in testing: with no place in the distribution for what is not software, the model raised `off_domain` and zeroed every probability, and the step ended `failed`. The policy now forbids the distribution of zeros. The **`off_domain` flag stays** and takes its precise meaning: software that could be developed but is not a webtool, independent of size and with no effect on the flow (§16.2). **The policy teaches the perimeter with a criterion instead of with a list**: a webtool is a small tool for a specific need, something somebody has to do and that comes round again; the examples illustrate and do not bound. Before, the model generalised from the context document's list and got «internal tools for tracking» out of it, sending a showcase site to `non_sequitur` and counting aesthetic care as a scope risk. Three things that do not put a request out of domain are now written out by name: who can use the tool, what it looks like outside, how big it is. **The tokens of an attempt that went wrong are no longer lost**: if the model answered, `usage` and `model` end up on the `failed` step together with the error (§16.3). The examples of `scripts/examples/` are regenerated from the real code (`readAnswers` + `renderPrespec`), no longer written by hand, and become five: `fuori-dominio.md` — the old one — takes the name `non-sequitur.md`, which is the outcome it deserves, and the freed name goes to a new example for the **flag**, a farm holiday's website, which passes as `ultrasafe` with `off_domain` raised (§16.8). Tests from 14 to 16. |
+| 2026-09-23 | 0.18.0 | **Going back** (§16.6). The prevalidation's fifth outcome, `underspecified`: a request that says too little to be judged is not refused, it goes back to the form filled in as it was, with a notice at the top and the project in `UNDERSPECIFIED`. The `project_id` travels in a hidden field and is checked again on anagraphics (the owner and the state); the rounds are counted on the pipeline's steps and above `prevalidation.max_underspecified_attempts` the request is refused. `verdict()` in `src/prevalidator.js` decides between the three outcomes; anagraphics accepts the new state and the new `result`. The texts are in the catalogues (`preanalyst.underspecified.*`), the notice is `.form-notice`, the form's fields carry the answer already given back with them. New configuration: `prevalidation.max_underspecified_attempts`. Tests from 6 to 14. |
+| 2026-09-23 | 0.17.0 | **The prevalidation** (§16), the flow's first gate. A new AI module `src/ai/` (a single interface plus the Anthropic provider with the official SDK, the output constrained to a JSON schema), `src/prevalidator.js` with the `scope-v1` policy that arrives from the configurator, four outcomes with their probability and the internal `off_domain` flag. The outcome is appended to the project's **pipeline** in anagraphics; if the check does not succeed the project stays. A refusal → `/?rejected={id}` with the one-button modal and the link to the PDF of the form's data (`GET /projects/{id}/rejection.pdf`, pdfkit; the extended reason only to the drivers or if the configuration says so). A **shared loader** on the submission (`commons/script/webtools_loader.js` + `commons/templates/loader.njk`, a new script_deployer). The pre-specification's template becomes a generated copy: the original is in `configurator/documents/`. New configuration: `ai`, `prevalidation`; the provider's key lives in the secrets (`configurator/secrets/`, outside git). The subsystem's first tests: 6. |
+| 2026-09-22 | 0.16.0 | **Languages.** All the texts of the page, of the questions, of the messages and of `upload.js` in the shared catalogues (`commons/i18n/locales/`, the `preanalyst.*` keys); `questions.js` keeps only the structure and the English texts of the pre-specification, and the options become `[code, text for the pre-specification]`. The sections' ids in English. The language switcher and `POST /locale`, which for whoever has entered saves the language in the session and in the profile. The pre-specification's `language` = the page's language. Configuration: the `i18n` section. |
+| 2026-09-22 | 0.15.0 | Alignment with the "Lavora con noi" page. **The driver and the discount are checked again at submission time** (`src/project_driver.js`): they count only with a driver who exists, is enabled and is not the person filling the form in; the discount carries its driver. The ambassador box: «Ti ha invitato a usare webtools.». The autonomous work notice: by consumption with the tokens, plus the system fee; the link leads to `#lavoro-autonomo`. |
+| 2026-09-22 | 0.14.0 | **Enabled drivers**: with `?driver=` or `?discount=` the driver found must have `enabled: true`. New `driver_disabled` and `discount_driver_disabled` states: the user reads that with that driver one does not go on and that they are to be contacted; we assign the project, and the discount of a driver who is not enabled does not travel with the form. The ambassador does not require being enabled. |
+| 2026-09-22 | 0.13.0 | **The ambassador** (§5.6): `?ambassador=<a driver's uid>` shows the "Invito" box if there are no driver links and no autonomous work; at submission time the uid, checked again with `GET /drivers/{uid}`, goes into `billing.ambassador_uid`. New `src/ambassador.js`, `partials/ambassador_box.njk`, `findDriver()` in `anagraphics.js`. |
+| 2026-09-22 | 0.12.0 | **Out goes the discount on the autonomous work's fee**: from the page, from the configuration (`billing.autonomous_fee_discount_percent`) and from the project's `billing`. The "Lavoro autonomo" block says that there is no driver's share and that it is paid by consumption plus the system fee, with the «Vuoi saperne di più?» link to the front-gate's "Lavora con noi" page, in a new tab (with no wording announcing it). New configuration: `subsystems_infos.front_gate.url`. |
+| 2026-09-21 | 0.11.0 | **Configuration from the configuration subsystem.** At startup `GET /configuration/preanalyst` is read from anagraphics (the shared client `commons/configuration/configuration_client.js`, a copy in `src/commons/`); out go all the environment variables and all the defaults, except the `WEBTOOLS_*` bootstrap. With no configuration the server does not start. The cut-off of the open answers (before, the `MAX_TEXT_LENGTH` constant in `prespec.js`) becomes `form.answer_max_chars`. |
+| 2026-09-21 | 0.10.0 | **The submission is connected** (§14). `POST /submit` creates the project in anagraphics, writes the pre-specification in webtools-workspaces and sends to `/analysis/{id}`, an empty page reserved for the owner. `submission_id` against double submissions; the driver and the discounts in the project, in `review` and `billing`; the project is deleted if the pre-specification is not written. `POST /upload` accepts only an `.md` with `project_id` in the front matter, checks the project and the owner and keeps it as `third_party`. The options' codes in English (`mobile`, `unknown`, …) with English labels for the pre-specification. The submit button sits in the access gate and is enabled by the login. A new `yaml` dependency. `referral.js` renamed **`driver_link.js`** (`resolveDriverLink`, `withoutOwnLink`): it reads a driver's link for the box, and is not to be confused with the project's data. |
+| 2026-09-21 | 0.9.0 | The rules for the driver filling the form in: their own discount or link is ignored (the `own_link` state in `referral.js`), other drivers' stay valid; the **Lavoro autonomo** block below the driver box, with the 20% discount on the fee, which dims the box with `:has()` and shows the notice. The right-hand column becomes an updatable container (`data-sso-aside`), included in the fragment. |
+| 2026-09-21 | 0.8.0 | The login opens in a **window** that closes by itself: `GET /login-done` closes the round trip, `GET /session-fragment` returns the two pieces rendered by the templates and the browser replaces them in place (`public/sso_popup.js`). The subsystem's first line of browser-side JavaScript. No more return of the ticket to the starting page, which opened a second copy of the form in the wrong window. |
+| 2026-09-21 | 0.7.0 | The HTML leaves the JavaScript: `templates/page.njk`, `macros/fields.njk`, `partials/driver_box.njk` rendered with **nunjucks** (autoescape), the shared shell from `commons/templates/base.njk`. `src/page.js` prepares the data only. The subsystem's first npm dependency. |
+| 2026-09-21 | 0.6.0 | Access: the state in the header, the "an account is needed to go on" box below the button, `GET /logout`, the return from the login with `?ticket=` and the `webtools_preanalyst` cookie. All the dialogue with the sso goes through `src/commons/sso_client.js`, a copy generated by the new deployer. The page stays usable while logged out and with the sso off too. |
+| 2026-09-20 | 0.1.0 | Creation: a single page rendered by the server, the drivers' dropdown read from anagraphics, four states of the discount code, static files, the `--start`/`--stop` script with a verified PID, `deploy_preanalyst` in the style's deployer. |
+| 2026-09-21 | 0.5.1 | Out goes the "this link does not carry any discount" notice: it was useless and misleading, it made one think that another link ought to have carried one. With `?driver=` the box shows the name only. |
+| 2026-09-21 | 0.5.0 | Out goes the driver's dropdown and every reference to the possibility of changing them. The box shows the driver's name when the link carries it, otherwise it says why not; the `uid` travels as a hidden field. `isLocked()` becomes `isResolved()`. |
+| 2026-09-21 | 0.4.0 | The driver box appears **only** with `?discount=` or `?driver=` in the URL. Without them, the page is single-column and does not call anagraphics. |
+| 2026-09-20 | 0.3.0 | The page splits in two: the main block with the text and the pre-analysis form (the questions in `src/questions.js`, 5 sections and 14 fields), the autonomous driver box on the right, attached to the form with `form="gate-form"`. The choice of the driver is declared **optional** in the texts. `GET /` always answers `200`: if the drivers' list does not arrive, the form stays and the URL's parameters travel as hidden fields. |
+| 2026-09-20 | 0.2.0 | The `?driver=<uid>` parameter added, with the same logic as `?discount=` but with no discount. `discount.js` becomes `referral.js`, with six states in place of four; if both parameters arrive, `discount` wins. |

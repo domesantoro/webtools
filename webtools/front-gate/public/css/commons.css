@@ -1,13 +1,13 @@
 /* ==========================================================
-   commons — stile condiviso dell'ecosistema webtools
-   "bottega digitale": carta, inchiostro, un solo colore deciso
+   commons — the shared style of the webtools ecosystem
+   "digital workshop": paper, ink, one decided colour
 
-   Contiene solo le parti generalizzabili: font, token, base,
-   tipografia, layout e componenti comuni. Gli stili specifici
-   di ogni sito restano nel suo .css locale, caricato dopo.
+   It holds only the parts that generalise: fonts, tokens, base,
+   typography, layout and shared components. The styles specific
+   to each site stay in its local .css, loaded afterwards.
 
-   Distribuzione: questo file si serve come css/commons.css,
-   con i font accanto in css/fonts/.
+   Distribution: this file is served as css/commons.css, with the
+   fonts next to it in css/fonts/.
    ========================================================== */
 
 /* ---------- font ---------- */
@@ -16,7 +16,7 @@
 @font-face { font-family: "Inter"; src: url("fonts/inter.woff2") format("woff2"); font-weight: 100 900; font-style: normal; font-display: swap; }
 @font-face { font-family: "JetBrains Mono"; src: url("fonts/jetbrains-mono.woff2") format("woff2"); font-weight: 100 800; font-style: normal; font-display: swap; }
 
-/* ---------- token ---------- */
+/* ---------- tokens ---------- */
 :root {
   --paper: #f4efe6;
   --paper-2: #ece5d8;
@@ -64,7 +64,13 @@ body {
 a { color: inherit; text-decoration: none; }
 button, input { font: inherit; }
 ::selection { background: var(--accent); color: var(--surface); }
+/* The keyboard focus ring. It stays on buttons, fields and checkboxes, where it
+   is the only way to know where you have got to navigating without a mouse. Not
+   on links: a vermilion rectangle around a word in the middle of a sentence is
+   more visible than the link itself. `a.btn` is a link only in the markup — it
+   looks and works like a button — so it keeps the ring like the other buttons. */
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 4px; }
+a:not(.btn):focus-visible { outline: none; }
 
 h1, h2, h3 { font-family: var(--serif); }
 
@@ -73,7 +79,7 @@ h1, h2, h3 { font-family: var(--serif); }
 .section { padding: 96px 0; }
 .section-line { border-top: 1.5px solid var(--ink); }
 
-/* ---------- marchio ---------- */
+/* ---------- brand ---------- */
 .brand { display: inline-flex; align-items: center; gap: 11px; }
 .brand-mark {
   width: 34px;
@@ -110,7 +116,7 @@ h1, h2, h3 { font-family: var(--serif); }
   margin-top: 3px;
 }
 
-/* ---------- bottoni ---------- */
+/* ---------- buttons ---------- */
 .btn {
   display: inline-flex;
   align-items: center;
@@ -141,7 +147,7 @@ h1, h2, h3 { font-family: var(--serif); }
 }
 .btn-primary:active { transform: translate(2px,2px); box-shadow: 1px 1px 0 var(--ink); }
 
-/* ---------- schede ---------- */
+/* ---------- cards ---------- */
 .card {
   background: var(--surface);
   border: 1.5px solid var(--ink);
@@ -149,9 +155,9 @@ h1, h2, h3 { font-family: var(--serif); }
   box-shadow: var(--shadow-hard);
 }
 .card-sm { border-radius: var(--radius-sm); box-shadow: var(--shadow-hard-md); }
-/* Il raggio serve: senza, il rettangolo pieno della testata passa sopra gli
-   angoli arrotondati e ne cancella due pezzi di bordo. Meno 2px perché dentro
-   il bordo della scheda la curva è più stretta. */
+/* The radius is needed: without it the solid rectangle of the head runs over the
+   rounded corners and erases two pieces of the border. Minus 2px because inside
+   the card's border the curve is tighter. */
 .card-head {
   background: var(--paper-2);
   border-bottom: 1.5px solid var(--ink);
@@ -161,8 +167,8 @@ h1, h2, h3 { font-family: var(--serif); }
   border-radius: calc(var(--radius-sm) - 2px) calc(var(--radius-sm) - 2px) 0 0;
 }
 
-/* ---------- campi ---------- */
-/* Nessun margine: la distanza fra i campi la decide il form che li contiene. */
+/* ---------- fields ---------- */
+/* No margin: the distance between fields is decided by the form holding them. */
 .field { display: grid; gap: 8px; border: 0; padding: 0; margin: 0; min-width: 0; }
 .field-label { font-weight: 600; font-size: 15px; padding: 0; }
 .field-hint { color: var(--muted); font-size: 14px; margin: -2px 0 0; line-height: 1.45; }
@@ -180,14 +186,14 @@ h1, h2, h3 { font-family: var(--serif); }
 }
 .input::placeholder { color: var(--muted); opacity: .75; }
 .input:focus-visible {
-  /* Il campo attivo non si muove e l'ombra resta quella di prima: il bordo
-     diventa vermiglio, senza cambiare spessore. */
+  /* The active field does not move and the shadow stays as it was: the border
+     turns vermilion, without changing thickness. */
   outline: none;
   border-color: var(--accent);
 }
 textarea.input { resize: vertical; line-height: 1.55; min-height: 80px; }
 
-/* ---------- avvisi ---------- */
+/* ---------- notices ---------- */
 .notice {
   margin: 0 0 18px;
   padding: 13px 15px;
@@ -227,7 +233,7 @@ textarea.input { resize: vertical; line-height: 1.55; min-height: 80px; }
 .menu-toggle { display: none; border: 0; background: transparent; color: var(--ink); padding: 8px; cursor: pointer; }
 .menu-toggle span { width: 24px; height: 2px; background: currentColor; display: block; margin: 5px 0; border-radius: 2px; }
 
-/* ---------- componenti ---------- */
+/* ---------- components ---------- */
 .eyebrow {
   display: inline-flex;
   align-items: center;
@@ -316,7 +322,7 @@ details p { color: var(--muted); max-width: 760px; margin: -4px 0 22px; font-siz
   .main-nav { top: 64px; left: 16px; right: 16px; }
 }
 
-/* ---------- piè di pagina e selettore della lingua ---------- */
+/* ---------- footer and language switcher ---------- */
 .site-footer { border-top: 1.5px solid var(--ink); padding: 30px 0 40px; color: var(--muted); font-family: var(--mono); font-size: 12px; }
 .footer-inner { display: flex; justify-content: space-between; align-items: center; gap: 20px; }
 .footer-links { display: flex; gap: 20px; }
@@ -337,8 +343,8 @@ details p { color: var(--muted); max-width: 760px; margin: -4px 0 22px; font-siz
 }
 
 /* ---------- loader ---------- */
-/* Il velo che copre la pagina mentre una richiesta è per strada. Compare solo
-   quando l'utente ha chiesto qualcosa: lo accende `webtools_loader.js`.
+/* The veil that covers the page while a request is on its way. It appears only
+   when the user has asked for something: `webtools_loader.js` raises it.
    Markup in commons/templates/loader.njk. */
 .webtools-loader { position: fixed; inset: 0; z-index: 90; display: none; place-items: center; background: rgba(244,239,230,.86); }
 .webtools-loader[data-on] { display: grid; }

@@ -1,29 +1,29 @@
-// Avvio del server.
+// Starting the server.
 //
-// In background: ./webtools_preanalyst.sh --start
-// In primo piano, per debug, con le variabili di webtools/configurator/bootstrap.env
-// nell'ambiente: npm start   (Ctrl+C per fermarlo)
+// In the background: ./webtools_preanalyst.sh --start
+// In the foreground, for debugging, with the variables of
+// webtools/configurator/bootstrap.env in the environment: npm start (Ctrl+C to stop)
 
 import { ConfigurationError } from "./commons/configuration_client.js";
 import { createServer } from "./server.js";
 import { loadSettings } from "./settings.js";
 
-// La configurazione si legge una volta, qui: se manca o è sbagliata il server
-// non parte, e il motivo resta nel log.
+// The configuration is read once, here: if it is missing or wrong the server does
+// not start, and the reason stays in the log.
 let settings;
 try {
   settings = await loadSettings();
 } catch (error) {
   if (!(error instanceof ConfigurationError)) throw error;
-  console.error(`webtools_preanalyst non parte: ${error.message}`);
+  console.error(`webtools_preanalyst is not starting: ${error.message}`);
   process.exit(1);
 }
 const server = createServer(settings);
 
 server.listen(settings.port, settings.host, () => {
-  // Lo script di avvio aspetta questa riga per dire che il server è su.
+  // The start script waits for this line before saying the server is up.
   console.log(
-    `webtools_preanalyst in ascolto su http://${settings.host}:${settings.port} ` +
+    `webtools_preanalyst listening on http://${settings.host}:${settings.port} ` +
       `(anagraphics: ${settings.anagraphicsUrl})`
   );
 });

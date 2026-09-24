@@ -1,103 +1,102 @@
 # webtools_sso
 
-**Autenticazione**: login, stato della sessione, logout. Tre rotte per i programmi e tre
-pagine per le persone — qui sta **l'unica pagina del sistema in cui si digita una password**.
-Node, con **nunjucks** per le pagine (unica dipendenza).
+**Authentication**: login, session state, logout. Three routes for programs and three pages for
+people — this is where **the only page in the system in which a password is typed** lives. Node,
+with **nunjucks** for the pages (the only dependency).
 
-Documentazione completa: `docs/subsystems/sso/README.md` (nella root del workspace).
+Full documentation: `docs/subsystems/sso/README.md` (at the root of the workspace).
 
-## Avvio e arresto
+## Start and stop
 
 ```sh
-webtools/sso/webtools_sso.sh --start   # avvia in background, slegato dal terminale
-webtools/sso/webtools_sso.sh --stop    # ferma
+webtools/sso/webtools_sso.sh --start   # starts it in the background, detached from the terminal
+webtools/sso/webtools_sso.sh --stop    # stops it
 ```
 
-- PID: `webtools_sso.pid`. Log: `webtools_sso.log` (in append).
-- `--stop` ferma solo il processo del file PID, e solo dopo aver verificato che sia
+- PID: `webtools_sso.pid`. Log: `webtools_sso.log` (appended).
+- `--stop` stops only the process of the PID file, and only after checking that it is
   `node …/webtools/sso/src/index.js`.
-- Debug in primo piano, da questa cartella: `npm start` (Ctrl+C per fermarlo).
-- Dopo un `git clone` o un cambio di versione: `npm install` (una sola dipendenza, nunjucks).
+- Debugging in the foreground, from this directory: `npm start` (Ctrl+C to stop it).
+- After a `git clone` or a version change: `npm install` (one dependency only, nunjucks).
 
-**Serve anche anagraphics acceso**, dove stanno utenti e sessioni:
+**anagraphics must be running too**, where users and sessions live:
 ```sh
 webtools/anagraphics/webtools_anagraphics.sh --start
 ```
 
-## Le rotte (`http://127.0.0.1:9300`)
+## The routes (`http://127.0.0.1:9300`)
 
-Per i programmi, in JSON:
+For programs, in JSON:
 
-| Rotta | Che cosa fa | Risposta |
+| Route | What it does | Response |
 |---|---|---|
-| `POST /login` | `{"username":…,"password":…}` | `201 {"logged":true,"session":{…}}` oppure `401 INVALID_CREDENTIALS` |
-| `GET /session` | `Authorization: Bearer <token>` | `200 {"logged":true,"session":{…}}` oppure `200 {"logged":false}` |
-| `POST /logout` | `Authorization: Bearer <token>` | `200 {"logged":false}`, ripetibile |
-| `POST /tickets/exchange` | `{"ticket":…,"service":…}` | La sessione a cui il biglietto dà accesso |
+| `POST /login` | `{"username":…,"password":…}` | `201 {"logged":true,"session":{…}}` or `401 INVALID_CREDENTIALS` |
+| `GET /session` | `Authorization: Bearer <token>` | `200 {"logged":true,"session":{…}}` or `200 {"logged":false}` |
+| `POST /logout` | `Authorization: Bearer <token>` | `200 {"logged":false}`, repeatable |
+| `POST /tickets/exchange` | `{"ticket":…,"service":…}` | The session the ticket gives access to |
 
-Per le persone, in HTML: `GET`/`POST /ui/login`, `GET /ui/logout`, `GET /ui/register`.
+For people, in HTML: `GET`/`POST /ui/login`, `GET /ui/logout`, `GET /ui/register`.
 
-Errori delle rotte JSON: stato HTTP corretto e codice stabile, `{"error":"<CODICE>"}`.
+Errors of the JSON routes: correct HTTP status and a stable code, `{"error":"<CODE>"}`.
 
-## Il giro del login, in breve
+## The login round trip, in brief
 
-Il browser si logga qui, ma il cookie che il sso mette vale solo per **questo** indirizzo: un
-cookie non attraversa due porte diverse. Allora il sso rimanda il browser al sottosistema con un
-**biglietto** nell'indirizzo; il sottosistema lo scambia da server a server (`/tickets/exchange`),
-riceve la sessione e si mette il **proprio** cookie. Il biglietto vale un minuto e una volta sola,
-quindi può stare in un indirizzo; il token della sessione, che dura ore, non ci passa mai.
+The browser logs in here, but the cookie the sso sets is good only for **this** address: a cookie
+does not cross two different ports. So the sso sends the browser back to the subsystem with a
+**ticket** in the address; the subsystem exchanges it server to server (`/tickets/exchange`),
+receives the session and sets **its own** cookie. The ticket is good for one minute and once, so it
+can sit in an address; the session token, which lasts hours, never travels there.
 
-Chi torna qui da un secondo sottosistema non ridigita la password: il cookie del sso lo riconosce
-e si emette solo un altro biglietto. Questa è la parte *single* del single sign-on.
+Whoever comes back here from a second subsystem does not retype the password: the sso's cookie
+recognises them and only another ticket is issued. This is the *single* part of single sign-on.
 
-Un sottosistema non deve scrivere niente di tutto questo a mano: c'è
-`webtools/commons/sso/sso_client.js`, che si porta in casa con
-`webtools/configurator/deploy.sh sso`.
+A subsystem does not have to write any of this by hand: there is
+`webtools/commons/sso/sso_client.js`, brought in with `webtools/configurator/deploy.sh sso`.
 
-Tre cose da sapere prima di usarlo:
+Three things to know before using it:
 
-- **Le sessioni stanno in Mongo, non qui dentro.** Il sso non ha un database: le scrive e le
-  rilegge da anagraphics. Un riavvio del sso non slogga nessuno.
-- **`logged: false` e `503` non sono la stessa cosa.** Il primo dice che la sessione non vale, il
-  secondo che l'archivio non risponde e quindi non lo sappiamo. Un `503` non va trattato come un
-  logout, o basterà un guasto di Mongo per sloggare tutti.
-- **Un login rifiutato dà sempre `INVALID_CREDENTIALS`**, che l'utente non esista, sia
-  disattivato, non abbia una password o l'abbia sbagliata. Quale dei quattro sia, sta nel log.
+- **The sessions live in Mongo, not in here.** The sso has no database: it writes them to and
+  reads them from anagraphics. Restarting the sso logs nobody out.
+- **`logged: false` and `503` are not the same thing.** The first says the session is not good,
+  the second that the store does not answer and so we do not know. A `503` must not be treated as
+  a logout, or one Mongo failure will log everybody out.
+- **A refused login always gives `INVALID_CREDENTIALS`**, whether the user does not exist, is
+  deactivated, has no password or got it wrong. Which of the four it is, is in the log.
 
-La sessione è lo stesso documento conservato in anagraphics: `token`, `uid`, `username`,
-`issued_at`, `expires_at`, `data` (oggi `screen_name` e `driver_uid`, fotografati al login).
-Dura 8 ore dal login e non si allunga con l'uso.
+The session is the same document stored in anagraphics: `token`, `uid`, `username`, `issued_at`,
+`expires_at`, `data` (today `screen_name` and `driver_uid`, photographed at login time). It lasts
+8 hours from the login and does not extend with use.
 
-## Stile delle pagine
+## The pages' style
 
-`public/commons.css` e `public/fonts/` sono **copie generate** dal deployer: non si modificano
-qui. Si modifica `webtools/commons/style/` e si lancia `webtools/configurator/deploy.sh style`.
-Lo stesso vale per `src/commons/configuration_client.js` (originale in
-`webtools/commons/configuration/`, deployer `configuration`).
-`public/styles.css` è lo stile locale delle due pagine e si modifica a mano.
+`public/commons.css` and `public/fonts/` are **generated copies** from the deployer: they are not
+edited here. Edit `webtools/commons/style/` and run `webtools/configurator/deploy.sh style`. The
+same holds for `src/commons/configuration_client.js` (the original is in
+`webtools/commons/configuration/`, the `configuration` deployer).
+`public/styles.css` is the two pages' local style and is edited by hand.
 
-## Password
+## Passwords
 
-Non si impostano da qui: si scrivono in anagraphics, col comando in
-`docs/subsystems/anagraphics/README.md` §8.5. Chi lo lancia deve chiudere anche le sessioni già
-aperte di quell'utente: la password nuova da sola non le ferma.
+They are not set from here: they are written in anagraphics, with the command in
+`docs/subsystems/anagraphics/README.md` §8.5. Whoever runs it must also close that user's sessions
+that are already open: the new password alone does not stop them.
 
-Il formato conservato (scrypt, con i parametri dentro il documento) è descritto in
-`docs/subsystems/anagraphics/README.md` §5.5. Qui si verifica soltanto.
+The stored format (scrypt, with the parameters inside the document) is described in
+`docs/subsystems/anagraphics/README.md` §5.5. Here it is only verified.
 
-## Configurazione
+## Configuration
 
-Letta all'avvio da anagraphics (`GET /configuration/sso`); la fonte è
-`webtools/configurator/configuration/sso.json`. Nessun default: se manca qualcosa il server
-non parte e il log dice quale campo. Dall'ambiente arrivano solo le variabili di
-`webtools/configurator/bootstrap.env`, che `--start` carica da sé. Il significato dei campi è
-nella documentazione completa (§6).
+Read at startup from anagraphics (`GET /configuration/sso`); the source is
+`webtools/configurator/configuration/sso.json`. No defaults: if anything is missing the server does
+not start and the log says which field. Only the variables of
+`webtools/configurator/bootstrap.env` come from the environment, and `--start` loads them by
+itself. What the fields mean is in the full documentation (§6).
 
-## Test
+## Tests
 
 ```sh
-npm test    # 35 test, nessun server da accendere
+npm test    # 47 tests, no server to start
 ```
 
-Al posto di anagraphics c'è un archivio finto, guasti compresi. `tests/credentials.test.js`
-contiene un hash prodotto davvero da Python: tiene insieme le due implementazioni di scrypt.
+In place of anagraphics there is a fake store, failures included. `tests/credentials.test.js`
+holds a hash really produced by Python: it keeps the two scrypt implementations together.

@@ -1,2 +1,2 @@
-{# Solo gli interni di .header-access: li rimpiazza il browser dopo il login. #}
-{% import "partials/access.njk" as accesso with context %}{{ accesso.header(access) }}
+{# Only the insides of .header-access: the browser replaces them after the login. #}
+{% import "partials/access.njk" as login with context %}{{ login.header(access) }}

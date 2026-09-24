@@ -43,21 +43,23 @@ Not provided.
 None.
 {% endif %}
 {#
-  (Questo commento sta in fondo perché il file deve cominciare con `---`:
-  qualunque cosa prima, anche una riga vuota, e il front matter non c'è più.)
+  (This comment is at the bottom because the file has to begin with `---`:
+  anything before it, an empty line included, and the front matter is gone.)
 
-  La pre-specifica: le risposte del form come documento markdown.
-  Reso da `src/prespec.js` con un ambiente senza autoescape (è markdown, non
-  HTML): il testo del cliente entra **solo** attraverso il filtro `quote`.
-  Perché è fatta così: vedi il commento in cima a `src/prespec.js`.
+  The pre-specification: the form's answers as a markdown document.
+  Rendered by `src/prespec.js` with an environment with no autoescape (it is
+  markdown, not HTML): the client's text comes in **only** through the `quote`
+  filter. Why it is made this way: see the comment at the top of
+  `src/prespec.js`.
 
-  NON MODIFICARE LA COPIA DENTRO UN SOTTOSISTEMA.
-  Questo file dice che **forma** ha la pre-specifica, quindi è configurazione:
-  l'originale sta in `webtools/configurator/documents/prespec.md.njk` e le copie
-  (`preanalyst/templates/commons/`) le distribuisce
+  DO NOT EDIT THE COPY INSIDE A SUBSYSTEM.
+  This file says what **shape** the pre-specification has, so it is
+  configuration: the original is in
+  `webtools/configurator/documents/prespec.md.njk` and the copies
+  (`preanalyst/templates/commons/`) are distributed by
   `webtools/configurator/documents_deployer/deploy.sh`.
 
-  Limite: il template è accoppiato a `src/prespec.js`, che gli passa le
-  variabili. Si può cambiare la forma del documento, non inventare campi che il
-  codice non manda.
+  A limit: the template is coupled to `src/prespec.js`, which passes it the
+  variables. The document's shape can be changed, but fields the code does not
+  send cannot be invented.
 #}

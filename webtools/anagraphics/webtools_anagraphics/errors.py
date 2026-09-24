@@ -1,10 +1,10 @@
-"""Errori dell'API: stato HTTP + codice stabile, mai testo da interpretare.
+"""API errors: HTTP status + a stable code, never prose to be interpreted.
 
-Formato unico per ogni risposta di errore:
+One format for every error response:
 
-    {"error": "<CODICE>", ...campi di contesto opzionali}
+    {"error": "<CODE>", ...optional context fields}
 
-I codici fanno parte del contratto dell'API: non si rinominano.
+The codes are part of the API contract: they are not renamed.
 """
 
 import logging
@@ -22,14 +22,18 @@ CONFIGURATION_NOT_FOUND = "CONFIGURATION_NOT_FOUND"
 DRIVER_NOT_FOUND = "DRIVER_NOT_FOUND"
 DISCOUNT_NOT_FOUND = "DISCOUNT_NOT_FOUND"
 USER_NOT_FOUND = "USER_NOT_FOUND"
-# L'utente c'è ma non ha una password impostata: non è un errore del chiamante.
+# The user exists but has no password set: not the caller's mistake.
 CREDENTIAL_NOT_SET = "CREDENTIAL_NOT_SET"
 SESSION_NOT_FOUND = "SESSION_NOT_FOUND"
 SESSION_EXISTS = "SESSION_EXISTS"
 TICKET_NOT_FOUND = "TICKET_NOT_FOUND"
 TICKET_EXISTS = "TICKET_EXISTS"
-# Un submission_id già usato per il progetto di un altro utente.
+# A submission_id already used for another user's project.
 SUBMISSION_EXISTS = "SUBMISSION_EXISTS"
+# No step yet open with that name on the project's pipeline.
+OPEN_STEP_NOT_FOUND = "OPEN_STEP_NOT_FOUND"
+# The user's turn credit is not enough for what was asked.
+NOT_ENOUGH_TURNS = "NOT_ENOUGH_TURNS"
 INVALID_BODY = "INVALID_BODY"
 ROUTE_NOT_FOUND = "ROUTE_NOT_FOUND"
 METHOD_NOT_ALLOWED = "METHOD_NOT_ALLOWED"
@@ -56,7 +60,7 @@ def install_error_handlers(app: FastAPI) -> None:
 
     @app.exception_handler(StarletteHTTPException)
     async def http_error(request: Request, exc: StarletteHTTPException) -> JSONResponse:
-        # Errori generati dal framework, non dagli endpoint.
+        # Errors raised by the framework, not by the endpoints.
         if exc.status_code == 404:
             return error_response(404, ROUTE_NOT_FOUND)
         if exc.status_code == 405:
@@ -65,17 +69,17 @@ def install_error_handlers(app: FastAPI) -> None:
 
     @app.exception_handler(RequestValidationError)
     async def invalid_body(request: Request, exc: RequestValidationError) -> JSONResponse:
-        # FastAPI risponderebbe 422 con l'elenco dei campi: noi diamo 400 e un
-        # codice stabile. Il dettaglio resta nel log, non nel contratto.
-        logger.warning("body non valido su %s: %s", request.url.path, exc.errors())
+        # FastAPI would answer 422 with the list of fields: we answer 400 with a
+        # stable code. The detail stays in the log, not in the contract.
+        logger.warning("invalid body on %s: %s", request.url.path, exc.errors())
         return error_response(400, INVALID_BODY)
 
     @app.exception_handler(ConnectionFailure)
     async def database_unavailable(request: Request, exc: ConnectionFailure) -> JSONResponse:
-        logger.error("MongoDB non raggiungibile: %s", exc)
+        logger.error("MongoDB unreachable: %s", exc)
         return error_response(503, DATABASE_UNAVAILABLE)
 
     @app.exception_handler(Exception)
     async def internal_error(request: Request, exc: Exception) -> JSONResponse:
-        # Il traceback viene comunque scritto nel log da uvicorn.
+        # The traceback is written to the log by uvicorn anyway.
         return error_response(500, INTERNAL_ERROR)

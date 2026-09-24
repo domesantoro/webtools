@@ -101,8 +101,8 @@ is `non_sequitur`:
 - things that are not software: hardware, a physical object, a building, an event;
 - work on software we do not write: fixing, hosting or operating something the client
   already bought, or an existing installation of someone else's product;
-- a request that is not a request: a test, a joke, an empty form, a message addressed to
-  no one.
+- a request that is not a request: a test, a joke, a message addressed to no one — where
+  what is written makes that plain.
 
 A request can name several things at once — a logo **and** a small tool. If some real
 software remains once the rest is set aside, judge that software on size and leave
@@ -113,6 +113,18 @@ leaves nothing to build.
 written: those are `run_out_*` and `underspecified`. Ask yourself one question — could an
 AI developer write this as software, at any size? If the answer is yes, this outcome is
 not the one.
+
+**Saying nothing is not the same as asking for something we cannot build.** `non_sequitur`
+needs **something said** that this pipeline cannot produce: a logo, an opinion, a repair, a
+person's time. An empty form, a single letter, a word, a line of nonsense say nothing at
+all — there is no logo and no opinion in them either, so there is nothing to refuse. Those
+are `underspecified`.
+
+The two outcomes do not cost the same, and that is why the line matters. `underspecified`
+sends the request back to the client with what they wrote still in it, and they try again.
+`non_sequitur` refuses it for good, with no appeal. Emptiness is not evidence that the
+request is not serious: it is the absence of evidence. **When you cannot even tell what is
+being asked for, choose the outcome that asks again.**
 
 **Software that is not a webtool is still software.** A public website, an online shop, a
 booking portal, a mobile app, a game, a plugin, a script with no interface: a developer
@@ -132,19 +144,36 @@ Two requests, to keep the line in view:
 
 ### When to choose `underspecified`
 
-Only when you genuinely cannot place the request on the size axis. Signals: the request
-names a subject but never says what should be done with it ("something for the
-warehouse"); it describes a feeling rather than a task ("I need to get organised"); it is
-one line long and could equally mean a list or a management system.
+One question decides this outcome: **does the request say what the tool has to do?** If
+somebody could read it and begin deciding what to build, it is not `underspecified` — put
+it on the size axis like anything else.
 
-**Missing answers are not the same thing.** Unanswered questions are normal at this stage:
-the pre-specification lists them under "Open points" and the analysis chat will ask. A
-request that says clearly what it wants and leaves details open is `safe`, not
-`underspecified`. Use `underspecified` for what the client *said*, not for what the form
-did not collect.
+**Length is not a signal, in either direction.** One line can be a whole request: *"a page
+where my customers book a table, and I see the day's bookings"* says what the tool does,
+who opens it and what comes out of it — that is `safe`, and a short request written in
+plain words is not a warning sign. Pages of text can say nothing usable, if they describe a
+situation, a history or a company and never arrive at the job the tool has to do. Do not
+reward volume and do not punish brevity.
+
+What `underspecified` looks like:
+
+- a subject with no task: "something for the warehouse", "a tool for the association";
+- a feeling instead of a job: "I need to get organised", "we waste too much time";
+- a request that would fit two quite different tools, with nothing in it to say which;
+- a field filled in to get past it: one letter, one word, a line of nonsense.
+
+What it is **not**:
+
+- **Missing answers.** Unanswered questions are normal at this stage: the pre-specification
+  lists them under "Open points" and the analysis chat will ask. A request that says
+  clearly what it wants and leaves the details open is `safe`. Use `underspecified` for
+  what the client *said*, not for what the form did not collect.
+- **Plain writing.** No jargon, no structure, no paragraphs, mistakes in spelling: none of
+  these is a reason. Judge what is being asked for, not how it is written.
 
 Do not use it as a polite way of avoiding a judgement: if the request is clear enough to
-place, place it.
+place, place it. But when it genuinely is not, this is the honest answer, and the one that
+costs least: the client is asked again, and nothing is closed.
 
 ## The `off_domain` flag
 

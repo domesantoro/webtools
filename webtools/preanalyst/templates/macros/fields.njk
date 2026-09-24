@@ -1,15 +1,15 @@
 {#
-  I campi del form, disegnati a partire dai dati di `src/questions.js`.
-  Qui non si sa che cosa chiedono le domande: si sa solo come si disegna un campo.
+  The form fields, drawn from the data of `src/questions.js`. Nothing here knows
+  what the questions ask: it only knows how a field is drawn.
 
-  Tipi gestiti: textarea, text, email (campi di testo), radio e checkbox (scelte).
-  I testi (legend, label, hint, placeholder, testo delle opzioni) arrivano già
-  tradotti da `src/page.js`.
+  Types handled: textarea, text, email (text fields), radio and checkbox (choices).
+  The texts (legend, label, hint, placeholder, option text) arrive already
+  translated from `src/page.js`.
 
-  Ogni campo si porta dietro la risposta già data, se c'è: `field.value` per i
-  campi di testo, `field.selected` (un elenco di codici) per le scelte. Al primo
-  invio sono vuoti. Serve a chi è tornato indietro perché la richiesta diceva
-  troppo poco: ritrova quello che aveva scritto.
+  Every field carries the answer already given, if there is one: `field.value` for
+  text fields, `field.selected` (a list of codes) for choices. At the first
+  submission they are empty. It is for somebody sent back because the request said
+  too little: they find again what they had written.
 #}
 
 {% macro field_hint(hint) %}
@@ -20,7 +20,7 @@
 {%- if required %} <abbr class="required" title="{{ t('preanalyst.form.required') }}">*</abbr>{% endif %}
 {%- endmacro %}
 
-{# radio e checkbox: stessa struttura, cambiano il tipo e il nome inviato. #}
+{# radio and checkbox: same structure, the type and the submitted name change. #}
 {% macro choice_field(field) %}
           <fieldset class="field choices">
             <legend class="field-label">{{ field.label }}{{ required_mark(field.required) }}</legend>

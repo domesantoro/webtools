@@ -1,4 +1,4 @@
-"""Accesso a MongoDB: collection e indici."""
+"""Access to MongoDB: collections and indexes."""
 
 from pymongo import MongoClient, ReturnDocument
 from pymongo.database import Database
@@ -13,23 +13,23 @@ USERS = "users"
 SESSIONS = "sessions"
 TICKETS = "tickets"
 
-# Nelle risposte non esponiamo l'_id interno di Mongo.
+# Responses never expose Mongo's internal _id.
 PUBLIC = {"_id": 0}
 
-# La lista dei driver espone solo ciò che serve a identificarli e mostrarli:
-# `username` esce solo dalla lettura di un singolo driver.
+# The driver list exposes only what is needed to identify and show them:
+# `username` comes out only when reading a single driver.
 DRIVER_SUMMARY = {"_id": 0, "uid": 1, "screen_name": 1, "enabled": 1}
 
-# L'utente senza il blocco delle credenziali: è la lettura normale.
+# The user without the credential block: this is the ordinary read.
 USER_PUBLIC = {"_id": 0, "credential": 0}
 
-# Il blocco delle credenziali, da solo: lo legge il sso per verificare una
-# password. Qui non si verifica niente, si restituisce il dato conservato.
+# The credential block on its own: the sso reads it to verify a password. Nothing
+# is verified here, the stored data is returned.
 USER_CREDENTIAL = {"_id": 0, "username": 1, "credential": 1}
 
 
 def connect(settings: Settings) -> Database:
-    # tz_aware: le date delle sessioni tornano con il fuso (UTC), non nude.
+    # tz_aware: session dates come back with their zone (UTC), not naked.
     client = MongoClient(
         settings.mongo_uri,
         tz_aware=True,
@@ -41,28 +41,28 @@ def connect(settings: Settings) -> Database:
 def ensure_indexes(db: Database) -> None:
     db[CONFIGURATION].create_index("subsystem", unique=True)
     db[PROJECTS].create_index("project_id", unique=True)
-    # L'id dell'invio del form: lo stesso invio ripetuto (doppio clic, pagina
-    # ricaricata) non deve creare un secondo progetto. Sparse perché un progetto
-    # può nascere anche per altre strade, senza un form alle spalle.
+    # The form submission id: the same submission repeated (double click, page
+    # reloaded) must not create a second project. Sparse because a project can be
+    # born by other routes too, with no form behind it.
     db[PROJECTS].create_index("submission_id", unique=True, sparse=True)
     db[DRIVERS].create_index("uid", unique=True)
     db[DISCOUNTS].create_index("discount_code", unique=True)
-    # Il driver è ridondato dentro lo sconto: serve l'indice per cercarli per driver.
+    # The driver is duplicated inside the discount: the index is for finding them by driver.
     db[DISCOUNTS].create_index("driver.uid")
-    # L'utente si cerca per username (è quello che si digita al login), ma l'uid
-    # resta l'identificativo stabile: unico anche quello.
+    # A user is looked up by username (that is what is typed at login), but the uid
+    # stays the stable identifier: unique as well.
     db[USERS].create_index("username", unique=True)
     db[USERS].create_index("uid", unique=True)
     db[SESSIONS].create_index("token", unique=True)
-    # Tutte le sessioni di un utente: serve per chiuderle in blocco.
+    # All of a user's sessions: needed to close them all at once.
     db[SESSIONS].create_index("uid")
-    # Indice TTL: Mongo cancella la sessione quando `expires_at` è passato.
-    # È solo pulizia dell'archivio, e passa ogni ~60 s: chi legge una sessione
-    # deve controllare la scadenza da sé, senza fidarsi della cancellazione.
+    # TTL index: Mongo deletes the session once `expires_at` has passed. It is
+    # only housekeeping, and it runs every ~60 s: whoever reads a session must
+    # check the expiry themselves, without relying on the deletion.
     db[SESSIONS].create_index("expires_at", expireAfterSeconds=0)
     db[TICKETS].create_index("ticket", unique=True)
-    # Come per le sessioni: il TTL è pulizia. Un biglietto vive un minuto, ma
-    # chi lo consuma controlla comunque la scadenza da sé.
+    # As for sessions: the TTL is housekeeping. A ticket lives one minute, but
+    # whoever consumes it checks the expiry themselves all the same.
     db[TICKETS].create_index("expires_at", expireAfterSeconds=0)
 
 
@@ -79,20 +79,86 @@ def find_project_by_submission(db: Database, submission_id: str) -> dict | None:
 
 
 def insert_project(db: Database, project: dict) -> None:
-    # Copia: insert_one aggiunge `_id` al dizionario che riceve.
+    # A copy: insert_one adds `_id` to the dictionary it receives.
     db[PROJECTS].insert_one(dict(project))
 
 
 def append_pipeline_step(db: Database, project_id: str, step: dict, state: str) -> dict | None:
-    """Accoda un passo alla pipeline del progetto e ne porta avanti lo stato.
+    """Appends a step to the project's pipeline and moves its state forward.
 
-    Una sola scrittura: `$push` e `$set` insieme, così non esiste un momento in
-    cui il passo c'è e lo stato è ancora quello di prima. Restituisce il
-    progetto aggiornato, oppure `None` se non esiste.
+    One single write: `$push` and `$set` together, so there is no moment in which
+    the step is there and the state is still the previous one. Returns the updated
+    project, or `None` if it does not exist.
     """
     return db[PROJECTS].find_one_and_update(
         {"project_id": project_id},
         {"$push": {"pipeline.steps": step}, "$set": {"pipeline.state": state}},
+        projection=PUBLIC,
+        return_document=ReturnDocument.AFTER,
+    )
+
+
+def update_open_step(db: Database, project_id: str, step_name: str, changes: dict) -> dict | None:
+    """Updates the data of the **last** `step_name` step, only while it is open.
+
+    Closed steps are not touched: the list is the register of the decisions taken,
+    and a decision taken is not rewritten. An `open` step, on the other hand, is
+    work in progress — the analysis chat, the turns still left — and grows until
+    another step closes it.
+
+    `changes` are fields of `data`, written one by one: what is not named stays as
+    it was. `None` if the project is not there, or has no open step with that name.
+    """
+    progetto = db[PROJECTS].find_one({"project_id": project_id}, {"pipeline.steps": 1})
+    if progetto is None:
+        return None
+
+    passi = progetto.get("pipeline", {}).get("steps", [])
+    indice = next(
+        (
+            i
+            for i in range(len(passi) - 1, -1, -1)
+            if passi[i].get("step") == step_name and passi[i].get("result") == "open"
+        ),
+        None,
+    )
+    if indice is None:
+        return None
+
+    return db[PROJECTS].find_one_and_update(
+        {"project_id": project_id},
+        {"$set": {f"pipeline.steps.{indice}.data.{campo}": valore for campo, valore in changes.items()}},
+        projection=PUBLIC,
+        return_document=ReturnDocument.AFTER,
+    )
+
+
+def push_to_open_step(db: Database, project_id: str, step_name: str, field: str, values: list) -> dict | None:
+    """Appends values to a list inside the data of the last open step.
+
+    The chat needs it: messages are added at the end, and rewriting the whole list
+    every turn would mean sending the entire conversation back just to make it two
+    lines longer.
+    """
+    progetto = db[PROJECTS].find_one({"project_id": project_id}, {"pipeline.steps": 1})
+    if progetto is None:
+        return None
+
+    passi = progetto.get("pipeline", {}).get("steps", [])
+    indice = next(
+        (
+            i
+            for i in range(len(passi) - 1, -1, -1)
+            if passi[i].get("step") == step_name and passi[i].get("result") == "open"
+        ),
+        None,
+    )
+    if indice is None:
+        return None
+
+    return db[PROJECTS].find_one_and_update(
+        {"project_id": project_id},
+        {"$push": {f"pipeline.steps.{indice}.data.{field}": {"$each": values}}},
         projection=PUBLIC,
         return_document=ReturnDocument.AFTER,
     )
@@ -107,7 +173,7 @@ def find_driver(db: Database, uid: str) -> dict | None:
 
 
 def list_drivers(db: Database) -> list[dict]:
-    # Senza paginazione: i driver sono pochi. Ordine stabile per uid.
+    # No pagination: there are few drivers. A stable order by uid.
     # Proiezione ridotta: niente `username` (vedi DRIVER_SUMMARY).
     return list(db[DRIVERS].find({}, DRIVER_SUMMARY).sort("uid"))
 
@@ -129,7 +195,7 @@ def find_user_credential(db: Database, username: str) -> dict | None:
 
 
 def set_user_locale(db: Database, username: str, locale: str) -> dict | None:
-    # La lingua preferita dell'utente: il sso la rimette nella sessione al login.
+    # The user's preferred language: the sso puts it back in the session at login.
     return db[USERS].find_one_and_update(
         {"username": username},
         {"$set": {"locale": locale}},
@@ -138,13 +204,48 @@ def set_user_locale(db: Database, username: str, locale: str) -> dict | None:
     )
 
 
+def spend_user_turns(db: Database, uid: str, amount: int) -> dict | None:
+    """Draws `amount` turns from the user's credit, **only if there are enough**.
+
+    The check lives in the filter, not in an earlier read: two requests at once
+    cannot draw on the same credit twice, because the second no longer matches the
+    condition. `None` when the credit is not enough — or the user does not exist,
+    which for the caller is the same thing: nothing was drawn.
+    """
+    return db[USERS].find_one_and_update(
+        {"uid": uid, "billing.turns_credit": {"$gte": amount}},
+        {"$inc": {"billing.turns_credit": -amount}},
+        projection=USER_PUBLIC,
+        return_document=ReturnDocument.AFTER,
+    )
+
+
+def grant_user_turns(db: Database, uid: str, amount: int) -> dict | None:
+    """Adds turns to the user's credit.
+
+    The field is born here if it was not there: `$inc` on a missing field creates
+    it starting from zero, and a user with no credit is a user with zero credit.
+    """
+    return db[USERS].find_one_and_update(
+        {"uid": uid},
+        {"$inc": {"billing.turns_credit": amount}},
+        projection=USER_PUBLIC,
+        return_document=ReturnDocument.AFTER,
+    )
+
+
+def find_user_by_uid(db: Database, uid: str) -> dict | None:
+    return db[USERS].find_one({"uid": uid}, USER_PUBLIC)
+
+
 def find_session(db: Database, token: str) -> dict | None:
     return db[SESSIONS].find_one({"token": token}, PUBLIC)
 
 
 def insert_session(db: Database, session: dict) -> None:
-    # Il documento arriva già fatto dal sso: qui non si genera né si valuta niente.
-    # Un token ripetuto viola l'indice unico e risale come DuplicateKeyError.
+    # The document arrives ready-made from the sso: nothing is generated or judged
+    # here. A repeated token violates the unique index and surfaces as a
+    # DuplicateKeyError.
     db[SESSIONS].insert_one(dict(session))
 
 
@@ -170,7 +271,7 @@ def insert_ticket(db: Database, ticket: dict) -> None:
 
 
 def consume_ticket(db: Database, ticket: str) -> dict | None:
-    # Legge e cancella in un colpo solo: due richieste con lo stesso biglietto
-    # non possono riuscire tutte e due, nemmeno se arrivano insieme. È l'unica
-    # cosa che rende il biglietto davvero usa-e-getta.
+    # Reads and deletes in one go: two requests with the same ticket cannot both
+    # succeed, not even if they arrive together. It is the only thing that makes
+    # the ticket genuinely single-use.
     return db[TICKETS].find_one_and_delete({"ticket": ticket}, PUBLIC)

@@ -1,12 +1,13 @@
 {#
-  Il box del driver: compare solo se il link ne portava uno (`?discount=` o `?driver=`).
+  The driver box: it appears only if the link carried one (`?discount=` or
+  `?driver=`).
 
-  Il driver non si sceglie da qui: o lo porta il link, o lo assegniamo noi. Il box
-  dice chi è, oppure perché quel link non è servito a niente.
+  The driver is not chosen from here: either the link brings one, or we assign one.
+  The box says who it is, or why that link came to nothing.
 
-  Gli stati vengono da `src/driver_link.js`. Quello che è arrivato nell'URL resta
-  agganciato al form come campo nascosto anche quando non si è potuto risolvere:
-  se il guasto è nostro, non deve pagarlo l'utente con lo sconto perduto.
+  The states come from `src/driver_link.js`. What arrived in the URL stays attached
+  to the form as a hidden field even when it could not be resolved: if the failure
+  is ours, the user must not pay for it with a lost discount.
 #}
 
 {% macro render(box) %}
@@ -20,8 +21,8 @@
           <p class="driver-box-lead">{{ t("preanalyst.driver_box.lead") }}</p>
           {%- endif %}
 
-          {#- Le frasi con un nome o un codice dentro usano `t_html`: il marcatore
-              sta nel catalogo, il valore lo ripulisce t_html. #}
+          {#- Sentences with a name or a code inside use `t_html`: the markup is in
+              the catalogue, the value is cleaned by t_html. #}
           {%- if not box.drivers_available %}
           <p class="notice notice-warn">{{ t("preanalyst.driver_box.drivers_unavailable") }}</p>
           {%- elif box.link.state == "discount_applied" %}
@@ -45,10 +46,10 @@
           {%- endif %}
 
           {%- if box.can_be_ignored %}
-          {#- Compare solo quando il driver segna "lavoro autonomo": il CSS lo
-              accende con `:has()`, senza JavaScript e senza ricaricare.
-              Dice quale delle due cose non verrà applicata, non "quello che c'è
-              qui sopra": chi legge deve sapere che cosa perde. #}
+          {#- It appears only when the driver ticks "autonomous work": the CSS
+              switches it on with `:has()`, with no JavaScript and no reload.
+              It says which of the two things will not be applied, not "what is
+              above here": the reader must know what they are losing. #}
           <p class="notice notice-warn ignored-note">
             {%- if box.link.state == "discount_applied" %}
             {{ t("preanalyst.driver_box.ignored_discount", { name: box.link.driver.screen_name }) }}

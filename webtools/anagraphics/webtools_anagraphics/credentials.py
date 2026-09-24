@@ -1,10 +1,10 @@
-"""Formato del blocco `credential` di un utente.
+"""The format of a user's `credential` block.
 
-Qui la password si **costruisce**, non si verifica: chi verifica è il sso. Questo
-modulo esiste perché il formato conservato nel database sia scritto in un posto
-solo, e perché lo script che imposta una password non se lo inventi ogni volta.
+Here a password is **built**, not verified: the one who verifies is the sso. This
+module exists so that the format stored in the database is written in one place
+only, and so that the script that sets a password does not invent it each time.
 
-Il blocco conservato in `users.credential`:
+The block stored in `users.credential`:
 
     {
       "algorithm": "scrypt",
@@ -14,12 +14,12 @@ Il blocco conservato in `users.credential`:
       "updated_at": <data>
     }
 
-I parametri sono dentro il documento, non impliciti nel codice: il giorno che si
-alzano, le password vecchie restano verificabili con i propri.
+The parameters live inside the document, not implicitly in the code: the day they
+are raised, old passwords stay verifiable with their own.
 
-`scrypt` sta nella libreria standard di Python e in quella di Node (`crypto`):
-nessuna dipendenza in più né qui né nel sso, e lo stesso identico calcolo dalle
-due parti.
+`scrypt` is in the standard library of both Python and Node (`crypto`): no extra
+dependency either here or in the sso, and exactly the same computation on both
+sides.
 """
 
 import base64
@@ -29,7 +29,7 @@ from datetime import datetime, timezone
 
 ALGORITHM = "scrypt"
 PARAMS = {"n": 16384, "r": 8, "p": 1, "dklen": 32}
-# 128 * n * r = 16 MB: il limite va alzato sopra il default di OpenSSL.
+# 128 * n * r = 16 MB: the limit has to be raised above the OpenSSL default.
 MAXMEM = 64 * 1024 * 1024
 SALT_BYTES = 16
 

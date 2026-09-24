@@ -1,15 +1,15 @@
 {% extends "commons/base.njk" %}
 
 {#
-  La paginetta che chiude il giro del login.
+  The small page that closes the login round trip.
 
-  Ci arriva la **finestra del login**, non la pagina di partenza: qui si è già
-  scambiato il biglietto e messo il cookie. Lo script (`/sso_popup.js`, caricato
-  dal blocco in fondo) avvisa la finestra che l'ha aperta e chiude questa.
+  The **login window** lands here, not the starting page: by now the ticket has
+  been exchanged and the cookie set. The script (`/sso_popup.js`, loaded by the
+  block at the bottom) notifies the window that opened it and closes this one.
 
-  Il testo serve ai casi in cui la chiusura non avviene: JavaScript spento,
-  finestra aperta a mano, o qualcosa che è andato storto. Non deve restare una
-  finestra muta.
+  The text is for the cases where the closing does not happen: JavaScript off, a
+  window opened by hand, or something gone wrong. No window should be left
+  speechless.
 #}
 
 {% block body_attributes %} data-sso-login-done{% endblock %}

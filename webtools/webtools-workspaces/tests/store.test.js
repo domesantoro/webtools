@@ -1,4 +1,4 @@
-// Il filesystem dei workspace e il modulo del front matter, su una radice temporanea.
+// The workspaces' filesystem and the front matter module, on a temporary root.
 
 import assert from "node:assert/strict";
 import { mkdtemp, readdir, readFile, rm } from "node:fs/promises";
@@ -16,23 +16,23 @@ after(() => rm(root, { recursive: true, force: true }));
 
 const meta = (origin) => ({ origin, uploadedBy: "8ff93901-673e-44ba-b05b-56011395dcba", now: NOW });
 
-test("front matter: si legge solo se sta in testa", () => {
+test("front matter: it is read only if it is at the top", () => {
   assert.deepEqual(parse(`---\nproject_id: ${PROJECT}\n---\n# Titolo\n`).data, {
     project_id: PROJECT,
   });
-  // Un `---` a metà documento è una riga orizzontale del markdown.
+  // A `---` in the middle of a document is a markdown horizontal rule.
   assert.equal(parse(`# Titolo\n\n---\nproject_id: x\n---\n`).data, null);
   assert.equal(split("﻿---\na: 1\n---\ncorpo").body, "corpo");
   assert.deepEqual(parse("---\n---\ncorpo").data, {});
 });
 
-test("front matter: YAML rotto o non una mappa", () => {
+test("front matter: broken YAML, or not a map", () => {
   assert.throws(() => parse("---\na: [1, 2\n---\n"), FrontMatterError);
   assert.throws(() => parse("---\n- uno\n- due\n---\n"), FrontMatterError);
   assert.throws(() => stamp("---\n- uno\n---\n", { origin: "system" }), FrontMatterError);
 });
 
-test("stamp: la chiave riservata si riscrive, il resto resta", () => {
+test("stamp: the reserved key is rewritten, the rest stays", () => {
   const text = `---\nproject_id: ${PROJECT}\nwebtools:\n  origin: system\n  altro: x\n---\n# Corpo\n`;
   const stamped = stamp(text, { origin: "third_party", version: 3 });
   const { data, body } = parse(stamped);
@@ -40,20 +40,20 @@ test("stamp: la chiave riservata si riscrive, il resto resta", () => {
   assert.equal(body, "# Corpo\n");
 });
 
-test("stamp: un file senza front matter ne riceve uno", () => {
+test("stamp: a file with no front matter is given one", () => {
   const { data, body } = parse(stamp("# Solo corpo\n", { origin: "system" }));
   assert.deepEqual(data, { webtools: { origin: "system" } });
   assert.equal(body, "# Solo corpo\n");
 });
 
-test("project_id: solo UUID canonici, niente percorsi", () => {
+test("project_id: canonical UUIDs only, no paths", () => {
   assert.ok(isProjectId(PROJECT));
   for (const value of ["..", "../etc", `${PROJECT}/..`, PROJECT.toUpperCase(), "", "abc"]) {
     assert.equal(isProjectId(value), false, value);
   }
 });
 
-test("versioni: la prima è 1, vale l'ultima, l'origine dichiarata non conta", async () => {
+test("versions: the first is 1, the last counts, the declared origin does not", async () => {
   assert.equal(await latestSpec(root, PROJECT), null);
 
   const first = await writeSpec(root, PROJECT, `---\nproject_id: ${PROJECT}\n---\nuno\n`, meta("system"));
@@ -81,7 +81,7 @@ test("versioni: la prima è 1, vale l'ultima, l'origine dichiarata non conta", a
   assert.deepEqual(files.sort(), ["spec-v001.md", "spec-v002.md"]);
 });
 
-test("scritture concorrenti: numeri tutti diversi, nessun file a metà", async () => {
+test("concurrent writes: all different numbers, no half-written file", async () => {
   const project = "0b7e3c1a-2f4d-4e6a-9b8c-7d6e5f4a3b2c";
   const results = await Promise.all(
     Array.from({ length: 10 }, (_, i) => writeSpec(root, project, `corpo ${i}\n`, meta("system")))
@@ -92,7 +92,7 @@ test("scritture concorrenti: numeri tutti diversi, nessun file a metà", async (
   );
   const dir = path.join(root, project, "specs");
   const files = await readdir(dir);
-  // Nessun temporaneo rimasto indietro.
+  // No temporary left behind.
   assert.equal(files.length, 10);
   for (const file of files) {
     const { data } = parse(await readFile(path.join(dir, file), "utf8"));
@@ -100,7 +100,7 @@ test("scritture concorrenti: numeri tutti diversi, nessun file a metà", async (
   }
 });
 
-test("front matter rotto: non si scrive niente", async () => {
+test("broken front matter: nothing is written", async () => {
   const project = "2c3d4e5f-6a7b-4c8d-9e0f-1a2b3c4d5e6f";
   await assert.rejects(writeSpec(root, project, "---\na: [\n---\n", meta("system")), FrontMatterError);
   await assert.rejects(readdir(path.join(root, project)), { code: "ENOENT" });

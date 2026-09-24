@@ -1,33 +1,34 @@
-"""Porta nella collection `configuration` quello che ai sottosistemi manca.
+"""Brings into the `configuration` collection whatever the subsystems are missing.
 
-    python -m scripts.load_configuration <cartella> [<cartella dei segreti>] [--reset [sottosistema …]]
-    (dalla cartella anagraphics)
+    python -m scripts.load_configuration <folder> [<secrets folder>] [--reset [subsystem …]]
+    (from the anagraphics directory)
 
-Un file per sottosistema: `sso.json` diventa il documento con `subsystem: "sso"`.
+One file per subsystem: `sso.json` becomes the document with `subsystem: "sso"`.
 
-**La configurazione che vive sta in Mongo, non nei file.** I file sono il seme —
-i valori con cui nasce un ambiente nuovo — e la forma attesa: dicono quali campi
-esistono. Quello che gira può divergere da loro, ed è normale: un limite alzato
-in esercizio, una soglia corretta, un prezzo cambiato restano dove sono.
+**The configuration that lives is in Mongo, not in the files.** The files are the
+seed — the values a new environment is born with — and the expected shape: they
+say which fields exist. What is running may diverge from them, and that is normal:
+a limit raised in operation, a threshold corrected, a price changed stay where
+they are.
 
-Quindi, quando il documento del sottosistema c'è già, si aggiungono **solo i
-campi che mancano**, ramo per ramo. Un campo che c'è non si tocca, qualunque
-valore abbia; un campo tolto dal file resta in Mongo; un sottosistema senza più
-un file non viene cancellato. Così uno sviluppo che introduce un campo nuovo
-parte senza interventi a mano, e niente di quello che è stato cambiato si perde.
+So, when the subsystem's document is already there, **only the missing fields**
+are added, branch by branch. A field that is there is not touched, whatever value
+it holds; a field removed from the file stays in Mongo; a subsystem that no longer
+has a file is not deleted. That way a piece of work introducing a new field starts
+with no manual intervention, and nothing that has been changed is lost.
 
-`--reset` fa la cosa opposta, ed è l'unico modo per farla: riporta i documenti a
-quello che dicono i file, campo per campo, cancellando le modifiche. Senza nomi
-vale per tutti i sottosistemi, con dei nomi solo per quelli.
+`--reset` does the opposite, and it is the only way to do it: it takes the
+documents back to what the files say, field by field, wiping the changes. Without
+names it holds for every subsystem, with names only for those.
 
-**I segreti sono un'altra cosa.** I file di `configurator/secrets/` (fuori da
-git) si fondono in profondità e **sostituiscono sempre** il valore che trovano:
-una chiave d'API non è un dato che si modifica dal sistema, e quel file è l'unico
-posto dove qualcuno la scrive — se la ruoti, deve valere quella nuova.
+**Secrets are another matter.** The files in `configurator/secrets/` (outside git)
+are deep-merged and **always replace** the value they find: an API key is not a
+value the system changes, and that file is the only place anybody writes it — if
+you rotate it, the new one must be the one that counts.
 
-Non si carica niente se anche un solo file non è JSON valido.
+Nothing is loaded if even a single file is not valid JSON.
 
-Di solito non si lancia a mano: lo fa webtools/configurator/load_configuration.sh.
+It is not usually run by hand: webtools/configurator/load_configuration.sh does it.
 """
 
 import json
@@ -46,19 +47,19 @@ def read_json(file: Path) -> dict:
     except (OSError, json.JSONDecodeError) as error:
         raise ConfigurationError(f"{file}: {error}") from error
     if not isinstance(content, dict):
-        raise ConfigurationError(f"{file}: deve contenere un oggetto JSON")
+        raise ConfigurationError(f"{file}: must contain a JSON object")
     if "subsystem" in content:
-        raise ConfigurationError(f"{file}: `subsystem` non va scritto, lo dà il nome del file")
+        raise ConfigurationError(f"{file}: `subsystem` is not written, the file name gives it")
     return content
 
 
 def merge(base: dict, extra: dict) -> dict:
-    """`extra` sopra `base`, ramo per ramo: quello che c'è in `extra` vince.
+    """`extra` on top of `base`, branch by branch: what is in `extra` wins.
 
-    Due oggetti si fondono; qualunque altra cosa viene sostituita. Serve ai
-    segreti, che aggiungono una foglia (`ai.providers.anthropic.api_key`) senza
-    portarsi via i rami vicini (`…anthropic.model`), e devono avere l'ultima
-    parola sul valore.
+    Two objects are merged; anything else is replaced. The secrets need it: they
+    add one leaf (`ai.providers.anthropic.api_key`) without carrying away the
+    neighbouring branches (`…anthropic.model`), and they must have the last word on
+    the value.
     """
     merged = dict(base)
     for key, value in extra.items():
@@ -70,14 +71,15 @@ def merge(base: dict, extra: dict) -> dict:
 
 
 def add_missing(stored: dict, seed: dict, prefix: str = "") -> tuple[dict, list[str]]:
-    """Il seme sotto quello che c'è: si aggiungono solo i campi che mancano.
+    """The seed underneath what is there: only the missing fields are added.
 
-    Un campo presente non si tocca — nemmeno se il seme dice un altro valore,
-    nemmeno se è `null`, `0` o `false`, che sono valori come gli altri. Si scende
-    solo dove tutti e due hanno un oggetto: se in Mongo un ramo è diventato
-    qualcos'altro, è una scelta di chi l'ha cambiato e non la si ribalta.
+    A field that is present is not touched — not even if the seed says another
+    value, not even if it is `null`, `0` or `false`, which are values like any
+    other. We descend only where both have an object: if a branch in Mongo has
+    become something else, that is the choice of whoever changed it and it is not
+    overturned.
 
-    Restituisce il documento aggiornato e i percorsi aggiunti, per poterli dire.
+    Returns the updated document and the paths added, so they can be reported.
     """
     updated = dict(stored)
     added: list[str] = []
@@ -87,49 +89,49 @@ def add_missing(stored: dict, seed: dict, prefix: str = "") -> tuple[dict, list[
             updated[key] = value
             added.append(path)
         elif isinstance(value, dict) and isinstance(updated[key], dict):
-            updated[key], sotto = add_missing(updated[key], value, f"{path}.")
-            added.extend(sotto)
+            updated[key], below = add_missing(updated[key], value, f"{path}.")
+            added.extend(below)
     return updated, added
 
 
 def read_documents(folder: Path, secrets: Path | None = None) -> tuple[dict[str, dict], dict[str, dict]]:
-    """I semi e i segreti, letti e controllati, senza ancora fonderli.
+    """The seeds and the secrets, read and checked, not yet merged.
 
-    Restano separati perché hanno regole diverse: il seme riempie i buchi, il
-    segreto sovrascrive.
+    They stay apart because they follow different rules: the seed fills the holes,
+    the secret overwrites.
     """
     seeds: dict[str, dict] = {}
     for file in sorted(folder.glob("*.json")):
         seeds[file.stem] = {"subsystem": file.stem, **read_json(file)}
     if not seeds:
-        raise ConfigurationError(f"nessun file .json in {folder}")
+        raise ConfigurationError(f"no .json file in {folder}")
 
     keys: dict[str, dict] = {}
     if secrets is not None and secrets.is_dir():
         for file in sorted(secrets.glob("*.json")):
             if file.stem not in seeds:
                 raise ConfigurationError(
-                    f"{file}: nessuna configurazione '{file.stem}' a cui fondere il segreto"
+                    f"{file}: no '{file.stem}' configuration to merge the secret into"
                 )
             keys[file.stem] = read_json(file)
     return seeds, keys
 
 
 def parse_arguments(argv: list[str]) -> tuple[Path, Path | None, list[str] | None]:
-    """→ (cartella, cartella dei segreti, sottosistemi da riportare al file).
+    """→ (folder, secrets folder, subsystems to take back to the file).
 
-    L'ultimo è `None` quando non si è chiesto `--reset`, la lista vuota quando lo
-    si è chiesto per tutti.
+    The last one is `None` when `--reset` was not asked for, and the empty list
+    when it was asked for all of them.
     """
     reset: list[str] | None = None
     if "--reset" in argv:
-        taglio = argv.index("--reset")
-        reset = argv[taglio + 1 :]
-        argv = argv[:taglio]
+        cut = argv.index("--reset")
+        reset = argv[cut + 1 :]
+        argv = argv[:cut]
     if len(argv) not in (1, 2):
         raise ConfigurationError(
-            "uso: python -m scripts.load_configuration <cartella> "
-            "[<cartella dei segreti>] [--reset [sottosistema …]]"
+            "usage: python -m scripts.load_configuration <folder> "
+            "[<secrets folder>] [--reset [subsystem …]]"
         )
     return Path(argv[0]), (Path(argv[1]) if len(argv) == 2 else None), reset
 
@@ -140,14 +142,14 @@ def main() -> int:
         seeds, keys = read_documents(folder, secrets)
         mongo_uri, mongo_db = mongo_target()
     except ConfigurationError as error:
-        print(f"Configurazione non caricata: {error}", file=sys.stderr)
+        print(f"Configuration not loaded: {error}", file=sys.stderr)
         return 1
 
     if reset:
-        sconosciuti = [nome for nome in reset if nome not in seeds]
-        if sconosciuti:
+        unknown = [name for name in reset if name not in seeds]
+        if unknown:
             print(
-                f"Configurazione non caricata: nessun file per {', '.join(sconosciuti)}",
+                f"Configuration not loaded: no file for {', '.join(unknown)}",
                 file=sys.stderr,
             )
             return 1
@@ -156,47 +158,47 @@ def main() -> int:
     collection = client[mongo_db][db.CONFIGURATION]
     collection.create_index("subsystem", unique=True)
 
-    creati: list[str] = []
-    aggiornati: dict[str, list[str]] = {}
-    ripristinati: list[str] = []
+    created: list[str] = []
+    updated_fields: dict[str, list[str]] = {}
+    restored: list[str] = []
 
     for subsystem, seed in seeds.items():
-        segreto = keys.get(subsystem, {})
+        secret = keys.get(subsystem, {})
         stored = collection.find_one({"subsystem": subsystem}, {"_id": 0})
 
         if stored is None:
-            collection.insert_one(merge(seed, segreto))
-            creati.append(subsystem)
+            collection.insert_one(merge(seed, secret))
+            created.append(subsystem)
             continue
 
         if reset is not None and (not reset or subsystem in reset):
-            collection.replace_one({"subsystem": subsystem}, merge(seed, segreto))
-            ripristinati.append(subsystem)
+            collection.replace_one({"subsystem": subsystem}, merge(seed, secret))
+            restored.append(subsystem)
             continue
 
-        documento, aggiunti = add_missing(stored, seed)
-        documento = merge(documento, segreto)
-        if documento != stored:
-            collection.replace_one({"subsystem": subsystem}, documento)
-        if aggiunti:
-            aggiornati[subsystem] = aggiunti
+        document, added_paths = add_missing(stored, seed)
+        document = merge(document, secret)
+        if document != stored:
+            collection.replace_one({"subsystem": subsystem}, document)
+        if added_paths:
+            updated_fields[subsystem] = added_paths
 
-    orfani = [
-        documento["subsystem"]
-        for documento in collection.find({"subsystem": {"$nin": list(seeds)}}, {"_id": 0, "subsystem": 1})
+    orphans = [
+        document["subsystem"]
+        for document in collection.find({"subsystem": {"$nin": list(seeds)}}, {"_id": 0, "subsystem": 1})
     ]
 
-    print(f"Configurazione di '{mongo_db}': {len(seeds)} sottosistemi letti da {folder.name}/")
-    if creati:
-        print(f"  creati: {', '.join(creati)}")
-    for subsystem, aggiunti in aggiornati.items():
-        print(f"  {subsystem}: aggiunti {', '.join(aggiunti)}")
-    if ripristinati:
-        print(f"  riportati al file: {', '.join(ripristinati)}")
-    if not creati and not aggiornati and not ripristinati:
-        print("  niente da aggiungere: quello che gira resta com'è")
-    if orfani:
-        print(f"  in Mongo senza un file, lasciati dove sono: {', '.join(orfani)}")
+    print(f"Configuration of '{mongo_db}': {len(seeds)} subsystems read from {folder.name}/")
+    if created:
+        print(f"  created: {', '.join(created)}")
+    for subsystem, added_paths in updated_fields.items():
+        print(f"  {subsystem}: added {', '.join(added_paths)}")
+    if restored:
+        print(f"  taken back to the file: {', '.join(restored)}")
+    if not created and not updated_fields and not restored:
+        print("  nothing to add: what is running stays as it is")
+    if orphans:
+        print(f"  in Mongo without a file, left where they are: {', '.join(orphans)}")
     return 0
 
 

@@ -1,7 +1,7 @@
 {
   "name": "webtools_sso",
   "version": "0.1.0",
-  "description": "Autenticazione interna: login, stato della sessione, logout.",
+  "description": "Internal authentication: login, session state, logout.",
   "private": true,
   "type": "module",
   "main": "src/index.js",

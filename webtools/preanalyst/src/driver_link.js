@@ -1,37 +1,38 @@
-// Il link di un driver, letto dall'URL: decide che cosa mostra il box del driver
-// e quali campi nascosti viaggiano col form. Non decide niente del progetto: driver
-// e sconti del progetto li scrive `projectTerms()` in server.js (`review`, `billing`).
+// A driver's link, read from the URL: it decides what the driver box shows and
+// which hidden fields travel with the form. It decides nothing about the project:
+// the project's driver and discounts are written by `projectTerms()` in server.js
+// (`review`, `billing`).
 //
-// Due strade portano allo stesso posto — la scelta del driver già fatta e bloccata —
-// ma non sono la stessa cosa:
+// Two roads lead to the same place — the driver already chosen and locked — but
+// they are not the same thing:
 //
-//   ?discount=<codice UUID>   link di un driver CON codice sconto
-//   ?driver=<uid UUID>        link di un driver SENZA sconto
+//   ?discount=<UUID code>   a driver's link WITH a discount code
+//   ?driver=<UUID uid>      a driver's link WITHOUT a discount
 //
-// Se arrivano tutti e due vince `discount`, perché è l'unico che porta con sé un
-// effetto economico: ignorarlo per seguire `driver` toglierebbe all'utente uno
-// sconto a cui ha diritto. Il caso resta nel log, perché un link con entrambi i
-// parametri è quasi sempre un errore di chi l'ha costruito.
+// If both arrive, `discount` wins, because it is the only one that carries an
+// economic effect: ignoring it to follow `driver` would take away a discount the
+// user is entitled to. The case stays in the log, because a link with both
+// parameters is almost always a mistake by whoever built it.
 //
-// Gli esiti, e la pagina non ne conosce altri:
+// The outcomes, and the page knows no others:
 //
-//   none                      nessun parametro: il box non si mostra affatto
-//   discount_applied          sconto valido e driver riconosciuto e abilitato
-//   discount_expired          la lettura dello sconto è fallita: sconto inapplicabile
-//   discount_driver_missing   sconto letto, ma il suo driver non si trova più
-//   discount_driver_disabled  sconto letto, ma il suo driver non è abilitato:
-//                             né lo sconto né il driver si applicano
-//   driver_applied            driver del link riconosciuto e abilitato, senza sconto
-//   driver_unknown            driver del link non trovato
-//   driver_disabled           driver del link trovato ma non abilitato
-//   own_link                  il link è di chi lo sta usando: un driver non si
-//                             manda un cliente da solo, quindi non si applica
+//   none                      no parameter: the box is not shown at all
+//   discount_applied          valid discount, driver recognised and enabled
+//   discount_expired          reading the discount failed: the discount cannot apply
+//   discount_driver_missing   discount read, but its driver can no longer be found
+//   discount_driver_disabled  discount read, but its driver is not enabled: neither
+//                             the discount nor the driver applies
+//   driver_applied            the link's driver recognised and enabled, no discount
+//   driver_unknown            the link's driver not found
+//   driver_disabled           the link's driver found but not enabled
+//   own_link                  the link belongs to whoever is using it: a driver does
+//                             not send a client to themselves, so it does not apply
 //
-// Un driver **non abilitato** (`enabled` diverso da true) esiste, ma non può
-// seguire progetti di clienti: con lui il sistema non prosegue, e il progetto
-// lo assegniamo noi.
+// A driver who is **not enabled** (`enabled` other than true) exists, but cannot
+// supervise client projects: with them the system does not go on, and we assign
+// the project ourselves.
 //
-// Il driver non si sceglie: o lo porta il link, o lo assegniamo noi.
+// The driver is not chosen: either the link brings one, or we assign one.
 
 import { findDiscount, findDriver } from "./anagraphics.js";
 
@@ -45,8 +46,8 @@ export const DISCOUNT_DRIVER_DISABLED = "discount_driver_disabled";
 export const DRIVER_DISABLED = "driver_disabled";
 export const OWN_LINK = "own_link";
 
-// Gli stati in cui il driver è stato riconosciuto: c'è un nome da mostrare e un
-// uid da mandare avanti col form. Negli altri il driver lo assegniamo noi.
+// The states in which the driver has been recognised: there is a name to show and
+// a uid to carry forward with the form. In the others we assign the driver.
 const RESOLVED = new Set([DISCOUNT_APPLIED, DRIVER_APPLIED]);
 
 export function isResolved(driverLink) {
@@ -56,8 +57,8 @@ export function isResolved(driverLink) {
 async function fromDiscount(settings, discountCode, drivers) {
   const result = await findDiscount(settings, discountCode);
   if (!result.ok) {
-    // Sia il codice inesistente sia il guasto tecnico: per l'utente lo sconto
-    // non si applica e basta. La differenza resta nel log di anagraphics.js.
+    // Both a non-existent code and a technical failure: for the user the discount
+    // simply does not apply. The difference stays in anagraphics.js's log.
     return { state: DISCOUNT_EXPIRED, code: discountCode };
   }
 
@@ -69,8 +70,8 @@ async function fromDiscount(settings, discountCode, drivers) {
     return {
       state: DISCOUNT_DRIVER_MISSING,
       code: discountCode,
-      // Il nome arriva dalla copia ridondata dentro lo sconto: è l'unico
-      // appiglio che resta all'utente per riconoscere chi contattare.
+      // The name comes from the copy duplicated inside the discount: it is the
+      // only handle the user is left with for recognising whom to contact.
       driverName: discount.driver?.screen_name ?? null,
       driverUid: driverUid ?? null,
     };
@@ -89,8 +90,8 @@ async function fromDiscount(settings, discountCode, drivers) {
 }
 
 function fromDriver(driverUid, drivers) {
-  // Nessuna lettura in più: l'elenco dei driver è già stato caricato, e contiene
-  // tutti i driver. Se l'uid non è lì dentro, non esiste da nessun'altra parte.
+  // No extra read: the driver list has already been loaded, and holds every
+  // driver. If the uid is not in there, it exists nowhere else.
   const known = drivers.find((driver) => driver.uid === driverUid);
   if (!known) {
     return { state: DRIVER_UNKNOWN, driverUid };
@@ -101,12 +102,12 @@ function fromDriver(driverUid, drivers) {
   return { state: DRIVER_APPLIED, driver: known };
 }
 
-// Un driver che compila la pre-analisi per sé non può usare il proprio link:
-// né il proprio sconto, né il proprio uid. Sarebbe uno sconto che si fa da solo.
-// I link **di altri driver** restano validi: quelli sono lavoro portato da loro.
+// A driver filling in the pre-analysis for themselves cannot use their own link:
+// neither their own discount nor their own uid. It would be a discount granted to
+// oneself. Links **of other drivers** stay valid: that is work they brought in.
 //
-// Il confronto si fa sull'uid del driver, non sullo username: l'uid non cambia
-// mai, lo username sì.
+// The comparison is on the driver's uid, not on the username: the uid never
+// changes, the username does.
 export function withoutOwnLink(driverLink, ownDriverUid) {
   if (!ownDriverUid) return driverLink;
 
@@ -120,7 +121,7 @@ export async function resolveDriverLink(settings, { discountCode, driverUid }, d
   if (discountCode) {
     if (driverUid) {
       console.warn(
-        `[preanalyst] link con discount e driver insieme: vince discount ` +
+        `[preanalyst] link with discount and driver together: discount wins ` +
           `(discount=${discountCode}, driver=${driverUid})`
       );
     }
@@ -132,32 +133,32 @@ export async function resolveDriverLink(settings, { discountCode, driverUid }, d
   return { state: NONE };
 }
 
-// Il link di un driver **ricostruito dal progetto**, per la pagina che torna
-// indietro quando la richiesta dice troppo poco (§16.6 del README).
+// A driver's link **rebuilt from the project**, for the page that comes back when
+// the request says too little (§16.6 of the README).
 //
-// Lì l'indirizzo con i parametri non c'è più — è la risposta a un `POST` — ma
-// quello che i parametri portavano è stato registrato sul progetto al primo
-// invio: `review.driver_uid` con `preset`, e `billing.discount_code`. Il box
-// deve mostrare le stesse cose di prima, altrimenti la pagina si presenta
-// mutilata a chi la rivede.
+// There the address with the parameters is gone — it is the answer to a `POST` —
+// but what the parameters carried was recorded on the project at the first
+// submission: `review.driver_uid` with `preset`, and `billing.discount_code`. The
+// box must show the same things as before, or the page comes back mutilated to
+// whoever sees it again.
 //
-// Qui gli stati sono solo quelli riconosciuti: un driver che non si trova più, o
-// che nel frattempo è stato disabilitato, non è un problema dell'utente — il
-// progetto è già assegnato, e dirglielo adesso non gli serve a niente.
+// Here the states are only the recognised ones: a driver who can no longer be
+// found, or who has been disabled in the meantime, is not the user's problem — the
+// project is already assigned, and telling them now would do them no good.
 export async function driverLinkOfProject(settings, project) {
   const driverUid = project.review?.preset ? project.review?.driver_uid : null;
   if (!driverUid) return { state: NONE };
 
-  const trovato = await findDriver(settings, driverUid);
-  if (!trovato.ok) return { state: NONE };
-  const driver = trovato.data;
+  const found = await findDriver(settings, driverUid);
+  if (!found.ok) return { state: NONE };
+  const driver = found.data;
 
   const discountCode = project.billing?.discount_code ?? null;
   if (!discountCode) return { state: DRIVER_APPLIED, driver };
 
-  // La percentuale non è sul progetto: si rilegge dallo sconto. Se non si
-  // riesce, resta il driver — che è la parte che conta per chi guarda.
-  const sconto = await findDiscount(settings, discountCode);
-  if (!sconto.ok) return { state: DRIVER_APPLIED, driver };
-  return { state: DISCOUNT_APPLIED, code: discountCode, driver, percentage: sconto.data.percentage };
+  // The percentage is not on the project: it is read again from the discount. If
+  // that fails, the driver remains — which is the part that matters to the reader.
+  const discount = await findDiscount(settings, discountCode);
+  if (!discount.ok) return { state: DRIVER_APPLIED, driver };
+  return { state: DISCOUNT_APPLIED, code: discountCode, driver, percentage: discount.data.percentage };
 }

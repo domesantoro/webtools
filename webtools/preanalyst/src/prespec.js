@@ -1,26 +1,27 @@
-// La pre-specifica: le risposte del form, scritte come documento .md.
+// The pre-specification: the form's answers, written out as a .md document.
 //
-// È il punto di partenza dell'analisi, quindi è scritta per chi la legge dopo:
-// - il front matter porta solo **codici**, presi dalle opzioni del form, così un
-//   programma (il prevalidator) li legge senza interpretare niente. Mai testo
-//   scritto dall'utente: non potrebbe iniettare chiavi YAML;
-// - il corpo è in inglese, con la domanda e la risposta chiusa in chiaro, perché
-//   un «No» non vuol dire niente senza la domanda;
-// - le risposte aperte restano testuali, nella lingua del cliente, dentro un
-//   blockquote: un `## titolo` scritto dal cliente resta testo suo e non diventa
-//   una sezione del documento;
-// - un campo vuoto si scrive `Not provided.`, non si omette, e finisce negli
-//   «Open points» insieme alle risposte "non saprei": è l'elenco di quello che
-//   la chat di analisi deve chiedere;
-// - niente nome, email, sconto o driver: il documento va a un fornitore AI, e
-//   chi è il cliente e da dove arriva restano nel progetto.
+// It is the starting point of the analysis, so it is written for whoever reads it
+// afterwards:
+// - the front matter carries **codes** only, taken from the form's options, so a
+//   program (the prevalidator) reads them without interpreting anything. Never
+//   text written by the user: that could not inject YAML keys;
+// - the body is in English, with the question and the closed answer spelled out,
+//   because a "No" means nothing without the question;
+// - the open answers stay as text, in the client's language, inside a blockquote:
+//   a `## heading` written by the client stays their text and does not become a
+//   section of the document;
+// - an empty field is written `Not provided.`, not omitted, and ends up in the
+//   "Open points" together with the "I do not know" answers: that is the list of
+//   what the analysis chat has to ask about;
+// - no name, email, discount or driver: the document goes to an AI provider, and
+//   who the client is and where they came from stay on the project.
 //
-// La chiave `webtools:` del front matter non si scrive qui: la timbra
-// webtools-workspaces quando conserva il file.
+// The front matter's `webtools:` key is not written here: webtools-workspaces
+// stamps it when it stores the file.
 //
-// Il template sta in `templates/commons/prespec.md.njk`, ed è una **copia
-// generata**: la forma del documento è configurazione, quindi l'originale è in
-// `webtools/configurator/documents/` e lo distribuisce il documents_deployer.
+// The template is in `templates/commons/prespec.md.njk`, and it is a **generated
+// copy**: the shape of the document is configuration, so the original is in
+// `webtools/configurator/documents/` and the documents_deployer distributes it.
 
 import { fileURLToPath } from "node:url";
 
@@ -30,19 +31,19 @@ import { SECTIONS } from "./questions.js";
 
 export const TEMPLATE = "prespec/1";
 
-// Le risposte chiuse che vanno nel front matter. Le skill no: l'elenco delle
-// caselle è aperto e sta accanto a un campo libero, quindi un codice da solo
-// racconterebbe metà della risposta.
+// The closed answers that go into the front matter. Not the skills: the list of
+// checkboxes is open and sits next to a free field, so a code on its own would
+// tell half the answer.
 const FRONT_MATTER_FIELDS = ["today", "users", "devices", "volume", "personal_data", "existing_data"];
 
-// Le risposte che valgono come "non lo so", e quindi sono un punto aperto.
+// The answers that count as "I do not know", and are therefore an open point.
 const UNKNOWN = "unknown";
 
 const TEMPLATES_DIR = fileURLToPath(new URL("../templates/", import.meta.url));
 
-// Un ambiente a parte, **senza autoescape**: questo è markdown, e l'escape
-// dell'HTML trasformerebbe `&` e `<` del cliente in entità. Il testo del cliente
-// entra solo attraverso il filtro `quote`.
+// A separate environment, **without autoescaping**: this is markdown, and HTML
+// escaping would turn the client's `&` and `<` into entities. The client's text
+// only gets in through the `quote` filter.
 const env = new nunjucks.Environment(new nunjucks.FileSystemLoader(TEMPLATES_DIR), {
   autoescape: false,
   trimBlocks: true,
@@ -57,10 +58,10 @@ env.addFilter("quote", (text) =>
 
 const FIELDS = SECTIONS.flatMap((section) => section.fields);
 
-// Le risposte del form, ripulite. Un codice che non è tra le opzioni si scarta:
-// nel front matter finisce solo quello che il form poteva mandare.
-//   → { answers: { nome: stringa | stringa[] | null }, missing: [nomi obbligatori vuoti] }
-// Una risposta aperta più lunga di `maxTextLength` caratteri si tronca.
+// The form's answers, cleaned up. A code that is not among the options is
+// discarded: only what the form could have sent ends up in the front matter.
+//   → { answers: { name: string | string[] | null }, missing: [names of empty required fields] }
+// An open answer longer than `maxTextLength` characters is truncated.
 export function readAnswers(form, maxTextLength) {
   const answers = {};
   for (const field of FIELDS) {
@@ -90,8 +91,8 @@ function optionText(field, code) {
   return field.options.find((option) => option[0] === code)[1];
 }
 
-// Come si scrive una risposta nel corpo: testo del cliente citato, risposte
-// chiuse col loro testo inglese, `null` se manca.
+// How an answer is written in the body: the client's text quoted, closed answers
+// with their English text, `null` if it is missing.
 function bodyAnswer(field, value) {
   if (isEmpty(value)) return null;
   if (field.kind === "checkbox") return { list: value.map((code) => optionText(field, code)) };
@@ -99,8 +100,8 @@ function bodyAnswer(field, value) {
   return { quote: value };
 }
 
-// I punti aperti: i campi senza risposta e le risposte "non saprei". Un gruppo
-// (le skill e il loro "Altro") manca solo se mancano tutte le sue domande.
+// The open points: the fields with no answer and the "I would not know" answers.
+// A group (the skills and their "Other") is missing only if all its questions are.
 function openPoints(answers) {
   const points = [];
   const groups = new Set();
@@ -121,15 +122,15 @@ function openPoints(answers) {
   return points;
 }
 
-// `language`: la lingua in cui il cliente ha scritto le risposte aperte, cioè
-// quella della pagina da cui ha mandato il form. Il resto è in inglese.
+// `language`: the language in which the client wrote the open answers, that is,
+// the one of the page they sent the form from. The rest is in English.
 export function renderPrespec(projectId, answers, language) {
   return env.render("commons/prespec.md.njk", {
     project_id: projectId,
     template: TEMPLATE,
     language,
-    // I codici sono sempre fra quelli del form ([a-z_]), quindi si scrivono
-    // nel YAML così come sono, senza virgolette.
+    // The codes always come from the form's own ([a-z_]), so they are written into
+    // the YAML as they are, without quotes.
     answers: FRONT_MATTER_FIELDS.map((name) => {
       const value = answers[name];
       let yaml = "null";

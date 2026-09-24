@@ -1,19 +1,19 @@
 #!/usr/bin/env bash
-# Diffonde il client del sso (commons/sso) nei sottosistemi che hanno un login.
-# Ogni progetto ha la sua funzione di deploy, con destinazioni esplicite: la
-# struttura dei progetti può essere diversa e non tutti ricevono il client.
+# Distributes the sso client (commons/sso) to the subsystems that have a login.
+# Every project has its own deploy function, with explicit targets: the projects'
+# structure may differ and not all of them receive the client.
 #
-# Il sso NON riceve niente da qui: lui è il servizio, non un suo consumatore.
+# The sso receives NOTHING from here: it is the service, not a consumer of it.
 set -euo pipefail
 
 WEBTOOLS="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 SOURCE="$WEBTOOLS/commons/sso"
 
-# preanalyst — due file, due destinazioni diverse:
-#   - il client del server va in src/commons/, dove lo importa il server;
-#   - lo script del browser va in public/, da dove lo scarica la pagina.
-# Le cartelle sono separate dal resto perché quei file non si modificano qui:
-# si modifica commons/sso e si rilancia questo deployer.
+# preanalyst — two files, two different targets:
+#   - the server client goes in src/commons/, where the server imports it;
+#   - the browser script goes in public/, where the page downloads it from.
+# The directories are kept apart from the rest because those files are not edited
+# there: edit commons/sso and run this deployer again.
 deploy_preanalyst() {
   local commons="$WEBTOOLS/preanalyst/src/commons"
   local public="$WEBTOOLS/preanalyst/public"
@@ -26,4 +26,4 @@ deploy_preanalyst() {
 
 deploy_preanalyst
 
-echo "Client del sso distribuito."
+echo "sso client distributed."

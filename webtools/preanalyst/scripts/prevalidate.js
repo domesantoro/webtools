@@ -1,17 +1,17 @@
-// Prova il prevalidator su un file, da riga di comando.
+// Tries the prevalidator on a file, from the command line.
 //
 //   set -a; source ../configurator/bootstrap.env; set +a
 //   node scripts/prevalidate.js <file.md>
 //
-// Il bootstrap serve a trovare anagraphics, come per ogni sottosistema.
+// The bootstrap is there to find anagraphics, as for every subsystem.
 //
-// Serve a guardare come giudica una policy senza passare dal form: si scrive una
-// pre-specifica a mano, si lancia, si leggono esito, distribuzione, flag e token
-// consumati. **Fa una chiamata vera al fornitore**, quindi costa: pochi millesimi
-// di euro, ma non è gratis.
+// It is for looking at how a policy judges without going through the form: write a
+// pre-specification by hand, run it, read the outcome, the distribution, the flag
+// and the tokens consumed. **It makes a real call to the provider**, so it costs:
+// a few thousandths of a euro, but it is not free.
 //
-// La configurazione è quella vera, letta da anagraphics: il fornitore, il
-// modello, la policy e la soglia sono quelli che userebbe il server.
+// The configuration is the real one, read from anagraphics: the provider, the
+// model, the policy and the threshold are the ones the server would use.
 
 import { readFile } from "node:fs/promises";
 
@@ -20,40 +20,40 @@ import { loadSettings } from "../src/settings.js";
 
 const file = process.argv[2];
 if (!file) {
-  console.error("Uso: node scripts/prevalidate.js <file.md>");
+  console.error("Usage: node scripts/prevalidate.js <file.md>");
   process.exit(2);
 }
 
 const settings = await loadSettings();
 const spec = await readFile(file, "utf8");
 
-const inizio = Date.now();
-const esito = await prevalidate(settings, spec);
-const durata = Date.now() - inizio;
+const start = Date.now();
+const outcome = await prevalidate(settings, spec);
+const elapsed = Date.now() - start;
 
-if (!esito.ok) {
-  console.error(`Prevalidazione non riuscita: ${esito.reason} (${durata} ms)`);
+if (!outcome.ok) {
+  console.error(`Prevalidation failed: ${outcome.reason} (${elapsed} ms)`);
   process.exit(1);
 }
 
-const { outcome, distribution, off_domain, reason, policy, provider, model, usage } = esito.data;
-// Il verdetto come lo prenderebbe il server, al **primo** giro: qui non c'è un
-// progetto, quindi non ci sono giri già fatti da contare.
-const decisione = verdict(distribution, outcome, {
+const { outcome: verdictName, distribution, off_domain, reason, policy, provider, model, usage } = outcome.data;
+// The verdict as the server would take it, on the **first** round: there is no
+// project here, so there are no rounds already done to count.
+const decision = verdict(distribution, verdictName, {
   threshold: settings.prevalidation.rejectThreshold,
   attempts: 0,
   maxAttempts: settings.prevalidation.maxUnderspecifiedAttempts,
 });
 
 console.log(`file      ${file}`);
-console.log(`policy    ${policy} · ${provider} · ${model} · ${durata} ms`);
-console.log(`token     ${usage.input_tokens} in, ${usage.output_tokens} out`);
+console.log(`policy    ${policy} · ${provider} · ${model} · ${elapsed} ms`);
+console.log(`tokens    ${usage.input_tokens} in, ${usage.output_tokens} out`);
 console.log("");
-for (const [nome, valore] of Object.entries(distribution)) {
-  const barra = "█".repeat(Math.round(valore * 40));
-  console.log(`  ${nome.padEnd(16)} ${valore.toFixed(3)}  ${barra}`);
+for (const [name, value] of Object.entries(distribution)) {
+  const bar = "█".repeat(Math.round(value * 40));
+  console.log(`  ${name.padEnd(16)} ${value.toFixed(3)}  ${bar}`);
 }
 console.log("");
-console.log(`esito     ${outcome}  →  ${decisione.toUpperCase()}`);
-console.log(`dominio   ${off_domain.flag ? `fuori: ${off_domain.reason}` : "dentro"}`);
-console.log(`motivo    ${reason}`);
+console.log(`outcome   ${verdictName}  →  ${decision.toUpperCase()}`);
+console.log(`domain    ${off_domain.flag ? `outside: ${off_domain.reason}` : "inside"}`);
+console.log(`reason    ${reason}`);

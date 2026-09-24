@@ -1,25 +1,26 @@
-// La modale della richiesta rifiutata.
+// The modal for a refused request.
 //
-// Si apre al caricamento della pagina perché è la risposta all'invio che
-// l'utente ha appena fatto: ci si arriva solo dal `303` di `/submit`, e la
-// pagina senza modale non direbbe che cosa è successo.
+// It opens when the page loads because it is the answer to the submission the
+// user has just made: you only get here from the `303` of `/submit`, and the page
+// without the modal would not say what happened.
 //
-// Alla chiusura — il bottone «ok», Esc, il clic fuori — si va alla home del sito
-// vetrina: da questa pagina non c'è altro da fare, e il form è ormai vuoto.
+// On closing — the «ok» button, Esc, a click outside — it goes to the showcase
+// site's home page: there is nothing else to do from this page, and the form is
+// empty by now.
 //
-// Senza JavaScript la modale non si apre: il markup c'è
-// (`templates/partials/rejection_dialog.njk`), ma resta chiuso e l'utente vede
-// la pagina normale. È un limite noto, scritto nel README.
+// Without JavaScript the modal does not open: the markup is there
+// (`templates/partials/rejection_dialog.njk`) but stays closed and the user sees
+// the ordinary page. It is a known limit, written down in the README.
 
 (function () {
   "use strict";
 
-  var modale = document.querySelector("[data-rejection-dialog]");
-  if (!modale || typeof modale.showModal !== "function") return;
+  var modal = document.querySelector("[data-rejection-dialog]");
+  if (!modal || typeof modal.showModal !== "function") return;
 
-  modale.addEventListener("close", function () {
-    window.location.href = modale.getAttribute("data-home");
+  modal.addEventListener("close", function () {
+    window.location.href = modal.getAttribute("data-home");
   });
 
-  modale.showModal();
+  modal.showModal();
 })();

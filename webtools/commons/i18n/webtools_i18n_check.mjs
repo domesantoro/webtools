@@ -1,20 +1,20 @@
-// Controllo dei cataloghi delle lingue.
+// Checks on the language catalogues.
 //
 //   node webtools/commons/i18n/webtools_i18n_check.mjs
 //
-// 1. Ogni chiave scritta per esteso nei template e nel codice dei sottosistemi
-//    (`t("…")`, `t_html("…")`, `has("…")`, `ui.t("…")`) deve esistere nel
-//    catalogo di riserva, l'inglese: se manca lì, in pagina compare la chiave.
-//    Esce con 1.
-// 2. Le chiavi dell'inglese che mancano in un'altra lingua: in pagina esce il
-//    testo inglese. È un elenco di lavoro per chi traduce, non un errore.
-// 3. Le chiavi di un'altra lingua che l'inglese non ha: nessuno le usa.
+// 1. Every key written out in full in the subsystems' templates and code
+//    (`t("…")`, `t_html("…")`, `has("…")`, `ui.t("…")`) must exist in the
+//    fallback catalogue, English: if it is missing there, the key itself shows up
+//    on the page. Exits with 1.
+// 2. English keys missing from another language: the English text shows up on the
+//    page. It is a worklist for whoever translates, not an error.
+// 3. Keys of another language that English does not have: nobody uses them.
 //
-// Le chiavi composte a runtime (`preanalyst.messages.${kind}.title`, le domande
-// di questions.js) non si vedono da qui: le copre il punto 2, perché partono
-// tutte dall'inglese.
+// Keys composed at runtime (`preanalyst.messages.${kind}.title`, the questions in
+// questions.js) are invisible from here: point 2 covers them, because they all
+// start from English.
 //
-// Non viene distribuito nei sottosistemi: gira sull'originale.
+// This is not distributed to the subsystems: it runs on the original.
 
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import path from "node:path";
@@ -24,7 +24,7 @@ const HERE = path.dirname(fileURLToPath(import.meta.url));
 const WEBTOOLS = path.resolve(HERE, "../..");
 const LOCALES = path.join(HERE, "locales");
 const FALLBACK = "en";
-// I sottosistemi con pagine: si guarda l'originale, non le copie in src/commons.
+// The subsystems with pages: the original is looked at, not the copies in src/commons.
 const SUBSYSTEMS = ["front-gate", "preanalyst", "sso", "commons/templates"];
 
 const KEY_CALL = /\b(?:t|t_html|has)\(\s*["']([a-z_]+(?:\.[A-Za-z0-9_]+)+)["']/g;
@@ -67,7 +67,7 @@ for (const subsystem of SUBSYSTEMS) {
 const missing = [...used].filter(([key]) => !reference.has(key));
 if (missing.length > 0) {
   failed = true;
-  console.log(`Chiavi usate ma assenti in ${FALLBACK}.json:`);
+  console.log(`Keys used but missing from ${FALLBACK}.json:`);
   for (const [key, file] of missing) console.log(`  ${key}   (${file})`);
 }
 
@@ -76,14 +76,14 @@ for (const [locale, keys] of Object.entries(catalogs)) {
   const untranslated = [...reference].filter((key) => !keys.has(key));
   const unused = [...keys].filter((key) => !reference.has(key));
   if (untranslated.length > 0) {
-    console.log(`${locale}: ${untranslated.length} chiavi senza traduzione (si mostra l'inglese):`);
+    console.log(`${locale}: ${untranslated.length} keys without a translation (English is shown):`);
     for (const key of untranslated) console.log(`  ${key}`);
   }
   if (unused.length > 0) {
-    console.log(`${locale}: ${unused.length} chiavi che ${FALLBACK}.json non ha:`);
+    console.log(`${locale}: ${unused.length} keys that ${FALLBACK}.json does not have:`);
     for (const key of unused) console.log(`  ${key}`);
   }
 }
 
-console.log(`${used.size} chiavi usate per esteso, ${reference.size} nel catalogo ${FALLBACK}.`);
+console.log(`${used.size} keys used in full, ${reference.size} in the ${FALLBACK} catalogue.`);
 process.exit(failed ? 1 : 0);

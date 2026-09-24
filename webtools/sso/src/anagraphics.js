@@ -1,15 +1,15 @@
-// Client HTTP verso webtools_anagraphics: utenti, credenziali, sessioni.
+// HTTP client towards webtools_anagraphics: users, credentials, sessions.
 //
-// Come in preanalyst, non solleva eccezioni verso il chiamante: ogni chiamata
-// restituisce { ok: true, data } oppure { ok: false, reason }, perché chi chiama
-// deve sapere *come* è andata male, non solo che è andata male.
+// As in the preanalyst, it raises no exceptions towards the caller: every call
+// returns { ok: true, data } or { ok: false, reason }, because the caller has to
+// know *how* it went wrong, not only that it went wrong.
 //
-//   reason "not_found"    → 404, con `code` (USER_NOT_FOUND, CREDENTIAL_NOT_SET, …)
-//   reason "conflict"     → 409, token già esistente
-//   reason "unavailable"  → servizio irraggiungibile, timeout, 5xx, 403, JSON rotto
+//   reason "not_found"    → 404, with `code` (USER_NOT_FOUND, CREDENTIAL_NOT_SET, …)
+//   reason "conflict"     → 409, token already there
+//   reason "unavailable"  → service unreachable, timeout, 5xx, 403, broken JSON
 //
-// Le risposte d'errore di anagraphics sono { "error": "<CODICE>" }: si confronta
-// il codice, mai il testo.
+// Anagraphics' error responses are { "error": "<CODE>" }: the code is compared,
+// never the text.
 
 async function request(settings, path, { method = "GET", body } = {}) {
   const url = `${settings.anagraphicsUrl}${path}`;
@@ -25,19 +25,19 @@ async function request(settings, path, { method = "GET", body } = {}) {
       signal: AbortSignal.timeout(settings.anagraphicsTimeoutMs),
     });
   } catch (error) {
-    // Servizio spento, DNS, rete, timeout del client.
+    // Service down, DNS, network, client timeout.
     console.error(`[anagraphics] ${method} ${path}: ${error.name} ${error.message}`);
     return { ok: false, reason: "unavailable" };
   }
 
-  // 204: cancellazione riuscita, nessun corpo da leggere.
+  // 204: deletion succeeded, no body to read.
   if (response.status === 204) return { ok: true, data: null };
 
   let payload;
   try {
     payload = await response.json();
   } catch {
-    console.error(`[anagraphics] ${method} ${path}: risposta non JSON (HTTP ${response.status})`);
+    console.error(`[anagraphics] ${method} ${path}: response is not JSON (HTTP ${response.status})`);
     return { ok: false, reason: "unavailable" };
   }
 
@@ -46,9 +46,9 @@ async function request(settings, path, { method = "GET", body } = {}) {
   if (response.status === 404) return { ok: false, reason: "not_found", code: payload?.error };
   if (response.status === 409) return { ok: false, reason: "conflict", code: payload?.error };
 
-  // 400 INVALID_BODY, 403 IP_NOT_ALLOWED, 503 DATABASE_UNAVAILABLE, 500: per il
-  // sso sono tutti "anagraphics non ci sta dando quello che serve", ma nel log
-  // deve restare il codice vero, perché sono guasti nostri, non dell'utente.
+  // 400 INVALID_BODY, 403 IP_NOT_ALLOWED, 503 DATABASE_UNAVAILABLE, 500: to the
+  // sso they are all "anagraphics is not giving us what we need", but the real
+  // code must stay in the log, because these are our failures, not the user's.
   console.error(`[anagraphics] ${method} ${path}: HTTP ${response.status} ${payload?.error ?? "?"}`);
   return { ok: false, reason: "unavailable", code: payload?.error };
 }
@@ -65,27 +65,27 @@ export function findUserCredential(settings, username) {
   return request(settings, `/users/${encode(username)}/credential`);
 }
 
-// PUT /users/{username}/locale { locale } → l'utente, con la lingua preferita.
+// PUT /users/{username}/locale { locale } → the user, with their preferred language.
 export function setUserLocale(settings, username, locale) {
   return request(settings, `/users/${encode(username)}/locale`, { method: "PUT", body: { locale } });
 }
 
-// PUT /sessions/{token}/locale { locale } → la sessione, con `data.locale`.
+// PUT /sessions/{token}/locale { locale } → the session, with `data.locale`.
 export function setSessionLocale(settings, token, locale) {
   return request(settings, `/sessions/${encode(token)}/locale`, { method: "PUT", body: { locale } });
 }
 
-// POST /sessions → il documento conservato. Il documento lo costruisce il sso.
+// POST /sessions → the stored document. The document is built by the sso.
 export function createSession(settings, session) {
   return request(settings, "/sessions", { method: "POST", body: session });
 }
 
-// GET /sessions/{token} → la sessione, anche se scaduta: la scadenza la valuta il sso.
+// GET /sessions/{token} → the session, expired or not: the expiry is judged by the sso.
 export function findSession(settings, token) {
   return request(settings, `/sessions/${encode(token)}`);
 }
 
-// DELETE /sessions/{token} → 204, oppure 404 se il token non c'è.
+// DELETE /sessions/{token} → 204, or 404 if the token is not there.
 export function deleteSession(settings, token) {
   return request(settings, `/sessions/${encode(token)}`, { method: "DELETE" });
 }
@@ -95,13 +95,13 @@ export function deleteSessionsOfUser(settings, uid) {
   return request(settings, `/sessions?uid=${encode(uid)}`, { method: "DELETE" });
 }
 
-// POST /tickets → il biglietto conservato.
+// POST /tickets → the stored ticket.
 export function createTicket(settings, ticket) {
   return request(settings, "/tickets", { method: "POST", body: ticket });
 }
 
-// DELETE /tickets/{ticket} → il biglietto, cancellandolo nello stesso momento.
-// Chi arriva secondo riceve not_found: è il consumo usa-e-getta.
+// DELETE /tickets/{ticket} → the ticket, deleting it at the same moment.
+// Whoever comes second gets not_found: that is the single-use consumption.
 export function consumeTicket(settings, ticket) {
   return request(settings, `/tickets/${encode(ticket)}`, { method: "DELETE" });
 }

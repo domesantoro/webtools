@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
-# Controllo del server webtools_anagraphics: --start | --stop
+# Control of the webtools_anagraphics server: --start | --stop
 #
-# - --start: avvia in background (nohup), slegato dal terminale.
-#            PID in webtools_anagraphics.pid, log in webtools_anagraphics.log (in append).
-# - --stop:  ferma il processo indicato dal file PID, solo dopo aver verificato
-#            che quel PID sia davvero il nostro server (mai per nome o per porta).
+# - --start: starts it in the background (nohup), detached from the terminal.
+#            PID in webtools_anagraphics.pid, log in webtools_anagraphics.log (appended).
+# - --stop:  stops the process named by the PID file, and only after checking that
+#            that PID really is our server (never by name or by port).
 #
-# Il server non ha valori di default: prende dall'ambiente solo le variabili di
-# ../configurator/bootstrap.env (caricate qui con --start) e il resto dalla sua
-# configurazione in anagraphics. Se manca qualcosa, non parte.
+# The server has no default values: from the environment it takes only the
+# variables of ../configurator/bootstrap.env (loaded here by --start) and the rest
+# from its own configuration in Mongo. If anything is missing, it does not start.
 set -euo pipefail
 
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -18,7 +18,7 @@ MODULE="webtools_anagraphics"
 PID_FILE="$DIR/webtools_anagraphics.pid"
 LOG_FILE="$DIR/webtools_anagraphics.log"
 
-# Stampa il PID se il file PID punta a un processo vivo che è il nostro server.
+# Prints the PID if the PID file points at a live process that is our server.
 running_pid() {
   [[ -f "$PID_FILE" ]] || return 1
   local pid cmd
@@ -32,15 +32,15 @@ running_pid() {
 start() {
   local pid
   if pid="$(running_pid)"; then
-    echo "webtools_anagraphics è già in esecuzione (PID $pid)."
+    echo "webtools_anagraphics is already running (PID $pid)."
     return 0
   fi
   if [[ ! -x "$PYTHON" ]]; then
-    echo "Ambiente mancante: lancia prima 'uv sync' in $DIR" >&2
+    echo "Environment missing: run 'uv sync' in $DIR first" >&2
     return 1
   fi
   if [[ ! -f "$BOOTSTRAP" ]]; then
-    echo "File di avvio mancante: $BOOTSTRAP" >&2
+    echo "Startup file missing: $BOOTSTRAP" >&2
     return 1
   fi
   set -a
@@ -59,21 +59,21 @@ start() {
   pid=$!
   echo "$pid" > "$PID_FILE"
 
-  # Attende fino a 10 s che uvicorn confermi l'avvio, o che il processo muoia.
+  # Waits up to 10 s for uvicorn to confirm the start, or for the process to die.
   for _ in $(seq 1 50); do
     if ! kill -0 "$pid" 2>/dev/null; then
       rm -f "$PID_FILE"
-      echo "Avvio fallito. Ultime righe del log:" >&2
+      echo "Start failed. Last lines of the log:" >&2
       tail -c +"$((log_offset + 1))" "$LOG_FILE" | tail -n 20 >&2
       return 1
     fi
     if tail -c +"$((log_offset + 1))" "$LOG_FILE" | grep -q "Uvicorn running on"; then
-      echo "webtools_anagraphics avviato (PID $pid). Log: $LOG_FILE"
+      echo "webtools_anagraphics started (PID $pid). Log: $LOG_FILE"
       return 0
     fi
     sleep 0.2
   done
-  echo "Il processo (PID $pid) è vivo ma non ha confermato l'avvio entro 10 s: controlla $LOG_FILE" >&2
+  echo "The process (PID $pid) is alive but has not confirmed the start within 10 s: check $LOG_FILE" >&2
   return 1
 }
 
@@ -81,19 +81,19 @@ stop() {
   local pid
   if ! pid="$(running_pid)"; then
     rm -f "$PID_FILE"
-    echo "webtools_anagraphics non è in esecuzione."
+    echo "webtools_anagraphics is not running."
     return 0
   fi
   kill -TERM "$pid"
   for _ in $(seq 1 50); do
     if ! kill -0 "$pid" 2>/dev/null; then
       rm -f "$PID_FILE"
-      echo "webtools_anagraphics fermato (PID $pid)."
+      echo "webtools_anagraphics stopped (PID $pid)."
       return 0
     fi
     sleep 0.2
   done
-  echo "Nessuna uscita entro 10 s dopo SIGTERM: invio SIGKILL a PID $pid." >&2
+  echo "No exit within 10 s after SIGTERM: sending SIGKILL to PID $pid." >&2
   kill -KILL "$pid" 2>/dev/null || true
   rm -f "$PID_FILE"
 }
@@ -102,7 +102,7 @@ case "${1:-}" in
   --start) start ;;
   --stop)  stop ;;
   *)
-    echo "Uso: $0 --start | --stop" >&2
+    echo "Usage: $0 --start | --stop" >&2
     exit 2
     ;;
 esac

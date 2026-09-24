@@ -41,7 +41,8 @@
       "eyebrow": "First step",
       "heading": "Tell us what you need.",
       "lead": "The pre-analysis starts here: you describe your problem and we work out whether we can solve it, and how. No IT knowledge is needed: answer in your own words, and leave blank what you don't know.",
-      "submit": "Send the request"
+      "submit": "Send the request",
+      "autonomous_appeared": "You are registered as a driver: before sending, choose alongside whether this is autonomous work."
     },
     "dialogs": {
       "title": "An account is required",
@@ -151,7 +152,58 @@
       "text": "What you wrote does not yet say what the tool should do. Add some detail to the answers below and send the request again: what you had written is still here."
     },
     "analysis": {
-      "title": "Analysis"
+      "title": "Analysis",
+      "eyebrow": "Second step",
+      "heading": "Let us bring the request into focus.",
+      "lead": "One question at a time, to fill in what the request does not say yet. Answer in your own words; if you do not know, say so.",
+      "opening": "I have read your request. I will ask a few questions to complete it, one at a time.",
+      "you": "You",
+      "system": "webtools",
+      "label": "Your message",
+      "placeholder": "Write your answer",
+      "hint": "Enter sends the message, Shift+Enter starts a new line.",
+      "send": "Send",
+      "waiting": "Writing",
+      "summary": {
+        "title": "The project",
+        "empty": "No particular terms: we assign the driver.",
+        "driver": "Driver",
+        "ambassador": "Invited by",
+        "discount": "Discount",
+        "discount_value": "{percentage}%",
+        "autonomous": "Autonomous work",
+        "autonomous_value": "On",
+        "download": "Download the conversation",
+        "go": "This is fine, let's go!"
+      },
+      "turns": {
+        "label": "Turns used",
+        "value": "<span data-chat-used>{used}</span> of <span data-chat-total>{max}</span>",
+        "warning": "Turns still available: <span data-chat-left>{left}</span> of <span data-chat-warn-total>{max}</span>. Once they are used it will no longer be possible to write on this page: any missing information should be provided now. Additional turns can be purchased afterwards, or the request can proceed with what has been collected."
+      },
+      "exhausted": {
+        "title": "No turns left",
+        "lead": "The {max} question-and-answer turns included in the pre-analysis have been used. Additional turns can be purchased in order to continue the conversation.",
+        "buy": "Buy additional turns",
+        "optional": "Purchasing is not required: the request can proceed with the information already collected. The “This is fine, let's go!” button is now active.",
+        "download_hint": "Downloading the conversation produces a file with all the information collected so far. The file can be submitted to an external AI assistant — ChatGPT or Claude, for instance — to complete the description without using turns, and uploaded later from the pre-analysis page, in the “Ready-made analysis” box.",
+        "credit_label": "Turns to add",
+        "credit_available": "Credit available: <span data-chat-credit-value>{credit}</span>.",
+        "credit_none": "You have no turns in credit.",
+        "use_credit": "Add to the project"
+      },
+      "mock": {
+        "notice": "Test page: the answers are fake, picked at random from a fixed list. There is no analysis behind them.",
+        "replies": {
+          "1": "Who will use the tool besides you? It matters whether everyone sees the same things or each person should only see their own part.",
+          "2": "When you record an entry, what do you write down every time? List it as it comes to mind, in any order.",
+          "3": "Do you already keep this somewhere — a sheet, a notebook, another program? If so, tell me what shape it is in: starting from scratch is not the same as starting from data that already exists.",
+          "4": "You mentioned searching: do you search by name, by date, by category? And do you need to find the single entry or the list of the ones like it?",
+          "5": "What happens to an entry once it is closed? Does it leave the list, stay with a mark, or move to a history you look at separately?",
+          "6": "Is there anything the tool should not do? Everything you rule out now is one round of questions less."
+        }
+      },
+      "error": "The operation could not be completed. Please try again."
     },
     "login_done": {
       "title": "Login",
@@ -286,8 +338,18 @@
       }
     },
     "rejection": {
-      "title": "We cannot go on with this request",
-      "lead": "From what you described, webtools is probably not the right tool for this need.",
+      "out_of_scope": {
+        "title": "We cannot go on with this request",
+        "lead": "From what you described, webtools is probably not the right tool for this need."
+      },
+      "not_software": {
+        "title": "This is not a request for software",
+        "lead": "webtools analyses and builds small software only: tools you use in a browser. It does not produce anything else — a graphic moodboard, texts or translations, or a professional opinion, for example."
+      },
+      "not_recognised": {
+        "title": "We did not recognise the request",
+        "lead": "We are sorry, but the analysis tool cannot make out your request."
+      },
       "pdf_hint": "You can keep what you wrote in the form:",
       "pdf_link": "download it as a PDF",
       "ok": "Ok",

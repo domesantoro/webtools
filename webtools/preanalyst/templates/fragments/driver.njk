@@ -1,5 +1,5 @@
-{# Solo gli interni di [data-sso-driver]: li rimpiazza il browser dopo il login. #}
+{# Only the insides of [data-sso-driver]: the browser replaces them after the login. #}
 {% import "partials/driver_box.njk" as box with context %}
-{% import "partials/ambassador_box.njk" as invito with context %}
-{% import "partials/driver_work.njk" as lavoro with context %}
-{% if aside.driver_box.show %}{{ box.render(aside.driver_box) }}{% endif %}{% if aside.ambassador_box.show %}{{ invito.render(aside.ambassador_box) }}{% endif %}{% if aside.driver_work.show %}{{ lavoro.render(aside.driver_work) }}{% endif %}
+{% import "partials/ambassador_box.njk" as invitation with context %}
+{% import "partials/driver_work.njk" as work with context %}
+{% if aside.driver_box.show %}{{ box.render(aside.driver_box) }}{% endif %}{% if aside.ambassador_box.show %}{{ invitation.render(aside.ambassador_box) }}{% endif %}{% if aside.driver_work.show %}{{ work.render(aside.driver_work) }}{% endif %}

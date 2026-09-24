@@ -1,43 +1,42 @@
-// Le domande della pre-analisi, come dati.
+// The pre-analysis questions, as data.
 //
-// Questo file è fatto per essere **riscritto spesso**: è la bozza da cui partire
-// per capire quali domande servono davvero. Aggiungere, togliere o riordinare una
-// domanda si fa qui; page.js le disegna senza sapere che cosa chiedono.
+// This file is made to be **rewritten often**: it is the draft to start from in
+// working out which questions are really needed. Adding, removing or reordering a
+// question is done here; page.js draws them without knowing what they ask.
 //
-// Qui c'è la **struttura** delle domande: codici, tipi, obbligatorietà e i testi
-// inglesi della pre-specifica. I testi per il cliente — titoli, domande,
-// spiegazioni, esempi, risposte — stanno nei cataloghi delle lingue
-// (`webtools/commons/i18n/locales/<lingua>.json`), sotto:
+// Here is the **structure** of the questions: codes, types, whether they are
+// required, and the English texts for the pre-specification. The texts for the
+// client — titles, questions, explanations, examples, answers — live in the
+// language catalogues (`webtools/commons/i18n/locales/<language>.json`), under:
 //
 //   preanalyst.questions.sections.<id>.legend / .hint
 //   preanalyst.questions.fields.<name>.label / .hint / .placeholder
-//   preanalyst.questions.fields.<name>.options.<codice>
+//   preanalyst.questions.fields.<name>.options.<code>
 //
-// `hint` e `placeholder` sono facoltativi: si mostrano se la chiave c'è.
-// Una domanda nuova si scrive qui e i suoi testi si aggiungono ai cataloghi.
+// `hint` and `placeholder` are optional: they are shown if the key is there. A new
+// question is written here and its texts are added to the catalogues.
 //
-// Regole che i testi per il cliente seguono:
-// - parole di tutti i giorni, mai gergo tecnico: chi risponde non è del mestiere;
-// - tono asciutto: si dice che cosa scrivere e a che cosa serve, punto. Niente
-//   frasi motivazionali, niente complimenti al cliente, niente pubblicità del
-//   nostro metodo. Se una frase si può togliere senza perdere informazione,
-//   va tolta;
-// - poche risposte già pronte invece di campi liberi, perché sono più facili da
-//   dare e molto più facili da leggere per il prevalidator;
-// - obbligatorio solo ciò senza cui non si può fare niente.
+// Rules the texts for the client follow:
+// - everyday words, never jargon: whoever answers is not of the trade;
+// - a dry tone: say what to write and what it is for, full stop. No motivational
+//   sentences, no compliments to the client, no advertising of our method. If a
+//   sentence can be removed without losing information, remove it;
+// - few ready-made answers instead of free fields, because they are easier to give
+//   and far easier for the prevalidator to read;
+// - required only where nothing can be done without it.
 //
-// Tipi: "textarea" | "text" | "email" | "radio" | "checkbox"
+// Types: "textarea" | "text" | "email" | "radio" | "checkbox"
 //
-// Ogni sezione e ogni domanda hanno `spec`: il titolo con cui compaiono nella
-// pre-specifica, che è scritta in inglese (`templates/prespec.md.njk`) in
-// qualunque lingua il cliente abbia risposto. Le opzioni sono
-// [codice, testo per la pre-specifica]: il codice è quello che si invia e che
-// finisce nel front matter, quindi è in inglese e non cambia quando si
-// riscrivono i testi.
+// Every section and every question has a `spec`: the title they appear under in
+// the pre-specification, which is written in English (`templates/prespec.md.njk`)
+// whatever language the client answered in. The options are
+// [code, text for the pre-specification]: the code is what gets submitted and what
+// ends up in the front matter, so it is in English and does not change when the
+// texts are rewritten.
 //
-// `group`: domande che valgono come una sola risposta. Le skill segnate e il
-// campo "Altro" sono la stessa informazione — l'elenco delle caselle è aperto,
-// non un catalogo — quindi mancano solo se mancano tutte e due.
+// `group`: questions that count as a single answer. The skills ticked and the
+// "Other" field are the same piece of information — the list of checkboxes is
+// open, not a catalogue — so they are missing only if both are.
 
 export const SECTIONS = [
   {

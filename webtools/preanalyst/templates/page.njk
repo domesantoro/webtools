@@ -1,33 +1,34 @@
 {% extends "commons/base.njk" %}
-{#- `with context`: i macro usano `t` e le altre funzioni della lingua. #}
+{#- `with context`: the macros use `t` and the other language functions. #}
 {% import "macros/fields.njk" as campi with context %}
 {% import "partials/driver_box.njk" as box with context %}
-{% import "partials/ambassador_box.njk" as invito with context %}
-{% import "partials/access.njk" as accesso with context %}
-{% import "partials/driver_work.njk" as lavoro with context %}
-{% import "partials/upload_box.njk" as caricamento with context %}
-{% import "partials/rejection_dialog.njk" as rigetto with context %}
+{% import "partials/ambassador_box.njk" as invitation with context %}
+{% import "partials/access.njk" as login with context %}
+{% import "partials/driver_work.njk" as work with context %}
+{% import "partials/upload_box.njk" as upload_block with context %}
+{% import "partials/rejection_dialog.njk" as refusal with context %}
 
 {#
-  La pagina della pre-analisi.
+  The pre-analysis page.
 
-  Due blocchi affiancati: a sinistra il testo e il form (le domande vengono da
-  `src/questions.js`), a destra il box del driver, che compare solo se il link ne
-  portava uno. Senza box la colonna è una sola e il form si stringe, o le righe
-  diventano illeggibili.
+  Two blocks side by side: on the left the text and the form (the questions come
+  from `src/questions.js`), on the right the driver box, which appears only if the
+  link carried one. Without the box there is a single column and the form narrows,
+  or the lines become unreadable.
 
-  La tendina del driver sta FUORI dal form e ci si aggancia con `form="gate-form"`:
-  così il box resta autonomo ma quello che porta viaggia insieme alle risposte.
+  The driver's controls sit OUTSIDE the form and hook onto it with
+  `form="gate-form"`: that way the box stays independent but what it carries
+  travels together with the answers.
 #}
 
-{#- Lo stato dell'accesso e l'indirizzo del login stanno sul <body>: li legge
-    sso_popup.js, e servono a chi deve aprire il login da codice e a chi deve
-    sapere se aprire la modale del login (gate.js, upload.js). #}
+{#- The login state and the login address sit on the <body>: sso_popup.js reads
+    them, and they are needed by whoever has to open the login from code and by
+    whoever has to know whether to open the login modal (gate.js, upload.js). #}
 {% block body_attributes %}{% if access.logged %} data-sso-logged{% endif %} data-sso-login-url="{{ access.login_url }}"{% endblock %}
 
 {% block header_extra %}
       <div class="header-access" data-sso-header>
-      {{- accesso.header(access) }}
+      {{- login.header(access) }}
       </div>
 {% endblock %}
 
@@ -42,22 +43,22 @@
       <div class="gate-layout">
         <div class="gate-main reveal delay-1">
 {%- if resumed %}
-          {#- Il secondo giro: la richiesta è tornata indietro perché diceva
-              troppo poco. L'avviso sta in testa al form, sopra la prima domanda,
-              perché è lì che si riprende a scrivere. #}
+          {#- The second round: the request came back because it said too little.
+              The notice sits at the top of the form, above the first question,
+              because that is where the writing starts again. #}
           <div class="form-notice">
             <h2 class="form-notice-title">{{ t("preanalyst.underspecified.title") }}</h2>
             <p class="form-notice-text">{{ t("preanalyst.underspecified.text") }}</p>
           </div>
 {%- endif %}
-          {#- Senza `novalidate`: il browser controlla da sé i campi obbligatori
-              prima di mandare il form. Il server li ricontrolla comunque. #}
+          {#- No `novalidate`: the browser checks the required fields itself before
+              sending the form. The server checks them again anyway. #}
           <form class="gate-form" id="gate-form" method="post" action="/submit" data-webtools-loader>
-            {#- L'id di questo invio: se il form arriva due volte, il progetto resta uno. #}
+            {#- The id of this submission: if the form arrives twice, there is still one project. #}
             <input type="hidden" name="submission_id" value="{{ submission_id }}">
 {%- if resumed %}
-            {#- Il progetto che si sta riscrivendo: senza, questo invio ne farebbe
-                nascere un altro e i giri non si conterebbero più. #}
+            {#- The project being rewritten: without it, this submission would give
+                birth to another and the rounds would no longer be counted. #}
             <input type="hidden" name="project_id" value="{{ resumed.project_id }}">
 {%- endif %}
             {%- for sezione in sections %}
@@ -65,36 +66,42 @@
             {%- endfor %}
 
             <div class="form-actions">
-              {#- La pre-analisi si compila anche da sloggati: il conto serve per
-                  mandarla. Da sloggati il clic apre la modale del login
-                  (gate.js); senza JavaScript il server risponde che serve
-                  l'accesso. #}
+              {#- After the login the submission resumes by itself (gate.js). It
+                  does not resume if the login brought up the autonomous work
+                  choice, which is there only for drivers: then this notice is
+                  switched on, and it is born here because the texts live in the
+                  catalogues and not in the JavaScript. #}
+              <p class="form-notice form-notice-inline" data-autonomous-notice hidden>{{ t("preanalyst.page.autonomous_appeared") }}</p>
+              {#- The pre-analysis can be filled in while logged out: the account is
+                  needed to send it. Logged out, the click opens the login modal
+                  (gate.js); without JavaScript the server answers that an account
+                  is needed. #}
               <button class="btn btn-primary" type="submit">{{ t("preanalyst.page.submit") }}</button>
             </div>
           </form>
         </div>
 
-        {#- La colonna destra. I blocchi del driver stanno in un contenitore a
-            parte perché il browser li rimpiazza dopo il login: il blocco del
-            caricamento resta fuori, o si porterebbe via il file già scelto. #}
+        {#- The right-hand column. The driver blocks sit in a separate container
+            because the browser replaces them after the login: the upload block
+            stays outside, or it would carry away the file already chosen. #}
         <div class="gate-aside">
           <div data-sso-driver>
           {%- if aside.driver_box.show %}{{ box.render(aside.driver_box) }}{% endif %}
-          {%- if aside.ambassador_box.show %}{{ invito.render(aside.ambassador_box) }}{% endif %}
-          {%- if aside.driver_work.show %}{{ lavoro.render(aside.driver_work) }}{% endif %}
+          {%- if aside.ambassador_box.show %}{{ invitation.render(aside.ambassador_box) }}{% endif %}
+          {%- if aside.driver_work.show %}{{ work.render(aside.driver_work) }}{% endif %}
           </div>
-          {{ caricamento.render(upload) }}
+          {{ upload_block.render(upload) }}
         </div>
       </div>
 
-      {#- Le modali del login, fuori dal form: dentro hanno un loro <form> per
-          chiudersi, e i form non si annidano. #}
-      {{ accesso.dialog(access, "login-dialog-submit",
+      {#- The login modals, outside the form: they have their own <form> inside to
+          close themselves, and forms do not nest. #}
+      {{ login.dialog(access, "login-dialog-submit",
            t("preanalyst.dialogs.submit.lead"), t("preanalyst.dialogs.submit.hint")) }}
-      {{ accesso.dialog(access, "login-dialog-upload",
+      {{ login.dialog(access, "login-dialog-upload",
            t("preanalyst.dialogs.upload.lead"), t("preanalyst.dialogs.upload.hint")) }}
 {%- if rejection %}
-      {{ rigetto.render(rejection) }}
+      {{ refusal.render(rejection) }}
 {%- endif %}
     </div>
 
@@ -105,8 +112,8 @@
 <script src="/sso_popup.js" defer></script>
 <script src="/gate.js" defer></script>
 <script src="/upload.js" defer></script>
-{#- Dopo gate.js: il loader si accende solo se il submit non è stato fermato, e i
-    gestori si chiamano nell'ordine in cui sono stati registrati. #}
+{#- After gate.js: the loader comes on only if the submit was not stopped, and the
+    handlers are called in the order they were registered. #}
 <script src="/webtools_loader.js" defer></script>
 {%- if rejection %}
 <script src="/rejection.js" defer></script>

@@ -1,17 +1,17 @@
-// Le pagine del sso: entra, registrati.
+// The sso pages: log in, register.
 //
-// Qui non c'è HTML: sta in `templates/`, in file .njk resi da nunjucks. Questo
-// file decide soltanto **quali dati** vanno a ogni pagina.
+// There is no HTML here: it lives in `templates/`, in .njk files rendered by
+// nunjucks. This file decides only **which data** goes to each page.
 //
-// Perché un motore di template e non stringhe dentro il JavaScript: con
-// l'autoescape acceso ogni valore che finisce nell'HTML viene ripulito da solo.
-// Scrivendo l'HTML a mano, invece, l'escape è disciplina: basta dimenticarlo una
-// volta su un valore che arriva da fuori e si è aperto un buco. Qui si digitano
-// password: non è il posto dove tenere una cosa che funziona "se ci si ricorda".
+// Why a template engine and not strings inside the JavaScript: with autoescaping
+// on, every value that ends up in the HTML is cleaned by itself. Writing the HTML
+// by hand, escaping is discipline instead: forget it once on a value coming from
+// outside and a hole is open. Passwords are typed here: this is not the place for
+// something that works "if you remember".
 //
-// Il layout comune (`templates/commons/base.njk`) è una **copia generata** dal
-// deployer: si modifica l'originale in `webtools/commons/templates/` e si
-// rilancia `webtools/configurator/deploy.sh`.
+// The shared layout (`templates/commons/base.njk`) is a **generated copy**: edit
+// the original in `webtools/commons/templates/` and run
+// `webtools/configurator/deploy.sh` again.
 
 import { fileURLToPath } from "node:url";
 
@@ -20,24 +20,24 @@ import nunjucks from "nunjucks";
 const TEMPLATES_DIR = fileURLToPath(new URL("../templates/", import.meta.url));
 
 const env = nunjucks.configure(TEMPLATES_DIR, {
-  // L'unica impostazione che conta davvero: tutto ciò che si scrive con {{ }}
-  // passa dall'escape. Per stampare HTML vero serve dirlo apposta con `| safe`.
+  // The one setting that really matters: everything written with {{ }} goes
+  // through escaping. To print real HTML you have to say so with `| safe`.
   autoescape: true,
-  // I template stanno su disco accanto al codice e cambiano solo con un deploy:
-  // si leggono una volta e restano in memoria.
+  // The templates live on disk next to the code and change only with a deploy:
+  // they are read once and stay in memory.
   noCache: false,
-  // Niente trimBlocks: insieme ai `{%-` dei template ridurrebbe la pagina a
-  // poche righe lunghissime, e l'HTML reso va letto anche da un essere umano.
+  // No trimBlocks: together with the templates' `{%-` it would squeeze the page
+  // into a few very long lines, and the rendered HTML is read by humans too.
   trimBlocks: false,
 });
 
-// I messaggi d'errore del login non dicono mai quale dei due campi è sbagliato:
-// non si fa sapere a chi prova se un indirizzo è registrato. I testi stanno nei
-// cataloghi, sotto `sso.login.errors.<errore>`.
+// The login error messages never say which of the two fields is wrong: whoever is
+// trying is not told whether an address is registered. The texts live in the
+// catalogues, under `sso.login.errors.<error>`.
 const ERRORS = ["invalid_credentials", "unavailable"];
 
-// `ui` è quello che dà `settings.i18n.pageContext(…)`: lingua, `t` e selettore
-// della lingua, che il layout comune usa su ogni pagina.
+// `ui` is what `settings.i18n.pageContext(…)` gives: language, `t` and the
+// language switcher, which the shared layout uses on every page.
 export function renderLoginPage(ui, { next, username = "", error = null }) {
   return env.render("login.njk", {
     ...ui,

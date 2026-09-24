@@ -1,49 +1,49 @@
-// Il loader comune: accende il velo quando un form parte davvero.
+// The shared loader: it raises the veil when a form actually goes.
 //
-// NON MODIFICARE LA COPIA DENTRO UN SOTTOSISTEMA.
-// L'originale è `webtools/commons/script/webtools_loader.js`; le copie le
-// distribuisce `webtools/configurator/script_deployer/deploy.sh`.
+// DO NOT EDIT THE COPY INSIDE A SUBSYSTEM.
+// The original is `webtools/commons/script/webtools_loader.js`; the copies are
+// distributed by `webtools/configurator/script_deployer/deploy.sh`.
 //
-// Si applica a ogni form marcato `data-webtools-loader`, insieme al markup di
-// `commons/templates/loader.njk`.
+// It applies to every form marked `data-webtools-loader`, together with the
+// markup in `commons/templates/loader.njk`.
 //
-// Il velo compare **solo se l'invio parte davvero**: si guarda
-// `evento.defaultPrevented`, perché un'altra pagina può fermare il submit
-// (nel preanalyst lo fa `gate.js`, che da sloggati apre la modale del login).
-// Per questo lo script va caricato **dopo** quelli che intercettano il submit:
-// i gestori si chiamano nell'ordine in cui sono stati registrati, e questo deve
-// vedere la decisione già presa.
+// The veil appears **only if the submission really goes**: `event.defaultPrevented`
+// is checked, because another page may stop the submit (in the preanalyst
+// `gate.js` does, opening the login modal when logged out). That is why this
+// script must be loaded **after** the ones that intercept the submit: handlers
+// are called in the order they were registered, and this one must see the
+// decision already taken.
 //
-// Il velo non si spegne da solo: dopo un invio la pagina cambia comunque, e una
-// rotella che sparisce mentre non è successo niente direbbe il falso. Se però
-// l'utente torna indietro nella cronologia il browser può restituire la pagina
-// com'era, velo acceso compreso: `pageshow` con `persisted` lo spegne.
+// The veil does not come down by itself: after a submission the page changes
+// anyway, and a spinner disappearing while nothing has happened would be a lie.
+// If the user goes back in history, though, the browser may hand back the page
+// as it was, raised veil included: `pageshow` with `persisted` lowers it.
 
 (function () {
   "use strict";
 
-  var velo = document.getElementById("webtools-loader");
-  if (!velo) return;
+  var veil = document.getElementById("webtools-loader");
+  if (!veil) return;
 
-  function accendi() {
-    velo.setAttribute("data-on", "");
-    velo.setAttribute("aria-hidden", "false");
+  function raise() {
+    veil.setAttribute("data-on", "");
+    veil.setAttribute("aria-hidden", "false");
   }
 
-  function spegni() {
-    velo.removeAttribute("data-on");
-    velo.setAttribute("aria-hidden", "true");
+  function lower() {
+    veil.removeAttribute("data-on");
+    veil.setAttribute("aria-hidden", "true");
   }
 
   var forms = document.querySelectorAll("form[data-webtools-loader]");
   for (var i = 0; i < forms.length; i += 1) {
-    forms[i].addEventListener("submit", function (evento) {
-      if (evento.defaultPrevented) return;
-      accendi();
+    forms[i].addEventListener("submit", function (event) {
+      if (event.defaultPrevented) return;
+      raise();
     });
   }
 
-  window.addEventListener("pageshow", function (evento) {
-    if (evento.persisted) spegni();
+  window.addEventListener("pageshow", function (event) {
+    if (event.persisted) lower();
   });
 })();

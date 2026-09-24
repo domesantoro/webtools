@@ -81,3 +81,16 @@ webtools_sso in ascolto su http://127.0.0.1:9300 (anagraphics: http://127.0.0.1:
 webtools_sso in ascolto su http://127.0.0.1:9300 (anagraphics: http://127.0.0.1:9100, sessioni: 28800s)
 === start 2026-09-23 16:27:34 ===
 webtools_sso in ascolto su http://127.0.0.1:9300 (anagraphics: http://127.0.0.1:9100, sessioni: 28800s)
+=== start 2026-09-24 14:42:01 ===
+webtools_sso in ascolto su http://127.0.0.1:9300 (anagraphics: http://127.0.0.1:9100, sessioni: 28800s)
+[sso] login di dome.santoro@gmail.com (uid 8ff93901-673e-44ba-b05b-56011395dcba)
+=== start 2026-09-24 16:18:17 ===
+webtools_sso in ascolto su http://127.0.0.1:9300 (anagraphics: http://127.0.0.1:9100, sessioni: 28800s)
+=== start 2026-09-24 16:29:30 ===
+webtools_sso listening on http://127.0.0.1:9300 (anagraphics: http://127.0.0.1:9100, sessioni: 28800s)
+=== start 2026-09-24 16:44:13 ===
+webtools_sso listening on http://127.0.0.1:9300 (anagraphics: http://127.0.0.1:9100, sessioni: 28800s)
+=== start 2026-09-24 16:50:17 ===
+webtools_sso listening on http://127.0.0.1:9300 (anagraphics: http://127.0.0.1:9100, sessions: 28800s)
+=== start 2026-09-24 17:05:48 ===
+webtools_sso listening on http://127.0.0.1:9300 (anagraphics: http://127.0.0.1:9100, sessions: 28800s)

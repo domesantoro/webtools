@@ -1,4 +1,4 @@
-// Il front matter delle SPECIFICHE di progetto: il blocco YAML in testa a un file .md.
+// The front matter of project SPECIFICATIONS: the YAML block at the top of a .md file.
 //
 //   ---
 //   project_id: 1f251606-bdba-40c4-bbee-bfedc6e57f70
@@ -6,33 +6,34 @@
 //     origin: third_party
 //     version: 2
 //   ---
-//   # Il resto del documento
+//   # The rest of the document
 //
-// Originale in webtools/commons/specs/. Nei sottosistemi c'è una copia generata
-// da configurator/specs_deployer/deploy.sh: si modifica qui e si rilancia.
+// The original is in webtools/commons/specs/. Each subsystem has a copy generated
+// by configurator/specs_deployer/deploy.sh: edit here and run it again.
 //
-// La chiave `webtools:` è riservata al sistema: la scrive chi conserva il file
-// (`stamp`), e quello che un file caricato dichiara lì dentro non vale niente.
+// The `webtools:` key is reserved for the system: it is written by whoever stores
+// the file (`stamp`), and whatever an uploaded file declares in there counts for
+// nothing.
 
 import YAML from "yaml";
 
 export const RESERVED_KEY = "webtools";
 
-// Il formato di un project_id: UUID in forma canonica minuscola, come lo genera
-// anagraphics. Chi lo legge da un file lo controlla prima di usarlo, e chi ci
-// costruisce un percorso sa che non contiene né `/` né `..`.
+// The shape of a project_id: a UUID in canonical lowercase form, as anagraphics
+// generates it. Whoever reads one from a file checks it before using it, and
+// whoever builds a path from it knows it contains neither `/` nor `..`.
 const PROJECT_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 
 export function isProjectId(value) {
   return typeof value === "string" && PROJECT_ID.test(value);
 }
 
-// Il front matter non è valido: YAML rotto, oppure non è una mappa chiave → valore.
+// The front matter is not valid: broken YAML, or not a key → value map.
 export class FrontMatterError extends Error {}
 
-// Separa il blocco dal corpo. Il blocco c'è solo se il file comincia con una
-// riga `---` e ne ha un'altra più sotto: un `---` a metà documento è una riga
-// orizzontale del markdown, non un front matter.
+// Splits the block from the body. The block is only there if the file starts with
+// a `---` line and has another one further down: a `---` in the middle of a
+// document is a markdown horizontal rule, not a front matter.
 export function split(text) {
   const clean = text.startsWith("﻿") ? text.slice(1) : text;
   const match = /^---[ \t]*\r?\n([\s\S]*?\r?\n)?---[ \t]*(?:\r?\n|$)/.exec(clean);
@@ -40,15 +41,15 @@ export function split(text) {
   return { frontMatter: match[1] ?? "", body: clean.slice(match[0].length) };
 }
 
-// I dati del front matter, oppure `null` se il file non ne ha uno.
+// The front matter data, or `null` if the file has none.
 export function parse(text) {
   const { frontMatter, body } = split(text);
   if (frontMatter === null) return { data: null, body };
   return { data: toMap(parseDocument(frontMatter).toJS()), body };
 }
 
-// Riscrive la chiave riservata con i valori dati, lasciando il resto com'è.
-// Se il file non ha un front matter, gliene dà uno.
+// Rewrites the reserved key with the given values, leaving the rest as it is.
+// If the file has no front matter, it is given one.
 export function stamp(text, values) {
   const { frontMatter, body } = split(text);
   const document = parseDocument(frontMatter ?? "");
@@ -69,7 +70,7 @@ function parseDocument(source) {
 function toMap(value) {
   if (value === null || value === undefined) return {};
   if (typeof value !== "object" || Array.isArray(value)) {
-    throw new FrontMatterError("il front matter non è una mappa chiave → valore");
+    throw new FrontMatterError("the front matter is not a key → value map");
   }
   return value;
 }

@@ -1,7 +1,7 @@
 {
   "name": "webtools_preanalyst",
   "version": "0.1.0",
-  "description": "La pre-analisi: il form, il caricamento delle specifiche e la chat di analisi.",
+  "description": "The pre-analysis: the form, the upload of specifications and the analysis chat.",
   "private": true,
   "type": "module",
   "main": "src/index.js",

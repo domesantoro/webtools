@@ -1,170 +1,171 @@
-// Il caricamento di un'analisi già pronta.
+// Uploading a ready-made analysis.
 //
-// Il file si sceglie anche da sloggati: il conto serve al momento di caricare.
-// Se al "Carica" non si è dentro, si apre la modale del login, e la finestra
-// del login si apre solo premendo "Entra" o "Registrati" lì dentro. Poi il
-// caricamento riparte da solo quando il login è finito (evento
-// `webtools:sso-login`, da sso_popup.js). Chiudere la modale annulla l'attesa.
+// The file can be chosen while logged out: the account is needed at the moment of
+// uploading. If at "Upload" you are not in, the login modal opens, and the login
+// window itself only opens by pressing "Entra" or "Registrati" inside it. The
+// upload then resumes by itself once the login is done (the `webtools:sso-login`
+// event, from sso_popup.js). Closing the modal cancels the wait.
 //
-// Il file resta qui, in memoria della pagina, finché non parte: non si perde
-// durante il login e non viene mandato a nessuno prima del momento giusto.
+// The file stays here, in the page's memory, until it goes: it is not lost during
+// the login and it is not sent to anybody before the right moment.
 //
-// Senza JavaScript resta il campo file e nient'altro: il bottone non compare e
-// non c'è nessun caricamento. È una funzione che vive nel browser.
+// Without JavaScript only the file field is left, and nothing else: the button
+// does not appear and there is no upload. It is a feature that lives in the
+// browser.
 
 (function () {
   "use strict";
 
-  var zona = document.querySelector("[data-upload-zone]");
-  if (!zona) return;
+  var zone = document.querySelector("[data-upload-zone]");
+  if (!zone) return;
 
-  var campo = zona.querySelector("input[type=file]");
-  var nome = zona.querySelector("[data-upload-name]");
-  var azioni = document.querySelector("[data-upload-actions]");
-  var stato = document.querySelector("[data-upload-status]");
-  var bottone = document.querySelector("[data-upload-send]");
-  var togli = document.querySelector("[data-upload-clear]");
-  var modale = document.getElementById("login-dialog-upload");
-  // I testi, nella lingua della pagina: li scrive il server (upload_box.njk).
-  var contenitore = zona.closest("[data-upload-messages]");
-  var testi = JSON.parse(contenitore.getAttribute("data-upload-messages"));
+  var field = zone.querySelector("input[type=file]");
+  var nameLabel = zone.querySelector("[data-upload-name]");
+  var actions = document.querySelector("[data-upload-actions]");
+  var status = document.querySelector("[data-upload-status]");
+  var uploadButton = document.querySelector("[data-upload-send]");
+  var clearButton = document.querySelector("[data-upload-clear]");
+  var modal = document.getElementById("login-dialog-upload");
+  // The texts, in the page's language: the server writes them (upload_box.njk).
+  var holder = zone.closest("[data-upload-messages]");
+  var texts = JSON.parse(holder.getAttribute("data-upload-messages"));
 
-  var scelto = null; // il file scelto
-  var inAttesaDelLogin = false; // login chiesto dalla modale del caricamento
-  var testoIniziale = nome.textContent;
+  var chosen = null; // the chosen file
+  var waitingForLogin = false; // login asked for by the upload modal
+  var initialLabel = nameLabel.textContent;
 
-  /* --------------------------------------------------------- la scelta */
+  /* ------------------------------------------------------------ the choice */
 
-  function mostra(file) {
-    scelto = file || null;
-    if (scelto) {
-      nome.textContent = scelto.name;
-      azioni.hidden = false;
+  function show(file) {
+    chosen = file || null;
+    if (chosen) {
+      nameLabel.textContent = chosen.name;
+      actions.hidden = false;
     } else {
-      nome.textContent = testoIniziale;
-      azioni.hidden = true;
-      campo.value = "";
+      nameLabel.textContent = initialLabel;
+      actions.hidden = true;
+      field.value = "";
     }
-    scrivi("");
+    write("");
   }
 
-  function scrivi(messaggio, tipo) {
-    stato.textContent = messaggio;
-    stato.className = "upload-status" + (tipo ? " upload-status-" + tipo : "");
+  function write(message, kind) {
+    status.textContent = message;
+    status.className = "upload-status" + (kind ? " upload-status-" + kind : "");
   }
 
-  campo.addEventListener("change", function () {
-    mostra(campo.files[0]);
+  field.addEventListener("change", function () {
+    show(field.files[0]);
   });
 
-  togli.addEventListener("click", function () {
-    mostra(null);
+  clearButton.addEventListener("click", function () {
+    show(null);
   });
 
-  /* ------------------------------------------------------ il trascinamento */
+  /* ---------------------------------------------------------- drag and drop */
 
-  ["dragenter", "dragover"].forEach(function (evento) {
-    zona.addEventListener(evento, function (e) {
-      e.preventDefault();
-      zona.classList.add("dropzone-over");
+  ["dragenter", "dragover"].forEach(function (name) {
+    zone.addEventListener(name, function (event) {
+      event.preventDefault();
+      zone.classList.add("dropzone-over");
     });
   });
 
-  ["dragleave", "drop"].forEach(function (evento) {
-    zona.addEventListener(evento, function (e) {
-      e.preventDefault();
-      zona.classList.remove("dropzone-over");
+  ["dragleave", "drop"].forEach(function (name) {
+    zone.addEventListener(name, function (event) {
+      event.preventDefault();
+      zone.classList.remove("dropzone-over");
     });
   });
 
-  zona.addEventListener("drop", function (e) {
-    var file = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+  zone.addEventListener("drop", function (event) {
+    var file = event.dataTransfer && event.dataTransfer.files && event.dataTransfer.files[0];
     if (!file) return;
-    // Si mette anche nel campo, così la pagina resta coerente con quello che
-    // l'utente vede: un file scelto è un file scelto, comunque sia arrivato.
+    // It also goes into the field, so the page stays consistent with what the
+    // user sees: a chosen file is a chosen file, however it arrived.
     try {
-      var lista = new DataTransfer();
-      lista.items.add(file);
-      campo.files = lista.files;
-    } catch (errore) {
-      // Browser che non lo permette: si tiene solo in memoria.
+      var list = new DataTransfer();
+      list.items.add(file);
+      field.files = list.files;
+    } catch (error) {
+      // Browsers that do not allow it: the file is kept in memory only.
     }
-    mostra(file);
+    show(file);
   });
 
-  /* --------------------------------------------------------- il caricamento */
+  /* ------------------------------------------------------------ the upload */
 
-  bottone.addEventListener("click", function () {
-    if (!scelto) return;
+  uploadButton.addEventListener("click", function () {
+    if (!chosen) return;
 
-    // Il login non si chiede per scegliere un file, si chiede per mandarlo — e
-    // lo si chiede, non lo si fa partire: qui si apre la modale e basta.
+    // The login is not asked for to choose a file, it is asked for to send one —
+    // and it is *asked for*, not started: here the modal opens and that is all.
     if (window.webtoolsSso && !window.webtoolsSso.isLogged()) {
-      scrivi("");
-      modale.showModal();
+      write("");
+      modal.showModal();
       return;
     }
 
-    manda();
+    upload();
   });
 
-  // I link della modale aprono il login da sé (sso_popup.js): qui si prende
-  // nota che il file, a login finito, va mandato.
-  modale.addEventListener("click", function (evento) {
-    if (!evento.target.closest("[data-sso-login]")) return;
-    inAttesaDelLogin = true;
-    scrivi(testi.finish_login);
+  // The modal's links open the login themselves (sso_popup.js): here we note
+  // that the file is to be sent once the login is done.
+  modal.addEventListener("click", function (event) {
+    if (!event.target.closest("[data-sso-login]")) return;
+    waitingForLogin = true;
+    write(texts.finish_login);
   });
 
-  modale.addEventListener("close", function () {
-    if (!inAttesaDelLogin) return;
-    inAttesaDelLogin = false;
-    scrivi("");
+  modal.addEventListener("close", function () {
+    if (!waitingForLogin) return;
+    waitingForLogin = false;
+    write("");
   });
 
   document.addEventListener("webtools:sso-login", function () {
-    var daMandare = inAttesaDelLogin && scelto;
-    inAttesaDelLogin = false;
-    if (modale.open) modale.close();
-    if (daMandare) manda();
+    var toSend = waitingForLogin && chosen;
+    waitingForLogin = false;
+    if (modal.open) modal.close();
+    if (toSend) upload();
   });
 
-  function manda() {
-    bottone.disabled = true;
-    scrivi(testi.in_progress);
+  function upload() {
+    uploadButton.disabled = true;
+    write(texts.in_progress);
 
-    // Il file va nel corpo così com'è, con il nome in un header: non serve un
-    // form multipart per mandare un file solo, e il server non deve smontare
-    // niente per ritrovarlo.
+    // The file goes in the body as it is, with its name in a header: a single
+    // file does not need a multipart form, and the server has nothing to take
+    // apart to find it again.
     fetch("/upload", {
       method: "POST",
       headers: {
-        "content-type": scelto.type || "application/octet-stream",
-        "x-file-name": encodeURIComponent(scelto.name),
+        "content-type": chosen.type || "application/octet-stream",
+        "x-file-name": encodeURIComponent(chosen.name),
       },
-      body: scelto,
+      body: chosen,
     })
-      .then(function (risposta) {
-        return risposta.json().then(function (corpo) {
-          return { ok: risposta.ok, status: risposta.status, corpo: corpo };
+      .then(function (response) {
+        return response.json().then(function (body) {
+          return { ok: response.ok, status: response.status, body: body };
         });
       })
-      .then(function (esito) {
-        bottone.disabled = false;
-        if (esito.ok) {
-          scrivi(testi.done.replace("{name}", esito.corpo.name), "ok");
+      .then(function (result) {
+        uploadButton.disabled = false;
+        if (result.ok) {
+          write(texts.done.replace("{name}", result.body.name), "ok");
           return;
         }
-        scrivi(messaggioDiErrore(esito.corpo.error), "errore");
+        write(errorMessage(result.body.error), "error");
       })
-      .catch(function (errore) {
-        bottone.disabled = false;
-        console.error("[upload]", errore);
-        scrivi(testi.failed, "errore");
+      .catch(function (error) {
+        uploadButton.disabled = false;
+        console.error("[upload]", error);
+        write(texts.failed, "error");
       });
   }
 
-  function messaggioDiErrore(codice) {
-    return testi.errors[codice] || testi.failed;
+  function errorMessage(code) {
+    return texts.errors[code] || texts.failed;
   }
 })();

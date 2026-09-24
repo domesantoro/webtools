@@ -1,12 +1,13 @@
 {#
-  Il box dell'ambassador: il driver che ha invitato l'utente a usare webtools.
-  Compare solo se l'ambassador è stato riconosciuto e nient'altro indica chi
-  porta il progetto (src/ambassador.js). Con il lavoro autonomo segnato lo
-  nasconde il CSS (regola `:has()` in styles.css).
+  The ambassador box: the driver who invited the user to use webtools. It appears
+  only if the ambassador has been recognised and nothing else says who brings the
+  project (src/ambassador.js). With autonomous work ticked the CSS hides it (the
+  `:has()` rule in styles.css).
 
-  Il campo nascosto porta l'uid all'invio, dove viene verificato di nuovo. Non
-  c'è quando il form si ripresenta (`locked`): l'ambassador del progetto è già
-  stato registrato al primo invio, e quel giro non lo rilegge.
+  The hidden field carries the uid to the submission, where it is checked again. It
+  is not there when the form comes back (`locked`): the project's ambassador was
+  already recorded at the first submission, and that round does not read it
+  again.
 #}
 
 {% macro render(ambassador) %}

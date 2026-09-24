@@ -1,14 +1,14 @@
-// Server HTTP del sito vetrina.
+// The showcase site's HTTP server.
 //
-// Le pagine si rendono dai template, con i valori della configurazione letta
-// all'avvio (vedi settings.js); tutto il resto sono file di public/.
+// The pages are rendered from the templates, with the values of the configuration
+// read at startup (see settings.js); everything else is files from public/.
 //
-//   GET  /, /<pagina>.html   la pagina, da templates/<pagina>.njk
-//   GET  /<file>             public/<file>
-//   POST /locale             cambia la lingua (cookie comune) e torna alla pagina
+//   GET  /, /<page>.html   the page, from templates/<page>.njk
+//   GET  /<file>           public/<file>
+//   POST /locale           changes the language (shared cookie) and returns to the page
 //
-// Gli errori seguono il contratto del progetto: stato HTTP corretto e codice
-// stabile, { "error": "<CODICE>" }.
+// The errors follow the project's contract: correct HTTP status and a stable code,
+// { "error": "<CODE>" }.
 
 import { createReadStream } from "node:fs";
 import { stat } from "node:fs/promises";
@@ -50,11 +50,11 @@ function servePage(template, settings, response, ui) {
 }
 
 async function serveStatic(pathname, response) {
-  // Solo file dentro public/: path.normalize toglie i "..".
+  // Only files inside public/: path.normalize strips the "..".
   const relative = path.normalize(pathname).replace(/^(\.\.[/\\])+/, "").replace(/^[/\\]+/, "");
   const file = path.join(PUBLIC_DIR, relative);
-  // Tentativo di uscire da public/ con dei "..": per chi chiama è come se il
-  // file non esistesse.
+  // An attempt to escape public/ with "..": to the caller it is as if the file did
+  // not exist.
   if (!file.startsWith(PUBLIC_DIR)) return sendError(response, 404, ROUTE_NOT_FOUND);
 
   let info;
@@ -77,10 +77,10 @@ function redirect(response, location, headers = {}) {
   response.end();
 }
 
-// Il selettore della lingua, in testata su ogni pagina. Scrive il cookie comune
-// e torna alla pagina da cui è partito: gli altri sottosistemi leggono lo stesso
-// cookie, quindi cambiano lingua anche loro alla prossima pagina. Qui non c'è
-// nessuna sessione da aggiornare: il sito vetrina non sa chi è entrato.
+// The language switcher, in the header of every page. It writes the shared cookie
+// and returns to the page it started from: the other subsystems read the same
+// cookie, so they change language too on the next page. There is no session to
+// update here: the showcase site does not know who has logged in.
 async function changeLocale(request, settings, response) {
   const change = await settings.i18n.readChange(request);
   if (!change.ok) return sendError(response, change.status, change.code);
@@ -101,14 +101,14 @@ export function createServer(settings) {
       try {
         pathname = decodeURIComponent(url.pathname);
       } catch {
-        // Un "%" non valido nell'indirizzo: nessun file può chiamarsi così.
+        // An invalid "%" in the address: no file can be called that.
         return sendError(response, 404, ROUTE_NOT_FOUND);
       }
       const template = PAGES[pathname];
       if (template) return servePage(template, settings, response, settings.i18n.pageContext(request, url));
       return await serveStatic(pathname, response);
     } catch (error) {
-      console.error(`[front-gate] errore su ${request.method} ${url.pathname}: ${error.stack ?? error}`);
+      console.error(`[front-gate] error on ${request.method} ${url.pathname}: ${error.stack ?? error}`);
       if (!response.headersSent) sendError(response, 500, INTERNAL_ERROR);
     }
   });

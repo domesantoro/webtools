@@ -1,14 +1,14 @@
-// Server HTTP di webtools_workspaces. Solo per i programmi, mai per i browser.
+// The HTTP server of webtools_workspaces. For programs only, never for browsers.
 //
-//   POST /projects/{project_id}/specs          corpo: il .md così com'è
+//   POST /projects/{project_id}/specs          body: the .md as it is
 //        X-Spec-Origin: system | third_party   → 201 { project_id, version }
 //        X-Uploaded-By: <uid>
-//   GET  /projects/{project_id}/specs/latest   → 200 il .md, con X-Spec-Version
+//   GET  /projects/{project_id}/specs/latest   → 200 the .md, with X-Spec-Version
 //
-// Conserva e non decide: non verifica che il progetto esista né di chi sia.
-// Quello lo fa chi chiama, prima di mandare il file.
+// It stores and does not decide: it does not check that the project exists, nor
+// whose it is. The caller does that, before sending the file.
 //
-// Errori: stato HTTP corretto e codice stabile, { "error": "<CODICE>" }.
+// Errors: correct HTTP status and a stable code, { "error": "<CODE>" }.
 
 import http from "node:http";
 
@@ -46,9 +46,9 @@ function sendError(response, status, code, headers = {}) {
   sendJson(response, status, { error: code }, headers);
 }
 
-// Il corpo intero, oppure `null` se supera il limite. In quel caso la risposta
-// è già partita: prima si risponde, poi si chiude, altrimenti il client non
-// leggerebbe mai il motivo e vedrebbe solo una connessione caduta.
+// The whole body, or `null` if it goes over the limit. In that case the answer has
+// already gone: first we answer, then we close, otherwise the client would never
+// read the reason and would only see a dropped connection.
 async function readBody(request, response, maxBytes) {
   const chunks = [];
   let received = 0;
@@ -78,7 +78,7 @@ async function receiveSpec(request, response, settings, projectId) {
 
   let text;
   try {
-    // `fatal`: un byte non valido è un errore, non un carattere sostituito in silenzio.
+    // `fatal`: an invalid byte is an error, not a character silently replaced.
     text = new TextDecoder("utf-8", { fatal: true }).decode(body);
   } catch {
     return sendError(response, 400, NOT_UTF8);
@@ -115,8 +115,8 @@ export function createServer(settings) {
     const url = new URL(request.url, "http://localhost");
 
     try {
-      // In ascolto su IPv6 lo stesso indirizzo arriva come "::ffff:127.0.0.1":
-      // è lo stesso IP scritto in un altro modo, non un altro chiamante.
+      // Listening on IPv6 the same address arrives as "::ffff:127.0.0.1": it is
+      // the same IP written another way, not another caller.
       const remote = (request.socket.remoteAddress ?? "").replace(/^::ffff:/, "");
       if (!settings.allowedIps.includes(remote)) {
         console.warn(`[workspaces] richiesta da IP fuori dal pool: ${remote}`);

@@ -1,19 +1,19 @@
 #!/usr/bin/env bash
-# Deployer generale: lancia tutti i sotto-deployer, in ordine.
+# The general deployer: it runs every sub-deployer, in order.
 #
-# Ogni sotto-deployer distribuisce una cosa sola (lo stile, gli script di browser, i
-# documenti e le policy, il client del sso, il client della configurazione, le lingue) e
-# sa da sé quali progetti la ricevono e dove va messa. Qui si dice soltanto quali
-# esistono e in che ordine girano.
+# Each sub-deployer distributes one thing (the style, the browser scripts, the
+# documents and the policies, the sso client, the configuration client, the
+# languages) and knows by itself which projects receive it and where it goes. Here
+# we only say which ones exist and in what order they run.
 #
-#   ./deploy.sh            lancia tutti i sotto-deployer
-#   ./deploy.sh style      lancia solo quello dello stile
-#   ./deploy.sh style sso  lancia quelli indicati, nell'ordine scritto qui
+#   ./deploy.sh            runs every sub-deployer
+#   ./deploy.sh style      runs only the style one
+#   ./deploy.sh style sso  runs the ones named, in the order written here
 set -euo pipefail
 
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-# nome → script. L'ordine di questa lista è l'ordine di esecuzione.
+# name → script. The order of this list is the order of execution.
 DEPLOYERS=(
   "style:$DIR/style_deployer/deploy.sh"
   "template:$DIR/template_deployer/deploy.sh"
@@ -26,44 +26,44 @@ DEPLOYERS=(
 )
 
 run() {
-  local nome="$1" script="$2"
+  local name="$1" script="$2"
   if [[ ! -x "$script" ]]; then
     if [[ ! -f "$script" ]]; then
-      echo "Sotto-deployer mancante: $script" >&2
+      echo "Sub-deployer missing: $script" >&2
       return 1
     fi
-    # Il file c'è ma non è eseguibile: si lancia con bash invece di fermarsi.
-    echo "== $nome (con bash: $script non è eseguibile)"
+    # The file is there but not executable: run it with bash instead of stopping.
+    echo "== $name (with bash: $script is not executable)"
     bash "$script"
     return
   fi
-  echo "== $nome"
+  echo "== $name"
   "$script"
 }
 
 main() {
-  local richiesti=("$@")
-  local eseguiti=0
+  local requested=("$@")
+  local done_count=0
 
-  for voce in "${DEPLOYERS[@]}"; do
-    local nome="${voce%%:*}" script="${voce#*:}"
-    if (( ${#richiesti[@]} > 0 )); then
-      local voluto=0
-      for r in "${richiesti[@]}"; do
-        [[ "$r" == "$nome" ]] && voluto=1
+  for entry in "${DEPLOYERS[@]}"; do
+    local name="${entry%%:*}" script="${entry#*:}"
+    if (( ${#requested[@]} > 0 )); then
+      local wanted=0
+      for r in "${requested[@]}"; do
+        [[ "$r" == "$name" ]] && wanted=1
       done
-      (( voluto )) || continue
+      (( wanted )) || continue
     fi
-    run "$nome" "$script"
-    eseguiti=$(( eseguiti + 1 ))
+    run "$name" "$script"
+    done_count=$(( done_count + 1 ))
   done
 
-  if (( eseguiti == 0 )); then
-    echo "Nessun deployer corrisponde a: ${richiesti[*]}" >&2
-    echo "Disponibili: ${DEPLOYERS[*]%%:*}" >&2
+  if (( done_count == 0 )); then
+    echo "No deployer matches: ${requested[*]}" >&2
+    echo "Available: ${DEPLOYERS[*]%%:*}" >&2
     return 2
   fi
-  echo "Deploy completato ($eseguiti sotto-deployer)."
+  echo "Deploy done ($done_count sub-deployers)."
 }
 
 main "$@"

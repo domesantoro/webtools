@@ -1,9 +1,10 @@
-// Verifica della password: il pezzo che deve funzionare identico in Python e in Node.
+// Password verification: the piece that must work identically in Python and in
+// Node.
 //
-// Il blocco qui sotto non è inventato: è stato prodotto davvero da
-// `webtools_anagraphics/credentials.py` con la password "password-di-prova".
-// Se un giorno i due scrypt smettessero di calcolare la stessa cosa, questo
-// test fallisce prima che a fallire sia un login.
+// The block below is not made up: it really was produced by
+// `webtools_anagraphics/credentials.py` with the password "password-di-prova". If
+// one day the two scrypts stopped computing the same thing, this test fails before
+// a login does.
 
 import assert from "node:assert/strict";
 import { test } from "node:test";
@@ -18,18 +19,18 @@ const CREDENTIAL = {
   hash: "sCBbG78hlwM7ZyWSi0vmMQwsURojukn7s99GhDhm51M=",
 };
 
-test("accetta la password giusta, calcolata da Python", async () => {
+test("accepts the right password, computed by Python", async () => {
   assert.equal(await verifyPassword(PASSWORD, CREDENTIAL), true);
 });
 
-test("rifiuta la password sbagliata", async () => {
+test("refuses the wrong password", async () => {
   assert.equal(await verifyPassword("password-sbagliata", CREDENTIAL), false);
   assert.equal(await verifyPassword("", CREDENTIAL), false);
-  // Un carattere in più non basta.
+  // One extra character is not enough.
   assert.equal(await verifyPassword(`${PASSWORD} `, CREDENTIAL), false);
 });
 
-test("un blocco credenziali malfatto non fa entrare e non rompe il login", async () => {
+test("a badly made credential block lets nobody in and does not break the login", async () => {
   const malfatti = [
     null,
     undefined,
@@ -38,7 +39,7 @@ test("un blocco credenziali malfatto non fa entrare e non rompe il login", async
     { ...CREDENTIAL, params: undefined },
     { ...CREDENTIAL, params: { n: 0, r: 8, p: 1, dklen: 32 } },
     { ...CREDENTIAL, salt: "" },
-    // Hash di lunghezza diversa da dklen: timingSafeEqual lancerebbe.
+    // A hash of a length other than dklen: timingSafeEqual would throw.
     { ...CREDENTIAL, hash: "c2hvcnQ=" },
   ];
   for (const credential of malfatti) {

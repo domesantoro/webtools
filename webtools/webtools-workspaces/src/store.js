@@ -1,10 +1,11 @@
-// Il filesystem dei workspace.
+// The workspaces' filesystem.
 //
 //   <root>/<project_id>/specs/spec-v001.md
-//                            spec-v002.md   ← vale l'ultima
+//                            spec-v002.md   ← the last one counts
 //
-// Qui si conserva e basta: che il progetto esista, e di chi sia, lo verifica
-// chi chiama. Il workspace di un progetto nasce alla prima specifica.
+// Here things are only stored: that the project exists, and whose it is, is
+// checked by the caller. A project's workspace is born with the first
+// specification.
 
 import { randomUUID } from "node:crypto";
 import { link, mkdir, readdir, readFile, unlink, writeFile } from "node:fs/promises";
@@ -16,16 +17,16 @@ export const ORIGINS = ["system", "third_party"];
 
 const SPEC_FILE = /^spec-v(\d{3,})\.md$/;
 
-// Oltre questo numero di scritture concorrenti sullo stesso progetto qualcosa
-// non va: meglio un errore che un ciclo senza fine.
+// Past this number of concurrent writes on the same project something is wrong:
+// better an error than an endless loop.
 const MAX_ATTEMPTS = 20;
 
-// Il controllo del formato è anche la difesa dai percorsi: un id che lo passa
-// non contiene né `/` né `..`, quindi non può uscire dalla radice.
+// The format check is also the defence against paths: an id that passes it
+// contains neither `/` nor `..`, so it cannot escape the root.
 export { isProjectId };
 
 function specsDir(root, projectId) {
-  if (!isProjectId(projectId)) throw new Error(`project_id non valido: ${projectId}`);
+  if (!isProjectId(projectId)) throw new Error(`invalid project_id: ${projectId}`);
   return path.join(root, projectId, "specs");
 }
 
@@ -48,19 +49,19 @@ async function versions(dir) {
     .sort((a, b) => a - b);
 }
 
-// Scrive una nuova versione della specifica e ne restituisce il numero.
+// Writes a new version of the specification and returns its number.
 //
-// I campi di sistema (origine, versione, chi, quando) si scrivono nella chiave
-// riservata del front matter, sopra a qualunque cosa il file dichiarasse lì.
+// The system fields (origin, version, who, when) are written into the front
+// matter's reserved key, over whatever the file declared there.
 //
-// Il file finale nasce **già completo**: si scrive un temporaneo e lo si
-// collega al nome della versione con `link`, che fallisce se quel nome esiste.
-// Due scritture concorrenti non possono prendersi lo stesso numero, e chi legge
-// l'ultima versione non trova mai un file a metà.
+// The final file is born **already complete**: a temporary one is written and then
+// linked to the version's name with `link`, which fails if that name exists. Two
+// concurrent writes cannot take the same number, and whoever reads the last
+// version never finds a half-written file.
 export async function writeSpec(root, projectId, text, { origin, uploadedBy, now = new Date() }) {
   const dir = specsDir(root, projectId);
-  // Prima si controlla il front matter, poi si tocca il disco: un file rifiutato
-  // non deve lasciare nemmeno la cartella del progetto.
+  // First the front matter is checked, then the disk is touched: a refused file
+  // must not leave even the project's directory behind.
   stamp(text, {});
   await mkdir(dir, { recursive: true });
 
@@ -80,16 +81,16 @@ export async function writeSpec(root, projectId, text, { origin, uploadedBy, now
       await link(temporary, path.join(dir, fileName(version)));
       return { version };
     } catch (error) {
-      // Un'altra scrittura ha preso questo numero: si riprova con il successivo.
+      // Another write took this number: we try again with the next one.
       if (error.code !== "EEXIST") throw error;
     } finally {
       await unlink(temporary).catch(() => {});
     }
   }
-  throw new Error(`troppe scritture concorrenti sul progetto ${projectId}`);
+  throw new Error(`too many concurrent writes on project ${projectId}`);
 }
 
-// L'ultima versione, oppure `null` se il progetto non ha specifiche.
+// The last version, or `null` if the project has no specifications.
 export async function latestSpec(root, projectId) {
   const dir = specsDir(root, projectId);
   const version = (await versions(dir)).at(-1);

@@ -1,59 +1,59 @@
-# Sottosistema `webtools-workspaces`
+# Subsystem `webtools-workspaces`
 
-> Codice: `webtools/webtools-workspaces/`. Documento aggiornato al 2026-09-21, versione 0.2.0.
+> Code: `webtools/webtools-workspaces/`. Document current as of 2026-09-21, version 0.2.0.
 
-## 0. Scheda rapida
+## 0. Quick sheet
 
 | | |
 |---|---|
-| Ruolo | Conserva i file dei progetti, oggi solo le specifiche, nel workspace di ogni progetto |
-| Tecnologia | Node ≥ 20, `node:http`, una dipendenza (`yaml`) |
-| Porta | **9400** (`listen.port` della configurazione) |
-| Configurazione | Letta all'avvio da anagraphics (`GET /configuration/workspaces`). Nessun default: se manca, il server non parte (§4) |
-| Avvio / arresto | `webtools/webtools-workspaces/webtools_workspaces.sh --start` / `--stop` |
-| PID / Log | `webtools_workspaces.pid` / `webtools_workspaces.log`, nella cartella del sottosistema |
-| Dati | Filesystem, sotto `storage.root` della configurazione (oggi `~/webtools_data/workspaces`) |
-| Chi lo chiama | `webtools_preanalyst`, da server a server |
-| Test | `npm test`: 13 test, nessun servizio acceso |
+| Role | Stores the project files, today only the specifications, in each project's workspace |
+| Technology | Node ≥ 20, `node:http`, one dependency (`yaml`) |
+| Port | **9400** (`listen.port` of the configuration) |
+| Configuration | Read at startup from anagraphics (`GET /configuration/workspaces`). No defaults: if it is missing, the server does not start (§4) |
+| Start / stop | `webtools/webtools-workspaces/webtools_workspaces.sh --start` / `--stop` |
+| PID / Log | `webtools_workspaces.pid` / `webtools_workspaces.log`, in the subsystem's directory |
+| Data | Filesystem, under `storage.root` of the configuration (today `~/webtools_data/workspaces`) |
+| Who calls it | `webtools_preanalyst`, server to server |
+| Tests | `npm test`: 13 tests, no service running |
 
-## 1. Ruolo
+## 1. Role
 
-**Conserva e non decide.** Scrive le specifiche che gli arrivano e restituisce l'ultima. Non
-verifica che il progetto esista, né di chi sia: lo fa chi chiama (preanalyst), prima di mandare
-il file. È la stessa divisione di anagraphics.
+**It stores and does not decide.** It writes the specifications it receives and returns the last
+one. It does not check that the project exists, nor whose it is: the caller (the preanalyst) does
+that, before sending the file. It is the same division as anagraphics.
 
-Perché un servizio e non una cartella condivisa: quando le macchine saranno separate, il disco
-sarà di una macchina sola. In più la difesa dai percorsi manipolati sta in un posto solo.
+Why a service and not a shared directory: when the machines are separated, the disk will belong to
+one machine only. On top of that, the defence against manipulated paths lives in one place.
 
-## 2. I file sul disco
+## 2. The files on disk
 
 ```text
 <storage.root>/
 └── <project_id>/
     └── specs/
         ├── spec-v001.md
-        └── spec-v002.md      ← vale l'ultima
+        └── spec-v002.md      ← the last one counts
 ```
 
-- Il workspace di un progetto nasce alla prima specifica.
-- `storage.root` sta **fuori dal repo**: sono file dei clienti, non codice.
-- Il `project_id` deve essere un UUID in forma canonica minuscola. Il controllo sta in
-  `commons/specs/spec_front_matter.js` (`isProjectId`) ed è anche la difesa dai percorsi: un id che lo
-  passa non contiene né `/` né `..`.
+- A project's workspace is born with the first specification.
+- `storage.root` sits **outside the repo**: these are the clients' files, not code.
+- The `project_id` must be a UUID in canonical lowercase form. The check lives in
+  `commons/specs/spec_front_matter.js` (`isProjectId`) and is also the defence against paths: an id
+  that passes it contains neither `/` nor `..`.
 
-### 2.1 Versioni
+### 2.1 Versions
 
-Ogni scrittura è una versione nuova e non si sovrascrive niente. Il file nasce **già completo**:
-si scrive un temporaneo (`.incoming-<uuid>.tmp`) e lo si collega al nome della versione con
-`link`, che fallisce se quel nome esiste già. In quel caso si riprova con il numero successivo,
-fino a 20 volte. Di conseguenza:
+Every write is a new version and nothing is overwritten. The file is born **already complete**: a
+temporary one (`.incoming-<uuid>.tmp`) is written and then linked to the version's name with
+`link`, which fails if that name already exists. In that case the next number is tried, up to 20
+times. As a result:
 
-- due scritture concorrenti non si prendono mai lo stesso numero;
-- chi legge l'ultima versione non trova mai un file a metà.
+- two concurrent writes never take the same number;
+- whoever reads the last version never finds a half-written file.
 
-### 2.2 La chiave riservata `webtools:`
+### 2.2 The reserved key `webtools:`
 
-Nel front matter di ogni file salvato il servizio scrive:
+In the front matter of every saved file the service writes:
 
 ```yaml
 webtools:
@@ -63,95 +63,102 @@ webtools:
   uploaded_by: 8ff93901-673e-44ba-b05b-56011395dcba
 ```
 
-La chiave si riscrive **sempre**, e quello che il file dichiarava lì dentro si scarta. `origin`
-la decide chi chiama, in base al canale da cui il file è arrivato:
-- `system`: la pre-specifica generata dal form;
-- `third_party`: un file caricato.
+The key is **always** rewritten, and whatever the file declared in there is discarded. `origin` is
+decided by the caller, according to the channel the file arrived through:
+- `system`: the pre-specification generated by the form;
+- `third_party`: an uploaded file.
 
-Un file caricato che dichiara `origin: system` viene salvato come `third_party`. Il resto del
-front matter e il corpo restano come sono.
+An uploaded file declaring `origin: system` is saved as `third_party`. The rest of the front matter
+and the body stay as they are.
 
-Un file senza front matter ne riceve uno con la sola chiave riservata. Un front matter rotto
-(YAML non valido, o non una mappa) viene rifiutato **prima** di toccare il disco: non resta
-nemmeno la cartella del progetto.
+A file with no front matter is given one holding the reserved key alone. A broken front matter
+(invalid YAML, or not a map) is refused **before** the disk is touched: not even the project's
+directory is left behind.
 
 ## 3. API
 
-Solo per i programmi. Errori: stato HTTP corretto e codice stabile, `{"error": "<CODICE>"}`.
+For programs only. Errors: correct HTTP status and a stable code, `{"error": "<CODE>"}`.
 
 ### 3.1 `POST /projects/{project_id}/specs`
 
-Corpo: il `.md` così com'è. Header obbligatori:
+Body: the `.md` as it is. Required headers:
 - `X-Spec-Origin: system | third_party`;
 - `X-Uploaded-By: <uid>`.
 
-| Esito | Stato | Body |
+| Outcome | Status | Body |
 |---|---|---|
-| Salvato | `201` | `{"project_id": …, "version": N}` |
-| Id non valido | `400` | `INVALID_PROJECT_ID` |
-| Origine mancante o sconosciuta | `400` | `INVALID_ORIGIN` |
-| `X-Uploaded-By` mancante | `400` | `MISSING_UPLOADER` |
-| Corpo vuoto | `400` | `EMPTY_SPEC` |
-| Non UTF-8 | `400` | `NOT_UTF8` |
-| Front matter rotto | `400` | `INVALID_FRONT_MATTER` |
-| Oltre `storage.spec_max_bytes` | `413` | `SPEC_TOO_LARGE` (si risponde prima, poi si chiude) |
+| Saved | `201` | `{"project_id": …, "version": N}` |
+| Invalid id | `400` | `INVALID_PROJECT_ID` |
+| Origin missing or unknown | `400` | `INVALID_ORIGIN` |
+| `X-Uploaded-By` missing | `400` | `MISSING_UPLOADER` |
+| Empty body | `400` | `EMPTY_SPEC` |
+| Not UTF-8 | `400` | `NOT_UTF8` |
+| Broken front matter | `400` | `INVALID_FRONT_MATTER` |
+| Over `storage.spec_max_bytes` | `413` | `SPEC_TOO_LARGE` (we answer first, then close) |
 
 ### 3.2 `GET /projects/{project_id}/specs/latest`
 
-L'ultima versione, `text/markdown`, con l'header `X-Spec-Version`. Se il progetto non ha
-specifiche, `404 SPEC_NOT_FOUND`. Serve agli step successivi.
+The last version, `text/markdown`, with the `X-Spec-Version` header. If the project has no
+specifications, `404 SPEC_NOT_FOUND`. The later steps need it.
 
-### 3.3 Comuni
+### 3.3 Shared
 
-`403 IP_NOT_ALLOWED` fuori dal pool, `404 ROUTE_NOT_FOUND`, `405 METHOD_NOT_ALLOWED`,
+`403 IP_NOT_ALLOWED` outside the pool, `404 ROUTE_NOT_FOUND`, `405 METHOD_NOT_ALLOWED`,
 `500 INTERNAL_ERROR`.
 
-## 4. Configurazione
+## 4. Configuration
 
-Il server legge la sua configurazione **all'avvio** da anagraphics, `GET /configuration/workspaces`. La fonte è `webtools/configurator/configuration/workspaces.json`; la carica in Mongo `webtools/configurator/load_configuration.sh` (lo fa già `start.sh`). Nessun default: se manca il documento o un campo, il server scrive `webtools_workspaces non parte: …` con il percorso del campo ed esce con 1. Dopo una modifica: `webtools/configurator/start.sh --restart`.
+The server reads its configuration **at startup** from anagraphics,
+`GET /configuration/workspaces`. The source is `webtools/configurator/configuration/workspaces.json`;
+`webtools/configurator/load_configuration.sh` loads it into Mongo (`start.sh` already does that). No
+defaults: if the document or a field is missing, the server prints
+`webtools_workspaces is not starting: …` with the field's path and exits with 1. After a change:
+`webtools/configurator/start.sh --restart`.
 
-Dall'ambiente arrivano solo `WEBTOOLS_ANAGRAPHICS_URL` e `WEBTOOLS_CONFIGURATION_TIMEOUT_MS`, che `--start` carica da `webtools/configurator/bootstrap.env`. Debug in primo piano: `set -a; source ../configurator/bootstrap.env; set +a; npm start`.
+Only `WEBTOOLS_ANAGRAPHICS_URL` and `WEBTOOLS_CONFIGURATION_TIMEOUT_MS` come from the environment,
+and `--start` loads them from `webtools/configurator/bootstrap.env`. Debugging in the foreground:
+`set -a; source ../configurator/bootstrap.env; set +a; npm start`.
 
-| Campo | Oggi | |
+| Field | Today | |
 |---|---|---|
 | `listen.host` | `127.0.0.1` | |
 | `listen.port` | `9400` | |
-| `access.allowed_ips` | `["127.0.0.1", "::1"]` | Il pool: confronto esatto sull'IP della connessione |
-| `storage.root` | `~/webtools_data/workspaces` | Assoluto, oppure con `~/` all'inizio (si espande nella home di chi avvia il server) |
+| `access.allowed_ips` | `["127.0.0.1", "::1"]` | The pool: an exact comparison on the connection's IP |
+| `storage.root` | `~/webtools_data/workspaces` | Absolute, or starting with `~/` (expanded in the home of whoever starts the server) |
 | `storage.spec_max_bytes` | `10485760` (10 MB) | |
 
-## 5. File
+## 5. Files
 
 ```text
 webtools/webtools-workspaces/
 ├── package.json
-├── webtools_workspaces.sh     # --start / --stop, PID con riga di comando verificata
+├── webtools_workspaces.sh     # --start / --stop, PID with a verified command line
 ├── src/
-│   ├── index.js               # avvio: legge la configurazione, o esce con 1
-│   ├── settings.js            # la configurazione `workspaces` da anagraphics → impostazioni del server
-│   ├── server.js              # rotte e codici d'errore
-│   ├── store.js               # il filesystem: versioni, scrittura atomica, lettura
-│   └── commons/               # COPIE GENERATE dai deployer: non si modificano qui
-│       ├── configuration_client.js   # da configurator/configuration_deployer
-│       └── spec_front_matter.js      # da configurator/specs_deployer
+│   ├── index.js               # startup: reads the configuration, or exits with 1
+│   ├── settings.js            # the `workspaces` configuration from anagraphics → the server's settings
+│   ├── server.js              # routes and error codes
+│   ├── store.js               # the filesystem: versions, atomic write, reading
+│   └── commons/               # GENERATED COPIES from the deployers: not edited here
+│       ├── configuration_client.js   # from configurator/configuration_deployer
+│       └── spec_front_matter.js      # from configurator/specs_deployer
 └── tests/
-    ├── store.test.js          # front matter, versioni, timbro, concorrenza
-    └── api.test.js            # le rotte, su una radice temporanea
+    ├── store.test.js          # front matter, versions, stamp, concurrency
+    └── api.test.js            # the routes, on a temporary root
 ```
 
-Dopo un clone serve `npm install` in questa cartella.
+After a clone, `npm install` is needed in this directory.
 
-## 6. Limiti noti
+## 6. Known limits
 
-- **Autenticazione tra servizi**: c'è solo il pool di IP, come per anagraphics e il sso.
-- **Nessuna cancellazione**: le versioni si accumulano. Anche un progetto cancellato da
-  anagraphics lascia il suo workspace, se ne aveva uno.
-- **Nessun elenco delle versioni** e nessuna lettura di una versione precisa: oggi serve solo l'ultima.
-- **Nessun backup** della radice.
+- **Authentication between services**: there is only the IP pool, as for anagraphics and the sso.
+- **No deletion**: versions pile up. Even a project deleted from anagraphics leaves its workspace
+  behind, if it had one.
+- **No list of versions** and no reading of a particular version: today only the last one is needed.
+- **No backup** of the root.
 
 ## 7. Changelog
 
-| Data | Versione | Modifica |
+| Date | Version | Change |
 |---|---|---|
-| 2026-09-21 | 0.2.0 | **Configurazione dal sottosistema di configurazione.** All'avvio si legge `GET /configuration/workspaces` da anagraphics (client comune `commons/configuration/configuration_client.js`); via `HOST`, `PORT`, `ALLOWED_IPS`, `WORKSPACES_ROOT`, `SPEC_MAX_BYTES` e i loro default. Senza configurazione il server non parte. |
-| 2026-09-21 | 0.1.0 | Creazione: `POST /projects/{id}/specs` e `GET /projects/{id}/specs/latest`, versioni con scrittura atomica, chiave riservata `webtools:` nel front matter, 13 test. |
+| 2026-09-21 | 0.2.0 | **Configuration from the configuration subsystem.** At startup `GET /configuration/workspaces` is read from anagraphics (shared client `commons/configuration/configuration_client.js`); gone are `HOST`, `PORT`, `ALLOWED_IPS`, `WORKSPACES_ROOT`, `SPEC_MAX_BYTES` and their defaults. Without configuration the server does not start. |
+| 2026-09-21 | 0.1.0 | Creation: `POST /projects/{id}/specs` and `GET /projects/{id}/specs/latest`, versions with atomic writes, the reserved `webtools:` key in the front matter, 13 tests. |

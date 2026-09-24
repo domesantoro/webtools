@@ -1,36 +1,36 @@
 {#
-  Layout comune dei siti webtools: guscio della pagina, testata e marchio.
+  The shared layout of the webtools sites: page shell, header and brand.
 
-  NON MODIFICARE LA COPIA DENTRO UN SOTTOSISTEMA.
-  L'originale è `webtools/commons/templates/base.njk`; le copie le distribuisce
-  `webtools/configurator/template_deployer/deploy.sh`, come per commons.css.
+  DO NOT EDIT THE COPY INSIDE A SUBSYSTEM.
+  The original is `webtools/commons/templates/base.njk`; the copies are distributed
+  by `webtools/configurator/template_deployer/deploy.sh`, as for commons.css.
 
-  Si usa così, da una pagina del sottosistema:
+  Used like this, from a page of the subsystem:
 
       {% extends "commons/base.njk" %}
       {% block main %}…{% endblock %}
 
-  Variabili attese:
-    title        obbligatoria: finisce nel <title>, seguita da " — webtools"
-    description   facoltativa: <meta name="description">
-    noindex       facoltativa: se vera, chiede ai motori di non indicizzare
-    home_link     facoltativa: se c'è, il marchio diventa un link a quell'indirizzo
+  Expected variables:
+    title         required: it ends up in <title>, followed by " — webtools"
+    description   optional: <meta name="description">
+    noindex       optional: if true, asks search engines not to index the page
+    home_link     optional: if present, the brand becomes a link to that address
     locale, t, locale_switch
-                  obbligatorie: la lingua, la traduzione e il selettore della
-                  lingua. Le dà `i18n.pageContext(request, url)` (vedi
-                  webtools/commons/i18n/webtools_i18n.js): il sottosistema le
-                  aggiunge ai dati di ogni pagina.
+                  required: the language, the translation and the language
+                  switcher. `i18n.pageContext(request, url)` gives them (see
+                  webtools/commons/i18n/webtools_i18n.js): the subsystem adds them
+                  to the data of every page.
 
-  Blocchi:
-    head             roba in più dentro <head>
-    body_attributes  attributi sul <body> (per esempio i marcatori del sso)
-    header_extra     la parte destra della testata (stato dell'accesso, menu…)
-    main             il contenuto della pagina
-    scripts          gli script, in fondo alla pagina
+  Blocks:
+    head             extra things inside <head>
+    body_attributes  attributes on the <body> (the sso markers, for instance)
+    header_extra     the right-hand part of the header (login state, menu…)
+    main             the content of the page
+    scripts          the scripts, at the bottom of the page
 
-  I fogli di stile si chiedono con percorsi **assoluti**: le pagine possono stare
-  sotto un percorso qualsiasi (per esempio /ui/login), e con un percorso relativo
-  il browser andrebbe a cercarli accanto alla pagina, dove non ci sono.
+  Stylesheets are requested with **absolute** paths: pages may live under any path
+  (/ui/login, for instance), and with a relative path the browser would look for
+  them next to the page, where they are not.
 #}<!doctype html>
 <html lang="{{ locale }}">
 <head>

@@ -1,43 +1,45 @@
-// Il prevalidator: il primo cancello del flusso.
+// The prevalidator: the first gate of the flow.
 //
-// Legge la pre-specifica appena scritta e dice se la richiesta sta dentro il
-// perimetro del servizio. Non progetta niente, non fa domande, non scrive testi
-// per il cliente: restituisce una decisione.
+// It reads the pre-specification that has just been written and says whether the
+// request sits inside the perimeter of the service. It designs nothing, asks no
+// questions, writes no text for the client: it returns a decision.
 //
-// Sei esiti, con una probabilità ciascuno — `non_sequitur`, `run_out_certain`,
-// `run_out_likely`, `underspecified`, `safe`, `ultrasafe` — e una motivazione.
+// Six outcomes, each with a probability — `non_sequitur`, `run_out_certain`,
+// `run_out_likely`, `underspecified`, `safe`, `ultrasafe` — and a reason.
 //
-// Quattro esiti stanno sull'asse della dimensione. Gli altri due no:
-// `underspecified` dice che su quell'asse la richiesta non si riesce a mettere,
-// perché ha detto troppo poco — non è un rifiuto, è un invito a scrivere
-// qualcosa in più; `non_sequitur` dice che su quell'asse la richiesta non ci
-// sta per principio, perché non c'è nessun software da misurare. Un logo, un
-// parere, una consulenza: il developer non potrebbe costruirli a nessuna
-// dimensione, quindi la richiesta si rifiuta come una che non ci sta.
+// Four outcomes sit on the size axis. The other two do not: `underspecified`
+// says the request cannot be placed on that axis, because it has said too little
+// — it is not a refusal, it is an invitation to write something more;
+// `non_sequitur` says the request does not sit on that axis in principle,
+// because there is no software to measure. A logo, an opinion, a consultancy:
+// the developer could not build them at any size, so the request is refused like
+// one that does not fit.
 //
-// Accanto agli esiti c'è il flag **interno** `off_domain`, che risponde a una
-// domanda diversa: il software che ci chiedono è un webtool? Si alza per una
-// richiesta che si potrebbe sviluppare — un sito vetrina, un negozio online,
-// un'app, un gioco, un plugin, uno script senza interfaccia — ma che non è il
-// genere di strumento che facciamo. È indipendente dalla dimensione: si può
-// essere fuori dominio ed essere `safe`. Non decide niente da solo e non arriva
-// mai al cliente: andrà al driver quando ci sarà l'area driver.
+// Alongside the outcomes there is the **internal** `off_domain` flag, which
+// answers a different question: is the software we are being asked for a webtool?
+// It is raised for a request that could be developed — a showcase site, an online
+// shop, an app, a game, a plugin, a script with no interface — but that is not
+// the kind of tool we make. It is independent of size: one can be off domain and
+// `safe`. It decides nothing on its own and never reaches the client: it will go
+// to the driver once the driver area exists.
 //
-// Da non confondere con `non_sequitur`, che invece è un esito e rifiuta: quello
-// dice che software non ce n'è affatto, questo che il software non è dei nostri.
+// Not to be confused with `non_sequitur`, which is an outcome and does refuse:
+// that one says there is no software at all, this one says the software is not
+// ours.
 //
-// I criteri non stanno qui: stanno nella policy, che è configurazione
-// (`webtools/configurator/policies/`), distribuita in `policies/`. Qui c'è solo
-// come si legge la risposta e come si decide che cosa farne.
+// The criteria are not here: they are in the policy, which is configuration
+// (`webtools/configurator/policies/`), distributed into `policies/`. Here there is
+// only how the answer is read and how it is decided what to do with it.
 //
-// Contratto verso chi chiama:
+// Contract towards the caller:
 //   { ok: true, data: { outcome, distribution, off_domain, reason, policy,
 //                       provider, model, usage } }
 //   { ok: false, reason: "unavailable" | "rejected" | "unknown_provider",
 //                usage?, model? }
 //
-// Anche quando va storto, se il modello ha risposto i token sono stati spesi:
-// `usage` c'è, e chi chiama lo registra. Un costo che non si vede non si misura.
+// Even when things go wrong, if the model answered the tokens have been spent:
+// `usage` is there, and the caller records it. A cost that cannot be seen is not
+// measured.
 
 import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
@@ -46,7 +48,7 @@ import { decide } from "./ai/webtools_ai.js";
 
 const POLICIES_DIR = fileURLToPath(new URL("../policies/", import.meta.url));
 
-// L'ordine conta: a parità di probabilità vince il primo, cioè il più prudente.
+// The order matters: on a tie the first one wins, that is, the most cautious.
 export const OUTCOMES = [
   "non_sequitur",
   "run_out_certain",
@@ -56,28 +58,28 @@ export const OUTCOMES = [
   "ultrasafe",
 ];
 
-// Gli esiti che portano la richiesta in REJECTED. Sono due e rifiutano allo
-// stesso modo, ma per ragioni diverse: `run_out_certain` è troppo grande per
-// noi, `non_sequitur` non è roba nostra a nessuna dimensione.
+// The outcomes that take the request to REJECTED. There are two, and they refuse
+// in the same way but for different reasons: `run_out_certain` is too big for us,
+// `non_sequitur` is not our kind of work at any size.
 export const REJECTING = ["non_sequitur", "run_out_certain"];
 
-// L'esito che rimanda l'utente al form: la richiesta non si riesce a giudicare,
-// serve qualche dettaglio in più.
+// The outcome that sends the user back to the form: the request cannot be judged,
+// a few more details are needed.
 export const UNDERSPECIFIED = "underspecified";
 
-// Lo schema che il modello deve rispettare. `additionalProperties: false` e
-// `required` ovunque: quello che torna o è questo, o non è niente.
+// The schema the model must respect. `additionalProperties: false` and `required`
+// everywhere: what comes back is either this, or nothing.
 //
-// **Niente `minimum` e `maximum` sulle probabilità**, per quanto verrebbe
-// naturale scriverli: l'uscita vincolata non accetta i vincoli numerici, e
-// l'API risponde `400 invalid_request_error` ("For 'number' type, properties
-// maximum, minimum are not supported"). Non sono supportati nemmeno
-// `minLength`/`maxLength`, `multipleOf` e gli schemi ricorsivi. Gli SDK li
-// tolgono da soli solo quando lo schema è uno Zod passato a `messages.parse()`;
-// qui lo schema è JSON e arriva all'API com'è scritto.
+// **No `minimum` and `maximum` on the probabilities**, however natural they would
+// be to write: constrained output does not accept numeric constraints, and the
+// API answers `400 invalid_request_error` ("For 'number' type, properties maximum,
+// minimum are not supported"). `minLength`/`maxLength`, `multipleOf` and recursive
+// schemas are not supported either. The SDKs strip them by themselves only when
+// the schema is a Zod one passed to `messages.parse()`; here the schema is JSON
+// and reaches the API exactly as written.
 //
-// Non si perde niente: l'intervallo lo controlla `normalize()`, che scarta
-// quello che non è un numero finito e non negativo e riporta la somma a 1.
+// Nothing is lost: the range is checked by `normalize()`, which discards whatever
+// is not a finite, non-negative number and brings the sum back to 1.
 const SCHEMA = {
   type: "object",
   properties: {
@@ -99,41 +101,41 @@ const SCHEMA = {
   additionalProperties: false,
 };
 
-// La policy, letta dal disco una volta sola: non cambia mentre il server gira, e
-// dopo un deploy il server si riavvia comunque.
+// The policy, read from disk once: it does not change while the server runs, and
+// after a deploy the server restarts anyway.
 const policies = new Map();
 
 async function readPolicy(name) {
   if (!policies.has(name)) {
-    const testo = await readFile(`${POLICIES_DIR}${name}.md`, "utf8");
-    // La copia porta in testa un commento HTML messo dal deployer («non
-    // modificare qui»): è roba nostra, non va nel prompt.
-    policies.set(name, testo.replace(/^\s*<!--[\s\S]*?-->\s*/, ""));
+    const text = await readFile(`${POLICIES_DIR}${name}.md`, "utf8");
+    // The copy carries an HTML comment at the top, put there by the deployer
+    // ("do not edit here"): that is ours, and does not belong in the prompt.
+    policies.set(name, text.replace(/^\s*<!--[\s\S]*?-->\s*/, ""));
   }
   return policies.get(name);
 }
 
-// La distribuzione, ripulita. Il modello dichiara sei numeri e quasi mai
-// sommano esattamente a 1: si normalizza, invece di fidarsi o di rifiutare una
-// risposta buona per un errore di aritmetica.
-//   → { distribution, outcome } oppure null se non c'è niente da normalizzare.
+// The distribution, cleaned up. The model declares six numbers and they almost
+// never sum to exactly 1: they are normalised, rather than trusted or rejected.
+//   → { distribution, outcome } or null if there is nothing to normalise.
 export function normalize(raw) {
-  const valori = OUTCOMES.map((name) => {
+  const values = OUTCOMES.map((name) => {
     const value = raw?.[name];
     return typeof value === "number" && Number.isFinite(value) && value >= 0 ? value : null;
   });
-  if (valori.some((value) => value === null)) return null;
+  if (values.some((value) => value === null)) return null;
 
-  const totale = valori.reduce((somma, value) => somma + value, 0);
-  if (totale <= 0) return null;
+  const total = values.reduce((sum, value) => sum + value, 0);
+  if (total <= 0) return null;
 
   const distribution = {};
-  OUTCOMES.forEach((name, indice) => {
-    distribution[name] = valori[indice] / totale;
+  OUTCOMES.forEach((name, index) => {
+    distribution[name] = values[index] / total;
   });
 
-  // L'esito è il più probabile. A parità vince il primo dell'elenco, cioè il più
-  // prudente: fra due letture ugualmente probabili si tiene quella che ferma.
+  // The outcome is the most probable one. On a tie the first of the list wins,
+  // that is, the most cautious: between two equally probable readings we keep the
+  // one that stops.
   let outcome = OUTCOMES[0];
   for (const name of OUTCOMES) {
     if (distribution[name] > distribution[outcome]) outcome = name;
@@ -141,21 +143,21 @@ export function normalize(raw) {
   return { distribution, outcome };
 }
 
-// Si rifiuta solo se l'esito più probabile è uno dei due che rifiutano **e**
-// supera la soglia. Due condizioni e non una: un `run_out_certain` al 35%, pur
-// essendo il più alto dei sei, non è una certezza di niente. La soglia è la
-// stessa per tutti e due: chi rifiuta lo fa alle stesse condizioni.
+// A request is refused only if the most probable outcome is one of the two that
+// refuse **and** it is above the threshold. Two conditions and not one: a
+// `run_out_certain` at 35%, highest of the six though it is, is a certainty of
+// nothing. The threshold is the same for both: whoever refuses does so on the
+// same terms.
 export function rejects(distribution, outcome, threshold) {
   return REJECTING.includes(outcome) && distribution[outcome] > threshold;
 }
 
-// Che cosa si fa di una prevalidazione riuscita: "rejected", "underspecified"
-// oppure "passed".
+// What is done with a successful prevalidation: "rejected", "underspecified" or
+// "passed".
 //
-// `attempts` è quante volte questa stessa richiesta è già tornata indietro per
-// mancanza di dettagli. Oltre il limite non si chiede più: continuare a
-// rimandare indietro qualcuno che ha già riscritto tante volte non è un invito,
-// è un muro, e allora tanto vale dirlo.
+// `attempts` is how many times this same request has already come back for want
+// of detail. Past the limit no more is asked: going on sending somebody back who
+// has already rewritten many times is not an invitation, it is a wall.
 export function verdict(distribution, outcome, { threshold, attempts, maxAttempts }) {
   if (rejects(distribution, outcome, threshold)) return "rejected";
   if (outcome !== UNDERSPECIFIED) return "passed";
@@ -166,32 +168,32 @@ export async function prevalidate(settings, spec) {
   const { policy, specMaxChars } = settings.prevalidation;
   const instructions = await readPolicy(policy);
 
-  const risposta = await decide(settings, {
+  const answer = await decide(settings, {
     instructions,
-    // Il taglio è una rete di sicurezza, non un controllo: le risposte aperte
-    // sono già limitate al momento dell'invio (`form.answer_max_chars`).
+    // The cut is a safety net, not a check: the open answers are already limited
+    // at submission time (`form.answer_max_chars`).
     document: spec.slice(0, specMaxChars),
     schema: SCHEMA,
   });
-  if (!risposta.ok) return risposta;
+  if (!answer.ok) return answer;
 
-  const { output, model, usage } = risposta.data;
-  const normalizzata = normalize(output?.distribution);
-  if (normalizzata === null) {
-    // Succede se il modello manda numeri che non sono numeri, o li mette tutti a
-    // zero: da una distribuzione vuota non si ricava nessun esito. La policy lo
-    // vieta esplicitamente — se non c'è altro, la massa va su `non_sequitur` —
-    // ma la guardia resta, perché il modello non è tenuto a obbedire. I token
-    // però sono stati spesi, e si riportano indietro.
-    console.error("[prevalidator] distribuzione non utilizzabile");
+  const { output, model, usage } = answer.data;
+  const normalized = normalize(output?.distribution);
+  if (normalized === null) {
+    // This happens if the model sends numbers that are not numbers, or puts them
+    // all at zero: an empty distribution yields no outcome. The policy forbids it
+    // explicitly — if nothing else fits, the mass goes on `non_sequitur` — but the
+    // guard stays, because the model is not obliged to obey. The tokens, however,
+    // have been spent, and they are reported back.
+    console.error("[prevalidator] unusable distribution");
     return { ok: false, reason: "rejected", usage, model };
   }
 
   return {
     ok: true,
     data: {
-      outcome: normalizzata.outcome,
-      distribution: normalizzata.distribution,
+      outcome: normalized.outcome,
+      distribution: normalized.distribution,
       off_domain: {
         flag: Boolean(output.off_domain?.flag),
         reason: String(output.off_domain?.reason ?? ""),

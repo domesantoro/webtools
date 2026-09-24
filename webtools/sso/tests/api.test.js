@@ -1,5 +1,5 @@
-// Le tre rotte, provate per intero ma senza anagraphics acceso: al suo posto
-// c'è un archivio finto che risponde come risponderebbe lui, compresi i guasti.
+// The routes, tested end to end but without anagraphics running: in its place
+// there is a fake store that answers as it would, failures included.
 
 import assert from "node:assert/strict";
 import { after, test } from "node:test";
@@ -51,10 +51,10 @@ const SETTINGS = {
 const notFound = (code) => ({ ok: false, reason: "not_found", code });
 const down = { ok: false, reason: "unavailable" };
 
-// Archivio finto: utenti in una mappa, sessioni in un'altra. `broken` spegne
-// tutto, come se anagraphics non rispondesse.
+// Fake store: users in one map, sessions in another. `broken` switches everything
+// off, as if anagraphics were not answering.
 function fakeAnagraphics({ users: iniziali = [{ user: USER, credential: CREDENTIAL }], broken = false } = {}) {
-  // Copie: la lingua salvata nel profilo di una prova non deve finire nella successiva.
+  // Copies: a language saved in a profile in one test must not leak into the next.
   const users = iniziali.map((entry) => ({ ...entry, user: { ...entry.user } }));
   const sessions = new Map();
   const tickets = new Map();
@@ -111,8 +111,8 @@ function fakeAnagraphics({ users: iniziali = [{ user: USER, credential: CREDENTI
       tickets.set(ticket.ticket, ticket);
       return { ok: true, data: ticket };
     },
-    // Come anagraphics: legge e cancella insieme, quindi il secondo che passa
-    // non trova più niente.
+    // Like anagraphics: it reads and deletes together, so the second to come along
+    // finds nothing.
     async consumeTicket(settings, ticket) {
       if (broken) return down;
       const conservato = tickets.get(ticket);
@@ -125,7 +125,7 @@ function fakeAnagraphics({ users: iniziali = [{ user: USER, credential: CREDENTI
 
 const servers = [];
 
-// Avvia il sso su una porta libera e restituisce come chiamarlo.
+// Starts the sso on a free port and returns how to call it.
 async function start(client, settings = SETTINGS) {
   const server = createServer(settings, client);
   await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
@@ -149,7 +149,7 @@ async function start(client, settings = SETTINGS) {
         headers: token ? { authorization: `Bearer ${token}` } : {},
       }),
     raw: (path, options) => fetch(`${base}${path}`, options),
-    // Le pagine: il browser non segue da solo i redirect, qui li guardiamo noi.
+    // The pages: the browser does not follow redirects by itself, here we look at them.
     page: (path, cookie) =>
       fetch(`${base}${path}`, {
         redirect: "manual",
@@ -174,7 +174,7 @@ async function start(client, settings = SETTINGS) {
   };
 }
 
-// Il valore del cookie da rimandare indietro, come farebbe un browser.
+// The cookie value to send back, as a browser would.
 function cookieFrom(response, name = "webtools_sso") {
   const header = response.headers.getSetCookie?.()[0] ?? response.headers.get("set-cookie") ?? "";
   const match = new RegExp(`${name}=([^;]*)`).exec(header);
@@ -185,7 +185,7 @@ after(() => {
   for (const server of servers) server.close();
 });
 
-test("login, stato, logout: il giro completo", async () => {
+test("login, state, logout: the full round trip", async () => {
   const archive = fakeAnagraphics();
   const sso = await start(archive);
 
@@ -197,7 +197,7 @@ test("login, stato, logout: il giro completo", async () => {
   assert.equal(session.username, USER.username);
   assert.equal(session.data.screen_name, "Dome");
   assert.ok(session.token);
-  // La sessione è finita nell'archivio, non è rimasta dentro il sso.
+  // The session ended up in the store, it did not stay inside the sso.
   assert.equal(archive.sessions.has(session.token), true);
 
   const status = await sso.session(session.token);
@@ -214,22 +214,22 @@ test("login, stato, logout: il giro completo", async () => {
   assert.deepEqual(await after.json(), { logged: false });
 });
 
-test("una seconda sessione dello stesso utente non tocca la prima", async () => {
+test("a second session of the same user does not touch the first", async () => {
   const sso = await start(fakeAnagraphics());
-  const credenziali = { username: USER.username, password: PASSWORD };
-  const prima = (await (await sso.login(credenziali)).json()).session;
-  const seconda = (await (await sso.login(credenziali)).json()).session;
+  const credentials = { username: USER.username, password: PASSWORD };
+  const first = (await (await sso.login(credentials)).json()).session;
+  const second = (await (await sso.login(credentials)).json()).session;
 
-  assert.notEqual(prima.token, seconda.token);
-  await sso.logout(prima.token);
-  assert.equal((await (await sso.session(seconda.token)).json()).logged, true);
+  assert.notEqual(first.token, second.token);
+  await sso.logout(first.token);
+  assert.equal((await (await sso.session(second.token)).json()).logged, true);
 });
 
-test("tutti i modi di non entrare rispondono la stessa cosa", async () => {
+test("every way of not getting in answers the same thing", async () => {
   const archive = fakeAnagraphics({
     users: [
       { user: USER, credential: CREDENTIAL },
-      { user: { ...USER, username: "senza@example.com" }, credential: null },
+      { user: { ...USER, username: "without@example.com" }, credential: null },
       { user: { ...USER, username: "spento@example.com", active: false }, credential: CREDENTIAL },
     ],
   });
@@ -237,8 +237,8 @@ test("tutti i modi di non entrare rispondono la stessa cosa", async () => {
 
   const tentativi = [
     { username: USER.username, password: "sbagliata" },
-    { username: "sconosciuto@example.com", password: PASSWORD },
-    { username: "senza@example.com", password: PASSWORD },
+    { username: "unknown@example.com", password: PASSWORD },
+    { username: "without@example.com", password: PASSWORD },
     { username: "spento@example.com", password: PASSWORD },
   ];
   for (const tentativo of tentativi) {
@@ -249,14 +249,14 @@ test("tutti i modi di non entrare rispondono la stessa cosa", async () => {
   assert.equal(archive.sessions.size, 0);
 });
 
-test("login con corpo non valido", async () => {
+test("login with an invalid body", async () => {
   const sso = await start(fakeAnagraphics());
   const corpi = [
     {},
     { username: USER.username },
     { username: USER.username, password: "" },
     { username: 42, password: PASSWORD },
-    "non è json",
+    "not json",
     "[]",
   ];
   for (const corpo of corpi) {
@@ -266,7 +266,7 @@ test("login con corpo non valido", async () => {
   }
 });
 
-test("senza token non si chiede né lo stato né il logout", async () => {
+test("with no token neither the state nor the logout can be asked for", async () => {
   const sso = await start(fakeAnagraphics());
   for (const response of [await sso.session(null), await sso.logout(null)]) {
     assert.equal(response.status, 400);
@@ -274,37 +274,37 @@ test("senza token non si chiede né lo stato né il logout", async () => {
   }
 });
 
-test("token sconosciuto: non loggato, e il logout resta ripetibile", async () => {
+test("unknown token: not logged in, and the logout stays repeatable", async () => {
   const sso = await start(fakeAnagraphics());
-  const status = await sso.session("token-che-non-esiste");
+  const status = await sso.session("token-that-does-not-exist");
   assert.equal(status.status, 200);
   assert.deepEqual(await status.json(), { logged: false });
 
-  const loggedOut = await sso.logout("token-che-non-esiste");
+  const loggedOut = await sso.logout("token-that-does-not-exist");
   assert.equal(loggedOut.status, 200);
   assert.deepEqual(await loggedOut.json(), { logged: false });
 });
 
-test("una sessione scaduta non è loggata", async () => {
+test("an expired session is not logged in", async () => {
   const archive = fakeAnagraphics();
-  // TTL negativo: la sessione nasce già scaduta.
+  // Negative TTL: the session is born already expired.
   const sso = await start(archive, { ...SETTINGS, sessionTtlSeconds: -1 });
   const { session } = await (await sso.login({ username: USER.username, password: PASSWORD })).json();
 
   const status = await sso.session(session.token);
   assert.equal(status.status, 200);
   assert.deepEqual(await status.json(), { logged: false });
-  // Non è stata cancellata dal sso: la toglie l'indice TTL di anagraphics.
+  // It was not deleted by the sso: anagraphics' TTL index removes it.
   assert.equal(archive.sessions.has(session.token), true);
 });
 
-test("con anagraphics giù non si entra, e non si dice a nessuno che è uscito", async () => {
+test("with anagraphics down nobody gets in, and nobody is told they are out", async () => {
   const sso = await start(fakeAnagraphics({ broken: true }));
 
   for (const response of [
     await sso.login({ username: USER.username, password: PASSWORD }),
-    // Qui sta il punto: rispondere { logged: false } farebbe sloggare tutti
-    // a ogni guasto di Mongo. Non lo sappiamo, e lo diciamo.
+    // Here is the point: answering { logged: false } would log everybody out at
+    // every Mongo failure. We do not know, and we say so.
     await sso.session("un-token-qualsiasi"),
     await sso.logout("un-token-qualsiasi"),
   ]) {
@@ -313,12 +313,12 @@ test("con anagraphics giù non si entra, e non si dice a nessuno che è uscito",
   }
 });
 
-test("rotte e metodi", async () => {
+test("routes and methods", async () => {
   const sso = await start(fakeAnagraphics());
 
-  const sconosciuta = await sso.raw("/nope");
-  assert.equal(sconosciuta.status, 404);
-  assert.deepEqual(await sconosciuta.json(), { error: "ROUTE_NOT_FOUND" });
+  const unknown = await sso.raw("/nope");
+  assert.equal(unknown.status, 404);
+  assert.deepEqual(await unknown.json(), { error: "ROUTE_NOT_FOUND" });
 
   const metodoSbagliato = await sso.raw("/login");
   assert.equal(metodoSbagliato.status, 405);
@@ -327,7 +327,7 @@ test("rotte e metodi", async () => {
 
 /* ----------------------------------------------- le pagine e i biglietti */
 
-test("la pagina di login mostra il form, e ricorda dove tornare", async () => {
+test("the login page shows the form, and remembers where to go back to", async () => {
   const sso = await start(fakeAnagraphics());
   const response = await sso.page(`/ui/login?next=${encodeURIComponent(NEXT)}`);
   const html = await response.text();
@@ -339,18 +339,18 @@ test("la pagina di login mostra il form, e ricorda dove tornare", async () => {
   assert.match(html, /name="next" value="http:\/\/127\.0\.0\.1:9200\/"/);
 });
 
-test("un next fuori dagli indirizzi ammessi non viene usato", async () => {
+test("a next outside the allowed addresses is not used", async () => {
   const sso = await start(fakeAnagraphics());
   const response = await sso.page("/ui/login?next=http://sito-finto.example/ruba");
   const html = await response.text();
 
-  // Al suo posto c'è il primo indirizzo ammesso: la pagina di login non può
-  // diventare il trampolino per mandare la gente dove capita.
+  // In its place there is the first allowed address: the login page cannot become
+  // the springboard for sending people wherever.
   assert.doesNotMatch(html, /sito-finto/);
   assert.match(html, /name="next" value="http:\/\/127\.0\.0\.1:9200"/);
 });
 
-test("il giro completo del login dalle pagine", async () => {
+test("the full login round trip from the pages", async () => {
   const archive = fakeAnagraphics();
   const sso = await start(archive);
 
@@ -360,15 +360,15 @@ test("il giro completo del login dalle pagine", async () => {
     next: NEXT,
   });
 
-  // Si torna al sottosistema, con il biglietto nell'indirizzo…
+  // We go back to the subsystem, with the ticket in the address…
   assert.equal(entrato.status, 303);
   const location = new URL(entrato.headers.get("location"));
   assert.equal(location.origin, "http://127.0.0.1:9200");
   const ticket = location.searchParams.get("ticket");
   assert.ok(ticket);
 
-  // …e il cookie del sso, che serve a non richiedere la password al prossimo
-  // sottosistema. Il token non compare mai nell'indirizzo.
+  // …and the sso's cookie, which is what keeps the next subsystem from asking for
+  // the password. The token never appears in the address.
   const cookie = cookieFrom(entrato);
   assert.ok(cookie);
   assert.doesNotMatch(location.search, /token/);
@@ -376,37 +376,37 @@ test("il giro completo del login dalle pagine", async () => {
   assert.match(setCookie, /HttpOnly/);
   assert.match(setCookie, /SameSite=Lax/);
 
-  // Lo scambio, da server a server: il sottosistema riceve la sessione.
-  const scambiato = await sso.exchange({ ticket, service: "http://127.0.0.1:9200" });
-  assert.equal(scambiato.status, 200);
-  const body = await scambiato.json();
+  // The exchange, server to server: the subsystem receives the session.
+  const exchanged = await sso.exchange({ ticket, service: "http://127.0.0.1:9200" });
+  assert.equal(exchanged.status, 200);
+  const body = await exchanged.json();
   assert.equal(body.logged, true);
   assert.equal(body.session.username, USER.username);
 
-  // Il biglietto vale una volta sola.
+  // The ticket is good once.
   const ripetuto = await sso.exchange({ ticket, service: "http://127.0.0.1:9200" });
   assert.equal(ripetuto.status, 404);
   assert.deepEqual(await ripetuto.json(), { error: "TICKET_NOT_FOUND" });
 });
 
-test("chi è già entrato non ridigita la password", async () => {
+test("whoever is already in does not retype the password", async () => {
   const archive = fakeAnagraphics();
   const sso = await start(archive);
   const cookie = cookieFrom(
     await sso.loginForm({ username: USER.username, password: PASSWORD, next: NEXT })
   );
 
-  // Secondo sottosistema: stessa pagina di login, ma con il cookie in mano.
+  // Second subsystem: the same login page, but with the cookie in hand.
   const response = await sso.page(`/ui/login?next=${encodeURIComponent(NEXT)}`, cookie);
   assert.equal(response.status, 303);
   const location = new URL(response.headers.get("location"));
   assert.ok(location.searchParams.get("ticket"));
 
-  // Una sola sessione per tutti e due: è il punto del single sign-on.
+  // One session for both: that is the point of single sign-on.
   assert.equal(archive.sessions.size, 1);
 });
 
-test("un biglietto emesso per un sottosistema non vale per un altro", async () => {
+test("a ticket issued for one subsystem is not good for another", async () => {
   const sso = await start(fakeAnagraphics());
   const entrato = await sso.loginForm({
     username: USER.username,
@@ -420,7 +420,7 @@ test("un biglietto emesso per un sottosistema non vale per un altro", async () =
   assert.deepEqual(await response.json(), { error: "TICKET_MISMATCH" });
 });
 
-test("password sbagliata: si resta sulla pagina, senza cookie e senza biglietto", async () => {
+test("wrong password: we stay on the page, with no cookie and no ticket", async () => {
   const sso = await start(fakeAnagraphics());
   const response = await sso.loginForm({
     username: USER.username,
@@ -432,11 +432,11 @@ test("password sbagliata: si resta sulla pagina, senza cookie e senza biglietto"
   assert.equal(response.status, 401);
   assert.equal(response.headers.get("set-cookie"), null);
   assert.match(html, /Username o password non validi/);
-  // Lo username resta scritto, la password no.
+  // The username stays written, the password does not.
   assert.match(html, new RegExp(`value="${USER.username}"`));
 });
 
-test("esci chiude la sessione condivisa e toglie il cookie", async () => {
+test("logging out closes the shared session and removes the cookie", async () => {
   const archive = fakeAnagraphics();
   const sso = await start(archive);
   const entrato = await sso.loginForm({
@@ -451,11 +451,11 @@ test("esci chiude la sessione condivisa e toglie il cookie", async () => {
   assert.equal(uscito.status, 303);
   assert.equal(uscito.headers.get("location"), NEXT);
   assert.match(uscito.headers.getSetCookie()[0], /Max-Age=0/);
-  // La sessione non c'è più: nessun sottosistema riconosce più quel token.
+  // The session is gone: no subsystem recognises that token any more.
   assert.equal(archive.sessions.size, 0);
 });
 
-test("la registrazione dice che non è attiva", async () => {
+test("registration says it is not active", async () => {
   const sso = await start(fakeAnagraphics());
   const response = await sso.page(`/ui/register?next=${encodeURIComponent(NEXT)}`, "webtools_locale=it");
   const html = await response.text();
@@ -464,7 +464,7 @@ test("la registrazione dice che non è attiva", async () => {
   assert.match(html, /non è ancora attiva/);
 });
 
-test("scambio con corpo non valido", async () => {
+test("exchange with an invalid body", async () => {
   const sso = await start(fakeAnagraphics());
   for (const body of [{}, { ticket: "x" }, { service: "http://127.0.0.1:9200" }]) {
     const response = await sso.exchange(body);
@@ -473,9 +473,9 @@ test("scambio con corpo non valido", async () => {
   }
 });
 
-test("fuori dal pool di IP non si vede niente", async () => {
-  // Il pool vuoto è il modo più diretto per essere "fuori": la chiamata parte
-  // comunque da 127.0.0.1, che ora non è più ammesso.
+test("outside the IP pool nothing is visible", async () => {
+  // An empty pool is the most direct way of being "outside": the call still starts
+  // from 127.0.0.1, which is now no longer allowed.
   const sso = await start(fakeAnagraphics(), { ...SETTINGS, allowedIps: [] });
   for (const response of [
     await sso.login({ username: USER.username, password: PASSWORD }),
@@ -487,9 +487,9 @@ test("fuori dal pool di IP non si vede niente", async () => {
   }
 });
 
-/* ------------------------------------------------------------- la lingua */
+/* ---------------------------------------------------------- the language */
 
-test("la pagina è nella lingua del cookie, e il selettore torna alla pagina", async () => {
+test("the page is in the cookie's language, and the switcher returns to the page", async () => {
   const sso = await start(fakeAnagraphics());
   const path = `/ui/login?next=${encodeURIComponent(NEXT)}`;
 
@@ -503,9 +503,9 @@ test("la pagina è nella lingua del cookie, e il selettore torna alla pagina", a
   assert.match(inglese, /tailor-made tools/);
 });
 
-test("POST /locale scrive il cookie comune e torna alla pagina", async () => {
+test("POST /locale writes the shared cookie and returns to the page", async () => {
   const sso = await start(fakeAnagraphics());
-  const cambia = (body) =>
+  const change = (body) =>
     sso.raw("/locale", {
       method: "POST",
       redirect: "manual",
@@ -513,21 +513,21 @@ test("POST /locale scrive il cookie comune e torna alla pagina", async () => {
       body,
     });
 
-  const ok = await cambia("locale=it&return_to=%2Fui%2Flogin%3Fnext%3Dx");
+  const ok = await change("locale=it&return_to=%2Fui%2Flogin%3Fnext%3Dx");
   assert.equal(ok.status, 303);
   assert.equal(ok.headers.get("location"), "/ui/login?next=x");
   assert.match(ok.headers.get("set-cookie"), /^webtools_locale=it; Path=\//);
 
-  // Il ritorno è solo un percorso di questo server.
-  const fuori = await cambia("locale=it&return_to=%2F%2Fsito-finto.example");
-  assert.equal(fuori.headers.get("location"), "/");
+  // The return is only a path of this server.
+  const outside = await change("locale=it&return_to=%2F%2Fsito-finto.example");
+  assert.equal(outside.headers.get("location"), "/");
 
-  const sconosciuta = await cambia("locale=xx&return_to=%2F");
-  assert.equal(sconosciuta.status, 400);
-  assert.deepEqual(await sconosciuta.json(), { error: "INVALID_LOCALE" });
+  const unknown = await change("locale=xx&return_to=%2F");
+  assert.equal(unknown.status, 400);
+  assert.deepEqual(await unknown.json(), { error: "INVALID_LOCALE" });
 });
 
-test("al primo login la lingua della pagina diventa quella del profilo", async () => {
+test("at the first login the page's language becomes the profile's", async () => {
   const archive = fakeAnagraphics();
   const sso = await start(archive);
   const entrato = await sso.loginForm(
@@ -542,7 +542,7 @@ test("al primo login la lingua della pagina diventa quella del profilo", async (
   assert.ok(entrato.headers.getSetCookie().some((c) => c.startsWith("webtools_locale=it;")));
 });
 
-test("la lingua del profilo vince su quella della pagina, e riscrive il cookie", async () => {
+test("the profile's language wins over the page's, and rewrites the cookie", async () => {
   const archive = fakeAnagraphics({ users: [{ user: { ...USER, locale: "en" }, credential: CREDENTIAL }] });
   const sso = await start(archive);
   const entrato = await sso.loginForm(
@@ -554,45 +554,45 @@ test("la lingua del profilo vince su quella della pagina, e riscrive il cookie",
   assert.ok(entrato.headers.getSetCookie().some((c) => c.startsWith("webtools_locale=en;")));
 });
 
-test("POST /session/locale: la lingua va nella sessione e nel profilo", async () => {
+test("POST /session/locale: the language goes into the session and into the profile", async () => {
   const archive = fakeAnagraphics();
   const sso = await start(archive);
   const token = (await (await sso.login({ username: USER.username, password: PASSWORD })).json()).session.token;
-  const cambia = (body, bearer = token) =>
+  const change = (body, bearer = token) =>
     sso.raw("/session/locale", {
       method: "POST",
       headers: { "content-type": "application/json", ...(bearer ? { authorization: `Bearer ${bearer}` } : {}) },
       body: JSON.stringify(body),
     });
 
-  const ok = await cambia({ locale: "it" });
+  const ok = await change({ locale: "it" });
   assert.equal(ok.status, 200);
   assert.equal((await ok.json()).session.data.locale, "it");
   assert.equal(archive.users[0].user.locale, "it");
 
-  const sconosciuta = await cambia({ locale: "xx" });
-  assert.equal(sconosciuta.status, 400);
-  assert.deepEqual(await sconosciuta.json(), { error: "INVALID_LOCALE" });
+  const unknown = await change({ locale: "xx" });
+  assert.equal(unknown.status, 400);
+  assert.deepEqual(await unknown.json(), { error: "INVALID_LOCALE" });
 
-  const senzaToken = await cambia({ locale: "it" }, null);
-  assert.deepEqual(await senzaToken.json(), { error: "MISSING_TOKEN" });
+  const noToken = await change({ locale: "it" }, null);
+  assert.deepEqual(await noToken.json(), { error: "MISSING_TOKEN" });
 
-  const altroToken = await cambia({ locale: "it" }, "token-che-non-esiste");
-  assert.deepEqual(await altroToken.json(), { logged: false });
+  const otherToken = await change({ locale: "it" }, "token-that-does-not-exist");
+  assert.deepEqual(await otherToken.json(), { logged: false });
 });
 
-test("il selettore delle pagine del sso, per chi è entrato, salva la lingua", async () => {
+test("the sso pages' switcher, for whoever has logged in, saves the language", async () => {
   const archive = fakeAnagraphics();
   const sso = await start(archive);
   const cookie = cookieFrom(await sso.loginForm({ username: USER.username, password: PASSWORD, next: NEXT }));
 
-  const cambiato = await sso.raw("/locale", {
+  const changed = await sso.raw("/locale", {
     method: "POST",
     redirect: "manual",
     headers: { "content-type": "application/x-www-form-urlencoded", cookie },
     body: "locale=it&return_to=%2Fui%2Fregister",
   });
-  assert.equal(cambiato.status, 303);
+  assert.equal(changed.status, 303);
   assert.equal(archive.users[0].user.locale, "it");
   const [session] = archive.sessions.values();
   assert.equal(session.data.locale, "it");

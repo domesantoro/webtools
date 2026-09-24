@@ -1,134 +1,158 @@
-# Sottosistema `anagraphics`
+# Subsystem `anagraphics`
 
-> Documentazione di riferimento per sviluppo, manutenzione, troubleshooting, bugfix e metriche.
-> Ultimo aggiornamento: 2026-09-23 · versione del sottosistema: `0.9.0`.
-> Codice: `webtools/anagraphics/` (percorsi relativi alla root del workspace `ftab - webtools/`).
+> Reference documentation for development, maintenance, troubleshooting, bugfixing and metrics.
+> Last updated: 2026-09-23 · subsystem version: `0.9.0`.
+> Code: `webtools/anagraphics/` (paths relative to the root of the `ftab - webtools/` workspace).
 
 ---
 
-## 0. Scheda rapida
+## 0. Quick sheet
 
-| Voce | Valore |
+| Item | Value |
 |---|---|
-| Cosa fa | API HTTP interna con la **configurazione di tutti i sottosistemi** (è il sottosistema di configurazione), l'anagrafica dei progetti, i driver e i loro codici sconto, gli **utenti** e le **sessioni** |
+| What it does | An internal HTTP API holding the **configuration of every subsystem** (it is the configuration subsystem), the record of the projects, the drivers and their discount codes, the **users** and the **sessions** |
 | Stack | Python 3.13 · FastAPI · uvicorn · pymongo · MongoDB 8 |
-| Codice | `webtools/anagraphics/` |
-| Avvio (background, slegato dal terminale) | `webtools/anagraphics/webtools_anagraphics.sh --start` |
-| Arresto | `webtools/anagraphics/webtools_anagraphics.sh --stop` |
-| Processo | `…/webtools/anagraphics/.venv/bin/python -m webtools_anagraphics` |
+| Code | `webtools/anagraphics/` |
+| Start (background, detached from the terminal) | `webtools/anagraphics/webtools_anagraphics.sh --start` |
+| Stop | `webtools/anagraphics/webtools_anagraphics.sh --stop` |
+| Process | `…/webtools/anagraphics/.venv/bin/python -m webtools_anagraphics` |
 | PID / Log | `webtools/anagraphics/webtools_anagraphics.pid` / `webtools/anagraphics/webtools_anagraphics.log` |
-| Indirizzo | `WEBTOOLS_ANAGRAPHICS_URL` in `webtools/configurator/bootstrap.env` (oggi `http://127.0.0.1:9100`) |
-| Database | `WEBTOOLS_MONGO_URI` / `WEBTOOLS_MONGO_DB` in `bootstrap.env` (oggi `mongodb://localhost:27017`, DB `webtools`) |
-| Collection | `configuration` (chiave `subsystem`), `projects` (chiave `project_id`), `drivers` (chiave `uid`), `discounts` (chiave `discount_code`), `users` (chiave `username`), `sessions` (chiave `token`) |
-| Scritture | Sessioni, biglietti e lingua: `POST /sessions`, `DELETE /sessions/{token}`, `DELETE /sessions?uid=…`, `PUT /sessions/{token}/locale`, `PUT /users/{username}/locale`, `POST /tickets`, `DELETE /tickets/{ticket}`. Tutto il resto è di sola lettura |
-| Accesso | Solo dagli IP in `access.allowed_ips` della sua configurazione; gli altri ricevono `403` |
-| Configurazione | Letta all'avvio da Mongo (documento `anagraphics` di `configuration`). Nessun default: se manca, il server non parte (§7) |
-| Autenticazione | Nessuna: l'unico controllo è il pool di IP. Chi autentica è `webtools_sso`, che usa questi dati |
-| Test | `uv run pytest` (44 test, usa il DB `webtools_test`, cancellato alla fine) |
-| Stato | Letture su sei collection, scritture su sessioni e biglietti. CRUD completo previsto più avanti |
+| Address | `WEBTOOLS_ANAGRAPHICS_URL` in `webtools/configurator/bootstrap.env` (today `http://127.0.0.1:9100`) |
+| Database | `WEBTOOLS_MONGO_URI` / `WEBTOOLS_MONGO_DB` in `bootstrap.env` (today `mongodb://localhost:27017`, DB `webtools`) |
+| Collections | `configuration` (key `subsystem`), `projects` (key `project_id`), `drivers` (key `uid`), `discounts` (key `discount_code`), `users` (key `username`), `sessions` (key `token`) |
+| Writes | Sessions, tickets and language: `POST /sessions`, `DELETE /sessions/{token}`, `DELETE /sessions?uid=…`, `PUT /sessions/{token}/locale`, `PUT /users/{username}/locale`, `POST /tickets`, `DELETE /tickets/{ticket}`. Everything else is read-only |
+| Access | Only from the IPs in `access.allowed_ips` of its configuration; the others get a `403` |
+| Configuration | Read at startup from Mongo (the `anagraphics` document of `configuration`). No defaults: if it is missing, the server does not start (§7) |
+| Authentication | None: the only check is the IP pool. The one who authenticates is `webtools_sso`, which uses this data |
+| Tests | `uv run pytest` (70 tests, using the `webtools_test` DB, dropped at the end) |
+| State | Reads on six collections, writes on sessions and tickets. A full CRUD is planned later |
 
-Prova veloce, con il server acceso:
+Quick check, with the server running:
 ```sh
 curl http://127.0.0.1:9100/configuration/front-gate   # {"subsystem":"front-gate","listen":{…},"subsystems_infos":{…},"screen_infos":{…}}
 curl http://127.0.0.1:9100/projects/1f251606-bdba-40c4-bbee-bfedc6e57f70       # {"project_id":"1f251606-bdba-40c4-bbee-bfedc6e57f70"}
-curl http://127.0.0.1:9100/drivers                                               # tutti i driver
-curl http://127.0.0.1:9100/drivers/7633be3d-e701-42ca-9fea-6c6d1bb4b7d1          # il driver Dome
-curl http://127.0.0.1:9100/drivers/7633be3d-e701-42ca-9fea-6c6d1bb4b7d1/discounts   # i suoi codici sconto
-curl http://127.0.0.1:9100/discounts/e8013cf2-34eb-4bc3-8a34-b08fb24a1bf3        # un singolo codice sconto
+curl http://127.0.0.1:9100/drivers                                               # every driver
+curl http://127.0.0.1:9100/drivers/7633be3d-e701-42ca-9fea-6c6d1bb4b7d1          # the driver Dome
+curl http://127.0.0.1:9100/drivers/7633be3d-e701-42ca-9fea-6c6d1bb4b7d1/discounts   # their discount codes
+curl http://127.0.0.1:9100/discounts/e8013cf2-34eb-4bc3-8a34-b08fb24a1bf3        # a single discount code
 ```
 
 ---
 
-## 1. Scopo e ruolo nel sistema
+## 1. Purpose and role in the system
 
-Il progetto è una "fabbrica" di piccoli software su misura, composta da più sottosistemi: il sito vetrina `front-gate`, i sistemi di pre-analisi e analisi, l'interfaccia dei driver, le demo e altri ancora (vedi `contesto/02. contesto_aggiornato.md`). `anagraphics` è la **fonte dati interna** condivisa:
+The project is a "factory" of small bespoke software, made of several subsystems: the showcase
+site `front-gate`, the pre-analysis and analysis systems, the driver interface, the demos and
+others still (see `contesto/02. contesto_aggiornato.md`). `anagraphics` is the shared **internal
+data source**:
 
-- **Configurazioni dei sottosistemi** (collection `configuration`): **ogni** sottosistema legge da qui la propria configurazione all'avvio, cercandola per nome, e senza non parte. I documenti si scrivono in `webtools/configurator/configuration/<nome>.json` e li carica `webtools/configurator/load_configuration.sh` (§7). Anagraphics stesso legge la sua (documento `anagraphics`) direttamente da Mongo.
-- **Progetti** (collection `projects`): ogni progetto cliente ha un documento, identificato da `project_id`. Nasce con `POST /projects` quando il cliente manda la pre-analisi (§6.3.1); i file del progetto (specifiche) non stanno qui ma in `webtools-workspaces`.
-- **Driver** (collection `drivers`): le persone che supervisionano i progetti, identificate da `uid`.
-- **Codici sconto** (collection `discounts`): ogni codice appartiene a un driver, identificato da `discount_code`.
-- **Utenti** (collection `users`): chi può entrare nel sistema, identificato da `username`, con il blocco delle credenziali.
-- **Sessioni** (collection `sessions`): chi è entrato e fino a quando, identificato dal `token`.
+- **Subsystem configurations** (collection `configuration`): **every** subsystem reads its own
+  configuration from here at startup, looking it up by name, and without it does not start. The
+  documents are written in `webtools/configurator/configuration/<name>.json` and
+  `webtools/configurator/load_configuration.sh` loads them (§7). Anagraphics itself reads its own
+  (the `anagraphics` document) straight from Mongo.
+- **Projects** (collection `projects`): every client project has a document, identified by
+  `project_id`. It is born with `POST /projects` when the client sends the pre-analysis (§6.3.1);
+  the project's files (specifications) do not live here but in `webtools-workspaces`.
+- **Drivers** (collection `drivers`): the people who supervise the projects, identified by `uid`.
+- **Discount codes** (collection `discounts`): each code belongs to a driver, identified by
+  `discount_code`.
+- **Users** (collection `users`): who may enter the system, identified by `username`, with the
+  credentials block.
+- **Sessions** (collection `sessions`): who has logged in and until when, identified by the
+  `token`.
 
-È un servizio **interno**: non è pensato per essere esposto su internet e oggi accetta solo chiamate da localhost.
+It is an **internal** service: it is not meant to be exposed on the internet and today it accepts
+calls from localhost only.
 
-**Che cosa non fa.** Utenti e sessioni stanno qui, ma il login no: `anagraphics` non confronta password e non decide se una sessione vale ancora. Conserva e restituisce. A verificare le credenziali, a generare i token e a giudicare le scadenze è `webtools_sso` (`docs/subsystems/sso/README.md`), che è l'unico a chiamare `GET /users/{username}/credential`. La regola che tiene insieme le due parti: **anagraphics è un archivio, non un'autorità**.
+**What it does not do.** Users and sessions live here, but the login does not: `anagraphics` does
+not compare passwords and does not decide whether a session is still good. It stores and returns.
+Verifying the credentials, generating the tokens and judging the expiries is `webtools_sso`'s job
+(`docs/subsystems/sso/README.md`), which is the only one calling
+`GET /users/{username}/credential`. The rule that holds the two parts together: **anagraphics is a
+store, not an authority**.
 
 ---
 
-## 2. Scelte funzionali
+## 2. Functional choices
 
-| Scelta | Motivo |
+| Choice | Reason |
 |---|---|
-| **Solo lettura, tranne le sessioni** | È la prima iterazione. Le scritture arriveranno con il CRUD completo; oggi i dati si inseriscono con il seed o con `mongosh` (§8.4). L'eccezione sono le sessioni, che nascono e muoiono di continuo: le scrive il sso (§5.6). |
-| **Le credenziali si restituiscono, non si verificano** | Il confronto della password richiede di sapere quando una password è "giusta", cioè una politica di autenticazione. Quella sta nel sso, insieme a token e scadenze. Qui resta il formato conservato (§5.5). |
-| **Chiavi con nome dedicato** (`subsystem`, `project_id`) al posto dell'`_id` di Mongo | Sono chiavi leggibili e stabili, pensate per essere usate dagli altri sottosistemi. L'`_id` resta un dettaglio interno di Mongo. |
-| **Indice univoco su ogni chiave** | Garantisce un solo documento per sottosistema o progetto. Un doppio inserimento fallisce con `DuplicateKeyError`. |
-| **`_id` mai restituito** | Le risposte contengono solo i dati di dominio. Inoltre `ObjectId` non si converte in JSON. |
-| **Dati minimi** | Oggi `configuration` = `{subsystem}`; `projects` ha i campi di §5.2. Le strutture verranno estese; l'API restituisce **tutto il documento** (tranne `_id`), quindi i nuovi campi compaiono senza modificare il codice. |
-| **Errori = stato HTTP + codice stabile** (`{"error": "PROJECT_NOT_FOUND", ...}`) | I consumer (Node, Python) decidono dallo stato HTTP (`res.ok`, `raise_for_status()`, axios) e distinguono il caso con un confronto di stringhe, senza interpretare testo. Un formato unico per tutti gli errori (§6.1). Scartato `200 + null`: renderebbe "non trovato" indistinguibile da un successo e nasconderebbe gli URL sbagliati. |
-| **Pool di IP al posto dell'autenticazione** | Servizio interno su una sola macchina: il pool basta per ora. Il controllo avviene **prima** di qualsiasi altra logica. |
-| **Conta solo l'IP della connessione** | Gli header `X-Forwarded-For` sono falsificabili, quindi non vengono considerati (§9.2). |
+| **Read-only, except the sessions** | It is the first iteration. Writes will come with the full CRUD; today data is inserted with the seed or with `mongosh` (§8.4). The exception is sessions, which are born and die constantly: the sso writes them (§5.6). |
+| **Credentials are returned, not verified** | Comparing a password requires knowing when a password is "right", that is, an authentication policy. That lives in the sso, together with tokens and expiries. What stays here is the stored format (§5.5). |
+| **Keys with a dedicated name** (`subsystem`, `project_id`) instead of Mongo's `_id` | They are readable, stable keys, meant to be used by the other subsystems. The `_id` stays an internal Mongo detail. |
+| **A unique index on every key** | It guarantees one document per subsystem or project. A double insert fails with `DuplicateKeyError`. |
+| **`_id` never returned** | The responses contain domain data only. Besides, `ObjectId` does not convert to JSON. |
+| **Minimal data** | Today `configuration` = `{subsystem}`; `projects` has the fields of §5.2. The structures will be extended; the API returns **the whole document** (except `_id`), so new fields appear without changing the code. |
+| **Errors = HTTP status + a stable code** (`{"error": "PROJECT_NOT_FOUND", ...}`) | The consumers (Node, Python) decide from the HTTP status (`res.ok`, `raise_for_status()`, axios) and tell the case apart with a string comparison, without interpreting prose. One format for every error (§6.1). `200 + null` was discarded: it would make "not found" indistinguishable from a success and would hide wrong URLs. |
+| **An IP pool instead of authentication** | An internal service on a single machine: the pool is enough for now. The check happens **before** any other logic. |
+| **Only the connection's IP counts** | The `X-Forwarded-For` headers can be forged, so they are not taken into account (§9.2). |
 
-Dati di esempio caricati dal seed (la collection `configuration` non passa dal seed: la carica `webtools/configurator/load_configuration.sh`, §5.1):
-- `projects`: `{"project_id": "1f251606-bdba-40c4-bbee-bfedc6e57f70"}`, un progetto di prova (senza proprietario: è precedente a `POST /projects`).
+Example data loaded by the seed (the `configuration` collection does not go through the seed:
+`webtools/configurator/load_configuration.sh` loads it, §5.1):
+- `projects`: `{"project_id": "1f251606-bdba-40c4-bbee-bfedc6e57f70"}`, a test project (with no
+  owner: it predates `POST /projects`).
 
 ---
 
-## 3. Scelte tecnologiche
+## 3. Technological choices
 
-| Componente | Versione installata | Perché |
+| Component | Installed version | Why |
 |---|---|---|
-| Python | 3.13.2 (nel venv creato da uv; il requisito è `>=3.12`) | Stack richiesto. uv ha scelto il 3.13 anche se sul sistema c'è il 3.14 |
-| **FastAPI** | 0.141.1 | API piccola, JSON nativo, validazione dei parametri, documentazione OpenAPI automatica. Facile da estendere al CRUD |
-| **uvicorn** | 0.53.0 | Server ASGI standard per FastAPI |
-| **pymongo** (sincrono) | 4.18.1 | Driver ufficiale. Le route sono `def` sincrone: FastAPI le esegue in un threadpool, ed è sufficiente per il carico previsto |
-| MongoDB | 8.0.5 (Homebrew, locale) | Documenti JSON flessibili, adatti a strutture che cresceranno |
-| **uv** | 0.10.x | Gestisce venv, dipendenze e lock (`uv.lock`) con un solo strumento |
-| pytest + httpx2 | 9.1.1 / 2.13.0 | `TestClient` di Starlette. `httpx2` al posto di `httpx`, che Starlette 1.x segnala come deprecato |
+| Python | 3.13.2 (in the venv created by uv; the requirement is `>=3.12`) | The required stack. uv chose 3.13 even though the system has 3.14 |
+| **FastAPI** | 0.141.1 | A small API, native JSON, parameter validation, automatic OpenAPI documentation. Easy to extend to a CRUD |
+| **uvicorn** | 0.53.0 | The standard ASGI server for FastAPI |
+| **pymongo** (synchronous) | 4.18.1 | The official driver. The routes are synchronous `def`s: FastAPI runs them in a threadpool, and that is enough for the expected load |
+| MongoDB | 8.0.5 (Homebrew, local) | Flexible JSON documents, suited to structures that will grow |
+| **uv** | 0.10.x | It handles venv, dependencies and lock (`uv.lock`) with a single tool |
+| pytest + httpx2 | 9.1.1 / 2.13.0 | Starlette's `TestClient`. `httpx2` instead of `httpx`, which Starlette 1.x flags as deprecated |
 
-Scartati, per semplicità:
-- **Motor / pymongo async**: non serve con questo carico;
-- **Pydantic settings**: la configurazione arriva da Mongo, non dall'ambiente, e i campi sono pochi;
-- **Docker**: il daemon non era attivo e Mongo è già installato in locale.
+Discarded, for simplicity:
+- **Motor / async pymongo**: not needed with this load;
+- **Pydantic settings**: the configuration comes from Mongo, not from the environment, and the
+  fields are few;
+- **Docker**: the daemon was not running and Mongo is already installed locally.
 
 ---
 
-## 4. Architettura
+## 4. Architecture
 
-### 4.1 Mappa dei file
+### 4.1 File map
 
 ```
 webtools/anagraphics/
-├── pyproject.toml     # dipendenze (uv), config pytest; package = false (non si installa come pacchetto)
-├── uv.lock            # versioni bloccate: non modificarlo a mano
-├── README.md          # guida breve
-├── webtools_anagraphics.sh   # CONTROLLO: --start / --stop (nohup + file PID verificato)
-├── webtools_anagraphics.pid  # generato da --start, rimosso da --stop
-├── webtools_anagraphics.log  # generato da --start (append)
-├── webtools_anagraphics/     # pacchetto Python (nome specifico, niente nomi generici come "app")
+├── pyproject.toml     # dependencies (uv), pytest config; package = false (not installed as a package)
+├── uv.lock            # locked versions: do not edit by hand
+├── README.md          # short guide
+├── webtools_anagraphics.sh   # CONTROL: --start / --stop (nohup + a verified PID file)
+├── webtools_anagraphics.pid  # generated by --start, removed by --stop
+├── webtools_anagraphics.log  # generated by --start (appended)
+├── webtools_anagraphics/     # the Python package (a specific name, no generic ones like "app")
 │   ├── __init__.py
-│   ├── __main__.py    # AVVIO: importa main (che legge la configurazione) e lancia uvicorn con proxy_headers=False; esce con 1 se la configurazione manca
-│   ├── settings.py    # Settings + load_settings(): bootstrap dall'ambiente, il resto dal documento `anagraphics` in Mongo
-│   ├── errors.py      # codici di errore (contratto API), ApiError, handler per 403/404/405/503/500
-│   ├── db.py          # connect(), ensure_indexes(), find_*(); costanti CONFIGURATION/PROJECTS/DRIVERS/DISCOUNTS/PUBLIC
-│   └── main.py        # oggetto FastAPI `app`, middleware del pool di IP, i 6 endpoint
+│   ├── __main__.py    # STARTUP: imports main (which reads the configuration) and runs uvicorn with proxy_headers=False; exits with 1 if the configuration is missing
+│   ├── settings.py    # Settings + load_settings(): bootstrap from the environment, the rest from the `anagraphics` document in Mongo
+│   ├── errors.py      # error codes (the API contract), ApiError, handlers for 403/404/405/503/500
+│   ├── db.py          # connect(), ensure_indexes(), find_*(); the CONFIGURATION/PROJECTS/DRIVERS/DISCOUNTS/PUBLIC constants
+│   └── main.py        # the FastAPI `app` object, the IP pool middleware, the endpoints
 ├── scripts/
-│   ├── seed.py        # indici univoci + upsert dei dati iniziali (idempotente); niente configurazioni
-│   └── load_configuration.py  # carica configurator/configuration/*.json nella collection `configuration`
+│   ├── seed.py        # unique indexes + upsert of the initial data (idempotent); no configurations
+│   └── load_configuration.py  # loads configurator/configuration/*.json into the `configuration` collection
 └── tests/
-    └── test_api.py    # 44 test end-to-end su Mongo reale (DB webtools_test)
+    └── test_api.py    # 44 end-to-end tests on a real Mongo (the webtools_test DB)
 ```
 
-### 4.2 Ciclo di vita
+### 4.2 Life cycle
 
-- `webtools_anagraphics/main.py` legge le impostazioni e crea il client Mongo **all'import del modulo**, cioè all'avvio del server. Di conseguenza:
-  - la configurazione cambiata dopo l'avvio non ha effetto: **serve un riavvio**;
-  - leggere la configurazione vuol dire interrogare Mongo: **se Mongo è spento, o il documento `anagraphics` non c'è, il server non parte** (`webtools_anagraphics non parte: …` nel log, uscita 1). Se Mongo cade dopo l'avvio, le richieste rispondono `503` (§11).
-- Il server **non crea gli indici** all'avvio: li crea `scripts/seed.py`.
-- Non ci sono hook di startup o shutdown (lifespan): il client Mongo si chiude con il processo.
+- `webtools_anagraphics/main.py` reads the settings and creates the Mongo client **when the module
+  is imported**, that is, at server startup. As a result:
+  - a configuration changed after the startup has no effect: **a restart is needed**;
+  - reading the configuration means querying Mongo: **if Mongo is down, or the `anagraphics`
+    document is not there, the server does not start** (`webtools_anagraphics is not starting: …`
+    in the log, exit 1). If Mongo falls over after the startup, the requests answer `503` (§11).
+- The server **does not create the indexes** at startup: `scripts/seed.py` creates them.
+- There are no startup or shutdown hooks (lifespan): the Mongo client closes with the process.
 
-### 4.3 Percorso di una richiesta
+### 4.3 The path of a request
 
 ```
 client ──HTTP──> uvicorn (127.0.0.1:9100, proxy_headers=False)
@@ -136,211 +160,262 @@ client ──HTTP──> uvicorn (127.0.0.1:9100, proxy_headers=False)
                    ▼
           middleware allow_only_known_ips   (webtools_anagraphics/main.py)
           request.client.host ∈ access.allowed_ips ?
-             │ no  → 403 {"error":"IP_NOT_ALLOWED"}      (nessuna query a Mongo)
-             │ sì
+             │ no  → 403 {"error":"IP_NOT_ALLOWED"}      (no query to Mongo)
+             │ yes
              ▼
-          routing FastAPI
-             │ route sconosciuta → 404 {"error":"ROUTE_NOT_FOUND"}; metodo errato → 405 {"error":"METHOD_NOT_ALLOWED"}
+          FastAPI routing
+             │ unknown route → 404 {"error":"ROUTE_NOT_FOUND"}; wrong method → 405 {"error":"METHOD_NOT_ALLOWED"}
              ▼
           get_configuration / get_project   (threadpool)
              │
              ▼
-          db.find_* → collection.find_one({chiave: valore}, {"_id": 0})
-             │ None → 404 {"error":"PROJECT_NOT_FOUND"|"CONFIGURATION_NOT_FOUND", <chiave>: <valore>}
-             │ Mongo irraggiungibile (ConnectionFailure) → 503 {"error":"DATABASE_UNAVAILABLE"}
-             │ qualsiasi altra eccezione → 500 {"error":"INTERNAL_ERROR"}   (traceback nel log)
+          db.find_* → collection.find_one({key: value}, {"_id": 0})
+             │ None → 404 {"error":"PROJECT_NOT_FOUND"|"CONFIGURATION_NOT_FOUND", <key>: <value>}
+             │ Mongo unreachable (ConnectionFailure) → 503 {"error":"DATABASE_UNAVAILABLE"}
+             │ any other exception → 500 {"error":"INTERNAL_ERROR"}   (traceback in the log)
              ▼
-          200 + documento JSON
+          200 + the JSON document
 ```
 
-Il controllo IP viene **prima** del routing, quindi un IP fuori dal pool riceve `403` anche su route inesistenti e su `/docs`.
+The IP check comes **before** the routing, so an IP outside the pool gets a `403` on non-existent
+routes and on `/docs` too.
 
 ---
 
-## 5. Modello dati (MongoDB)
+## 5. Data model (MongoDB)
 
-**Database**: `webtools` (variabile `WEBTOOLS_MONGO_DB` di `bootstrap.env`). Gli indici li crea `scripts/seed.py` (`db.ensure_indexes`), non l'avvio del server.
+**Database**: `webtools` (the `WEBTOOLS_MONGO_DB` variable of `bootstrap.env`). The indexes are
+created by `scripts/seed.py` (`db.ensure_indexes`), not by the server's startup.
 
-| Collection | Chiave | Altri indici | Contenuto | Chi scrive |
+| Collection | Key | Other indexes | Content | Who writes |
 |---|---|---|---|---|
-| `configuration` | `subsystem` (univoco) | — | La configurazione di ogni sottosistema | `configurator/load_configuration.sh` |
-| `projects` | `project_id` (univoco) | `submission_id` (univoco, sparse) | Un documento per progetto cliente | `webtools_preanalyst`, via API |
-| `drivers` | `uid` (univoco) | — | Le persone che supervisionano i progetti | seed / `mongosh` |
-| `discounts` | `discount_code` (univoco) | `driver.uid` | I codici sconto, col driver ridondato dentro | seed / `mongosh` |
-| `users` | `username` (univoco) | `uid` (univoco) | Chi può entrare nel sistema, con le credenziali | seed + comando a mano (§8.5) |
-| `sessions` | `token` (univoco) | `uid`, **TTL** su `expires_at` | Chi è entrato e fino a quando | `webtools_sso`, via API |
-| `tickets` | `ticket` (univoco) | **TTL** su `expires_at` | Biglietti usa-e-getta per passare una sessione da un indirizzo a un altro | `webtools_sso`, via API |
+| `configuration` | `subsystem` (unique) | — | Every subsystem's configuration | `configurator/load_configuration.sh` |
+| `projects` | `project_id` (unique) | `submission_id` (unique, sparse) | One document per client project | `webtools_preanalyst`, through the API |
+| `drivers` | `uid` (unique) | — | The people who supervise the projects | seed / `mongosh` |
+| `discounts` | `discount_code` (unique) | `driver.uid` | The discount codes, with the driver duplicated inside | seed / `mongosh` |
+| `users` | `username` (unique) | `uid` (unique) | Who may enter the system, with the credentials | seed + a command by hand (§8.5) |
+| `sessions` | `token` (unique) | `uid`, **TTL** on `expires_at` | Who has logged in and until when | `webtools_sso`, through the API |
+| `tickets` | `ticket` (unique) | **TTL** on `expires_at` | Single-use tickets for handing a session from one address to another | `webtools_sso`, through the API |
 
-`_id` è sempre un ObjectId automatico e non esce mai da nessuna risposta: nelle tabelle che seguono non viene più ripetuto.
+`_id` is always an automatic ObjectId and never leaves any response: it is not repeated in the
+tables that follow.
 
 ### 5.1 `configuration`
-| Campo | Tipo | Vincoli | Note |
+| Field | Type | Constraints | Notes |
 |---|---|---|---|
-| `_id` | ObjectId | automatico | Mai esposto |
-| `subsystem` | string | **univoco** (indice `subsystem_1`) | Nome del sottosistema, es. `front-gate`. Distingue maiuscole e minuscole |
+| `_id` | ObjectId | automatic | Never exposed |
+| `subsystem` | string | **unique** (index `subsystem_1`) | The subsystem's name, e.g. `front-gate`. Case-sensitive |
 
-Gli altri campi dipendono dal sottosistema e l'API li restituisce così come sono. Sono **strutturati** (oggetti annidati per argomento: `listen`, `access`, `subsystems_infos`, `session`, …), non piatti.
+The other fields depend on the subsystem and the API returns them as they are. They are
+**structured** (objects nested by subject: `listen`, `access`, `subsystems_infos`, `session`, …),
+not flat.
 
-**Da dove arrivano.** La configurazione che vive sta **qui, in questa collection**. I file di `webtools/configurator/configuration/<subsystem>.json` (senza il campo `subsystem`, che lo dà il nome del file) sono il **seme** — i valori con cui nasce un ambiente nuovo — e la **forma attesa**: dicono quali campi esistono. `webtools/configurator/load_configuration.sh`, che `start.sh` lancia prima di avviare i servizi, aggiunge **solo i campi che mancano**: un campo che c'è non si tocca qualunque valore abbia, un campo tolto da un file resta, un sottosistema senza più un file non viene cancellato. Un documento modificato qui sopravvive a tutti i riavvii; per riportarlo al file serve `./load_configuration.sh --reset <subsystem>`, che è l'unico modo per cancellare quelle modifiche. I segreti di `configurator/secrets/` fanno eccezione e **sostituiscono sempre** il valore che trovano: una chiave ruotata deve valere.
+**Where they come from.** The configuration that lives is **here, in this collection**. The files
+in `webtools/configurator/configuration/<subsystem>.json` (without the `subsystem` field, which
+the file name gives) are the **seed** — the values a new environment is born with — and the
+**expected shape**: they say which fields exist. `webtools/configurator/load_configuration.sh`,
+which `start.sh` runs before starting the services, adds **only the missing fields**: a field that
+is there is not touched whatever value it holds, a field removed from a file stays, a subsystem
+that no longer has a file is not deleted. A document changed here survives every restart; to take
+it back to the file you need `./load_configuration.sh --reset <subsystem>`, which is the only way
+to wipe those changes. The secrets of `configurator/secrets/` are the exception and **always
+replace** the value they find: a rotated key must count.
 
-Il significato di ogni campo sta nella documentazione del sottosistema che lo legge. Qui solo quello di anagraphics stesso:
+What each field means is in the documentation of the subsystem that reads it. Here only
+anagraphics' own:
 
-| Campo | Tipo | Note |
+| Field | Type | Notes |
 |---|---|---|
-| `access.allowed_ips` | string[] | Gli IP ammessi, **esatti** (niente CIDR). Non vuoto |
-| `mongo.server_selection_timeout_ms` | int | Quanto aspettare Mongo in ogni richiesta prima di rispondere `503` |
+| `access.allowed_ips` | string[] | The allowed IPs, **exact** (no CIDR). Not empty |
+| `mongo.server_selection_timeout_ms` | int | How long to wait for Mongo in each request before answering `503` |
 
 ### 5.2 `projects`
-Fino alla 0.4.0 la collection si chiamava `anagraphics` (migrazione in §8.7).
+Up to 0.4.0 the collection was called `anagraphics` (migration in §8.7).
 
-| Campo | Tipo | Vincoli | Note |
+| Field | Type | Constraints | Notes |
 |---|---|---|---|
-| `_id` | ObjectId | automatico | Mai esposto |
-| `project_id` | string | **univoco** (indice `project_id_1`) | **UUID** v4 in forma canonica minuscola, es. `1f251606-bdba-40c4-bbee-bfedc6e57f70`. Lo genera anagraphics in `POST /projects`: chi chiama non può sceglierlo |
-| `owner_uid` | string | — | L'`uid` dell'utente (`users.uid`) che ha creato il progetto. Chi legge un progetto per conto di un utente confronta questo campo |
-| `submission_id` | string | **univoco, sparse** (indice `submission_id_1`) | L'id dell'invio del form della pre-analisi. Lo stesso invio ripetuto trova il progetto già nato invece di crearne un altro. Sparse: un progetto può nascere anche per altre strade |
-| `created_at` | datetime (UTC) | — | Momento della creazione |
-| `pipeline` | object | — | Dove sta il progetto lungo il flusso e che cosa gli è successo: `{state, steps}`. `state` è uno di `PREANALYSIS`, `PREVALIDATION`, `UNDERSPECIFIED`, `ANALYSIS`, `DRIVER_VALIDATION`, `CLIENT_VALIDATION`, `DEVELOPMENT`, `ALPHA_TEST`, `DEMO`, `PAID`, `REJECTED` — `UNDERSPECIFIED` è la richiesta tornata all'utente perché diceva troppo poco: non è un rifiuto, e da lì si riparte riscrivendo. `steps` è una **lista in ordine** dei passi compiuti, non una mappa: un passo può ripetersi, e la lista è il registro delle decisioni prese sul progetto. Ogni passo: `{step, result, decided_at, data}`, con `result` fra `passed`, `rejected`, `underspecified` e `failed` e `data` libero — la forma la decide chi compie il passo, qui si conserva e non si interpreta. Fino alla 0.8.0 c'era un `state` piatto al posto di tutto questo (migrazione §8.9) |
-| `review` | object | — | Chi supervisiona il progetto: `{driver_uid, preset}`. `preset: true` = driver **preimpostato** (dal link di un driver, o il driver stesso in un lavoro autonomo); `preset: false` = assegnato dal sistema. Alla creazione, senza link, `driver_uid` è `null` |
-| `billing` | object | — | I dati economici: `{discount_code, autonomous_work, ambassador_uid}`. Il codice sconto del link e il lavoro autonomo **si escludono**: con il lavoro autonomo `discount_code` è `null`. `ambassador_uid` è l'uid del driver che ha invitato l'utente a lavorare con noi, o `null`; i progetti creati prima della 0.6.2 non hanno il campo. Fino alla 0.6.0 c'era anche `autonomous_fee_discount` (migrazione §8.8). Si conservano soltanto: il prezzo non si calcola qui |
+| `_id` | ObjectId | automatic | Never exposed |
+| `project_id` | string | **unique** (index `project_id_1`) | A **UUID** v4 in canonical lowercase form, e.g. `1f251606-bdba-40c4-bbee-bfedc6e57f70`. Anagraphics generates it in `POST /projects`: the caller cannot choose it |
+| `owner_uid` | string | — | The `uid` of the user (`users.uid`) who created the project. Whoever reads a project on a user's behalf compares this field |
+| `submission_id` | string | **unique, sparse** (index `submission_id_1`) | The id of the pre-analysis form submission. The same submission repeated finds the project already born instead of creating another. Sparse: a project can be born by other routes too |
+| `created_at` | datetime (UTC) | — | The moment of creation |
+| `pipeline` | object | — | Where the project is along the flow and what has happened to it: `{state, steps}`. `state` is one of `PREANALYSIS`, `PREVALIDATION`, `UNDERSPECIFIED`, `ANALYSIS`, `DRIVER_VALIDATION`, `CLIENT_VALIDATION`, `DEVELOPMENT`, `ALPHA_TEST`, `DEMO`, `PAID`, `REJECTED` — `UNDERSPECIFIED` is the request sent back to the user because it said too little: it is not a refusal, and from there one starts again by rewriting. `steps` is an **ordered list** of the steps taken, not a map: a step can repeat, and the list is the register of the decisions taken on the project. Each step: `{step, result, decided_at, data}`, with `result` among `open`, `passed`, `rejected`, `underspecified` and `failed` and `data` free — its shape is decided by whoever takes the step, here it is stored and not interpreted. **`open` is the only one that has decided nothing**: the step has begun and lasts — it is the case of the analysis chat, which opens when the project reaches `ANALYSIS` and grows with every turn. While it is open its `data` is updated with `PATCH` (§6.20); when it closes it takes one of the other results and from then on is never touched again, like every other step. Up to 0.8.0 there was a flat `state` in place of all this (migration §8.9) |
+| `review` | object | — | Who supervises the project: `{driver_uid, preset}`. `preset: true` = a **preset** driver (from a driver's link, or the driver themselves in autonomous work); `preset: false` = assigned by the system. At creation, with no link, `driver_uid` is `null` |
+| `billing` | object | — | The economic data: `{discount_code, autonomous_work, ambassador_uid}`. The link's discount code and autonomous work **exclude each other**: with autonomous work `discount_code` is `null`. `ambassador_uid` is the uid of the driver who invited the user to work with us, or `null`; projects created before 0.6.2 do not have the field. Up to 0.6.0 there was also `autonomous_fee_discount` (migration §8.8). They are only stored: the price is not worked out here |
 
 ### 5.3 `drivers`
-| Campo | Tipo | Vincoli | Note |
+| Field | Type | Constraints | Notes |
 |---|---|---|---|
-| `_id` | ObjectId | automatico | Mai esposto |
-| `uid` | string | **univoco** (indice `uid_1`) | **UUID** del driver, es. `7633be3d-e701-42ca-9fea-6c6d1bb4b7d1`. Come per `project_id`, il formato non viene validato dall'API |
-| `username` | string | — | Identificativo di accesso del driver. Il login non è ancora gestito: oggi il campo è solo un dato |
-| `screen_name` | string | — | Nome mostrato, es. `Dome` |
-| `enabled` | bool | — | Abilitato a seguire i progetti dei clienti (dopo il colloquio). Un driver non abilitato può essere ambassador e fare lavoro autonomo, ma nessun cliente può averlo come driver: le regole le applica preanalyst |
+| `_id` | ObjectId | automatic | Never exposed |
+| `uid` | string | **unique** (index `uid_1`) | The driver's **UUID**, e.g. `7633be3d-e701-42ca-9fea-6c6d1bb4b7d1`. As for `project_id`, the format is not validated by the API |
+| `username` | string | — | The driver's login identifier. The login is not handled yet: today the field is only data |
+| `screen_name` | string | — | The name shown, e.g. `Dome` |
+| `enabled` | bool | — | Allowed to supervise client projects (after the interview). A driver who is not enabled can be an ambassador and do autonomous work, but no client can have them as their driver: the preanalyst applies the rules |
 
-Driver presenti:
+Drivers present:
 
-| `uid` | `username` | `screen_name` | `enabled` | Note |
+| `uid` | `username` | `screen_name` | `enabled` | Notes |
 |---|---|---|---|---|
-| `7633be3d-e701-42ca-9fea-6c6d1bb4b7d1` | `dome.santoro@gmail.com` | `Dome` | `true` | Il driver reale. Ha un codice sconto |
-| `639718a3-ea41-4533-bdb8-73ac58b3b1b2` | `driver.prova@example.com` | `Prova` | `true` | **Dato di prova**, senza codici sconto: serve per vedere più di un driver nella lista e per il caso "driver esistente senza sconti" |
-| `f234b930-e5d0-4e10-8a4f-1a8a13814370` | `driver.nonabilitato@example.com` | `Non abilitato` | `false` | **Dato di prova** con un codice sconto: serve per i casi "link" e "sconto" di un driver non abilitato |
+| `7633be3d-e701-42ca-9fea-6c6d1bb4b7d1` | `dome.santoro@gmail.com` | `Dome` | `true` | The real driver. Has a discount code |
+| `639718a3-ea41-4533-bdb8-73ac58b3b1b2` | `driver.prova@example.com` | `Prova` | `true` | **Test data**, with no discount codes: it is there to see more than one driver in the list, and for the "driver who exists with no discounts" case |
+| `f234b930-e5d0-4e10-8a4f-1a8a13814370` | `driver.nonabilitato@example.com` | `Non abilitato` | `false` | **Test data** with a discount code: it is there for the "link" and "discount" cases of a driver who is not enabled |
 
 ### 5.4 `discounts`
-| Campo | Tipo | Vincoli | Note |
+| Field | Type | Constraints | Notes |
 |---|---|---|---|
-| `_id` | ObjectId | automatico | Mai esposto |
-| `discount_code` | string | **univoco** (indice `discount_code_1`) | **UUID** del codice sconto, es. `e8013cf2-34eb-4bc3-8a34-b08fb24a1bf3` |
-| `driver.uid` | string | indice **non** univoco (`driver.uid_1`) | `uid` del driver a cui appartiene il codice |
-| `driver.screen_name` | string | — | Nome del driver, **ridondato** |
-| `percentage` | number | — | Percentuale di sconto in **punti percentuali**: `5` significa 5%, non 0,05 |
+| `_id` | ObjectId | automatic | Never exposed |
+| `discount_code` | string | **unique** (index `discount_code_1`) | The discount code's **UUID**, e.g. `e8013cf2-34eb-4bc3-8a34-b08fb24a1bf3` |
+| `driver.uid` | string | a **non**-unique index (`driver.uid_1`) | The `uid` of the driver the code belongs to |
+| `driver.screen_name` | string | — | The driver's name, **duplicated** |
+| `percentage` | number | — | The discount percentage in **percentage points**: `5` means 5%, not 0.05 |
 
-Codici presenti: `e8013cf2-34eb-4bc3-8a34-b08fb24a1bf3`, del driver `Dome`, al 5%; `91165eb1-65d6-43a9-ade8-681ec3ebef8d`, del driver di prova `Non abilitato`, al 10%.
+Codes present: `e8013cf2-34eb-4bc3-8a34-b08fb24a1bf3`, of the driver `Dome`, at 5%;
+`91165eb1-65d6-43a9-ade8-681ec3ebef8d`, of the test driver `Non abilitato`, at 10%.
 
-**Sulla ridondanza del driver.** `uid` e `screen_name` sono copiati dentro lo sconto di proposito: chi legge un codice sconto ha subito il nome da mostrare, senza una seconda lettura. Il prezzo è che **un cambio di `screen_name` in `drivers` non si propaga**: finché non c'è il CRUD va aggiornato a mano anche in `discounts` (§8.4). `uid` invece non cambia mai.
+**On duplicating the driver.** `uid` and `screen_name` are copied inside the discount on purpose:
+whoever reads a discount code has the name to show straight away, with no second read. The price
+is that **a change of `screen_name` in `drivers` does not propagate**: until there is a CRUD it
+must be updated by hand in `discounts` too (§8.4). `uid`, on the other hand, never changes.
 
 ### 5.5 `users`
-| Campo | Tipo | Vincoli | Note |
+| Field | Type | Constraints | Notes |
 |---|---|---|---|
-| `uid` | string | **univoco** (indice `uid_1`) | **UUID** della persona. È l'identificativo stabile: `username` può cambiare, `uid` no |
-| `username` | string | **univoco** (indice `username_1`) | Quello che si digita al login. Oggi è l'indirizzo email. Distingue maiuscole e minuscole |
-| `screen_name` | string | — | Nome mostrato, es. `Dome` |
-| `active` | bool | — | `false` impedisce il login (lo controlla il sso). Il documento resta |
-| `driver_uid` | string / assente | — | `uid` del documento in `drivers`, se questa persona è anche un driver |
-| `credential` | oggetto / `null` | — | Il blocco della password, sotto. `null` significa "password mai impostata": l'utente esiste ma non può entrare |
-| `locale` | string / assente | — | La lingua preferita (`it`, `en`, …). La scrive il sso al primo login e a ogni cambio di lingua; al login successivo la rimette nella sessione (§6.19) |
+| `uid` | string | **unique** (index `uid_1`) | The person's **UUID**. It is the stable identifier: `username` can change, `uid` cannot |
+| `username` | string | **unique** (index `username_1`) | What is typed at the login. Today it is the email address. Case-sensitive |
+| `screen_name` | string | — | The name shown, e.g. `Dome` |
+| `active` | bool | — | `false` prevents the login (the sso checks it). The document stays |
+| `driver_uid` | string / absent | — | The `uid` of the document in `drivers`, if this person is also a driver |
+| `credential` | object / `null` | — | The password block, below. `null` means "password never set": the user exists but cannot get in |
+| `locale` | string / absent | — | The preferred language (`it`, `en`, …). The sso writes it at the first login and at every language change; at the next login it puts it back into the session (§6.19) |
+| `billing` | object | — | The person's economic data: today only `{turns_credit}`, the chat turns they have in credit and can move onto a project when the included ones run out. An integer, never negative: the check lives inside the write (§6.21). Users born before 0.10.0 do not have the field (migration §8.10) |
 
-Il blocco `credential`:
+The `credential` block:
 
-| Campo | Esempio | Note |
+| Field | Example | Notes |
 |---|---|---|
-| `algorithm` | `"scrypt"` | L'unico gestito oggi. Il sso rifiuta quello che non conosce |
-| `params` | `{"n":16384,"r":8,"p":1,"dklen":32}` | **Dentro il documento, non nel codice**: il giorno che si alzano, le password vecchie restano verificabili con i propri |
-| `salt` | base64 di 16 byte casuali | Diverso per ogni password |
-| `hash` | base64 di 32 byte | Il risultato di scrypt su password e salt |
-| `updated_at` | data | Quando è stata impostata |
+| `algorithm` | `"scrypt"` | The only one handled today. The sso refuses what it does not know |
+| `params` | `{"n":16384,"r":8,"p":1,"dklen":32}` | **Inside the document, not in the code**: the day they are raised, old passwords stay verifiable with their own |
+| `salt` | base64 of 16 random bytes | Different for every password |
+| `hash` | base64 of 32 bytes | The result of scrypt on the password and the salt |
+| `updated_at` | date | When it was set |
 
-**Perché scrypt.** Sta nella libreria standard sia di Python sia di Node: nessuna dipendenza in più né qui né nel sso, e lo stesso identico calcolo dalle due parti. Il formato si costruisce in un punto solo, `webtools_anagraphics/credentials.py`; chi verifica è `webtools/sso/src/credentials.js`. Il test `tests/credentials.test.js` del sso contiene un hash prodotto davvero da Python: se i due scrypt smettessero di calcolare la stessa cosa, fallisce quel test invece di un login.
+**Why scrypt.** It is in the standard library of both Python and Node: no extra dependency either
+here or in the sso, and exactly the same computation on both sides. The format is built in one
+place only, `webtools_anagraphics/credentials.py`; the one who verifies is
+`webtools/sso/src/credentials.js`. The sso's `tests/credentials.test.js` holds a hash really
+produced by Python: if the two scrypts stopped computing the same thing, that test fails instead
+of a login.
 
-La password **non si semina**: si imposta a parte, costruendo il blocco con `build_credential()` (§8.5). Non esiste ancora uno strumento dedicato: finché non c'è il CRUD è un comando a mano.
+The password is **not seeded**: it is set separately, building the block with
+`build_credential()` (§8.5). There is no dedicated tool yet: until there is a CRUD it is a command
+by hand.
 
-Utenti presenti:
+Users present:
 
-| `uid` | `username` | `screen_name` | `driver_uid` | Note |
+| `uid` | `username` | `screen_name` | `driver_uid` | Notes |
 |---|---|---|---|---|
-| `8ff93901-673e-44ba-b05b-56011395dcba` | `dome.santoro@gmail.com` | `Dome` | `7633be3d-…` | L'utente reale. Password di sviluppo impostata il 2026-09-21 |
-| `214912a9-2cc4-4205-87b7-93ea71f6be72` | `driver.prova@example.com` | `Prova` | `639718a3-…` | **Dato di prova**, con una password nota di sviluppo. Va tolto quando si esce dalla PoC |
+| `8ff93901-673e-44ba-b05b-56011395dcba` | `dome.santoro@gmail.com` | `Dome` | `7633be3d-…` | The real user. A development password set on 2026-09-21 |
+| `214912a9-2cc4-4205-87b7-93ea71f6be72` | `driver.prova@example.com` | `Prova` | `639718a3-…` | **Test data**, with a known development password. To be removed when we leave the PoC |
 
-Le due password sono **password di sviluppo**, corte e note: vanno rifatte prima che il sistema sia raggiungibile da fuori questa macchina.
+The two passwords are **development passwords**, short and known: they must be redone before the
+system is reachable from outside this machine.
 
-**Perché `uid` e `driver_uid` sono due cose diverse.** `users.uid` è l'identità della persona, `drivers.uid` è l'identità del ruolo di driver: un cliente è un utente e non è un driver. Il collegamento è esplicito in `driver_uid` invece che implicito nell'uguaglianza dei due uid, così si vede leggendo il documento.
+**Why `uid` and `driver_uid` are two different things.** `users.uid` is the person's identity,
+`drivers.uid` is the identity of the driver role: a client is a user and is not a driver. The link
+is explicit in `driver_uid` instead of implicit in the two uids being equal, so it can be seen by
+reading the document.
 
 ### 5.6 `sessions`
-| Campo | Tipo | Vincoli | Note |
+| Field | Type | Constraints | Notes |
 |---|---|---|---|
-| `token` | string | **univoco** (indice `token_1`) | 32 byte casuali in base64url (43 caratteri). Non contiene informazioni: è solo la chiave per ritrovare la sessione |
-| `uid` | string | indice **non** univoco (`uid_1`) | La persona. Un utente può avere più sessioni aperte insieme |
-| `username` | string | — | Copiato al login, per non dover rileggere l'utente |
-| `issued_at` | data | — | Quando è entrata |
-| `expires_at` | data | indice **TTL** (`expires_at_1`, `expireAfterSeconds: 0`) | Quando smette di valere |
-| `data` | oggetto | — | Dati di sessione, liberi. Oggi contiene `screen_name` e `driver_uid` fotografati al login, e `locale`, la lingua della sessione, che cambia con `PUT /sessions/{token}/locale` |
+| `token` | string | **unique** (index `token_1`) | 32 random bytes in base64url (43 characters). It holds no information: it is only the key for finding the session again |
+| `uid` | string | a **non**-unique index (`uid_1`) | The person. A user can have several sessions open at once |
+| `username` | string | — | Copied at login, so as not to have to read the user again |
+| `issued_at` | date | — | When they came in |
+| `expires_at` | date | a **TTL** index (`expires_at_1`, `expireAfterSeconds: 0`) | When it stops counting |
+| `data` | object | — | Session data, free. Today it holds `screen_name` and `driver_uid` photographed at login time, and `locale`, the session's language, which changes with `PUT /sessions/{token}/locale` |
 
-**Il documento lo costruisce il sso.** Token, date e contenuto di `data` arrivano già fatti in `POST /sessions`: qui si controlla che i campi ci siano e si conserva. `GET /sessions/{token}` restituisce la sessione **anche se scaduta**, finché il TTL non l'ha rimossa: decidere se vale ancora è del sso.
+**The document is built by the sso.** The token, the dates and the content of `data` arrive
+ready-made in `POST /sessions`: here we check that the fields are there and store it.
+`GET /sessions/{token}` returns the session **even if expired**, until the TTL has removed it:
+deciding whether it is still good is the sso's job.
 
-**L'indice TTL è pulizia, non sicurezza.** Mongo passa a cancellare circa ogni 60 secondi, quindi una sessione scaduta può restare nell'archivio per un po'. Nessun consumer deve dedurre la validità dalla presenza del documento: si guarda `expires_at`.
+**The TTL index is housekeeping, not security.** Mongo comes round to delete roughly every 60
+seconds, so an expired session can stay in the store for a while. No consumer should infer
+validity from the document's presence: look at `expires_at`.
 
-**La fotografia dentro `data` invecchia**, come il driver dentro i codici sconto (§5.4): se cambia lo `screen_name`, le sessioni già aperte mostrano quello vecchio fino al login successivo.
+**The photograph inside `data` ages**, like the driver inside the discount codes (§5.4): if the
+`screen_name` changes, sessions already open show the old one until the next login.
 
 ### 5.7 `tickets`
-| Campo | Tipo | Vincoli | Note |
+| Field | Type | Constraints | Notes |
 |---|---|---|---|
-| `ticket` | string | **univoco** (indice `ticket_1`) | 32 byte casuali in base64url |
-| `token` | string | — | La sessione a cui dà accesso |
-| `service` | string | — | Il sottosistema per cui è stato emesso, es. `http://127.0.0.1:9200` |
-| `issued_at` | data | — | — |
-| `expires_at` | data | indice **TTL** (`expires_at_1`) | Un minuto dopo l'emissione |
+| `ticket` | string | **unique** (index `ticket_1`) | 32 random bytes in base64url |
+| `token` | string | — | The session it gives access to |
+| `service` | string | — | The subsystem it was issued for, e.g. `http://127.0.0.1:9200` |
+| `issued_at` | date | — | — |
+| `expires_at` | date | a **TTL** index (`expires_at_1`) | One minute after it was issued |
 
-**A che serve.** Un cookie appartiene a un indirizzo solo: il sso, che sta sulla porta 9300, non può metterne uno per conto di preanalyst, che sta sulla 9200. Dopo il login il sso rimanda quindi il browser al sottosistema con un **biglietto** nell'indirizzo; il sottosistema lo scambia da server a server e riceve la sessione. Il token vero, che dura ore, non passa mai dall'indirizzo — dove finirebbe nella cronologia del browser, nei log e nei link condivisi.
+**What it is for.** A cookie belongs to one address only: the sso, which sits on port 9300, cannot
+set one on behalf of the preanalyst, which sits on 9200. After the login the sso therefore sends
+the browser back to the subsystem with a **ticket** in the address; the subsystem exchanges it
+server to server and receives the session. The real token, which lasts hours, never travels
+through the address — where it would end up in the browser's history, in logs and in shared links.
 
-**Vale una volta sola.** `DELETE /tickets/{ticket}` legge e cancella nello stesso momento (`find_one_and_delete`): due richieste con lo stesso biglietto non possono riuscire entrambe, nemmeno se arrivano insieme. Un biglietto letto da un log è quindi già consumato, e comunque scaduto dopo un minuto.
+**It is good once.** `DELETE /tickets/{ticket}` reads and deletes at the same moment
+(`find_one_and_delete`): two requests with the same ticket cannot both succeed, not even if they
+arrive together. A ticket read from a log is therefore already consumed, and expired after a
+minute anyway.
 
-### 5.8 Regole per estendere i documenti
-- Si possono **aggiungere campi** liberamente: l'API restituisce tutto il documento tranne `_id`.
-- I valori devono essere **convertibili in JSON** da FastAPI: string, number, bool, null, liste, oggetti annidati e `datetime` vanno bene. Un `ObjectId` in un campo diverso da `_id`, un `Decimal128` o dati binari producono un **500** (§11). In quel caso vanno convertiti prima di restituire il documento.
-- Non rinominare `subsystem`, `project_id`, `uid` o `discount_code` senza aggiornare `webtools_anagraphics/db.py`, `scripts/seed.py`, gli indici e i test.
+### 5.8 Rules for extending the documents
+- **Fields can be added** freely: the API returns the whole document except `_id`.
+- The values must be **convertible to JSON** by FastAPI: string, number, bool, null, lists, nested
+  objects and `datetime` are fine. An `ObjectId` in a field other than `_id`, a `Decimal128` or
+  binary data produce a **500** (§11). In that case they must be converted before the document is
+  returned.
+- Do not rename `subsystem`, `project_id`, `uid` or `discount_code` without updating
+  `webtools_anagraphics/db.py`, `scripts/seed.py`, the indexes and the tests.
 
 ---
 
-## 6. Riferimento API
+## 6. API reference
 
-URL base: `http://127.0.0.1:9100`. Tutte le risposte, errori compresi, sono JSON.
+Base URL: `http://127.0.0.1:9100`. Every response, errors included, is JSON.
 
-### 6.1 Formato degli errori (contratto)
+### 6.1 Error format (the contract)
 
-Ogni errore ha lo **stato HTTP corretto** e un body con un **codice stabile**:
+Every error has the **correct HTTP status** and a body with a **stable code**:
 ```json
-{"error": "<CODICE>", "<campo di contesto>": "<valore>"}
+{"error": "<CODE>", "<context field>": "<value>"}
 ```
-- Il campo `error` è sempre presente. I campi di contesto sono presenti solo dove indicato.
-- I codici **fanno parte del contratto dell'API**: non si rinominano e non si riusano con altri significati. Sono definiti in `webtools_anagraphics/errors.py`.
-- Non ci sono messaggi discorsivi: i consumer confrontano `error`, non devono interpretare testo.
+- The `error` field is always there. The context fields are there only where stated.
+- The codes are **part of the API contract**: they are not renamed and not reused with other
+  meanings. They are defined in `webtools_anagraphics/errors.py`.
+- There are no prose messages: the consumers compare `error`, they must not interpret text.
 
-| Stato | `error` | Contesto | Quando |
+| Status | `error` | Context | When |
 |---|---|---|---|
-| `404` | `CONFIGURATION_NOT_FOUND` | `subsystem` | Nessuna conf per quel sottosistema |
-| `404` | `PROJECT_NOT_FOUND` | `project_id` | Nessun progetto con quell'id |
-| `404` | `DRIVER_NOT_FOUND` | `uid` | Nessun driver con quell'uid |
-| `404` | `DISCOUNT_NOT_FOUND` | `discount_code` | Nessun codice sconto con quel codice |
-| `404` | `USER_NOT_FOUND` | `username` | Nessun utente con quello username |
-| `404` | `CREDENTIAL_NOT_SET` | `username` | L'utente esiste ma non ha una password impostata (`credential: null`) |
-| `404` | `SESSION_NOT_FOUND` | — | Nessuna sessione con quel token: sconosciuto, già cancellato o rimosso dal TTL |
-| `409` | `SESSION_EXISTS` | `token` | Esiste già una sessione con quel token. Non si sovrascrive |
-| `404` | `TICKET_NOT_FOUND` | — | Nessun biglietto con quel codice: sconosciuto, già consumato o rimosso dal TTL |
-| `409` | `TICKET_EXISTS` | — | Esiste già un biglietto con quel codice |
-| `409` | `SUBMISSION_EXISTS` | — | Un `POST /projects` con il `submission_id` di un progetto di un altro utente |
-| `400` | `INVALID_BODY` | — | Corpo di `POST /sessions`, `POST /tickets` o `POST /projects` mancante, incompleto o con campi non validi. Il dettaglio dei campi resta nel log, non nella risposta |
-| `404` | `ROUTE_NOT_FOUND` | — | URL inesistente: di solito un bug nel consumer |
-| `405` | `METHOD_NOT_ALLOWED` | — | Metodo non ammesso su una route esistente |
-| `403` | `IP_NOT_ALLOWED` | — | IP del chiamante fuori da `access.allowed_ips` (§9) |
-| `503` | `DATABASE_UNAVAILABLE` | — | MongoDB irraggiungibile, dopo il timeout di selezione del server (default 30 s) |
-| `500` | `INTERNAL_ERROR` | — | Qualsiasi altro errore imprevisto; il traceback è nel log |
+| `404` | `CONFIGURATION_NOT_FOUND` | `subsystem` | No configuration for that subsystem |
+| `404` | `PROJECT_NOT_FOUND` | `project_id` | No project with that id |
+| `404` | `DRIVER_NOT_FOUND` | `uid` | No driver with that uid |
+| `404` | `DISCOUNT_NOT_FOUND` | `discount_code` | No discount code with that code |
+| `404` | `USER_NOT_FOUND` | `username` | No user with that username |
+| `404` | `CREDENTIAL_NOT_SET` | `username` | The user exists but has no password set (`credential: null`) |
+| `404` | `SESSION_NOT_FOUND` | — | No session with that token: unknown, already deleted or removed by the TTL |
+| `409` | `SESSION_EXISTS` | `token` | A session with that token already exists. It is not overwritten |
+| `404` | `TICKET_NOT_FOUND` | — | No ticket with that code: unknown, already consumed or removed by the TTL |
+| `409` | `TICKET_EXISTS` | — | A ticket with that code already exists |
+| `409` | `SUBMISSION_EXISTS` | — | A `POST /projects` with the `submission_id` of another user's project |
+| `404` | `OPEN_STEP_NOT_FOUND` | `project_id`, `step` | No step yet open with that name on the project's pipeline (§6.20) |
+| `409` | `NOT_ENOUGH_TURNS` | `uid` | The user's turn credit is not enough for what was asked (§6.21) |
+| `400` | `INVALID_BODY` | — | The body of `POST /sessions`, `POST /tickets` or `POST /projects` missing, incomplete or with invalid fields. The detail of the fields stays in the log, not in the response |
+| `404` | `ROUTE_NOT_FOUND` | — | A non-existent URL: usually a bug in the consumer |
+| `405` | `METHOD_NOT_ALLOWED` | — | A method not allowed on an existing route |
+| `403` | `IP_NOT_ALLOWED` | — | The caller's IP outside `access.allowed_ips` (§9) |
+| `503` | `DATABASE_UNAVAILABLE` | — | MongoDB unreachable, after the server selection timeout (30 s by default) |
+| `500` | `INTERNAL_ERROR` | — | Any other unexpected error; the traceback is in the log |
 
-Esempi di gestione lato consumer:
+Examples of handling on the consumer's side:
 ```python
 # Python (requests)
 r = requests.get(f"{BASE}/projects/{project_id}")
@@ -361,232 +436,293 @@ throw new Error(`anagraphics: ${res.status} ${body.error}`);
 ```
 
 ### 6.2 `GET /configuration/{subsystem}`
-Restituisce la configurazione del sottosistema.
+Returns the subsystem's configuration.
 
-| Esito | Stato | Body |
+| Outcome | Status | Body |
 |---|---|---|
-| Trovata | `200` | il documento senza `_id`, es. `{"subsystem":"front-gate","listen":{"host":"127.0.0.1","port":9000},"subsystems_infos":{"preanalyst":{"url":"http://127.0.0.1:9200"}},"screen_infos":{"pricing":{"standard_price_cents":40000}}}` |
-| Non trovata | `404` | `{"error":"CONFIGURATION_NOT_FOUND","subsystem":"<richiesto>"}` |
-| Altri errori | `403` / `503` / `500` | vedi §6.1 |
+| Found | `200` | the document without `_id`, e.g. `{"subsystem":"front-gate","listen":{"host":"127.0.0.1","port":9000},"subsystems_infos":{"preanalyst":{"url":"http://127.0.0.1:9200"}},"screen_infos":{"pricing":{"standard_price_cents":40000}}}` |
+| Not found | `404` | `{"error":"CONFIGURATION_NOT_FOUND","subsystem":"<requested>"}` |
+| Other errors | `403` / `503` / `500` | see §6.1 |
 
 ### 6.3 `GET /projects/{project_id}`
-Restituisce il progetto. Fino alla 0.4.0 era `GET /anagraphics/{project_id}`, che non esiste più.
+Returns the project. Up to 0.4.0 it was `GET /anagraphics/{project_id}`, which no longer exists.
 
-| Esito | Stato | Body |
+| Outcome | Status | Body |
 |---|---|---|
-| Trovato | `200` | il documento senza `_id` (§5.2) |
-| Non trovato | `404` | `{"error":"PROJECT_NOT_FOUND","project_id":"<richiesto>"}` |
-| Altri errori | `403` / `503` / `500` | vedi §6.1 |
+| Found | `200` | the document without `_id` (§5.2) |
+| Not found | `404` | `{"error":"PROJECT_NOT_FOUND","project_id":"<requested>"}` |
+| Other errors | `403` / `503` / `500` | see §6.1 |
 
 #### 6.3.1 `POST /projects`
-Crea un progetto. Corpo: `{"owner_uid": "<uid>", "submission_id": "<id dell'invio, almeno 16 caratteri>", "review": {"driver_uid": …, "preset": true}, "billing": {"discount_code": …, "autonomous_work": false, "ambassador_uid": null}}` (`review` e `billing` facoltativi, con i default di §5.2). Le regole su chi è preimpostato e quale sconto vale le applica chi chiama (preanalyst). Anagraphics genera `project_id`, `created_at` e `pipeline: {state: "PREANALYSIS", steps: []}`; un `project_id` nel corpo viene ignorato.
+Creates a project. Body: `{"owner_uid": "<uid>", "submission_id": "<the submission's id, at least 16 characters>", "review": {"driver_uid": …, "preset": true}, "billing": {"discount_code": …, "autonomous_work": false, "ambassador_uid": null}}` (`review` and `billing` optional, with the defaults of §5.2). The rules about who is preset and which discount counts are applied by the caller (the preanalyst). Anagraphics generates `project_id`, `created_at` and `pipeline: {state: "PREANALYSIS", steps: []}`; a `project_id` in the body is ignored.
 
-| Esito | Stato | Body |
+| Outcome | Status | Body |
 |---|---|---|
-| Creato | `201` | il documento completo |
-| Stesso `submission_id`, stesso `owner_uid` | `200` | il progetto **già esistente**: non se ne crea un secondo |
-| Stesso `submission_id`, altro `owner_uid` | `409` | `{"error":"SUBMISSION_EXISTS"}` (non si rivela il progetto dell'altro) |
-| Corpo non valido | `400` | `{"error":"INVALID_BODY"}` |
-| Altri errori | `403` / `503` / `500` | vedi §6.1 |
+| Created | `201` | the complete document |
+| Same `submission_id`, same `owner_uid` | `200` | the project **already there**: a second one is not created |
+| Same `submission_id`, another `owner_uid` | `409` | `{"error":"SUBMISSION_EXISTS"}` (the other's project is not revealed) |
+| Invalid body | `400` | `{"error":"INVALID_BODY"}` |
+| Other errors | `403` / `503` / `500` | see §6.1 |
 
 #### 6.3.2 `POST /projects/{project_id}/pipeline/steps`
-Accoda un passo alla pipeline del progetto e lo porta nello stato che il passo dice. Corpo: `{"step": "prevalidation", "result": "passed", "state": "ANALYSIS", "data": {…}}`.
+Appends a step to the project's pipeline and moves it to the state the step says. Body: `{"step": "prevalidation", "result": "passed", "state": "ANALYSIS", "data": {…}}`.
 
-- `step` e `state` sono elenchi chiusi (§5.2): un nome inventato risponde `400`, e nel database non entra niente.
-- `result` è `passed`, `rejected`, `underspecified` o `failed`. `underspecified` è un passo compiuto
-  che rimanda indietro senza chiudere niente: sta fra `passed` e `rejected`, e **si conta** — chi
-  decide quante volte si può tornare indietro guarda quanti ce ne sono già nella lista.
-- `state` è **dove porta** il passo, non un campo del passo: lo stesso esito può portare in posti diversi a seconda del cancello, quindi lo decide chi chiama. Nel documento finisce in `pipeline.state`, non dentro il passo.
-- `decided_at` lo mette anagraphics: quando è successo non lo sceglie chi chiama.
-- La scrittura è una sola (`$push` e `$set` insieme): non esiste un momento in cui il passo c'è e lo stato è ancora quello di prima.
+- `step` and `state` are closed lists (§5.2): an invented name answers `400`, and nothing gets into
+  the database.
+- `result` is `open`, `passed`, `rejected`, `underspecified` or `failed`. `underspecified` is a step
+  taken that sends the request back without closing anything: it sits between `passed` and
+  `rejected`, and it **is counted** — whoever decides how many times one may go back looks at how
+  many there already are in the list. `open` is a step that has begun and has decided nothing yet
+  (§6.20).
+- `state` is **where the step leads**, not a field of the step: the same outcome can lead to
+  different places depending on the gate, so the caller decides it. In the document it ends up in
+  `pipeline.state`, not inside the step.
+- `decided_at` is set by anagraphics: when it happened is not the caller's choice.
+- There is a single write (`$push` and `$set` together): there is no moment in which the step is
+  there and the state is still the previous one.
 
-| Esito | Stato | Body |
+| Outcome | Status | Body |
 |---|---|---|
-| Accodato | `201` | il progetto aggiornato |
-| Progetto inesistente | `404` | `{"error":"PROJECT_NOT_FOUND","project_id":"<richiesto>"}` |
-| Corpo non valido, nome fuori elenco | `400` | `{"error":"INVALID_BODY"}` |
-| Altri errori | `403` / `503` / `500` | vedi §6.1 |
+| Appended | `201` | the updated project |
+| Project does not exist | `404` | `{"error":"PROJECT_NOT_FOUND","project_id":"<requested>"}` |
+| Invalid body, a name outside the list | `400` | `{"error":"INVALID_BODY"}` |
+| Other errors | `403` / `503` / `500` | see §6.1 |
 
 #### 6.3.3 `DELETE /projects/{project_id}`
-Cancella un progetto. Serve a disfare un progetto rimasto a metà: preanalyst lo usa quando la pre-specifica non si riesce a scrivere.
+Deletes a project. It is for undoing a project left half-made: the preanalyst uses it when the
+pre-specification cannot be written.
 
-| Esito | Stato | Body |
+| Outcome | Status | Body |
 |---|---|---|
-| Cancellato | `204` | — |
-| Non trovato | `404` | `{"error":"PROJECT_NOT_FOUND","project_id":"<richiesto>"}` |
+| Deleted | `204` | — |
+| Not found | `404` | `{"error":"PROJECT_NOT_FOUND","project_id":"<requested>"}` |
 
 ### 6.4 `GET /drivers`
-Restituisce **tutti** i driver, ordinati per `uid`, con i soli campi `uid`, `screen_name` ed `enabled`.
+Returns **every** driver, ordered by `uid`, with the `uid`, `screen_name` and `enabled` fields
+only.
 
-| Esito | Stato | Body |
+| Outcome | Status | Body |
 |---|---|---|
-| Sempre | `200` | `{"drivers":[{"uid":…,"screen_name":…,"enabled":…}, …]}` |
-| Nessun driver | `200` | `{"drivers":[]}` |
-| Altri errori | `403` / `503` / `500` | vedi §6.1 |
+| Always | `200` | `{"drivers":[{"uid":…,"screen_name":…,"enabled":…}, …]}` |
+| No drivers | `200` | `{"drivers":[]}` |
+| Other errors | `403` / `503` / `500` | see §6.1 |
 
-**`username` non compare nella lista**, a differenza di `GET /drivers/{uid}`: una lista si legge per mostrare o scegliere un driver, e non c'è motivo di distribuire gli identificativi di accesso di tutti in una volta. La proiezione è la costante `DRIVER_SUMMARY` in `webtools_anagraphics/db.py`. Nota che non è una misura di sicurezza finché non c'è il login: chi può chiamare la lista può anche chiamare i singoli driver.
+**`username` does not appear in the list**, unlike in `GET /drivers/{uid}`: a list is read to show
+or choose a driver, and there is no reason to hand out everybody's login identifiers at once. The
+projection is the `DRIVER_SUMMARY` constant in `webtools_anagraphics/db.py`. Note that it is not a
+security measure while there is no login: whoever can call the list can also call the individual
+drivers.
 
-Nessuna paginazione e nessun filtro: i driver sono pochi. Se un giorno diventassero tanti, qui servono `limit`/`skip`.
+No pagination and no filters: there are few drivers. If one day there were many, `limit`/`skip`
+would be needed here.
 
 ### 6.5 `GET /drivers/{uid}`
-Restituisce il driver.
+Returns the driver.
 
-| Esito | Stato | Body |
+| Outcome | Status | Body |
 |---|---|---|
-| Trovato | `200` | il documento senza `_id`, es. `{"uid":"7633be3d-…","username":"dome.santorogmail.com","screen_name":"Dome"}` |
-| Non trovato | `404` | `{"error":"DRIVER_NOT_FOUND","uid":"<richiesto>"}` |
-| Altri errori | `403` / `503` / `500` | vedi §6.1 |
+| Found | `200` | the document without `_id`, e.g. `{"uid":"7633be3d-…","username":"dome.santorogmail.com","screen_name":"Dome"}` |
+| Not found | `404` | `{"error":"DRIVER_NOT_FOUND","uid":"<requested>"}` |
+| Other errors | `403` / `503` / `500` | see §6.1 |
 
 ### 6.6 `GET /drivers/{uid}/discounts`
-Restituisce **tutti** i codici sconto del driver, ordinati per `discount_code`.
+Returns **every** discount code of the driver, ordered by `discount_code`.
 
-| Esito | Stato | Body |
+| Outcome | Status | Body |
 |---|---|---|
-| Driver esistente | `200` | `{"uid":"<richiesto>","discounts":[<documenti senza _id>]}` |
-| Driver esistente senza codici | `200` | `{"uid":"<richiesto>","discounts":[]}` |
-| Driver inesistente | `404` | `{"error":"DRIVER_NOT_FOUND","uid":"<richiesto>"}` |
-| Altri errori | `403` / `503` / `500` | vedi §6.1 |
+| The driver exists | `200` | `{"uid":"<requested>","discounts":[<documents without _id>]}` |
+| The driver exists with no codes | `200` | `{"uid":"<requested>","discounts":[]}` |
+| The driver does not exist | `404` | `{"error":"DRIVER_NOT_FOUND","uid":"<requested>"}` |
+| Other errors | `403` / `503` / `500` | see §6.1 |
 
-La distinzione è voluta: **lista vuota ≠ driver inesistente**. Il consumer non deve dedurre l'esistenza del driver dal numero di sconti, quindi l'endpoint verifica prima il driver e solo dopo legge i codici (due letture, non una).
+The distinction is deliberate: **an empty list ≠ a driver who does not exist**. The consumer must
+not infer the driver's existence from the number of discounts, so the endpoint checks the driver
+first and only then reads the codes (two reads, not one).
 
 ### 6.7 `GET /discounts/{discount_code}`
-Restituisce un singolo codice sconto, col driver ridondato dentro (§5.4).
+Returns a single discount code, with the driver duplicated inside (§5.4).
 
-| Esito | Stato | Body |
+| Outcome | Status | Body |
 |---|---|---|
-| Trovato | `200` | il documento senza `_id`, es. `{"discount_code":"e8013cf2-…","driver":{"uid":"7633be3d-…","screen_name":"Dome"},"percentage":5}` |
-| Non trovato | `404` | `{"error":"DISCOUNT_NOT_FOUND","discount_code":"<richiesto>"}` |
-| Altri errori | `403` / `503` / `500` | vedi §6.1 |
+| Found | `200` | the document without `_id`, e.g. `{"discount_code":"e8013cf2-…","driver":{"uid":"7633be3d-…","screen_name":"Dome"},"percentage":5}` |
+| Not found | `404` | `{"error":"DISCOUNT_NOT_FOUND","discount_code":"<requested>"}` |
+| Other errors | `403` / `503` / `500` | see §6.1 |
 
 ### 6.8 `GET /users/{username}`
-L'utente **senza** il blocco delle credenziali. È la lettura normale, quella che possono fare tutti i sottosistemi del pool.
+The user **without** the credentials block. It is the ordinary read, the one every subsystem in
+the pool may do.
 
-| Esito | Stato | Body |
+| Outcome | Status | Body |
 |---|---|---|
-| Trovato | `200` | es. `{"uid":"8ff93901-…","username":"dome.santoro@gmail.com","screen_name":"Dome","active":true,"driver_uid":"7633be3d-…"}` |
-| Non trovato | `404` | `{"error":"USER_NOT_FOUND","username":"<richiesto>"}` |
-| Altri errori | `403` / `503` / `500` | vedi §6.1 |
+| Found | `200` | e.g. `{"uid":"8ff93901-…","username":"dome.santoro@gmail.com","screen_name":"Dome","active":true,"driver_uid":"7633be3d-…"}` |
+| Not found | `404` | `{"error":"USER_NOT_FOUND","username":"<requested>"}` |
+| Other errors | `403` / `503` / `500` | see §6.1 |
 
-Non esiste una lista degli utenti: si leggono uno per uno, per username.
+There is no list of users: they are read one by one, by username.
 
 ### 6.9 `GET /users/{username}/credential`
-Algoritmo, parametri, salt e hash della password (§5.5). **La usa solo il sso**, per verificare un login.
+The algorithm, parameters, salt and hash of the password (§5.5). **Only the sso uses it**, to
+verify a login.
 
-| Esito | Stato | Body |
+| Outcome | Status | Body |
 |---|---|---|
-| Trovato | `200` | `{"username":"…","credential":{"algorithm":"scrypt","params":{…},"salt":"…","hash":"…","updated_at":"…"}}` |
-| Utente inesistente | `404` | `{"error":"USER_NOT_FOUND","username":"<richiesto>"}` |
-| Password mai impostata | `404` | `{"error":"CREDENTIAL_NOT_SET","username":"<richiesto>"}` |
-| Altri errori | `403` / `503` / `500` | vedi §6.1 |
+| Found | `200` | `{"username":"…","credential":{"algorithm":"scrypt","params":{…},"salt":"…","hash":"…","updated_at":"…"}}` |
+| The user does not exist | `404` | `{"error":"USER_NOT_FOUND","username":"<requested>"}` |
+| Password never set | `404` | `{"error":"CREDENTIAL_NOT_SET","username":"<requested>"}` |
+| Other errors | `403` / `503` / `500` | see §6.1 |
 
-I due 404 sono distinti perché dicono due cose diverse a chi amministra. Al cliente il sso li unisce comunque in un solo `INVALID_CREDENTIALS`: chi prova a entrare non deve capire se un indirizzo è registrato.
+The two 404s are told apart because they say two different things to whoever administers the
+system. To the client the sso merges them into a single `INVALID_CREDENTIALS` anyway: whoever
+tries to get in must not work out whether an address is registered.
 
 ### 6.10 `POST /sessions`
-Conserva una sessione costruita dal sso. Qui non si genera niente: né il token né le date.
+Stores a session built by the sso. Nothing is generated here: neither the token nor the dates.
 
-Corpo (JSON):
+Body (JSON):
 
-| Campo | Obbligatorio | Note |
+| Field | Required | Notes |
 |---|---|---|
-| `token` | sì | Almeno 16 caratteri |
-| `uid` | sì | La persona |
-| `username` | sì | — |
-| `issued_at` | sì | Data ISO 8601 |
-| `expires_at` | sì | Data ISO 8601. Può essere già passata: non viene controllata |
-| `data` | no | Oggetto libero, default `{}` |
+| `token` | yes | At least 16 characters |
+| `uid` | yes | The person |
+| `username` | yes | — |
+| `issued_at` | yes | An ISO 8601 date |
+| `expires_at` | yes | An ISO 8601 date. It may already be past: it is not checked |
+| `data` | no | A free object, `{}` by default |
 
-| Esito | Stato | Body |
+| Outcome | Status | Body |
 |---|---|---|
-| Creata | `201` | il documento conservato |
-| Token già presente | `409` | `{"error":"SESSION_EXISTS","token":"<inviato>"}` |
-| Corpo non valido | `400` | `{"error":"INVALID_BODY"}` |
-| Altri errori | `403` / `503` / `500` | vedi §6.1 |
+| Created | `201` | the stored document |
+| Token already there | `409` | `{"error":"SESSION_EXISTS","token":"<sent>"}` |
+| Invalid body | `400` | `{"error":"INVALID_BODY"}` |
+| Other errors | `403` / `503` / `500` | see §6.1 |
 
-Campi in più oltre a questi vengono ignorati: quello che deve sopravvivere va dentro `data`.
+Extra fields beyond these are ignored: what has to survive goes inside `data`.
 
 ### 6.11 `GET /sessions/{token}`
-La sessione, **anche se scaduta** (§5.6).
+The session, **even if expired** (§5.6).
 
-| Esito | Stato | Body |
+| Outcome | Status | Body |
 |---|---|---|
-| Trovata | `200` | il documento senza `_id` |
-| Non trovata | `404` | `{"error":"SESSION_NOT_FOUND"}` |
-| Altri errori | `403` / `503` / `500` | vedi §6.1 |
+| Found | `200` | the document without `_id` |
+| Not found | `404` | `{"error":"SESSION_NOT_FOUND"}` |
+| Other errors | `403` / `503` / `500` | see §6.1 |
 
-Il body del 404 non ripete il token: finirebbe nei log di chiunque, e un token è un segreto.
+The 404's body does not repeat the token: it would end up in everybody's logs, and a token is a
+secret.
 
 ### 6.12 `DELETE /sessions/{token}`
-Chiude una sessione.
+Closes a session.
 
-| Esito | Stato | Body |
+| Outcome | Status | Body |
 |---|---|---|
-| Cancellata | `204` | vuoto |
-| Non trovata | `404` | `{"error":"SESSION_NOT_FOUND"}` |
-| Altri errori | `403` / `503` / `500` | vedi §6.1 |
+| Deleted | `204` | empty |
+| Not found | `404` | `{"error":"SESSION_NOT_FOUND"}` |
+| Other errors | `403` / `503` / `500` | see §6.1 |
 
-Il 404 serve a distinguere "l'ho chiusa io adesso" da "non c'era". Il sso risponde comunque `logged: false` in entrambi i casi.
+The 404 is there to tell "I have just closed it" from "it was not there". The sso answers
+`logged: false` in both cases anyway.
 
 ### 6.13 `DELETE /sessions?uid={uid}`
-Chiude **tutte** le sessioni di un utente. Serve al cambio password e al blocco di un account.
+Closes **all** of a user's sessions. It is for password changes and for blocking an account.
 
-| Esito | Stato | Body |
+| Outcome | Status | Body |
 |---|---|---|
-| Fatto | `200` | `{"uid":"<richiesto>","deleted":<numero>}` |
-| Senza `uid` | `400` | `{"error":"INVALID_BODY"}` |
-| Altri errori | `403` / `503` / `500` | vedi §6.1 |
+| Done | `200` | `{"uid":"<requested>","deleted":<number>}` |
+| Without `uid` | `400` | `{"error":"INVALID_BODY"}` |
+| Other errors | `403` / `503` / `500` | see §6.1 |
 
-Un `uid` inesistente risponde `200` con `deleted: 0`: la richiesta è "non deve restarne nessuna", e il risultato è quello.
+A `uid` that does not exist answers `200` with `deleted: 0`: the request is "none must be left",
+and that is the result.
 
 ### 6.14 `POST /tickets`
-Conserva un biglietto costruito dal sso (§5.7).
+Stores a ticket built by the sso (§5.7).
 
-Corpo (JSON): `ticket` (almeno 16 caratteri), `token` (almeno 16), `service`, `issued_at`, `expires_at`.
+Body (JSON): `ticket` (at least 16 characters), `token` (at least 16), `service`, `issued_at`,
+`expires_at`.
 
-| Esito | Stato | Body |
+| Outcome | Status | Body |
 |---|---|---|
-| Creato | `201` | il documento conservato |
-| Biglietto già presente | `409` | `{"error":"TICKET_EXISTS"}` |
-| Corpo non valido | `400` | `{"error":"INVALID_BODY"}` |
-| Altri errori | `403` / `503` / `500` | vedi §6.1 |
+| Created | `201` | the stored document |
+| Ticket already there | `409` | `{"error":"TICKET_EXISTS"}` |
+| Invalid body | `400` | `{"error":"INVALID_BODY"}` |
+| Other errors | `403` / `503` / `500` | see §6.1 |
 
 ### 6.15 `DELETE /tickets/{ticket}`
-**Consuma** il biglietto: lo restituisce e lo cancella nello stesso momento.
+**Consumes** the ticket: it returns it and deletes it at the same moment.
 
-| Esito | Stato | Body |
+| Outcome | Status | Body |
 |---|---|---|
-| Consumato | `200` | il documento, che da adesso non esiste più |
-| Sconosciuto, già usato o scaduto dal TTL | `404` | `{"error":"TICKET_NOT_FOUND"}` |
-| Altri errori | `403` / `503` / `500` | vedi §6.1 |
+| Consumed | `200` | the document, which from now on no longer exists |
+| Unknown, already used or expired by the TTL | `404` | `{"error":"TICKET_NOT_FOUND"}` |
+| Other errors | `403` / `503` / `500` | see §6.1 |
 
-Il 404 non ripete il biglietto, per la stessa ragione delle sessioni: finirebbe nei log.
+The 404 does not repeat the ticket, for the same reason as the sessions: it would end up in the
+logs.
 
-### 6.16 Note sui parametri
-- Il parametro di percorso è una stringa su **un solo segmento**: non può contenere `/`. I caratteri speciali vanno codificati nell'URL (`@` negli username va bene così com'è).
-- La corrispondenza è esatta e distingue maiuscole e minuscole (`Front-Gate` ≠ `front-gate`).
+### 6.16 Notes on the parameters
+- The path parameter is a string on **a single segment**: it cannot contain `/`. Special
+  characters must be URL-encoded (`@` in usernames is fine as it is).
+- The match is exact and case-sensitive (`Front-Gate` ≠ `front-gate`).
 
-### 6.19 `PUT /users/{username}/locale` e `PUT /sessions/{token}/locale`
-La lingua preferita dell'utente e quella della sessione. Le chiama il sso: al primo login (se il profilo non ha ancora una lingua) e quando si cambia lingua dal selettore delle pagine.
+### 6.19 `PUT /users/{username}/locale` and `PUT /sessions/{token}/locale`
+The user's preferred language and the session's. The sso calls them: at the first login (if the
+profile has no language yet) and when the language is changed from the pages' switcher.
 
-Corpo (JSON): `{"locale": "it"}`. Qui si controlla solo che sia un codice di lingua (`^[a-z]{2,3}$`): quali lingue esistono lo decide il sso, dalla sua configurazione (`i18n.locales`).
+Body (JSON): `{"locale": "it"}`. Here we only check that it is a language code (`^[a-z]{2,3}$`):
+which languages exist is decided by the sso, from its own configuration (`i18n.locales`).
 
-| Esito | Stato | Body |
+| Outcome | Status | Body |
 |---|---|---|
-| Fatto (utente) | `200` | l'utente senza `credential`, con `locale` |
-| Fatto (sessione) | `200` | la sessione, con `data.locale`; il resto di `data` resta com'era |
-| Utente inesistente | `404` | `{"error":"USER_NOT_FOUND","username":"<richiesto>"}` |
-| Sessione inesistente | `404` | `{"error":"SESSION_NOT_FOUND"}` |
-| Codice non valido | `400` | `{"error":"INVALID_BODY"}` |
-| Altri errori | `403` / `503` / `500` | vedi §6.1 |
+| Done (user) | `200` | the user without `credential`, with `locale` |
+| Done (session) | `200` | the session, with `data.locale`; the rest of `data` stays as it was |
+| The user does not exist | `404` | `{"error":"USER_NOT_FOUND","username":"<requested>"}` |
+| The session does not exist | `404` | `{"error":"SESSION_NOT_FOUND"}` |
+| Invalid code | `400` | `{"error":"INVALID_BODY"}` |
+| Other errors | `403` / `503` / `500` | see §6.1 |
 
-### 6.17 Route generate da FastAPI
-Sono raggiungibili, sempre solo da IP consentiti:
-- `GET /docs`: interfaccia Swagger;
+### 6.20 `PATCH /projects/{project_id}/pipeline/steps/{step}`
+
+Updates the data of the **last open step** with that name. Body:
+
+```json
+{ "set": { "turns_left": 4 }, "push": { "chat": [{"role": "client", "text": "…"}] } }
+```
+
+`set` rewrites fields of `data`, `push` appends to lists inside `data`; they can be used together,
+and that is the chat's case, appending two messages and rewriting the remaining turns at the same
+moment — they are the same thing seen from two sides.
+
+**`open` only.** A step that has decided something is not rewritten: the list of steps is the
+register of those decisions, and rewriting one would mean changing the past. Without an open step
+with that name the answer is `404 OPEN_STEP_NOT_FOUND`, and **nothing is created**: the step is
+opened by whoever runs that phase, with `POST .../steps`, not by whoever writes inside it.
+
+It returns the updated project. `404 PROJECT_NOT_FOUND` if the project does not exist.
+
+### 6.21 `POST /users/{uid}/billing/turns/spend` and `.../grant`
+
+They move turns on the user's credit. Body `{"turns": 3}`, always **positive**: the direction is
+said by the route, not by the sign, or a `0` or a `-3` would become a way of saying the other
+thing. A non-positive value is `400 INVALID_BODY`.
+
+| | |
+|---|---|
+| `spend` | draws turns down. **The check that the credit is enough lives inside the write**, not in an earlier read: two requests at once cannot spend the same credit twice, because the second no longer matches the condition. If it is not enough, `409 NOT_ENOUGH_TURNS` and nothing was drawn |
+| `grant` | adds turns. The field is born here if it was not there: a user with no credit is a user with zero credit. This is where the payment will arrive; today only the preanalyst's fake purchase arrives here |
+
+Both return the updated user, without the `credential` block. `404 USER_NOT_FOUND` if the `uid`
+does not exist — and `spend` tells that apart from insufficient credit, because one is a failure
+and the other is an answer to the user.
+
+### 6.17 Routes generated by FastAPI
+They are reachable, always from allowed IPs only:
+- `GET /docs`: the Swagger interface;
 - `GET /redoc`;
-- `GET /openapi.json`: lo schema.
+- `GET /openapi.json`: the schema.
 
-Qualsiasi altra route risponde `404 {"error":"ROUTE_NOT_FOUND"}`.
+Any other route answers `404 {"error":"ROUTE_NOT_FOUND"}`.
 
-### 6.18 Esempi
+### 6.18 Examples
 ```sh
 curl -i http://127.0.0.1:9100/configuration/front-gate
 curl -s http://127.0.0.1:9100/drivers
@@ -594,153 +730,179 @@ curl -s http://127.0.0.1:9100/projects/1f251606-bdba-40c4-bbee-bfedc6e57f70
 curl -s http://127.0.0.1:9100/drivers/7633be3d-e701-42ca-9fea-6c6d1bb4b7d1
 curl -s http://127.0.0.1:9100/drivers/7633be3d-e701-42ca-9fea-6c6d1bb4b7d1/discounts
 curl -s http://127.0.0.1:9100/discounts/e8013cf2-34eb-4bc3-8a34-b08fb24a1bf3
-curl -s -w " [%{http_code}]\n" http://127.0.0.1:9100/projects/inesistente   # {"error":"PROJECT_NOT_FOUND","project_id":"inesistente"} [404]
-curl -s -w " [%{http_code}]\n" http://127.0.0.1:9100/drivers/inesistente/discounts   # {"error":"DRIVER_NOT_FOUND","uid":"inesistente"} [404]
+curl -s -w " [%{http_code}]\n" http://127.0.0.1:9100/projects/nonexistent   # {"error":"PROJECT_NOT_FOUND","project_id":"nonexistent"} [404]
+curl -s -w " [%{http_code}]\n" http://127.0.0.1:9100/drivers/nonexistent/discounts   # {"error":"DRIVER_NOT_FOUND","uid":"nonexistent"} [404]
 
-# utenti
+# users
 curl -s http://127.0.0.1:9100/users/dome.santoro@gmail.com
-curl -s -w " [%{http_code}]\n" http://127.0.0.1:9100/users/dome.santoro@gmail.com/credential   # 404 CREDENTIAL_NOT_SET finché non c'è la password
+curl -s -w " [%{http_code}]\n" http://127.0.0.1:9100/users/dome.santoro@gmail.com/credential   # 404 CREDENTIAL_NOT_SET until there is a password
 
-# sessioni (normalmente le scrive il sso, non si fa a mano)
+# sessions (normally the sso writes them, this is not done by hand)
 curl -s -X POST http://127.0.0.1:9100/sessions -H 'content-type: application/json' \
-  -d '{"token":"token-di-prova-0123456789","uid":"214912a9-2cc4-4205-87b7-93ea71f6be72","username":"driver.prova@example.com","issued_at":"2026-09-21T10:00:00Z","expires_at":"2026-09-21T18:00:00Z"}'
-curl -s http://127.0.0.1:9100/sessions/token-di-prova-0123456789
-curl -s -o /dev/null -w "%{http_code}\n" -X DELETE http://127.0.0.1:9100/sessions/token-di-prova-0123456789   # 204
+  -d '{"token":"test-token-0123456789","uid":"214912a9-2cc4-4205-87b7-93ea71f6be72","username":"driver.prova@example.com","issued_at":"2026-09-21T10:00:00Z","expires_at":"2026-09-21T18:00:00Z"}'
+curl -s http://127.0.0.1:9100/sessions/test-token-0123456789
+curl -s -o /dev/null -w "%{http_code}\n" -X DELETE http://127.0.0.1:9100/sessions/test-token-0123456789   # 204
 curl -s -X DELETE "http://127.0.0.1:9100/sessions?uid=214912a9-2cc4-4205-87b7-93ea71f6be72"
 ```
 
 ---
 
-## 7. Configurazione
+## 7. Configuration
 
-Nessun valore di default: se manca qualcosa, il server scrive il motivo nel log (`webtools_anagraphics non parte: …`) ed esce con 1.
+No default values: if anything is missing, the server writes the reason in the log
+(`webtools_anagraphics is not starting: …`) and exits with 1.
 
-**Dall'ambiente** arriva solo quello che serve a raggiungere la configurazione. Lo script di controllo lo carica da `webtools/configurator/bootstrap.env`:
+**From the environment** comes only what is needed to reach the configuration. The control script
+loads it from `webtools/configurator/bootstrap.env`:
 
-| Variabile | Letta da | Note |
+| Variable | Read by | Notes |
 |---|---|---|
-| `WEBTOOLS_ANAGRAPHICS_URL` | `settings.py` | Il nostro indirizzo, `http://host:porta`: il server si mette in ascolto lì. Gli altri sottosistemi usano la stessa variabile per chiamarci, quindi c'è un solo posto dove cambiarlo |
-| `WEBTOOLS_CONFIGURATION_TIMEOUT_MS` | `settings.py` | Quanto aspettare Mongo per leggere la configurazione, all'avvio |
-| `WEBTOOLS_MONGO_URI` | `settings.py` | Anche `scripts/seed.py` e `scripts/load_configuration.py` |
-| `WEBTOOLS_MONGO_DB` | `settings.py` | I test la impostano a `webtools_test` |
+| `WEBTOOLS_ANAGRAPHICS_URL` | `settings.py` | Our address, `http://host:port`: the server listens there. The other subsystems use the same variable to call us, so there is one place to change it |
+| `WEBTOOLS_CONFIGURATION_TIMEOUT_MS` | `settings.py` | How long to wait for Mongo when reading the configuration, at startup |
+| `WEBTOOLS_MONGO_URI` | `settings.py` | Also `scripts/seed.py` and `scripts/load_configuration.py` |
+| `WEBTOOLS_MONGO_DB` | `settings.py` | The tests set it to `webtools_test` |
 
-**Tutto il resto** è il documento `anagraphics` della collection `configuration` (§5.1), letto direttamente da Mongo: anagraphics non può chiedere la configurazione a sé stesso via HTTP prima di essere acceso. Si modifica `webtools/configurator/configuration/anagraphics.json` e si rilancia `webtools/configurator/start.sh --restart`.
+**Everything else** is the `anagraphics` document of the `configuration` collection (§5.1), read
+straight from Mongo: anagraphics cannot ask itself for its configuration over HTTP before it is
+running. Edit `webtools/configurator/configuration/anagraphics.json` and run
+`webtools/configurator/start.sh --restart` again.
 
-La configurazione si legge **una volta all'avvio**: dopo una modifica bisogna riavviare.
+The configuration is read **once at startup**: after a change, a restart is needed.
 
 ---
 
-## 8. Comandi operativi
+## 8. Operational commands
 
-I comandi `uv` si lanciano da `webtools/anagraphics/`; lo script di controllo funziona da qualsiasi cartella.
+The `uv` commands are run from `webtools/anagraphics/`; the control script works from any
+directory.
 
-### 8.1 Setup (una volta sola)
+### 8.1 Setup (once only)
 ```sh
-uv sync                        # crea .venv e installa le dipendenze (anche quelle di sviluppo)
-uv run python -m scripts.seed  # indici + dati iniziali; si può rilanciare
-../configurator/load_configuration.sh   # la configurazione di tutti i sottosistemi
+uv sync                        # creates .venv and installs the dependencies (the development ones too)
+uv run python -m scripts.seed  # indexes + initial data; can be re-run
+../configurator/load_configuration.sh   # the configuration of every subsystem
 ```
 
-Il seed e `load_configuration.py` leggono `WEBTOOLS_MONGO_URI` e `WEBTOOLS_MONGO_DB` dall'ambiente: `load_configuration.sh` li carica da sé, per il seed si lancia prima `set -a; source ../configurator/bootstrap.env; set +a`.
+The seed and `load_configuration.py` read `WEBTOOLS_MONGO_URI` and `WEBTOOLS_MONGO_DB` from the
+environment: `load_configuration.sh` loads them by itself, for the seed run
+`set -a; source ../configurator/bootstrap.env; set +a` first.
 
-### 8.2 Avvio e arresto
+### 8.2 Start and stop
 
-Si usa lo script `webtools/anagraphics/webtools_anagraphics.sh`. Funziona da qualsiasi cartella.
+The script `webtools/anagraphics/webtools_anagraphics.sh` is used. It works from any directory.
 
 ```sh
-webtools/anagraphics/webtools_anagraphics.sh --start   # avvia in background
-webtools/anagraphics/webtools_anagraphics.sh --stop    # ferma
+webtools/anagraphics/webtools_anagraphics.sh --start   # starts it in the background
+webtools/anagraphics/webtools_anagraphics.sh --stop    # stops it
 ```
 
 **`--start`**
-- Avvia `…/webtools/anagraphics/.venv/bin/python -m webtools_anagraphics` con `nohup`: il server resta attivo anche chiudendo il terminale.
-- Scrive il PID in `webtools_anagraphics.pid` e accoda stdout e stderr (log di accesso e traceback) in `webtools_anagraphics.log`. Prima di ogni avvio aggiunge al log una riga `=== start <data> ===`.
-- Carica nell'ambiente le variabili di `webtools/configurator/bootstrap.env`.
-- Aspetta fino a 10 s il messaggio `Uvicorn running on`:
-  - se arriva: `webtools_anagraphics avviato (PID …)`, uscita 0;
-  - se il processo muore: stampa le ultime righe del log, cancella il file PID, uscita 1.
-- Se il server è già in esecuzione non ne avvia un secondo: `… è già in esecuzione (PID …)`.
-- Se manca `.venv`, chiede di lanciare `uv sync`.
+- Starts `…/webtools/anagraphics/.venv/bin/python -m webtools_anagraphics` with `nohup`: the
+  server stays up even if the terminal is closed.
+- Writes the PID in `webtools_anagraphics.pid` and appends stdout and stderr (access logs and
+  tracebacks) to `webtools_anagraphics.log`. Before every start it adds a
+  `=== start <date> ===` line to the log.
+- Loads the variables of `webtools/configurator/bootstrap.env` into the environment.
+- Waits up to 10 s for the `Uvicorn running on` message:
+  - if it arrives: `webtools_anagraphics started (PID …)`, exit 0;
+  - if the process dies: it prints the last lines of the log, deletes the PID file, exit 1.
+- If the server is already running it does not start a second one:
+  `… is already running (PID …)`.
+- If `.venv` is missing, it asks you to run `uv sync`.
 
 **`--stop`**
-- Legge il PID dal file e, **prima di ucciderlo, verifica** che la riga di comando di quel processo sia esattamente `…/webtools/anagraphics/.venv/bin/python -m webtools_anagraphics`.
-- Manda `SIGTERM` e aspetta fino a 10 s. Se il processo non esce, manda `SIGKILL`. Poi cancella il file PID.
-- Se il file PID manca, o punta a un processo che non è il nostro (per esempio un PID riusato dopo un crash), **non uccide nulla**: cancella il file e stampa `… non è in esecuzione`.
+- Reads the PID from the file and, **before killing it, checks** that that process's command line
+  is exactly `…/webtools/anagraphics/.venv/bin/python -m webtools_anagraphics`.
+- Sends `SIGTERM` and waits up to 10 s. If the process does not exit, it sends `SIGKILL`. Then it
+  deletes the PID file.
+- If the PID file is missing, or points at a process that is not ours (a PID reused after a crash,
+  for instance), **it kills nothing**: it deletes the file and prints `… is not running`.
 
-**Perché così:**
-- Non si ferma per nome del processo: `pkill -f` con un pattern colpirebbe anche altri progetti sul Mac.
-- Non si ferma per porta: la porta potrebbe essere occupata da un altro programma.
-- Si usa il PID salvato all'avvio, verificato sulla riga di comando completa, che contiene il percorso del venv di questo progetto.
-- Lo script lancia direttamente `.venv/bin/python`, non `uv run`: così il PID salvato è quello del server e non di un processo wrapper.
+**Why this way:**
+- It does not stop by process name: `pkill -f` with a pattern would hit other projects on the Mac
+  too.
+- It does not stop by port: the port might be taken by another program.
+- It uses the PID saved at startup, checked against the full command line, which contains the path
+  of this project's venv.
+- The script runs `.venv/bin/python` directly, not `uv run`: that way the saved PID is the
+  server's and not a wrapper process's.
 
-**Controlli utili**
+**Useful checks**
 ```sh
-curl http://127.0.0.1:9100/configuration/front-gate          # risponde? {"subsystem":"front-gate",…}
-tail -f webtools/anagraphics/webtools_anagraphics.log         # log in tempo reale
+curl http://127.0.0.1:9100/configuration/front-gate          # does it answer? {"subsystem":"front-gate",…}
+tail -f webtools/anagraphics/webtools_anagraphics.log         # the log in real time
 ```
 
-**Avvio in primo piano, per il debug** (Ctrl+C per fermarlo), da `webtools/anagraphics/`:
+**Starting in the foreground, for debugging** (Ctrl+C to stop it), from `webtools/anagraphics/`:
 ```sh
 set -a; source ../configurator/bootstrap.env; set +a
 uv run python -m webtools_anagraphics
 ```
 
-> ⚠️ **Non** avviare con `uvicorn webtools_anagraphics.main:app`: senza `--no-proxy-headers` uvicorn si fida di `X-Forwarded-For` per le richieste da localhost, e il pool di IP può essere aggirato (§9.2).
+> ⚠️ **Do not** start it with `uvicorn webtools_anagraphics.main:app`: without
+> `--no-proxy-headers` uvicorn trusts `X-Forwarded-For` for requests from localhost, and the IP
+> pool can be bypassed (§9.2).
 >
-> ⚠️ **Non** lanciare `python scripts/seed.py`: fallisce con `ModuleNotFoundError: No module named 'webtools_anagraphics'`. Usa `uv run python -m scripts.seed` da `webtools/anagraphics/`.
+> ⚠️ **Do not** run `python scripts/seed.py`: it fails with
+> `ModuleNotFoundError: No module named 'webtools_anagraphics'`. Use
+> `uv run python -m scripts.seed` from `webtools/anagraphics/`.
 
-### 8.3 MongoDB locale (Homebrew)
-| Voce | Valore |
+### 8.3 Local MongoDB (Homebrew)
+| Item | Value |
 |---|---|
 | Config | `/usr/local/etc/mongod.conf` |
-| Dati | `/usr/local/var/mongodb` |
+| Data | `/usr/local/var/mongodb` |
 | Log | `/usr/local/var/log/mongodb/mongo.log` |
-| Ascolta su | `127.0.0.1`, `::1` (solo locale) |
+| Listens on | `127.0.0.1`, `::1` (local only) |
 
 ```sh
-brew services list | grep mongo              # stato
-brew services start mongodb-community        # avvio (se è spento)
+brew services list | grep mongo              # state
+brew services start mongodb-community        # start (if it is down)
 brew services restart mongodb-community
-mongosh --quiet --eval 'db.runCommand({ping:1})'   # risponde { ok: 1 }
+mongosh --quiet --eval 'db.runCommand({ping:1})'   # answers { ok: 1 }
 ```
 
-### 8.4 Ispezionare e modificare i dati (finché non c'è il CRUD)
+### 8.4 Inspecting and changing the data (until there is a CRUD)
 ```sh
 mongosh webtools --quiet --eval 'db.configuration.find({}, {_id:0}).toArray()'
 mongosh webtools --quiet --eval 'db.projects.find({}, {_id:0}).toArray()'
 mongosh webtools --quiet --eval 'db.drivers.find({}, {_id:0}).toArray()'
 mongosh webtools --quiet --eval 'db.discounts.find({}, {_id:0}).toArray()'
-# gli utenti senza il blocco delle credenziali
+# the users without the credentials block
 mongosh webtools --quiet --eval 'db.users.find({}, {_id:0, credential:0}).toArray()'
-# chi ha una password impostata, senza stamparla
+# who has a password set, without printing it
 mongosh webtools --quiet --eval 'db.users.find({}, {_id:0, username:1, "credential.updated_at":1}).toArray()'
-# le sessioni aperte, senza il token intero
+# the open sessions, without the whole token
 mongosh webtools --quiet --eval 'db.sessions.find({}, {_id:0, username:1, issued_at:1, expires_at:1}).toArray()'
 mongosh webtools --quiet --eval 'db.projects.getIndexes()'
 
-# nuovo UUID: python3 -c 'import uuid; print(uuid.uuid4())'
-# aggiungere o aggiornare un progetto (upsert, rispetta l'indice univoco)
+# a new UUID: python3 -c 'import uuid; print(uuid.uuid4())'
+# adding or updating a project (upsert, it respects the unique index)
 mongosh webtools --quiet --eval 'db.projects.updateOne({project_id:"<uuid>"}, {$set:{project_id:"<uuid>"}}, {upsert:true})'
 
-# eliminare un progetto
+# deleting a project
 mongosh webtools --quiet --eval 'db.projects.deleteOne({project_id:"<uuid>"})'
 
-# aggiungere un driver
-mongosh webtools --quiet --eval 'db.drivers.updateOne({uid:"<uuid>"}, {$set:{uid:"<uuid>", username:"<username>", screen_name:"<nome>"}}, {upsert:true})'
+# adding a driver
+mongosh webtools --quiet --eval 'db.drivers.updateOne({uid:"<uuid>"}, {$set:{uid:"<uuid>", username:"<username>", screen_name:"<name>"}}, {upsert:true})'
 
-# aggiungere un codice sconto a un driver
-mongosh webtools --quiet --eval 'db.discounts.updateOne({discount_code:"<uuid>"}, {$set:{discount_code:"<uuid>", driver:{uid:"<uuid driver>", screen_name:"<nome>"}, percentage:5}}, {upsert:true})'
+# adding a discount code to a driver
+mongosh webtools --quiet --eval 'db.discounts.updateOne({discount_code:"<uuid>"}, {$set:{discount_code:"<uuid>", driver:{uid:"<driver uuid>", screen_name:"<name>"}, percentage:5}}, {upsert:true})'
 
-# cambiare lo screen_name di un driver: va aggiornata anche la copia negli sconti (§5.4)
-mongosh webtools --quiet --eval 'db.drivers.updateOne({uid:"<uuid>"}, {$set:{screen_name:"<nuovo>"}}); db.discounts.updateMany({"driver.uid":"<uuid>"}, {$set:{"driver.screen_name":"<nuovo>"}})'
+# changing a driver's screen_name: the copy in the discounts must be updated too (§5.4)
+mongosh webtools --quiet --eval 'db.drivers.updateOne({uid:"<uuid>"}, {$set:{screen_name:"<new>"}}); db.discounts.updateMany({"driver.uid":"<uuid>"}, {$set:{"driver.screen_name":"<new>"}})'
 ```
-Per rendere permanenti i dati iniziali, aggiungili alle liste `CONFIGURATIONS` / `PROJECTS` / `DRIVERS` / `DISCOUNTS` / `USERS` in `scripts/seed.py` e rilancia il seed. Il seed **non tocca le password già impostate**: `credential` si scrive solo alla creazione dell'utente (`$setOnInsert`).
+To make initial data permanent, add it to the `CONFIGURATIONS` / `PROJECTS` / `DRIVERS` /
+`DISCOUNTS` / `USERS` lists in `scripts/seed.py` and re-run the seed. The seed **does not touch
+passwords already set**: `credential` is written only when the user is created (`$setOnInsert`).
 
-Le password non si scrivono con `mongosh`: il blocco `credential` va costruito con scrypt, e a farlo è §8.5.
+Passwords are not written with `mongosh`: the `credential` block has to be built with scrypt, and
+§8.5 is what does it.
 
-### 8.5 Impostare la password di un utente
+### 8.5 Setting a user's password
 
-Non c'è uno strumento dedicato: si costruisce il blocco `credential` con `build_credential()` e lo si scrive sull'utente, che deve già esistere.
+There is no dedicated tool: the `credential` block is built with `build_credential()` and written
+onto the user, who must already exist.
 
 ```sh
 uv run python -c '
@@ -753,53 +915,60 @@ username = input("username: ")
 database = db.connect(load_settings())
 user = database[db.USERS].find_one({"username": username}, {"_id": 0, "uid": 1})
 if user is None:
-    raise SystemExit(f"utente non trovato: {username}")
+    raise SystemExit(f"user not found: {username}")
 database[db.USERS].update_one(
     {"username": username}, {"$set": {"credential": build_credential(getpass("password: "))}}
 )
-print("sessioni chiuse:", db.delete_sessions_of_user(database, user["uid"]))
+print("sessions closed:", db.delete_sessions_of_user(database, user["uid"]))
 '
 ```
 
-Due cose da non perdere per strada:
+Two things not to lose along the way:
 
-- la password si fa **digitare** (`getpass`), non si passa come argomento: dagli argomenti finirebbe nella cronologia della shell e nell'elenco dei processi;
-- dopo il cambio vanno **chiuse le sessioni aperte** di quell'utente (`delete_sessions_of_user`): cambiare password serve soprattutto quando si sospetta che sia entrato qualcun altro, e una sessione già aperta non la ferma la password nuova.
+- the password is **typed in** (`getpass`), not passed as an argument: from the arguments it would
+  end up in the shell history and in the process list;
+- after the change, that user's **open sessions must be closed**
+  (`delete_sessions_of_user`): changing a password is mostly useful when one suspects somebody
+  else has got in, and an already open session is not stopped by the new password.
 
-### 8.6 Test
+### 8.6 Tests
 ```sh
-uv run pytest        # 44 test, circa 1 secondo; serve Mongo acceso
-uv run pytest -v     # con il nome dei singoli test
+uv run pytest        # 70 tests, about a second; Mongo must be running
+uv run pytest -v     # with the names of the individual tests
 ```
 
 ---
 
-### 8.7 Migrazione alla 0.5.0: `anagraphics` → `projects`
+### 8.7 Migration to 0.5.0: `anagraphics` → `projects`
 
-Una volta sola per database, **prima** di avviare la 0.5.0. Poi il seed crea l'indice nuovo su `submission_id` (non tocca le password):
+Once per database, **before** starting 0.5.0. Then the seed creates the new index on
+`submission_id` (it does not touch the passwords):
 
 ```sh
 mongosh webtools --quiet --eval 'db.anagraphics.renameCollection("projects")'
 uv run python -m scripts.seed
 ```
 
-Eseguita sul database `webtools` il 2026-09-21.
+Run on the `webtools` database on 2026-09-21.
 
-### 8.8 Migrazione alla 0.6.1: via `billing.autonomous_fee_discount`
+### 8.8 Migration to 0.6.1: away with `billing.autonomous_fee_discount`
 
-Il lavoro autonomo non ha più uno sconto sulla fee. Una volta sola per database; il campo, se resta, viene comunque restituito così com'è:
+Autonomous work no longer has a discount on the fee. Once per database; the field, if it stays, is
+returned as it is anyway:
 
 ```sh
 mongosh webtools --quiet --eval 'db.projects.updateMany({"billing.autonomous_fee_discount": {$exists: true}}, {$unset: {"billing.autonomous_fee_discount": ""}})'
 ```
 
-Eseguita sul database `webtools` il 2026-09-22 (2 progetti).
+Run on the `webtools` database on 2026-09-22 (2 projects).
 
-### 8.9 Migrazione alla 0.9.0: `state` → `pipeline`
+### 8.9 Migration to 0.9.0: `state` → `pipeline`
 
-Il campo `state` piatto diventa l'oggetto `pipeline`, con lo stato e la lista dei passi. `steps` nasce vuota: dei progetti già esistenti non sappiamo quali passi abbiano attraversato, e inventarli sarebbe peggio che non averli.
+The flat `state` field becomes the `pipeline` object, with the state and the list of steps.
+`steps` is born empty: of the projects that already exist we do not know which steps they went
+through, and inventing them would be worse than not having them.
 
-Lo script è idempotente e ha una prova a vuoto:
+The script is idempotent and has a dry run:
 
 ```sh
 cd webtools/anagraphics
@@ -808,217 +977,289 @@ set -a; source ../configurator/bootstrap.env; set +a
 .venv/bin/python -m scripts.migrate_pipeline
 ```
 
-Eseguita sul database `webtools` il 2026-09-23 (4 progetti).
+Run on the `webtools` database on 2026-09-23 (4 projects).
+
+### 8.10 Migration to 0.10.0: `billing.turns_credit` on the users
+
+Every user gets the `billing` block with the turn credit, at **zero**: nobody has bought anything
+yet, and granting turns to people who were already there would be inventing a purchase that never
+happened.
+
+The field would create itself at the first `grant` (`$inc` on a missing field starts from zero),
+but then it would exist only for those who have bought, and reading "no credit" instead of "zero
+credit" is a distinction nobody wants to make.
+
+```sh
+cd webtools/anagraphics
+set -a; source ../configurator/bootstrap.env; set +a
+.venv/bin/python -m scripts.migrate_user_billing --dry-run
+.venv/bin/python -m scripts.migrate_user_billing
+```
+
+Run on the `webtools` database on 2026-09-24 (2 users).
 
 ---
 
-## 9. Sicurezza e pool di IP
+## 9. Security and the IP pool
 
-### 9.1 Come funziona
-Il middleware `allow_only_known_ips` in `webtools_anagraphics/main.py` confronta `request.client.host` con `settings.allowed_ips`, un `frozenset` di stringhe:
-- il confronto è **esatto**: niente sottoreti o CIDR, niente risoluzione di nomi;
-- se l'IP non è nel pool risponde `403` e **non** interroga Mongo;
-- se `request.client` non c'è (caso raro), la richiesta viene rifiutata.
+### 9.1 How it works
+The `allow_only_known_ips` middleware in `webtools_anagraphics/main.py` compares
+`request.client.host` with `settings.allowed_ips`, a `frozenset` of strings:
+- the comparison is **exact**: no subnets or CIDR, no name resolution;
+- if the IP is not in the pool it answers `403` and does **not** query Mongo;
+- if `request.client` is not there (a rare case), the request is refused.
 
-### 9.2 Header del proxy (importante)
-Di default uvicorn ha `proxy_headers=True` e considera attendibile `127.0.0.1`. In quella configurazione una richiesta da localhost con `X-Forwarded-For: <ip>` fa sì che `request.client.host` diventi `<ip>`.
+### 9.2 Proxy headers (important)
+By default uvicorn has `proxy_headers=True` and trusts `127.0.0.1`. In that configuration a
+request from localhost with `X-Forwarded-For: <ip>` makes `request.client.host` become `<ip>`.
 
-Per questo il servizio si avvia **solo** con `webtools_anagraphics.sh --start` (o `python -m webtools_anagraphics` in primo piano). Entrambi passano da `webtools_anagraphics/__main__.py`, che imposta `proxy_headers=False`.
+That is why the service is started **only** with `webtools_anagraphics.sh --start` (or
+`python -m webtools_anagraphics` in the foreground). Both go through
+`webtools_anagraphics/__main__.py`, which sets `proxy_headers=False`.
 
-Verifica fatta il 2026-09-19: con `-H "X-Forwarded-For: 10.0.0.1"`
-- lanciando uvicorn diretto → `403` (l'IP della connessione viene sostituito);
-- lanciando `python -m webtools_anagraphics` → `200` (conta l'IP reale della connessione).
+Checked on 2026-09-19: with `-H "X-Forwarded-For: 10.0.0.1"`
+- running uvicorn directly → `403` (the connection's IP is replaced);
+- running `python -m webtools_anagraphics` → `200` (the connection's real IP counts).
 
-Se in futuro il servizio starà dietro un reverse proxy, andrà rivisto: con `proxy_headers=False` tutte le richieste risulteranno provenire dall'IP del proxy.
+If in future the service sits behind a reverse proxy, this will have to be revisited: with
+`proxy_headers=False` every request will appear to come from the proxy's IP.
 
-### 9.3 Rete
-- Con `WEBTOOLS_ANAGRAPHICS_URL=http://127.0.0.1:9100` il server non è raggiungibile da altre macchine, qualunque sia `access.allowed_ips`.
-- Con `127.0.0.1` il server **non ascolta su IPv6**: `http://[::1]:9100` non risponde. `::1` in `access.allowed_ips` serve solo ascoltando su `::`. `curl http://localhost:9100` funziona lo stesso, perché dopo il tentativo IPv6 ripiega su IPv4.
-- Per accettare chiamate da un'altra macchina servono **entrambe** le cose: l'host dell'URL sull'interfaccia giusta e l'IP del chiamante in `access.allowed_ips`.
+### 9.3 Network
+- With `WEBTOOLS_ANAGRAPHICS_URL=http://127.0.0.1:9100` the server is not reachable from other
+  machines, whatever `access.allowed_ips` says.
+- With `127.0.0.1` the server **does not listen on IPv6**: `http://[::1]:9100` does not answer.
+  `::1` in `access.allowed_ips` is only of use when listening on `::`. `curl http://localhost:9100`
+  works anyway, because after the IPv6 attempt it falls back to IPv4.
+- To accept calls from another machine **both** things are needed: the URL's host on the right
+  interface and the caller's IP in `access.allowed_ips`.
 
-### 9.4 Cosa manca, per scelta
-- Autenticazione e autorizzazione.
-- TLS: il servizio parla HTTP in chiaro.
+### 9.4 What is missing, by choice
+- Authentication and authorisation.
+- TLS: the service speaks HTTP in the clear.
 - Rate limiting.
-- Autenticazione su MongoDB: l'istanza locale non ha credenziali.
+- Authentication on MongoDB: the local instance has no credentials.
 
 ---
 
-## 10. Test
+## 10. Tests
 
-Il file `tests/test_api.py` esegue test end-to-end sul **Mongo reale**.
+The file `tests/test_api.py` runs end-to-end tests against the **real Mongo**.
 
-- In cima al file, **prima degli import di `webtools_anagraphics`**, vengono impostate le variabili di bootstrap con `WEBTOOLS_MONGO_DB=webtools_test` e si scrive in `webtools_test` il documento `anagraphics` della configurazione. Serve perché le impostazioni si leggono all'import di `webtools_anagraphics.main`: senza documento l'import fallirebbe, e con l'import prima delle variabili i test userebbero il DB `webtools` di produzione.
-- Quattro test (`test_settings_*`) provano l'avvio: configurazione letta, variabile di bootstrap mancante, documento mancante, campo mancante. In tutti i casi mancanti `load_settings()` lancia `ConfigurationError`.
-- Una fixture di modulo crea gli indici, inserisce la conf `front-gate`, il progetto `1f251606-…`, **due** driver (uno col codice sconto, uno senza, per distinguere lista vuota da driver inesistente), il codice sconto e **due utenti** (uno con credenziali, uno con `credential: null`), e alla fine **cancella** `webtools_test`. Sono gli stessi due driver del seed, così la lista è verificabile anche a mano.
-- `TestClient` usa di default l'host `"testclient"`, che non è nel pool. Per questo i test passano `client=("127.0.0.1", 50000)` e, per il caso `403`, `client=("10.0.0.1", 50000)`.
+- At the top of the file, **before the `webtools_anagraphics` imports**, the bootstrap variables
+  are set with `WEBTOOLS_MONGO_DB=webtools_test` and the configuration's `anagraphics` document is
+  written into `webtools_test`. This is needed because the settings are read when
+  `webtools_anagraphics.main` is imported: without the document the import would fail, and with
+  the import before the variables the tests would use the production `webtools` DB.
+- Four tests (`test_settings_*`) exercise the startup: configuration read, bootstrap variable
+  missing, document missing, field missing. In every missing case `load_settings()` raises
+  `ConfigurationError`.
+- A module fixture creates the indexes, inserts the `front-gate` configuration, the project
+  `1f251606-…`, **two** drivers (one with the discount code, one without, to tell an empty list
+  from a driver who does not exist), the discount code and **two users** (one with credentials,
+  one with `credential: null`), and at the end **drops** `webtools_test`. They are the same two
+  drivers as the seed, so the list can be checked by hand too.
+- `TestClient` uses the host `"testclient"` by default, which is not in the pool. That is why the
+  tests pass `client=("127.0.0.1", 50000)` and, for the `403` case, `client=("10.0.0.1", 50000)`.
 
-| Test | Verifica |
+| Test | What it checks |
 |---|---|
-| `test_configuration_found` | 200 e body esatto, senza `_id` |
+| `test_configuration_found` | 200 and the exact body, without `_id` |
 | `test_configuration_not_found` | 404 + `{"error":"CONFIGURATION_NOT_FOUND","subsystem":…}` |
-| `test_project_found` | 200 e body esatto, senza `_id` |
+| `test_project_found` | 200 and the exact body, without `_id` |
 | `test_project_not_found` | 404 + `{"error":"PROJECT_NOT_FOUND","project_id":…}` |
-| `test_driver_found` | 200 e body esatto, senza `_id` |
-| `test_drivers_list` | 200 + `{"drivers":[…]}` con entrambi i driver, ordinati per `uid` e **senza** `username` |
+| `test_driver_found` | 200 and the exact body, without `_id` |
+| `test_drivers_list` | 200 + `{"drivers":[…]}` with both drivers, ordered by `uid` and **without** `username` |
 | `test_driver_not_found` | 404 + `{"error":"DRIVER_NOT_FOUND","uid":…}` |
-| `test_discount_found` | 200 e body esatto, col driver ridondato |
+| `test_discount_found` | 200 and the exact body, with the driver duplicated |
 | `test_discount_not_found` | 404 + `{"error":"DISCOUNT_NOT_FOUND","discount_code":…}` |
 | `test_discounts_of_driver` | 200 + `{"uid":…,"discounts":[…]}` |
-| `test_discounts_of_driver_without_discounts` | 200 + lista **vuota**, non 404 |
-| `test_discounts_of_unknown_driver` | 404 + `DRIVER_NOT_FOUND`, non lista vuota |
-| `test_user_found` | 200 e body esatto, **senza** il blocco `credential` |
+| `test_discounts_of_driver_without_discounts` | 200 + an **empty** list, not a 404 |
+| `test_discounts_of_unknown_driver` | 404 + `DRIVER_NOT_FOUND`, not an empty list |
+| `test_user_found` | 200 and the exact body, **without** the `credential` block |
 | `test_user_not_found` | 404 + `{"error":"USER_NOT_FOUND","username":…}` |
 | `test_user_credential` | 200 + `{"username":…,"credential":{…}}` |
-| `test_user_credential_not_set` | 404 + `CREDENTIAL_NOT_SET` per l'utente con `credential: null` |
-| `test_user_credential_of_unknown_user` | 404 + `USER_NOT_FOUND`, distinto dal precedente |
-| `test_session_lifecycle` | Creazione (201), rilettura identica, cancellazione (204), poi 404 sia in lettura sia in cancellazione |
-| `test_session_keeps_free_data` | Il contenuto di `data` torna indietro com'era |
-| `test_session_expired_is_still_returned` | Una sessione già scaduta si conserva e si rilegge: la scadenza la giudica il sso |
-| `test_session_duplicate_token` | 409 + `SESSION_EXISTS`, nessuna sovrascrittura |
-| `test_session_invalid_body` | 400 + `INVALID_BODY` per corpo vuoto, token troppo corto, data illeggibile |
-| `test_session_not_found` | 404 + `SESSION_NOT_FOUND`, senza ripetere il token |
-| `test_delete_sessions_of_user` | Chiude solo le sessioni di quell'`uid`, e dice quante |
-| `test_delete_sessions_of_user_without_sessions` | 200 + `deleted: 0`, non 404 |
-| `test_ticket_is_consumed_once` | Creazione, consumo che restituisce il documento, e secondo consumo che trova 404 |
+| `test_user_credential_not_set` | 404 + `CREDENTIAL_NOT_SET` for the user with `credential: null` |
+| `test_user_credential_of_unknown_user` | 404 + `USER_NOT_FOUND`, told apart from the previous one |
+| `test_session_lifecycle` | Creation (201), an identical read back, deletion (204), then 404 on both reading and deleting |
+| `test_session_keeps_free_data` | The content of `data` comes back as it was |
+| `test_session_expired_is_still_returned` | An already expired session is stored and read back: the expiry is judged by the sso |
+| `test_session_duplicate_token` | 409 + `SESSION_EXISTS`, no overwriting |
+| `test_session_invalid_body` | 400 + `INVALID_BODY` for an empty body, a token that is too short, an unreadable date |
+| `test_session_not_found` | 404 + `SESSION_NOT_FOUND`, without repeating the token |
+| `test_delete_sessions_of_user` | Closes only that `uid`'s sessions, and says how many |
+| `test_delete_sessions_of_user_without_sessions` | 200 + `deleted: 0`, not a 404 |
+| `test_ticket_is_consumed_once` | Creation, a consumption returning the document, and a second consumption getting a 404 |
 | `test_ticket_duplicate` | 409 + `TICKET_EXISTS` |
-| `test_ticket_invalid_body` | 400 + `INVALID_BODY` per corpo vuoto e biglietto troppo corto |
-| `test_ip_outside_pool_is_rejected` | 403 + `IP_NOT_ALLOWED` su tutte le letture, su una route inesistente **e sulle scritture** |
+| `test_ticket_invalid_body` | 400 + `INVALID_BODY` for an empty body and a ticket that is too short |
+| `test_ip_outside_pool_is_rejected` | 403 + `IP_NOT_ALLOWED` on every read, on a non-existent route **and on the writes** |
 | `test_unknown_route` | 404 + `ROUTE_NOT_FOUND` |
 | `test_method_not_allowed` | 405 + `METHOD_NOT_ALLOWED` |
-| `test_database_unavailable` | 503 + `DATABASE_UNAVAILABLE` (query simulata che solleva `ServerSelectionTimeoutError`) |
-| `test_internal_error` | 500 + `INTERNAL_ERROR` (query simulata che solleva `RuntimeError`) |
+| `test_database_unavailable` | 503 + `DATABASE_UNAVAILABLE` (a simulated query raising `ServerSelectionTimeoutError`) |
+| `test_internal_error` | 500 + `INTERNAL_ERROR` (a simulated query raising `RuntimeError`) |
 
-Verificati anche a mano il 2026-09-20, col server vero, i sei endpoint e i 404 di driver e sconti.
+Also checked by hand on 2026-09-20, with the real server, the six endpoints and the 404s of
+drivers and discounts.
 
-Verificati a mano il 2026-09-19, col server vero:
-- tutti i codici sopra;
-- Mongo spento davvero → `503 DATABASE_UNAVAILABLE`;
-- `X-Forwarded-For` ignorato.
+Checked by hand on 2026-09-19, with the real server:
+- every code above;
+- Mongo really down → `503 DATABASE_UNAVAILABLE`;
+- `X-Forwarded-For` ignored.
 
-Resta un warning noto e innocuo, interno a Starlette: `anyio.abc.BlockingPortal alias is deprecated`.
+A known, harmless warning remains, internal to Starlette:
+`anyio.abc.BlockingPortal alias is deprecated`.
 
 ---
 
 ## 11. Troubleshooting
 
-| Sintomo | Causa probabile | Verifica / soluzione |
+| Symptom | Likely cause | Check / solution |
 |---|---|---|
-| `403 {"error":"IP_NOT_ALLOWED"}` da localhost | 1) Server avviato con `uvicorn` diretto e client che invia `X-Forwarded-For`. 2) `access.allowed_ips` senza `127.0.0.1`. 3) Server in ascolto su `::` e client arrivato come `::1` o `::ffff:127.0.0.1` | Avvia con `webtools_anagraphics.sh --start`. Controlla `configurator/configuration/anagraphics.json` e che sia stato caricato. Guarda l'IP nel log di accesso (`INFO: <ip>:<porta> - "GET ..."`) e aggiungilo al pool |
-| `503 {"error":"DATABASE_UNAVAILABLE"}` dopo circa **30 s** | Mongo spento o irraggiungibile. Nel log compare `MongoDB non raggiungibile: …` | `mongosh --eval 'db.runCommand({ping:1})'`; `brew services start mongodb-community`; controlla `WEBTOOLS_MONGO_URI`. L'attesa è `mongo.server_selection_timeout_ms` della configurazione |
-| `404 PROJECT_NOT_FOUND` / `CONFIGURATION_NOT_FOUND` su un dato che "dovrebbe esserci" | Seed o `load_configuration.sh` non eseguiti, `WEBTOOLS_MONGO_DB` diverso, chiave scritta con maiuscole diverse, spazi nel valore | `mongosh webtools --eval 'db.projects.find({},{_id:0})'`; confronta il valore esatto |
-| `404 {"error":"ROUTE_NOT_FOUND"}` | La route non esiste: errore di battitura nel percorso o `/` in più | Usa `/configuration/<nome>` o `/projects/<id>`; vedi `/docs` |
-| `500 {"error":"INTERNAL_ERROR"}` su un documento specifico | Campo non convertibile in JSON (`ObjectId`, `Decimal128`, binari) | Traceback nel log del server (`ValueError`/`TypeError` durante la serializzazione). Converti il campo o adatta la risposta |
-| `DuplicateKeyError` inserendo dati | Indice univoco su `subsystem` o `project_id` | Usa `updateOne(..., {upsert:true})` invece di `insertOne` |
-| `ModuleNotFoundError: No module named 'webtools_anagraphics'` | Seed lanciato come file (`python scripts/seed.py`) o da una cartella diversa | Da `webtools/anagraphics/`: `uv run python -m scripts.seed` |
-| `[Errno 48] Address already in use` (stampato da `--start`) | Porta 9100 occupata da un altro programma o da un'istanza avviata senza lo script | `lsof -nP -iTCP:9100 -sTCP:LISTEN` per vedere chi è. Se non è nostro, cambia la porta in `WEBTOOLS_ANAGRAPHICS_URL` (`bootstrap.env`): vale per tutti i sottosistemi |
-| `--start` dice "già in esecuzione" ma il server non risponde | Processo bloccato | `…/webtools_anagraphics.sh --stop` e poi `--start`; guarda il log |
-| `--start` fallisce con "Ambiente mancante" | `.venv` non creato | `cd webtools/anagraphics && uv sync` |
-| `--start` fallisce con `webtools_anagraphics non parte: …` | Configurazione assente o sbagliata: variabile di bootstrap mancante, Mongo spento, documento `anagraphics` non caricato, campo mancante | Il messaggio dice quale. `webtools/configurator/load_configuration.sh`, poi di nuovo `--start` |
-| `--start` fallisce con altre righe di log | Errore all'avvio (import) | Il messaggio stampato è la coda di `webtools_anagraphics.log` |
-| Le modifiche alla configurazione non hanno effetto | Si legge solo all'avvio, e va prima caricata in Mongo | `webtools/configurator/start.sh --restart` (carica e riavvia) |
-| Le modifiche al codice non hanno effetto | Il server non ha il reload automatico | `--stop` e `--start`. In sviluppo si può usare `uv run uvicorn webtools_anagraphics.main:app --reload --no-proxy-headers --host 127.0.0.1 --port 9100` |
-| I test scrivono nel DB `webtools` | Qualcuno ha spostato gli import di `webtools_anagraphics` sopra l'impostazione delle variabili di bootstrap in `tests/test_api.py` | Ripristina l'ordine (§10) |
-| I test falliscono tutti con timeout | Mongo spento | Avvia Mongo (§8.3) |
-| `http://[::1]:9100` non risponde | Il server ascolta solo su IPv4 | Normale con `127.0.0.1` in `WEBTOOLS_ANAGRAPHICS_URL` (§9.3) |
+| `403 {"error":"IP_NOT_ALLOWED"}` from localhost | 1) The server started with `uvicorn` directly and a client sending `X-Forwarded-For`. 2) `access.allowed_ips` without `127.0.0.1`. 3) The server listening on `::` and the client arriving as `::1` or `::ffff:127.0.0.1` | Start it with `webtools_anagraphics.sh --start`. Check `configurator/configuration/anagraphics.json` and that it has been loaded. Look at the IP in the access log (`INFO: <ip>:<port> - "GET ..."`) and add it to the pool |
+| `503 {"error":"DATABASE_UNAVAILABLE"}` after about **30 s** | Mongo down or unreachable. The log holds `MongoDB unreachable: …` | `mongosh --eval 'db.runCommand({ping:1})'`; `brew services start mongodb-community`; check `WEBTOOLS_MONGO_URI`. The wait is `mongo.server_selection_timeout_ms` of the configuration |
+| `404 PROJECT_NOT_FOUND` / `CONFIGURATION_NOT_FOUND` on data that "should be there" | The seed or `load_configuration.sh` not run, a different `WEBTOOLS_MONGO_DB`, a key written with different capitals, spaces in the value | `mongosh webtools --eval 'db.projects.find({},{_id:0})'`; compare the exact value |
+| `404 {"error":"ROUTE_NOT_FOUND"}` | The route does not exist: a typo in the path or an extra `/` | Use `/configuration/<name>` or `/projects/<id>`; see `/docs` |
+| `500 {"error":"INTERNAL_ERROR"}` on a particular document | A field not convertible to JSON (`ObjectId`, `Decimal128`, binary) | The traceback is in the server's log (`ValueError`/`TypeError` during serialisation). Convert the field or adapt the response |
+| `DuplicateKeyError` while inserting data | The unique index on `subsystem` or `project_id` | Use `updateOne(..., {upsert:true})` instead of `insertOne` |
+| `ModuleNotFoundError: No module named 'webtools_anagraphics'` | The seed run as a file (`python scripts/seed.py`) or from a different directory | From `webtools/anagraphics/`: `uv run python -m scripts.seed` |
+| `[Errno 48] Address already in use` (printed by `--start`) | Port 9100 taken by another program or by an instance started without the script | `lsof -nP -iTCP:9100 -sTCP:LISTEN` to see who it is. If it is not ours, change the port in `WEBTOOLS_ANAGRAPHICS_URL` (`bootstrap.env`): it holds for every subsystem |
+| `--start` says "already running" but the server does not answer | A stuck process | `…/webtools_anagraphics.sh --stop` and then `--start`; look at the log |
+| `--start` fails with "Environment missing" | `.venv` not created | `cd webtools/anagraphics && uv sync` |
+| `--start` fails with `webtools_anagraphics is not starting: …` | Configuration missing or wrong: a bootstrap variable missing, Mongo down, the `anagraphics` document not loaded, a field missing | The message says which. `webtools/configurator/load_configuration.sh`, then `--start` again |
+| `--start` fails with other log lines | An error at startup (import) | The message printed is the tail of `webtools_anagraphics.log` |
+| Configuration changes have no effect | It is read only at startup, and it must be loaded into Mongo first | `webtools/configurator/start.sh --restart` (loads and restarts) |
+| Code changes have no effect | The server has no automatic reload | `--stop` and `--start`. In development you can use `uv run uvicorn webtools_anagraphics.main:app --reload --no-proxy-headers --host 127.0.0.1 --port 9100` |
+| The tests write into the `webtools` DB | Somebody moved the `webtools_anagraphics` imports above the setting of the bootstrap variables in `tests/test_api.py` | Restore the order (§10) |
+| Every test fails with a timeout | Mongo down | Start Mongo (§8.3) |
+| `http://[::1]:9100` does not answer | The server listens on IPv4 only | Normal with `127.0.0.1` in `WEBTOOLS_ANAGRAPHICS_URL` (§9.3) |
 
-Dove guardare:
-- **log del server**: `webtools/anagraphics/webtools_anagraphics.log` se avviato con `--start` (§8.2), altrimenti lo stdout del terminale. Contiene i log di accesso uvicorn e i traceback;
-- **log di Mongo**: `/usr/local/var/log/mongodb/mongo.log`.
+Where to look:
+- **the server's log**: `webtools/anagraphics/webtools_anagraphics.log` if started with `--start`
+  (§8.2), otherwise the terminal's stdout. It holds the uvicorn access logs and the tracebacks;
+- **Mongo's log**: `/usr/local/var/log/mongodb/mongo.log`.
 
 ---
 
-## 12. Metriche e osservabilità
+## 12. Metrics and observability
 
-Stato attuale: **nessuna metrica dedicata**. Non esistono endpoint `/health` o `/metrics` né logging strutturato. Le informazioni disponibili oggi sono queste.
+Current state: **no dedicated metrics**. There are no `/health` or `/metrics` endpoints and no
+structured logging. What is available today is this.
 
-| Cosa | Come |
+| What | How |
 |---|---|
-| Traffico ed esiti | Log di accesso uvicorn in `webtools_anagraphics.log`: `INFO: 127.0.0.1:61935 - "GET /projects/1f251606-bdba-40c4-bbee-bfedc6e57f70 HTTP/1.1" 200 OK`. Conteggio per codice: `grep -c '" 403' webtools_anagraphics.log`, ecc. |
-| Stato del servizio | `curl -s -o /dev/null -w "%{http_code} %{time_total}s\n" http://127.0.0.1:9100/configuration/front-gate` (200 = servizio e Mongo attivi) |
-| Stato di Mongo | `mongosh --eval 'db.runCommand({ping:1})'` |
-| Volume dei dati | `mongosh webtools --quiet --eval 'db.projects.countDocuments()'` (idem per `configuration`) |
-| Dimensioni e indici | `mongosh webtools --quiet --eval 'db.projects.stats()'` |
-| Query lente | Profiler di Mongo: `db.setProfilingLevel(1, {slowms: 50})`, poi `db.system.profile.find()` |
+| Traffic and outcomes | The uvicorn access log in `webtools_anagraphics.log`: `INFO: 127.0.0.1:61935 - "GET /projects/1f251606-bdba-40c4-bbee-bfedc6e57f70 HTTP/1.1" 200 OK`. Counting by code: `grep -c '" 403' webtools_anagraphics.log`, and so on |
+| Service state | `curl -s -o /dev/null -w "%{http_code} %{time_total}s\n" http://127.0.0.1:9100/configuration/front-gate` (200 = the service and Mongo are up) |
+| Mongo's state | `mongosh --eval 'db.runCommand({ping:1})'` |
+| Data volume | `mongosh webtools --quiet --eval 'db.projects.countDocuments()'` (the same for `configuration`) |
+| Sizes and indexes | `mongosh webtools --quiet --eval 'db.projects.stats()'` |
+| Slow queries | Mongo's profiler: `db.setProfilingLevel(1, {slowms: 50})`, then `db.system.profile.find()` |
 
-Primi candidati se servissero metriche: un endpoint `/health` con ping a Mongo, un logging JSON con durata delle richieste, un exporter Prometheus.
-
----
-
-## 13. Limiti noti e debito tecnico
-
-- Sola lettura tranne le sessioni: per configurazioni, progetti, driver, sconti e utenti non c'è ancora nessun endpoint di scrittura (CRUD previsto).
-- **Chiunque sia nel pool di IP può leggere `GET /users/{username}/credential`**, non solo il sso: finché il pool è il solo localhost di questo Mac la differenza non esiste, ma il giorno in cui i sottosistemi stanno su macchine diverse serve un'autenticazione tra servizi, non un elenco di IP.
-- Nessun controllo di chi crea o cancella una sessione: chi è nel pool può creare una sessione per qualsiasi `uid`. Vale la nota sopra.
-- Nessuno schema o validazione dei documenti in Mongo (né `$jsonSchema` né modelli Pydantic sulle risposte, tranne il corpo di `POST /sessions`).
-- Il driver ridondato dentro gli sconti non si aggiorna da solo: un cambio di `screen_name` va propagato a mano (§5.4).
-- `drivers.username` resta un dato scollegato: l'utente vero sta in `users`, col suo `driver_uid`. I due `username` oggi coincidono per copia, non per vincolo.
-- Entrambi gli utenti hanno una **password di sviluppo**, corta e nota: va rifatta prima di uscire dalla PoC.
-- Impostare una password è un comando a mano (§8.5): niente strumento dedicato, nessun controllo sulla lunghezza, e chi lo scrive deve ricordarsi di chiudere le sessioni aperte.
-- `GET /drivers/{uid}/discounts` e `GET /drivers` restituiscono tutto, senza paginazione né filtri: va bene finché i numeri restano piccoli.
-- In `drivers` e in `users` c'è un dato di prova (`Prova`): va tolto quando il sottosistema smette di essere una PoC.
-- Chi è nel pool può anche creare biglietti per una sessione qualsiasi: vale la stessa nota sull'autenticazione tra servizi.
-- Le sessioni e i biglietti scaduti restano nell'archivio fino al passaggio del TTL (circa un minuto): vanno bene per una lettura, non per contare "quante sessioni sono aperte".
-- Client Mongo creato all'import del modulo, senza lifespan: difficile sostituirlo nei test, niente chiusura esplicita.
-- Indici creati solo dal seed, non all'avvio del server.
-- Se Mongo non risponde, l'errore arriva dopo 30 s, il timeout di default di pymongo.
-- Pool di IP senza CIDR e senza supporto a un reverse proxy.
-- Nessuna autenticazione, TLS, rate limiting, `/health` o metriche.
-- Nessuna containerizzazione né gestione come servizio (launchd/systemd): il server si avvia a mano con `webtools_anagraphics.sh --start`, non riparte da solo dopo un crash o un riavvio del Mac, e il log cresce senza rotazione.
-- I test richiedono un Mongo reale e acceso.
+First candidates if metrics were needed: a `/health` endpoint with a ping to Mongo, JSON logging
+with request durations, a Prometheus exporter.
 
 ---
 
-## 14. Come estendere (checklist)
+## 13. Known limits and technical debt
 
-**Aggiungere un campo ai documenti**
-Nessuna modifica al codice. Aggiorna `scripts/seed.py` se il campo deve far parte dei dati iniziali, aggiorna §5 di questo documento e verifica che il valore sia convertibile in JSON.
+- Read-only except the sessions: for configurations, projects, drivers, discounts and users there
+  is still no write endpoint (a CRUD is planned).
+- **Anybody in the IP pool can read `GET /users/{username}/credential`**, not only the sso: while
+  the pool is only this Mac's localhost the difference does not exist, but the day the subsystems
+  sit on different machines authentication between services is needed, not a list of IPs.
+- No check on who creates or deletes a session: whoever is in the pool can create a session for
+  any `uid`. The note above holds.
+- No schema or validation of the documents in Mongo (neither `$jsonSchema` nor Pydantic models on
+  the responses, except the body of `POST /sessions`).
+- The driver duplicated inside the discounts does not update itself: a change of `screen_name`
+  must be propagated by hand (§5.4).
+- `drivers.username` remains a disconnected piece of data: the real user is in `users`, with its
+  `driver_uid`. The two `username`s coincide today by copying, not by constraint.
+- Both users have a **development password**, short and known: it must be redone before leaving
+  the PoC.
+- Setting a password is a command by hand (§8.5): no dedicated tool, no check on the length, and
+  whoever writes it must remember to close the open sessions.
+- `GET /drivers/{uid}/discounts` and `GET /drivers` return everything, with no pagination and no
+  filters: fine while the numbers stay small.
+- In `drivers` and in `users` there is test data (`Prova`): it must be removed when the subsystem
+  stops being a PoC.
+- Whoever is in the pool can also create tickets for any session: the same note on authentication
+  between services holds.
+- Expired sessions and tickets stay in the store until the TTL comes round (about a minute): fine
+  for a read, not for counting "how many sessions are open".
+- The Mongo client is created when the module is imported, with no lifespan: hard to replace in
+  the tests, no explicit close.
+- Indexes created by the seed only, not at server startup.
+- If Mongo does not answer, the error arrives after 30 s, pymongo's default timeout.
+- An IP pool with no CIDR and no support for a reverse proxy.
+- No authentication, TLS, rate limiting, `/health` or metrics.
+- No containerisation and no management as a service (launchd/systemd): the server is started by
+  hand with `webtools_anagraphics.sh --start`, it does not come back by itself after a crash or a
+  reboot of the Mac, and the log grows with no rotation.
+- The tests require a real Mongo, running.
 
-**Aggiungere un endpoint**
-1. Aggiungi la query in `webtools_anagraphics/db.py`, con proiezione `PUBLIC`.
-2. Aggiungi la route in `webtools_anagraphics/main.py`: il middleware IP la protegge automaticamente.
-3. Per i casi di errore solleva `errors.ApiError(stato, CODICE, **contesto)`. Se serve un codice nuovo, aggiungilo come costante in `webtools_anagraphics/errors.py` e documentalo in §6.1: non riusare codici esistenti con altri significati.
-4. Aggiungi i test in `tests/test_api.py`: 200, errori con body esatto, 403.
-5. Documenta in §6.
+---
 
-**Aggiungere una collection**
-Costante in `webtools_anagraphics/db.py`, indice in `ensure_indexes()`, dati iniziali in `scripts/seed.py`, pulizia già coperta dal `drop_database` dei test, documentazione in §5. Se la collection punta a un'altra (come `discounts` → `drivers`), serve anche un indice **non** univoco sul campo di collegamento.
+## 14. How to extend (a checklist)
 
-**Aggiungere un valore configurabile**
-Non una variabile d'ambiente: un campo in `webtools/configurator/configuration/anagraphics.json`, nel gruppo giusto (o in uno nuovo). Poi campo in `Settings` e lettura in `load_settings()`, senza default. Documenta in §5.1. L'ambiente resta per il solo bootstrap (§7).
+**Adding a field to the documents**
+No change to the code. Update `scripts/seed.py` if the field is to be part of the initial data,
+update §5 of this document and check that the value is convertible to JSON.
 
-**Configurazione di un sottosistema nuovo**
-Un file `webtools/configurator/configuration/<nome>.json`; il sottosistema lo legge all'avvio con `GET /configuration/<nome>` (i sottosistemi Node con `commons/configuration/configuration_client.js`). Qui non serve cambiare niente.
+**Adding an endpoint**
+1. Add the query in `webtools_anagraphics/db.py`, with the `PUBLIC` projection.
+2. Add the route in `webtools_anagraphics/main.py`: the IP middleware protects it automatically.
+3. For the error cases raise `errors.ApiError(status, CODE, **context)`. If a new code is needed,
+   add it as a constant in `webtools_anagraphics/errors.py` and document it in §6.1: do not reuse
+   existing codes with other meanings.
+4. Add the tests in `tests/test_api.py`: 200, the errors with their exact body, 403.
+5. Document it in §6.
 
-**Passare al CRUD**
-Punti da decidere:
-- modelli Pydantic per validare l'input;
-- gestione di `DuplicateKeyError`, da tradurre in `409`;
-- autenticazione oltre al pool di IP;
-- chi è autorizzato a scrivere.
+**Adding a collection**
+A constant in `webtools_anagraphics/db.py`, an index in `ensure_indexes()`, initial data in
+`scripts/seed.py`, cleanup already covered by the tests' `drop_database`, documentation in §5. If
+the collection points at another one (as `discounts` → `drivers`), a **non**-unique index on the
+linking field is needed too.
+
+**Adding a configurable value**
+Not an environment variable: a field in
+`webtools/configurator/configuration/anagraphics.json`, in the right group (or in a new one).
+Then a field in `Settings` and a read in `load_settings()`, with no default. Document it in §5.1.
+The environment is left for the bootstrap only (§7).
+
+**The configuration of a new subsystem**
+A file `webtools/configurator/configuration/<name>.json`; the subsystem reads it at startup with
+`GET /configuration/<name>` (the Node subsystems with
+`commons/configuration/configuration_client.js`). Nothing needs changing here.
+
+**Moving to a CRUD**
+Points to decide:
+- Pydantic models for validating the input;
+- handling of `DuplicateKeyError`, to be translated into a `409`;
+- authentication beyond the IP pool;
+- who is allowed to write.
 
 ---
 
 ## 15. Changelog
 
-| Data | Versione | Modifica |
+| Date | Version | Change |
 |---|---|---|
-| 2026-09-23 | 0.9.2 | **La configurazione che vive sta in Mongo.** `scripts/load_configuration.py` non sostituisce più i documenti per intero a ogni avvio: aggiunge **solo i campi mancanti**, non cancella un campo tolto da un file né un sottosistema che un file non ce l'ha più. I file di `configurator/configuration/` diventano il seme e la forma attesa. Nuovo `--reset [sottosistema …]`, l'unico modo per riportare i documenti ai file. I segreti restano un'eccezione e sostituiscono sempre: una chiave ruotata deve valere. Prima un valore cambiato in esercizio spariva al primo `start.sh`, in silenzio. Test da 56 a 62 (`tests/test_load_configuration.py`). |
-| 2026-09-23 | 0.9.1 | Due voci in più negli elenchi chiusi della pipeline (§5.2): lo stato `UNDERSPECIFIED` e il `result` `underspecified`, per la richiesta che torna all'utente perché diceva troppo poco (preanalyst §16.6). Nient'altro cambia: i documenti già scritti restano validi. Test da 55 a 56. |
-| 2026-09-23 | 0.9.0 | **La pipeline del progetto** (§5.2): il campo `state` piatto diventa l'oggetto `pipeline` con lo stato e la lista in ordine dei passi compiuti — il registro delle decisioni. Nuova `POST /projects/{id}/pipeline/steps` (§6.3.2), con elenchi chiusi per i nomi dei passi e degli stati: un nome inventato non entra nel database. Migrazione §8.9. `scripts/load_configuration.py` accetta una seconda cartella, i **segreti**, e la fonde in profondità sulla configurazione prima di scriverla in Mongo: le chiavi delle API sono configurazione, ma non possono stare in git. Test da 50 a 55. |
-| 2026-09-22 | 0.8.0 | **La lingua.** Nuovi `PUT /users/{username}/locale` e `PUT /sessions/{token}/locale` (§6.19): campo `users.locale` e `sessions.data.locale`. Li usa il sso per ricordare la lingua scelta tra un login e l'altro. Test da 45 a 50. |
-| 2026-09-22 | 0.7.0 | Campo **`enabled`** dei driver (abilitato a seguire i progetti), anche nella lista `GET /drivers` (`DRIVER_SUMMARY`). `Dome` e `Prova` abilitati; nuovo driver di prova non abilitato, `Non abilitato`, con un codice sconto al 10%. Dati aggiornati con il seed il 2026-09-22. |
-| 2026-09-22 | 0.6.2 | Nuovo `billing.ambassador_uid` (default `null`): il driver che ha invitato l'utente. Le regole su quando vale le applica preanalyst. Test da 44 a 45. |
-| 2026-09-22 | 0.6.1 | Tolto `billing.autonomous_fee_discount`: il lavoro autonomo non ha più uno sconto sulla fee (migrazione §8.8). Un corpo di `POST /projects` che lo contiene ancora non dà errore: il campo si ignora. |
-| 2026-09-21 | 0.6.0 | **Sottosistema di configurazione per tutti.** Configurazione di anagraphics letta all'avvio dal suo documento in `configuration` (`access.allowed_ips`, `mongo.server_selection_timeout_ms`); indirizzo e porta da `WEBTOOLS_ANAGRAPHICS_URL`. Niente più default né variabili `HOST`, `PORT`, `MONGO_URI`, `MONGO_DB`, `ALLOWED_IPS`: dall'ambiente solo il bootstrap `WEBTOOLS_*`. Senza configurazione il server non parte. Le configurazioni non stanno più nel seed: nuovo `scripts/load_configuration.py`, che carica `configurator/configuration/*.json`. Test da 40 a 44. |
-| 2026-09-19 | 0.1.0 | Creazione: API di lettura `configuration`/`anagraphics`, pool di IP, seed, test. |
-| 2026-09-19 | 0.1.0 | Fix: avvio tramite `__main__.py` con `proxy_headers=False`. Prima, con uvicorn diretto, `X-Forwarded-For` da localhost sostituiva l'IP del client. |
-| 2026-09-19 | 0.1.0 | Pacchetto rinominato da `app` a `webtools_anagraphics`, per non avere nomi generici tra i processi del Mac. |
-| 2026-09-19 | 0.1.0 | Progetto di prova `demo-001` eliminato e sostituito da `1f251606-bdba-40c4-bbee-bfedc6e57f70`: i `project_id` sono UUID. |
-| 2026-09-19 | 0.1.0 | Errori: stato HTTP + codice stabile (`{"error": "…"}`), niente più testi discorsivi (`{"detail": "…"}`). Nuovi codici: `CONFIGURATION_NOT_FOUND`, `PROJECT_NOT_FOUND`, `ROUTE_NOT_FOUND`, `METHOD_NOT_ALLOWED`, `IP_NOT_ALLOWED`, `DATABASE_UNAVAILABLE` (503, prima 500), `INTERNAL_ERROR`. |
-| 2026-09-19 | 0.1.0 | Script `webtools_anagraphics.sh --start/--stop`: nohup, file PID e arresto solo dopo aver verificato la riga di comando. Sostituisce `pkill -f` e l'arresto per porta. |
-| 2026-09-21 | 0.5.0 | La collection `anagraphics` diventa **`projects`** (migrazione §8.7) e `GET /anagraphics/{id}` diventa `GET /projects/{id}`. Nuovi `POST /projects` (l'id lo genera anagraphics; `submission_id` univoco sparse rende idempotente l'invio del form) e `DELETE /projects/{id}`. Campi nuovi del progetto: `owner_uid`, `submission_id`, `created_at`, `state`, `review` (driver e `preset`), `billing` (sconto e sconto sulla fee del lavoro autonomo). Codice nuovo: `SUBMISSION_EXISTS`. Test da 33 a 40. |
-| 2026-09-21 | 0.4.0 | Collection `tickets` (chiave `ticket`, TTL su `expires_at`) con `POST /tickets` e `DELETE /tickets/{ticket}`, che consuma il biglietto leggendolo. Serve al sso per passare una sessione da un indirizzo a un altro, cosa che un cookie non sa fare (§5.7). Codici nuovi: `TICKET_NOT_FOUND`, `TICKET_EXISTS`. Test da 30 a 33. |
-| 2026-09-21 | 0.3.0 | Collection `users` (chiave `username`, con il blocco `credential` in scrypt) e `sessions` (chiave `token`, indice TTL su `expires_at`). Endpoint nuovi: `GET /users/{username}`, `GET /users/{username}/credential`, `POST /sessions`, `GET /sessions/{token}`, `DELETE /sessions/{token}`, `DELETE /sessions?uid=…`. **Prime scritture** del sottosistema. Codici nuovi: `USER_NOT_FOUND`, `CREDENTIAL_NOT_SET`, `SESSION_NOT_FOUND`, `SESSION_EXISTS`, `INVALID_BODY`. Client Mongo con `tz_aware=True`. Test da 17 a 30. Il login resta fuori di qui: lo fa `webtools_sso`. |
-| 2026-09-20 | 0.2.1 | `GET /drivers`, la lista di tutti i driver, con i soli `uid` e `screen_name`. `username` del driver `Dome` corretto in `dome.santoro@gmail.com`. Aggiunto il driver di prova `Prova`. Test da 16 a 17. |
-| 2026-09-20 | 0.2.0 | Collection `drivers` (chiave `uid`) e `discounts` (chiave `discount_code`, driver ridondato, `percentage` in punti percentuali). Tre endpoint nuovi: `GET /drivers/{uid}`, `GET /drivers/{uid}/discounts`, `GET /discounts/{discount_code}`. Codici nuovi: `DRIVER_NOT_FOUND`, `DISCOUNT_NOT_FOUND`. Primo driver: `Dome`, con un codice sconto al 5%. Test da 9 a 16. Login non gestito. |
+| 2026-09-24 | 0.10.0 | **The open step and the turn credit.** A new `open` result for a pipeline step that has begun and has decided nothing yet — it is the analysis chat, which opens when the project reaches `ANALYSIS` and grows with every turn. A new `PATCH /projects/{id}/pipeline/steps/{step}` (§6.20) that updates the `data` of the **last open step** with that name, with `set` and `push`: closed steps stay untouchable, because the list is the register of the decisions taken. The user gets the `billing` block with `turns_credit`, and two routes for moving it (§6.21): `spend` checks that the credit is enough **inside** the write, so two requests at once cannot spend it twice; `grant` increases it, and that is where the payment will arrive. Migration `scripts/migrate_user_billing.py` (§8.10), run: 2 users. Tests from 62 to 70. |
+| 2026-09-23 | 0.9.2 | **The configuration that lives is in Mongo.** `scripts/load_configuration.py` no longer replaces the documents whole at every start: it adds **only the missing fields**, and deletes neither a field removed from a file nor a subsystem that no longer has one. The files in `configurator/configuration/` become the seed and the expected shape. A new `--reset [subsystem …]`, the only way to take the documents back to the files. The secrets stay an exception and always replace: a rotated key must count. Before, a value changed in operation disappeared at the first `start.sh`, silently. Tests from 56 to 62 (`tests/test_load_configuration.py`). |
+| 2026-09-23 | 0.9.1 | Two more entries in the pipeline's closed lists (§5.2): the state `UNDERSPECIFIED` and the `result` `underspecified`, for the request that goes back to the user because it said too little (preanalyst §16.6). Nothing else changes: the documents already written stay valid. Tests from 55 to 56. |
+| 2026-09-23 | 0.9.0 | **The project's pipeline** (§5.2): the flat `state` field becomes the `pipeline` object with the state and the ordered list of the steps taken — the register of decisions. A new `POST /projects/{id}/pipeline/steps` (§6.3.2), with closed lists for the names of the steps and the states: an invented name does not get into the database. Migration §8.9. `scripts/load_configuration.py` accepts a second directory, the **secrets**, and deep-merges it onto the configuration before writing it into Mongo: API keys are configuration, but they cannot live in git. Tests from 50 to 55. |
+| 2026-09-22 | 0.8.0 | **The language.** New `PUT /users/{username}/locale` and `PUT /sessions/{token}/locale` (§6.19): the `users.locale` and `sessions.data.locale` fields. The sso uses them to remember the chosen language between one login and the next. Tests from 45 to 50. |
+| 2026-09-22 | 0.7.0 | The drivers' **`enabled`** field (allowed to supervise projects), in the `GET /drivers` list too (`DRIVER_SUMMARY`). `Dome` and `Prova` enabled; a new test driver who is not enabled, `Non abilitato`, with a discount code at 10%. Data updated with the seed on 2026-09-22. |
+| 2026-09-22 | 0.6.2 | A new `billing.ambassador_uid` (`null` by default): the driver who invited the user. The rules on when it counts are applied by the preanalyst. Tests from 44 to 45. |
+| 2026-09-22 | 0.6.1 | `billing.autonomous_fee_discount` removed: autonomous work no longer has a discount on the fee (migration §8.8). A `POST /projects` body still holding it does not error: the field is ignored. |
+| 2026-09-21 | 0.6.0 | **A configuration subsystem for everybody.** Anagraphics' configuration read at startup from its document in `configuration` (`access.allowed_ips`, `mongo.server_selection_timeout_ms`); host and port from `WEBTOOLS_ANAGRAPHICS_URL`. No more defaults and no more `HOST`, `PORT`, `MONGO_URI`, `MONGO_DB`, `ALLOWED_IPS` variables: from the environment only the `WEBTOOLS_*` bootstrap. Without configuration the server does not start. The configurations no longer live in the seed: a new `scripts/load_configuration.py`, which loads `configurator/configuration/*.json`. Tests from 40 to 44. |
+| 2026-09-19 | 0.1.0 | Creation: the read API for `configuration`/`anagraphics`, the IP pool, the seed, the tests. |
+| 2026-09-19 | 0.1.0 | Fix: startup through `__main__.py` with `proxy_headers=False`. Before, with uvicorn directly, `X-Forwarded-For` from localhost replaced the client's IP. |
+| 2026-09-19 | 0.1.0 | The package renamed from `app` to `webtools_anagraphics`, so as not to have generic names among the Mac's processes. |
+| 2026-09-19 | 0.1.0 | The test project `demo-001` deleted and replaced by `1f251606-bdba-40c4-bbee-bfedc6e57f70`: `project_id`s are UUIDs. |
+| 2026-09-19 | 0.1.0 | Errors: HTTP status + a stable code (`{"error": "…"}`), no more prose (`{"detail": "…"}`). New codes: `CONFIGURATION_NOT_FOUND`, `PROJECT_NOT_FOUND`, `ROUTE_NOT_FOUND`, `METHOD_NOT_ALLOWED`, `IP_NOT_ALLOWED`, `DATABASE_UNAVAILABLE` (503, previously 500), `INTERNAL_ERROR`. |
+| 2026-09-19 | 0.1.0 | The `webtools_anagraphics.sh --start/--stop` script: nohup, a PID file and a stop only after checking the command line. It replaces `pkill -f` and stopping by port. |
+| 2026-09-21 | 0.5.0 | The `anagraphics` collection becomes **`projects`** (migration §8.7) and `GET /anagraphics/{id}` becomes `GET /projects/{id}`. New `POST /projects` (anagraphics generates the id; a unique sparse `submission_id` makes the form submission idempotent) and `DELETE /projects/{id}`. New fields of the project: `owner_uid`, `submission_id`, `created_at`, `state`, `review` (the driver and `preset`), `billing` (the discount and the discount on the autonomous work fee). A new code: `SUBMISSION_EXISTS`. Tests from 33 to 40. |
+| 2026-09-21 | 0.4.0 | The `tickets` collection (key `ticket`, a TTL on `expires_at`) with `POST /tickets` and `DELETE /tickets/{ticket}`, which consumes the ticket by reading it. The sso needs it to hand a session from one address to another, which a cookie cannot do (§5.7). New codes: `TICKET_NOT_FOUND`, `TICKET_EXISTS`. Tests from 30 to 33. |
+| 2026-09-21 | 0.3.0 | The `users` collection (key `username`, with the `credential` block in scrypt) and `sessions` (key `token`, a TTL index on `expires_at`). New endpoints: `GET /users/{username}`, `GET /users/{username}/credential`, `POST /sessions`, `GET /sessions/{token}`, `DELETE /sessions/{token}`, `DELETE /sessions?uid=…`. The subsystem's **first writes**. New codes: `USER_NOT_FOUND`, `CREDENTIAL_NOT_SET`, `SESSION_NOT_FOUND`, `SESSION_EXISTS`, `INVALID_BODY`. The Mongo client with `tz_aware=True`. Tests from 17 to 30. The login stays out of here: `webtools_sso` does it. |
+| 2026-09-20 | 0.2.1 | `GET /drivers`, the list of every driver, with `uid` and `screen_name` only. The `username` of the driver `Dome` corrected to `dome.santoro@gmail.com`. The test driver `Prova` added. Tests from 16 to 17. |
+| 2026-09-20 | 0.2.0 | The `drivers` collection (key `uid`) and `discounts` (key `discount_code`, the driver duplicated, `percentage` in percentage points). Three new endpoints: `GET /drivers/{uid}`, `GET /drivers/{uid}/discounts`, `GET /discounts/{discount_code}`. New codes: `DRIVER_NOT_FOUND`, `DISCOUNT_NOT_FOUND`. The first driver: `Dome`, with a discount code at 5%. Tests from 9 to 16. The login not handled. |

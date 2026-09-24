@@ -1,38 +1,40 @@
-// Codice condiviso: come un sottosistema parla con webtools_sso.
+// Shared code: how a subsystem talks to webtools_sso.
 //
-// NON MODIFICARE LA COPIA DENTRO UN SOTTOSISTEMA.
-// L'originale è `webtools/commons/sso/sso_client.js`; le copie le distribuisce
-// `webtools/configurator/sso_deployer/deploy.sh`, come per commons.css.
+// DO NOT EDIT THE COPY INSIDE A SUBSYSTEM.
+// The original is `webtools/commons/sso/sso_client.js`; the copies are distributed
+// by `webtools/configurator/sso_deployer/deploy.sh`, as for commons.css.
 //
-// Qui non si decide niente sull'autenticazione: si sa **come chiedere**. Chi
-// verifica le password, chi tiene le sessioni e chi giudica le scadenze è il sso.
+// Nothing about authentication is decided here: this file knows **how to ask**.
+// Verifying passwords, holding sessions and judging expiries is the sso's job.
 //
-// Il giro completo, per chi legge questo file per la prima volta:
+// The full round trip, for whoever reads this file for the first time:
 //
-//   1. l'utente non è loggato → si manda il browser a `loginUrl(next)`;
-//   2. il sso mostra la sua pagina di login, l'unica del sistema;
-//   3. finito, rimanda il browser al sottosistema con `?ticket=…` nell'indirizzo;
-//   4. il sottosistema chiama `claimTicket()` **da server a server** e riceve la
-//      sessione, poi si mette il proprio cookie e toglie il biglietto dall'indirizzo;
-//   5. da lì in poi ogni richiesta porta il cookie, e `currentSession()` dice chi è.
+//   1. the user is not logged in → the browser is sent to `loginUrl(next)`;
+//   2. the sso shows its login page, the only one in the system;
+//   3. once done, it sends the browser back to the subsystem with `?ticket=…` in
+//      the address;
+//   4. the subsystem calls `claimTicket()` **server to server** and receives the
+//      session, then sets its own cookie and strips the ticket from the address;
+//   5. from then on every request carries the cookie, and `currentSession()` says
+//      who it is.
 //
-// Serve il biglietto perché un cookie appartiene a un indirizzo solo: il sso non
-// può metterne uno per conto nostro. E il token della sessione non passa mai
-// dall'indirizzo, perché dura ore e l'indirizzo finisce nella cronologia e nei log:
-// ci passa il biglietto, che vale una volta sola e per un minuto.
+// The ticket is needed because a cookie belongs to one address only: the sso
+// cannot set one on our behalf. And the session token never travels through the
+// address, because it lasts hours and the address ends up in history and in logs:
+// the ticket travels there instead, and it is good once and for one minute.
 //
-// Il sottosistema deve avere queste impostazioni:
+// The subsystem must have these settings:
 //
-//   ssoUrl        indirizzo del sso, es. "http://127.0.0.1:9300"
-//   ssoTimeoutMs  quanto si aspetta una risposta
-//   cookieName    nome del **proprio** cookie: deve essere diverso da quello del
-//                 sso e da quello degli altri sottosistemi, perché i cookie
-//                 ignorano la porta e su 127.0.0.1 finiscono tutti nello stesso
-//                 mucchio (due cookie con lo stesso nome si sovrascrivono)
-//   publicUrl     il proprio indirizzo pubblico, es. "http://127.0.0.1:9200":
-//                 è quello che si dichiara al sso quando si scambia il biglietto
+//   ssoUrl        the sso address, e.g. "http://127.0.0.1:9300"
+//   ssoTimeoutMs  how long to wait for an answer
+//   cookieName    the name of its **own** cookie: it must differ from the sso's
+//                 and from the other subsystems', because cookies ignore the port
+//                 and on 127.0.0.1 they all end up in the same pile (two cookies
+//                 with the same name overwrite each other)
+//   publicUrl     its own public address, e.g. "http://127.0.0.1:9200": it is what
+//                 is declared to the sso when the ticket is exchanged
 
-/* ------------------------------------------------------------- richieste */
+/* -------------------------------------------------------------- requests */
 
 async function request(settings, path, { method = "GET", body, token } = {}) {
   const url = `${settings.ssoUrl}${path}`;
@@ -57,7 +59,7 @@ async function request(settings, path, { method = "GET", body, token } = {}) {
   try {
     payload = await response.json();
   } catch {
-    console.error(`[sso-client] ${method} ${path}: risposta non JSON (HTTP ${response.status})`);
+    console.error(`[sso-client] ${method} ${path}: response is not JSON (HTTP ${response.status})`);
     return { ok: false, reason: "unavailable" };
   }
 
@@ -72,19 +74,19 @@ export function readCookie(request, name) {
   const header = request.headers.cookie;
   if (!header) return null;
   for (const piece of header.split(";")) {
-    const separatore = piece.indexOf("=");
-    if (separatore === -1) continue;
-    if (piece.slice(0, separatore).trim() === name) {
-      return decodeURIComponent(piece.slice(separatore + 1).trim());
+    const separator = piece.indexOf("=");
+    if (separator === -1) continue;
+    if (piece.slice(0, separator).trim() === name) {
+      return decodeURIComponent(piece.slice(separator + 1).trim());
     }
   }
   return null;
 }
 
-// HttpOnly: il JavaScript della pagina non può leggerlo.
-// SameSite=Lax: non viene allegato alle richieste che partono da un altro sito,
-// tranne la normale navigazione con un link.
-// Niente Secure perché su localhost non c'è HTTPS: fuori di qui va aggiunto.
+// HttpOnly: the page's JavaScript cannot read it.
+// SameSite=Lax: it is not attached to requests starting from another site, except
+// ordinary navigation through a link.
+// No Secure because there is no HTTPS on localhost: outside here it must be added.
 export function sessionCookie(settings, token, maxAgeSeconds) {
   return `${settings.cookieName}=${token}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${Math.max(
     0,
@@ -96,7 +98,7 @@ export function clearSessionCookie(settings) {
   return `${settings.cookieName}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0`;
 }
 
-/* ------------------------------------------------------------- indirizzi */
+/* ------------------------------------------------------------- addresses */
 
 function withNext(settings, path, next) {
   return `${settings.ssoUrl}${path}?next=${encodeURIComponent(next)}`;
@@ -114,16 +116,16 @@ export function registerUrl(settings, next) {
   return withNext(settings, "/ui/register", next);
 }
 
-/* -------------------------------------------------------------- sessione */
+/* --------------------------------------------------------------- session */
 
-// Chi sta chiedendo questa pagina.
+// Who is asking for this page.
 //
-//   { ok: true, logged: false }            nessun cookie, o sessione non più valida
-//   { ok: true, logged: true, session }    sessione valida
-//   { ok: false, reason: "unavailable" }   il sso non risponde: **non lo sappiamo**
+//   { ok: true, logged: false }            no cookie, or the session is no longer valid
+//   { ok: true, logged: true, session }    valid session
+//   { ok: false, reason: "unavailable" }   the sso does not answer: **we do not know**
 //
-// L'ultimo caso non va confuso con "non è loggato": trattarlo come un logout
-// butterebbe fuori tutti a ogni guasto del sso.
+// The last case is not to be confused with "not logged in": treating it as a
+// logout would throw everybody out at every sso failure.
 export async function currentSession(settings, httpRequest) {
   const token = readCookie(httpRequest, settings.cookieName);
   if (!token) return { ok: true, logged: false };
@@ -133,8 +135,8 @@ export async function currentSession(settings, httpRequest) {
   return { ok: true, logged: Boolean(result.data.logged), session: result.data.session ?? null };
 }
 
-// Scambia il biglietto che il sso ha messo nell'indirizzo. Da server a server:
-// il browser non vede mai questa chiamata.
+// Exchanges the ticket the sso put in the address. Server to server: the browser
+// never sees this call.
 export async function claimTicket(settings, ticket) {
   const result = await request(settings, "/tickets/exchange", {
     method: "POST",
@@ -144,13 +146,13 @@ export async function claimTicket(settings, ticket) {
   return { ok: true, logged: Boolean(result.data.logged), session: result.data.session ?? null };
 }
 
-// La lingua scelta con il selettore delle pagine, per chi è entrato: il sso la
-// mette nella sessione e nel profilo, così il login successivo la ritrova.
-// Senza cookie di sessione non c'è niente da salvare: la lingua resta nel
-// cookie comune, che scrive chi chiama.
+// The language chosen with the pages' switcher, for whoever has logged in: the
+// sso puts it in the session and in the profile, so the next login finds it again.
+// Without a session cookie there is nothing to save: the language stays in the
+// shared cookie, which the caller writes.
 //
-//   { ok: true, logged }                   fatto, oppure sessione non più valida
-//   { ok: false, reason: "unavailable" }   il sso non risponde
+//   { ok: true, logged }                   done, or the session is no longer valid
+//   { ok: false, reason: "unavailable" }   the sso does not answer
 export async function saveSessionLocale(settings, httpRequest, locale) {
   const token = readCookie(httpRequest, settings.cookieName);
   if (!token) return { ok: true, logged: false };
@@ -160,17 +162,17 @@ export async function saveSessionLocale(settings, httpRequest, locale) {
   return { ok: true, logged: Boolean(result.data.logged) };
 }
 
-/* -------------------------------------------------- il ritorno dal login */
+/* ------------------------------------------------ coming back from login */
 
 export function ticketFrom(url) {
   return url.searchParams.get("ticket");
 }
 
-// Lo stesso indirizzo senza il biglietto: ci si rimanda il browser subito dopo
-// lo scambio, così il biglietto non resta nella barra degli indirizzi né nella
-// cronologia, e un aggiornamento della pagina non prova a riusarlo.
+// The same address without the ticket: the browser is sent there right after the
+// exchange, so the ticket stays neither in the address bar nor in the history, and
+// reloading the page does not try to use it again.
 export function urlWithoutTicket(settings, url) {
-  const pulito = new URL(url);
-  pulito.searchParams.delete("ticket");
-  return `${settings.publicUrl}${pulito.pathname}${pulito.search}`;
+  const clean = new URL(url);
+  clean.searchParams.delete("ticket");
+  return `${settings.publicUrl}${clean.pathname}${clean.search}`;
 }

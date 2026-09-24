@@ -1,8 +1,8 @@
-// Le pagine del sito vetrina.
+// The showcase site's pages.
 //
-// Qui non c'è HTML: sta in `templates/`, in file .njk resi da nunjucks con
-// l'autoescape acceso. Questo file decide soltanto quali pagine esistono e
-// quali dati ricevono.
+// There is no HTML here: it lives in `templates/`, in .njk files rendered by
+// nunjucks with autoescaping on. This file decides only which pages exist and
+// which data they receive.
 
 import { fileURLToPath } from "node:url";
 
@@ -16,8 +16,8 @@ const env = nunjucks.configure(TEMPLATES_DIR, {
   trimBlocks: false,
 });
 
-// Indirizzo → template. Gli indirizzi restano quelli del sito statico, perché
-// le pagine si collegano tra loro con `<nome>.html`.
+// Address → template. The addresses stay those of the static site, because the
+// pages link to each other with `<name>.html`.
 export const PAGES = {
   "/": "index.njk",
   "/index.html": "index.njk",
@@ -29,9 +29,9 @@ export const PAGES = {
   "/lavora-con-noi.html": "lavora-con-noi.njk",
 };
 
-// `ui` è quello che dà `settings.i18n.pageContext(…)`: lingua, `t` e selettore
-// della lingua. I testi di tutte le pagine stanno nei cataloghi, sotto
-// `front_gate.*`; il prezzo si scrive secondo la lingua (400 € / €400).
+// `ui` is what `settings.i18n.pageContext(…)` gives: language, `t` and the
+// language switcher. The texts of every page live in the catalogues, under
+// `front_gate.*`; the price is written according to the language (400 € / €400).
 export function renderPage(template, settings, ui) {
   return env.render(template, {
     ...ui,

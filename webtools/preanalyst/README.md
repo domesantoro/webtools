@@ -1,131 +1,143 @@
 # webtools_preanalyst
 
-La **pre-analisi**: la pagina da cui il cliente entra nel flusso e, in futuro, la chat di analisi.
-Node, con **nunjucks** per le pagine e **yaml** per il front matter delle specifiche.
+The **pre-analysis**: the page the client enters the flow from, and the specification rounds in
+`/analysis/{id}`. The conversation and the turns live on the project; the model's answer and the
+purchase of turns are still fake (§14.3.2 of the documentation).
+Node, with **nunjucks** for the pages and **yaml** for the specifications' front matter.
 
-- `POST /submit`: il form crea il progetto (anagraphics) con la sua pre-specifica .md
-  (webtools-workspaces), la fa **prevalidare** e manda a `/analysis/{id}`, per ora vuota — oppure
-  a `/?rejected={id}` se la richiesta non passa il cancello.
-- `POST /upload`: una specifica .md già pronta, con il `project_id` nel front matter, per un
-  progetto dell'utente.
-- `GET /projects/{id}/rejection.pdf`: i dati del form dopo un rifiuto.
+- `POST /submit`: the form creates the project (anagraphics) with its .md pre-specification
+  (webtools-workspaces), has it **prevalidated** and sends the browser to `/analysis/{id}` — or to
+  `/?rejected={id}` if the request does not pass the gate.
+- `POST /analysis/{id}/messages`, `.../turns`, `.../turns/buy`: one turn of the chat, moving turns
+  from the user's credit, and the fake purchase.
+- `POST /upload`: a ready-made .md specification, with the `project_id` in the front matter, for a
+  project of the user's.
+- `GET /projects/{id}/rejection.pdf`: the form data after a refusal.
 
-Il **prevalidator** (`src/prevalidator.js`) chiede a un modello se la richiesta sta dentro il
-perimetro del servizio: sei esiti con la loro probabilità, più il flag interno `off_domain`. Due
-esiti rifiutano — troppo grande, oppure roba che non potremmo costruire a nessuna dimensione — uno
-rimanda l'utente al form, tre passano; il flag dice che è software sviluppabile ma non un webtool,
-e non cambia il flusso. Il fornitore si
-raggiunge attraverso `src/ai/`, una porta sola, e si cambia dalla configurazione (`ai.provider`).
-I criteri stanno in `policies/`, copie generate da `configurator/policies/`: non si modificano qui.
+The **prevalidator** (`src/prevalidator.js`) asks a model whether the request sits inside the
+perimeter of the service: six outcomes with their probability, plus the internal `off_domain`
+flag. Two outcomes refuse — too big, or something we could not build at any size — one sends the
+user back to the form, three pass; the flag says it is software that could be developed but is not
+a webtool, and it does not change the flow. The provider is reached through `src/ai/`, a single
+door, and is changed from the configuration (`ai.provider`). The criteria live in `policies/`,
+copies generated from `configurator/policies/`: they are not edited here.
 
-Serve la chiave del fornitore in `webtools/configurator/secrets/preanalyst.json` (fuori da git):
-senza, il server non parte.
+The provider's key is needed in `webtools/configurator/secrets/preanalyst.json` (outside git):
+without it, the server does not start.
 
-Provare il prevalidator senza passare dal form — **fa una chiamata vera, quindi costa**:
+Trying the prevalidator without going through the form — **it makes a real call, so it costs**:
 
 ```sh
 set -a; source ../configurator/bootstrap.env; set +a
-node scripts/prevalidate.js scripts/esempi/normale.md
+node scripts/prevalidate.js scripts/examples/ordinary.md
 ```
 
-Documentazione completa: `docs/subsystems/preanalyst/README.md` (nella root del workspace).
+Full documentation: `docs/subsystems/preanalyst/README.md` (at the root of the workspace).
 
-## Avvio e arresto
+## Start and stop
 
 ```sh
-webtools/preanalyst/webtools_preanalyst.sh --start   # avvia in background, slegato dal terminale
-webtools/preanalyst/webtools_preanalyst.sh --stop    # ferma
+webtools/preanalyst/webtools_preanalyst.sh --start   # starts it in the background, detached from the terminal
+webtools/preanalyst/webtools_preanalyst.sh --stop    # stops it
 ```
 
-- PID: `webtools_preanalyst.pid`. Log: `webtools_preanalyst.log` (in append).
-- `--stop` ferma solo il processo del file PID, e solo dopo aver verificato che sia
+- PID: `webtools_preanalyst.pid`. Log: `webtools_preanalyst.log` (appended).
+- `--stop` stops only the process of the PID file, and only after checking that it is
   `node …/webtools/preanalyst/src/index.js`.
-- Debug in primo piano, da questa cartella: `set -a; source ../configurator/bootstrap.env; set +a; npm start` (Ctrl+C per fermarlo).
-- Dopo un `git clone` o un cambio di versione: `npm install`.
-- Test: `npm test` (`node --test`).
+- Debugging in the foreground, from this directory: `set -a; source ../configurator/bootstrap.env; set +a; npm start` (Ctrl+C to stop it).
+- After a `git clone` or a version change: `npm install`.
+- Tests: `npm test` (`node --test`).
 
-**Servono anche anagraphics, sso e webtools-workspaces accesi**. `webtools/configurator/start.sh`
-li avvia tutti nell'ordine giusto.
+**anagraphics, the sso and webtools-workspaces must be running too**.
+`webtools/configurator/start.sh` starts them all in the right order.
 
-## La pagina (`http://127.0.0.1:9200`)
+## The page (`http://127.0.0.1:9200`)
 
-Il form della pre-analisi (le domande stanno in `src/questions.js`). Il box del driver, a destra,
-compare **solo** se nell'URL c'è `?discount=` o `?driver=`: chi arriva senza vede solo il form, e
-la pagina non chiama nemmeno anagraphics.
+The pre-analysis form (the questions live in `src/questions.js`). The driver box, on the right,
+appears **only** if the URL holds `?discount=` or `?driver=`: whoever arrives without one sees
+only the form, and the page does not even call anagraphics.
 
-**Il driver non si sceglie**: o lo porta il link, o lo assegniamo noi. Il box è informativo.
+**The driver is not chosen**: either the link brings one, or we assign one. The box is
+informative.
 
-Un driver può mandare qui un cliente in due modi: `?discount=<codice sconto>`, che porta con sé uno
-sconto, oppure `?driver=<uid>`, che **non ne porta nessuno**. In tutti e due i casi, se il driver
-si trova, la tendina è bloccata.
+A driver can send a client here in two ways: `?discount=<discount code>`, which carries a
+discount, or `?driver=<uid>`, which carries **none**. In both cases, if the driver is found, the
+choice is locked.
 
-| Caso | Cosa succede |
+| Case | What happens |
 |---|---|
-| `?discount=`, sconto valido e driver trovato | Nome del driver nel box, avviso verde con la percentuale |
-| `?discount=`, lettura fallita | "Non è applicabile: probabilmente è scaduto", e il driver lo assegniamo noi |
-| `?discount=`, driver dello sconto non trovato | "Non è applicabile: il driver non si trova, contattalo" |
-| `?driver=`, uid trovato | Nome del driver nel box, nessun avviso |
-| `?driver=`, uid non trovato | "Il driver di questo link non si trova, contattalo" |
-| `?driver=` o `?discount=`, driver non abilitato | "Non è abilitato a seguire progetti, con lui non possiamo proseguire: contattalo"; il driver lo assegniamo noi e lo sconto non si applica |
-| Tutti e due i parametri | Vince `discount`; `driver` viene ignorato e la cosa finisce nel log |
-| Elenco dei driver irraggiungibile | `200`: il box dice che non riesce a identificarlo, e il form resta compilabile |
-| `?ambassador=<uid>` senza gli altri due, uid di un driver | Box "Invito" con il nome; sparisce se si segna il lavoro autonomo. Uid sconosciuto: nessun box |
+| `?discount=`, valid discount and driver found | The driver's name in the box, a green notice with the percentage |
+| `?discount=`, read failed | "It cannot be applied: it has probably expired", and we assign the driver |
+| `?discount=`, the discount's driver not found | "It cannot be applied: the driver cannot be found, contact them" |
+| `?driver=`, uid found | The driver's name in the box, no notice |
+| `?driver=`, uid not found | "This link's driver cannot be found, contact them" |
+| `?driver=` or `?discount=`, driver not enabled | "They are not enabled to supervise projects, we cannot go on with them: contact them"; we assign the driver and the discount does not apply |
+| Both parameters | `discount` wins; `driver` is ignored and the fact goes in the log |
+| The driver list unreachable | `200`: the box says it cannot identify them, and the form stays fillable |
+| `?ambassador=<uid>` without the other two, the uid of a driver | An "Invito" box with the name; it disappears if autonomous work is ticked. Unknown uid: no box |
 
-Le letture verso anagraphics le fa **questo server**, mai il browser: anagraphics accetta solo
-chiamate dagli IP del suo pool.
+The reads towards anagraphics are made by **this server**, never by the browser: anagraphics only
+accepts calls from the IPs of its pool.
 
-## L'accesso
+## Logging in
 
-La pagina si compila **anche da sloggati**: il conto serve per proseguire, e lo si chiede lì. In
-testata c'è "Entra" oppure il nome di chi è entrato con "Esci". Il bottone d'invio è abilitato solo
-per chi è entrato; da sloggati sotto c'è il riquadro che chiede di entrare o registrarsi.
+The page can be filled in **while logged out**: the account is needed to go on, and it is asked
+for there. In the header there is "Entra", or the name of whoever has logged in with "Esci". The
+submit button is enabled only for whoever is in; logged out, below it there is the box asking to
+log in or register.
 
-Il login **si apre in una finestra a parte**, di proposito: quello che si è scritto nel form non è
-salvato da nessuna parte, e se il login sostituisse questa pagina andrebbe perso. Finito il login
-la finestra **si chiude da sola** e questa pagina **si aggiorna sul posto** — cambiano testata e
-riquadro, il form non viene toccato. Senza JavaScript funziona lo stesso, ma si torna a mano.
+The login **opens in a separate window**, on purpose: what has been written in the form is not
+saved anywhere, and if the login replaced this page it would be lost. Once the login is done the
+window **closes by itself** and this page **refreshes in place** — the header and the box change,
+the form is not touched. Without JavaScript it still works, but you go back by hand. After the
+login the submission resumes by itself, unless the login has brought up the autonomous work
+choice.
 
-"Esci" (`GET /logout`) toglie il nostro cookie e manda al sso, che chiude la sessione: si esce da
-tutti i sottosistemi, non solo da qui.
+"Esci" (`GET /logout`) removes our cookie and sends the browser to the sso, which closes the
+session: you log out of every subsystem, not only of this one.
 
-Col sso spento la pagina resta usabile e lo dice: **niente ferma la pre-analisi**.
+With the sso down the page stays usable and says so: **nothing stops the pre-analysis**.
 
-Il dialogo col sso sta tutto in `src/commons/sso_client.js`, che è una copia generata.
+The whole conversation with the sso lives in `src/commons/sso_client.js`, which is a generated
+copy.
 
-## Stile e parti comuni
+## Style and shared parts
 
 - `public/commons.css`, `public/fonts/`, `src/commons/sso_client.js`,
-  `src/commons/configuration_client.js`, `public/sso_popup.js` e `templates/commons/base.njk`
-  sono **copie generate** dal deployer: non modificarle qui. Si modificano gli originali in
-  `webtools/commons/` e si lancia `webtools/configurator/deploy.sh`.
+  `src/commons/configuration_client.js`, `public/sso_popup.js` and `templates/commons/base.njk`
+  are **generated copies** from the deployer: do not edit them here. Edit the originals in
+  `webtools/commons/` and run `webtools/configurator/deploy.sh`.
 
-## Dov'è l'HTML
+## Where the HTML is
 
-In `templates/`, non nel codice: `page.njk` è la pagina, `macros/fields.njk` disegna i campi a
-partire dai dati di `src/questions.js`, `partials/driver_box.njk` è il box del driver.
-`templates/commons/base.njk` è il guscio comune, ed è una copia generata.
+In `templates/`, not in the code: `page.njk` is the page, `macros/fields.njk` draws the fields
+from the data of `src/questions.js`, `partials/driver_box.njk` is the driver box, `analysis.njk`
+is the specification-rounds page. `templates/commons/base.njk` is the shared shell, and it is a
+generated copy.
 
-`src/page.js` non contiene HTML: prepara i dati e basta. L'escape lo fa nunjucks da sé, e questo è
-il motivo principale della scelta: qui ogni valore arriva dall'URL o dal database.
-- `public/styles.css` è lo stile **locale** di questa pagina, e si modifica a mano.
-- `public/assets/mark.svg` è una copia a mano di quello del front-gate.
+`src/page.js` holds no HTML: it prepares the data and nothing else. Escaping is done by nunjucks
+by itself, and that is the main reason for the choice: here every value comes from the URL or from
+the database.
+- `public/styles.css` is this page's **local** style, and is edited by hand.
+- `public/assets/mark.svg` is a copy by hand of the front-gate's.
 
-## Configurazione
+## Configuration
 
-Letta all'avvio da anagraphics (`GET /configuration/preanalyst`); la fonte è
-`webtools/configurator/configuration/preanalyst.json`. Nessun default: se manca qualcosa il
-server non parte e il log dice quale campo. Dall'ambiente arrivano solo le variabili di
-`webtools/configurator/bootstrap.env`, che `--start` carica da sé. Il significato dei campi è
-nella documentazione completa (§8).
+Read at startup from anagraphics (`GET /configuration/preanalyst`); the source is
+`webtools/configurator/configuration/preanalyst.json`. No defaults: if anything is missing the
+server does not start and the log says which field. Only the variables of
+`webtools/configurator/bootstrap.env` come from the environment, and `--start` loads them by
+itself. What the fields mean is in the full documentation (§8).
 
-## Test
+## Tests
 
 ```sh
 cd webtools/preanalyst
 npm test
 ```
 
-Coprono le funzioni che **decidono**: come si legge la risposta del prevalidator e che cosa se ne
-fa (`tests/prevalidator.test.js`), e il conteggio dei giri di chi è tornato indietro
-(`tests/server.test.js`). Non chiamano il fornitore, non hanno bisogno dei server accesi e non
-costano niente. Restano scoperti `src/driver_link.js` e il resto: buco noto, non una scelta.
+They cover the functions that **decide**: how the prevalidator's answer is read and what is done
+with it (`tests/prevalidator.test.js`), and the counting of the rounds of whoever has been sent
+back (`tests/server.test.js`). They do not call the provider, they need no servers running and
+they cost nothing. `src/driver_link.js` and the rest are left uncovered: a known hole, not a
+choice.

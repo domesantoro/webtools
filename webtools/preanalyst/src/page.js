@@ -1,20 +1,21 @@
-// I dati che vanno alla pagina.
+// The data that goes to the page.
 //
-// Qui non c'è HTML: sta in `templates/`, in file .njk resi da nunjucks. Questo
-// file prepara i dati e basta — quali sezioni, com'è andata la provenienza dal
-// link di un driver, chi è entrato.
+// There is no HTML here: it lives in `templates/`, in .njk files rendered by
+// nunjucks. This file prepares the data and nothing else — which sections, how the
+// provenance from a driver's link turned out, who has logged in.
 //
-// Perché un motore di template e non stringhe dentro il JavaScript: con
-// l'autoescape acceso, ogni valore che finisce nell'HTML viene ripulito da solo.
-// Scrivendo l'HTML a mano l'escape è disciplina, e qui i valori arrivano tutti
-// da fuori — dall'URL e dal database.
+// Why a template engine and not strings inside the JavaScript: with autoescaping
+// on, every value that ends up in the HTML is cleaned by itself. Writing the HTML
+// by hand makes escaping a matter of discipline, and here the values all come from
+// outside — from the URL and from the database.
 //
-// Il layout comune (`templates/commons/base.njk`) è una **copia generata** dal
-// deployer: si modifica l'originale in `webtools/commons/templates/` e si
-// rilancia `webtools/configurator/deploy.sh`.
+// The shared layout (`templates/commons/base.njk`) is a **generated copy**: edit
+// the original in `webtools/commons/templates/` and run
+// `webtools/configurator/deploy.sh` again.
 //
-// La pagina è resa dal server: il browser riceve l'HTML già completo e non parla
-// mai con anagraphics, che accetta solo chiamate da IP noti.
+// The page is rendered by the server: the browser receives the HTML already
+// complete and never talks to anagraphics, which only accepts calls from known
+// IPs.
 
 import { fileURLToPath } from "node:url";
 
@@ -22,28 +23,27 @@ import nunjucks from "nunjucks";
 
 import { loginUrl, registerUrl } from "./commons/sso_client.js";
 import { SECTIONS } from "./questions.js";
-import { DISCOUNT_DRIVER_DISABLED, isResolved, OWN_LINK } from "./driver_link.js";
+import { DISCOUNT_APPLIED, DISCOUNT_DRIVER_DISABLED, isResolved, OWN_LINK } from "./driver_link.js";
 
 const TEMPLATES_DIR = fileURLToPath(new URL("../templates/", import.meta.url));
 
 const env = nunjucks.configure(TEMPLATES_DIR, {
-  // L'impostazione che conta: tutto ciò che si scrive con {{ }} passa
-  // dall'escape. Per stampare HTML vero serve dirlo apposta con `| safe`.
+  // The setting that matters: everything written with {{ }} goes through
+  // escaping. To print real HTML you have to say so with `| safe`.
   autoescape: true,
   noCache: false,
-  // Niente trimBlocks: insieme ai `{%-` dei template ridurrebbe la pagina a
-  // poche righe lunghissime, e l'HTML reso va letto anche da un essere umano.
+  // No trimBlocks: together with the templates' `{%-` it would squeeze the page
+  // into a few very long lines, and the rendered HTML is read by humans too.
   trimBlocks: false,
 });
 
-// Quello che è arrivato nell'URL non deve perdersi al primo invio: il codice
-// sconto non sta in nessun campo visibile, quindi viaggia nascosto. Quando il
-// driver è stato riconosciuto si manda il suo uid; quando non si è potuto
-// risolvere niente, si rimanda indietro quello che era arrivato — se il guasto
-// è nostro, non deve pagarlo l'utente.
+// What arrived in the URL must not be lost at the first submission: the discount
+// code sits in no visible field, so it travels hidden. When the driver has been
+// recognised their uid is sent; when nothing could be resolved, what arrived is
+// sent back — if the failure is ours, the user must not pay for it.
 function hiddenFields(driverLink, params, driversAvailable) {
   const campi = [];
-  // Lo sconto di un driver non abilitato non si applica: non viaggia col form.
+  // The discount of a driver who is not enabled does not apply: it does not travel with the form.
   if (params.discountCode && driverLink.state !== DISCOUNT_DRIVER_DISABLED) {
     campi.push({ name: "discount", value: params.discountCode });
   }
@@ -55,26 +55,26 @@ function hiddenFields(driverLink, params, driversAvailable) {
   return campi;
 }
 
-// Dove il sso rimanda il browser dopo il login: **non** la pagina di partenza,
-// ma la paginetta che chiude il giro (`/login-done`). Ci arriva la finestra del
-// login, che avvisa la pagina di partenza e si chiude. Mandarlo alla pagina di
-// partenza aprirebbe una seconda copia della pre-analisi nella finestra
-// sbagliata, lasciando quella vera convinta che non sia entrato nessuno.
+// Where the sso sends the browser after the login: **not** the starting page, but
+// the small page that closes the round trip (`/login-done`). The login window
+// lands there, notifies the starting page and closes. Sending it to the starting
+// page would open a second copy of the pre-analysis in the wrong window, leaving
+// the real one convinced nobody had logged in.
 function afterLogin(settings) {
   return `${settings.publicUrl}/login-done`;
 }
 
-// La sezione "Lavoro autonomo" della pagina "Lavora con noi" del sito vetrina.
+// The "Autonomous work" section of the showcase site's "Work with us" page.
 function workWithUsUrl(settings) {
   return `${settings.frontGateUrl}/lavora-con-noi.html#lavoro-autonomo`;
 }
 
-// I pezzi che dipendono da chi è entrato. Sono gli stessi macro usati dalla
-// pagina, quindi quella appena caricata e quella aggiornata dal browser non
-// possono divergere.
-// I pezzi da rimpiazzare dopo il login, ognuno col selettore del contenitore.
-// Non si rimpiazza la colonna destra intera: dentro c'è il blocco del
-// caricamento, e rifarlo butterebbe via il file che l'utente ha già scelto.
+// The fragments that depend on who has logged in. They are the same macros the
+// page uses, so the page just loaded and the page refreshed by the browser cannot
+// diverge.
+// The fragments to replace after the login, each with its container's selector.
+// The whole right-hand column is not replaced: the upload block is in there, and
+// redoing it would throw away the file the user has already chosen.
 export function renderAccessFragments(ui, access, settings, colonna) {
   const dati = accessData(access, settings);
   const aside = asideData({ ...colonna, moreUrl: workWithUsUrl(settings) });
@@ -87,9 +87,9 @@ export function renderAccessFragments(ui, access, settings, colonna) {
   };
 }
 
-// La colonna destra: il box del driver e, solo per un driver, il blocco del
-// lavoro autonomo. Può essere vuota — chi arriva senza link e non è un driver
-// non ha niente da vedere lì — e in quel caso la pagina resta a una colonna.
+// The right-hand column: the driver box and, for a driver only, the autonomous
+// work block. It can be empty — somebody arriving without a link who is not a
+// driver has nothing to see there — and in that case the page stays single-column.
 function asideData({
   driverLink,
   params,
@@ -102,8 +102,8 @@ function asideData({
   locked,
 }) {
   const ownLink = driverLink.state === OWN_LINK;
-  // Un link proprio non si mostra: il box sparisce e a dirlo è il blocco del
-  // lavoro autonomo, che per un driver c'è comunque.
+  // One's own link is not shown: the box disappears and the autonomous work
+  // block says so, which is there for a driver anyway.
   const boxShow = showDriverBox && !ownLink;
   const resolved = driversAvailable && isResolved(driverLink);
 
@@ -113,44 +113,45 @@ function asideData({
       drivers_available: driversAvailable,
       resolved,
       link: driverLink,
-      // L'avviso ha senso solo se c'è una casella da segnare e qualcosa di
-      // valido da non applicare: un driver che guarda un riferimento a un altro
-      // driver, riconosciuto. Su uno sconto scaduto non c'è niente da ignorare.
-      // Con la casella ferma non c'è più niente da ignorare, e niente deve
-      // viaggiare col form: i termini del progetto si sono decisi al primo invio
-      // e questo giro non li rilegge.
+      // The notice only makes sense if there is a box to tick and something valid
+      // not to apply: a driver looking at a reference to another driver, and a
+      // recognised one. On an expired discount there is nothing to ignore. With
+      // the checkbox locked there is nothing left to ignore, and nothing must
+      // travel with the form: the project's terms were settled at the first
+      // submission and this round does not read them again.
       can_be_ignored: boxShow && isDriver && resolved && !locked,
       hidden: locked ? [] : hiddenFields(driverLink, params, driversAvailable),
     },
-    // Chi ha invitato l'utente a usare webtools (src/ambassador.js). C'è solo
-    // se l'ambassador è stato riconosciuto; con il lavoro autonomo segnato lo
-    // spegne il CSS.
+    // Who invited the user to use webtools (src/ambassador.js). It is there only
+    // if the ambassador has been recognised; with autonomous work ticked the CSS
+    // switches it off.
     ambassador_box: {
       show: Boolean(ambassador),
       driver: ambassador,
-      // Quando il form si ripresenta il box si legge e basta: l'uid non
-      // riparte col form, perché il progetto ce l'ha già.
+      // When the form comes back the box is read and nothing else: the uid does
+      // not travel with the form again, because the project already has it.
       locked: Boolean(locked),
     },
     driver_work: {
       show: isDriver,
       own_link: ownLink,
       more_url: moreUrl,
-      // Com'è messa la casella. Al primo invio è libera e vuota; quando il form
-      // si ripresenta dice quello che il progetto ha già registrato e non si
-      // tocca più, perché quella scelta è stata fatta (src/server.js).
+      // How the checkbox stands. At the first submission it is free and empty;
+      // when the form comes back it says what the project has already recorded and
+      // is not touched again, because that choice has been made (src/server.js).
       checked: Boolean(autonomousWork?.checked),
       locked: Boolean(autonomousWork?.locked),
     },
   };
 }
 
-// Le pagine di esito dell'invio e dell'analisi, quando qualcosa non va.
-// Una frase su che cosa è successo, una su che cosa fare: i testi stanno nei
-// cataloghi, sotto `preanalyst.messages.<tipo>.title` e `.text`.
+// The outcome pages of the submission and of the analysis, when something goes
+// wrong. One sentence on what happened, one on what to do: the texts live in the
+// catalogues, under `preanalyst.messages.<kind>.title` and `.text`.
 //
-// `ui`, in ogni pagina resa qui, è quello che dà `settings.i18n.pageContext(…)`:
-// lingua, `t` e selettore della lingua, che il layout comune usa su ogni pagina.
+// `ui`, in every page rendered here, is what `settings.i18n.pageContext(…)` gives:
+// language, `t` and the language switcher, which the shared layout uses on every
+// page.
 export function renderMessage(ui, kind) {
   const message = {
     title: ui.t(`preanalyst.messages.${kind}.title`),
@@ -159,14 +160,80 @@ export function renderMessage(ui, kind) {
   return env.render("message.njk", { ...ui, title: message.title, noindex: true, home_link: "/", message });
 }
 
-// La pagina dell'analisi: per ora solo il guscio, con chi è entrato in testata.
-export function renderAnalysis(ui, { access, settings }) {
+// The fake answers of the chat (see the TODO in `src/server.js`).
+//
+// They are numbered keys and not a list because `t` reads strings only: the
+// catalogue is made of keys and values, and an array would not fit. We go on while
+// the next key is there, so adding one is a line in the catalogue and nothing
+// else.
+//
+// It all goes away together when the answer becomes real.
+export function mockReplies(ui) {
+  const replies = [];
+  for (let number = 1; ui.has(`preanalyst.analysis.mock.replies.${number}`); number += 1) {
+    replies.push(ui.t(`preanalyst.analysis.mock.replies.${number}`));
+  }
+  return replies;
+}
+
+// The summary next to the chat: what was decided when the request set off. Only
+// what is there is shown — with no driver, no discount, no ambassador and no
+// autonomous work the box is left with the turn counter alone, which is the reason
+// it is there anyway.
+//
+// `driverLinkOfProject` returns only `none`, `driver_applied` or
+// `discount_applied`: the states for link-reading failures do not come through
+// here, because the link is not read again (src/server.js).
+function summaryData({ driverLink, ambassador, autonomous }) {
+  const driver = isResolved(driverLink) ? driverLink.driver : null;
+  return {
+    driver: driver ? { name: driver.screen_name } : null,
+    // If the discount is there but the percentage could not be read again, we
+    // stay silent instead of writing a discount with no number.
+    discount: driverLink.state === DISCOUNT_APPLIED && driverLink.percentage != null
+      ? { percentage: driverLink.percentage }
+      : null,
+    ambassador: ambassador ? { name: ambassador.screen_name } : null,
+    autonomous,
+    // The box is always there, but if it carries no terms it says so instead of
+    // showing an empty list.
+    empty: !driver && !ambassador && !autonomous,
+  };
+}
+
+// The analysis page: the specification rounds.
+//
+// The conversation and the turns live on the project, read by `serveAnalysis`;
+// **only the answer is fake**, chosen by the server from a fixed list.
+//
+// `answer_max_chars` is the same limit as the form's answers: a message is an
+// answer like any other, and no new configuration field is needed.
+export function renderAnalysis(ui, { access, settings, terms, project_id, chat }) {
+  // The turns **used** are not counted separately: they are the rounds already
+  // done, that is, half the messages. The total is what has been used plus what is
+  // left, and not `max_turns`: with bought turns the starting cap is no longer the
+  // total.
+  const usati = Math.floor(chat.messages.length / 2);
   return env.render("analysis.njk", {
     ...ui,
     title: ui.t("preanalyst.analysis.title"),
     noindex: true,
     home_link: "/",
     access: accessData(access, settings),
+    chat: {
+      project_id,
+      max_chars: settings.answerMaxChars,
+      messages: chat.messages,
+      turns_left: chat.turnsLeft,
+      used: usati,
+      total: usati + chat.turnsLeft,
+      // At how many remaining turns we warn. In the configuration the number is
+      // said from the other end — "from the twentieth of thirty" — but what holds
+      // with bought turns too is how many are left, not how far along we are.
+      warn_when_left: settings.analysis.maxTurns - settings.analysis.warnFromTurn,
+      credit: chat.credit,
+    },
+    summary: summaryData(terms),
   });
 }
 
@@ -174,12 +241,12 @@ export function renderLoginDone(ui, { ok }) {
   return env.render("login_done.njk", { ...ui, title: ui.t("preanalyst.login_done.title"), noindex: true, ok });
 }
 
-// Le domande di `src/questions.js` con i loro testi nella lingua della pagina.
-// `hint` e `placeholder` ci sono solo se il catalogo li ha.
+// The questions of `src/questions.js` with their texts in the page's language.
+// `hint` and `placeholder` are there only if the catalogue has them.
 //
-// `answers` sono le risposte già date, quando il form si ripresenta a chi è
-// tornato indietro (src/server.js): ogni campo si porta dietro quello che c'era.
-// Al primo invio è vuoto e i campi nascono vuoti.
+// `answers` are the answers already given, when the form comes back to somebody
+// who was sent back (src/server.js): every field carries what was there. At the
+// first submission it is empty and the fields are born empty.
 function localizedSections(ui, answers) {
   const optional = (key) => (ui.has(key) ? ui.t(key) : null);
   return SECTIONS.map((section) => {
@@ -203,9 +270,9 @@ function localizedSections(ui, answers) {
   });
 }
 
-// Che cosa aveva risposto l'utente a una domanda, nella forma che serve al
-// template: `value` per i campi di testo, `selected` per le scelte — sempre un
-// elenco di codici, anche per un radio, così il template fa una cosa sola.
+// What the user had answered to a question, in the shape the template needs:
+// `value` for text fields, `selected` for choices — always a list of codes, even
+// for a radio, so the template does one thing only.
 function answered(field, value) {
   if (field.kind === "radio" || field.kind === "checkbox") {
     const codici = Array.isArray(value) ? value : value ? [value] : [];
@@ -214,9 +281,9 @@ function answered(field, value) {
   return { value: typeof value === "string" ? value : "" };
 }
 
-// I messaggi del caricamento (public/upload.js): il browser non ha cataloghi,
-// li riceve dalla pagina già nella lingua giusta. Un codice d'errore senza testo
-// cade su `failed`.
+// The upload messages (public/upload.js): the browser has no catalogues, it gets
+// them from the page already in the right language. An error code with no text
+// falls back to `failed`.
 const UPLOAD_ERRORS = [
   "NOT_LOGGED",
   "FILE_TOO_LARGE",
@@ -263,7 +330,7 @@ export function renderPage(ui, {
   access,
   settings,
   submissionId,
-  rejectedProjectId,
+  rejection,
   answers = {},
   resumed = null,
   autonomousWork = null,
@@ -275,9 +342,9 @@ export function renderPage(ui, {
     description: ui.t("preanalyst.page.description"),
     home_link: "/",
     sections: localizedSections(ui, answers),
-    // Il secondo giro: la richiesta è tornata indietro perché diceva troppo
-    // poco. La pagina lo dice in testa al form e si porta dietro il progetto,
-    // così la riscrittura non ne fa nascere un altro.
+    // The second round: the request came back because it said too little. The page
+    // says so at the top of the form and carries the project along, so the rewrite
+    // does not give birth to another one.
     resumed: resumed ? { project_id: resumed.projectId } : null,
     access: accessData(access, settings),
     aside: asideData({
@@ -296,13 +363,14 @@ export function renderPage(ui, {
       accept: settings.uploadAccept,
       messages: uploadMessages(ui),
     },
-    // La modale del rifiuto c'è solo per chi ci è appena stato mandato da
-    // `/submit`. `rejectedProjectId` arriva già verificato: progetto esistente,
-    // di chi guarda, davvero rifiutato (src/server.js).
-    rejection: rejectedProjectId
+    // The refusal modal is there only for somebody just sent here by `/submit`.
+    // `rejection` arrives already checked: the project exists, belongs to the
+    // viewer, really was refused, and carries the case to show (src/server.js).
+    rejection: rejection
       ? {
-          pdf_url: `/projects/${encodeURIComponent(rejectedProjectId)}/rejection.pdf`,
+          pdf_url: `/projects/${encodeURIComponent(rejection.project_id)}/rejection.pdf`,
           home_url: settings.frontGateUrl,
+          case: rejection.case,
         }
       : null,
   });

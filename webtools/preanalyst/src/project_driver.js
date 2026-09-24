@@ -1,20 +1,21 @@
-// Il driver e lo sconto del progetto, ricontrollati all'invio.
+// The project's driver and discount, checked again at submission time.
 //
-// La pagina li fa viaggiare come campi nascosti (`driver`, `discount`), ma un
-// campo nascosto non è una prova: chiunque può mandare quello che vuole. Qui si
-// rilegge tutto da anagraphics, con le stesse regole del box del driver
+// The page carries them as hidden fields (`driver`, `discount`), but a hidden
+// field is not proof: anybody can send whatever they like. Here everything is
+// read again from anagraphics, with the same rules as the driver box
 // (src/driver_link.js):
 //
-// - lo sconto vale solo se esiste; il driver del progetto è quello dello sconto,
-//   qualunque cosa dica il campo `driver`;
-// - il driver vale solo se esiste ed è abilitato (`enabled: true`): con uno non
-//   abilitato non si prosegue, e sconto e driver cadono insieme;
-// - un driver non porta un cliente a se stesso: il proprio uid non vale;
-// - con il lavoro autonomo non si guarda niente: il driver è chi compila.
+// - a discount counts only if it exists; the project's driver is the discount's
+//   one, whatever the `driver` field says;
+// - a driver counts only if they exist and are enabled (`enabled: true`): with one
+//   who is not enabled we do not go on, and discount and driver fall together;
+// - a driver does not bring a client to themselves: their own uid does not count;
+// - with autonomous work nothing is looked at: the driver is whoever is filling
+//   the form in.
 //
-// Quando non vale, il driver lo assegna il sistema (`driver_uid: null`).
-// `{ ok: false }` solo se anagraphics non risponde: l'invio non si registra,
-// invece di perdere driver e sconto.
+// When it does not count, the driver is assigned by the system
+// (`driver_uid: null`). `{ ok: false }` only if anagraphics does not answer: the
+// submission is not recorded, rather than losing driver and discount.
 
 import { findDiscount, findDriver } from "./anagraphics.js";
 

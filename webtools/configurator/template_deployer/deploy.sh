@@ -1,39 +1,39 @@
 #!/usr/bin/env bash
-# Diffonde i template comuni (commons/templates) nei sottosistemi che rendono pagine.
-# Ogni progetto ha la sua funzione di deploy, con destinazioni esplicite.
+# Distributes the shared templates (commons/templates) to the subsystems that render pages.
+# Every project has its own deploy function, with explicit targets.
 #
-# I template arrivano in `templates/commons/` del sottosistema, che li estende con
-# `{% extends "commons/base.njk" %}`. La cartella è separata dai template locali
-# perché quei file non si modificano lì: si modifica commons/templates e si
-# rilancia questo deployer.
+# The templates land in the subsystem's `templates/commons/`, which extends them
+# with `{% extends "commons/base.njk" %}`. The directory is kept apart from the
+# local templates because those files are not edited there: edit commons/templates
+# and run this deployer again.
 #
-# front-gate ha un guscio suo (templates/layout.njk) e usa di qui solo
-# `locale_switch.njk`, il selettore della lingua del piè di pagina.
+# front-gate has a shell of its own (templates/layout.njk) and uses only
+# `locale_switch.njk` from here, the footer's language switcher.
 set -euo pipefail
 
 WEBTOOLS="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 SOURCE="$WEBTOOLS/commons/templates"
 
-copia_in() {
-  local destinazione="$1"
-  mkdir -p "$destinazione"
-  # Si copiano tutti i .njk: quelli comuni sono pochi e servono tutti a chi rende pagine.
-  cp "$SOURCE"/*.njk "$destinazione/"
+copy_into() {
+  local target="$1"
+  mkdir -p "$target"
+  # Every .njk is copied: the shared ones are few and all of them are needed by whoever renders pages.
+  cp "$SOURCE"/*.njk "$target/"
 }
 
-# preanalyst — la pagina della pre-analisi.
+# preanalyst — the pre-analysis page.
 deploy_preanalyst() {
   echo "→ preanalyst"
-  copia_in "$WEBTOOLS/preanalyst/templates/commons"
+  copy_into "$WEBTOOLS/preanalyst/templates/commons"
 }
 
-# sso — le pagine di login e registrazione.
+# sso — the login and registration pages.
 deploy_sso() {
   echo "→ sso"
-  copia_in "$WEBTOOLS/sso/templates/commons"
+  copy_into "$WEBTOOLS/sso/templates/commons"
 }
 
-# front-gate — il sito vetrina: solo il selettore della lingua.
+# front-gate — the showcase site: the language switcher only.
 deploy_front_gate() {
   echo "→ front-gate"
   mkdir -p "$WEBTOOLS/front-gate/templates/commons"
@@ -44,4 +44,4 @@ deploy_preanalyst
 deploy_sso
 deploy_front_gate
 
-echo "Template comuni distribuiti."
+echo "Shared templates distributed."

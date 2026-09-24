@@ -1,14 +1,14 @@
 {#-
-  Il guscio di tutte le pagine del sito vetrina: head, header, footer.
-  La pagina lo estende e imposta, fuori dai blocchi:
-    page         il nome della pagina (`esempi`, `contatti`, …): evidenzia la
-                 sua voce nel menu e toglie dal footer il link a se stessa
-    title        il <title>
-    description  la meta description
-  e riempie il blocco `main`.
+  The shell of every page of the showcase site: head, header, footer.
+  The page extends it and sets, outside the blocks:
+    page         the page's name (`esempi`, `contatti`, …): it highlights its item
+                 in the menu and removes the link to itself from the footer
+    title        the <title>
+    description  the meta description
+  and fills the `main` block.
 
-  I testi stanno nei cataloghi (webtools/commons/i18n/locales/), sotto
-  `front_gate.*`; `t`, `locale` e il selettore della lingua li dà
+  The texts live in the catalogues (webtools/commons/i18n/locales/), under
+  `front_gate.*`; `t`, `locale` and the language switcher are given by
   `i18n.pageContext` (src/page.js).
 -#}
 <!doctype html>

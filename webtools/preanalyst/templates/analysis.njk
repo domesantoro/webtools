@@ -1,17 +1,195 @@
 {% extends "commons/base.njk" %}
-{% import "partials/access.njk" as accesso with context %}
+{% import "partials/access.njk" as login with context %}
 
 {#
-  La pagina dell'analisi: qui arriverà la chat. Per ora è vuota di proposito,
-  c'è solo il guscio con chi è entrato in testata.
+  The analysis page: the specification rounds, one message at a time, with the
+  summary of what was settled when the request set off next to them.
+
+  TODAY ONLY THE ANSWER IS FAKE: the server picks it from a fixed list in the
+  catalogue. Everything else is real — the conversation and the turns live on the
+  open step of the project's pipeline, the credit on the user's record, and
+  reloading the page loses nothing.
+
+  The turns — a question and its answer — are counted by the server. When
+  `chat.warn_when_left` are left the warning appears; at zero the field for writing
+  is hidden and the out-of-turns box takes its place, from which turns can be added
+  out of the credit. If the turns come back, the field comes back.
+
+  The markup of a message lives in the two <template>s at the bottom, not inside
+  `public/analysis.js`: composing HTML from strings in the JavaScript would make
+  escaping a matter of memory, and here the text is written by the user. The
+  browser clones the model and fills `.chat-text` with `textContent`, which gives
+  birth to no HTML. For the same reason the turns warning and the out-of-turns box
+  are already here, switched off: the JavaScript switches them on and writes no
+  text.
+
+  Without JavaScript the page stays readable — heading, first message, field,
+  summary — but nothing is sent: the conversation lives in the browser.
 #}
 
 {% block header_extra %}
       <div class="header-access">
-      {{- accesso.header(access) }}
+      {{- login.header(access) }}
       </div>
 {% endblock %}
 
 {% block main %}
-    <div class="container gate"></div>
+    <div class="container chat">
+      <div class="chat-intro reveal">
+        <div class="eyebrow">{{ t("preanalyst.analysis.eyebrow") }}</div>
+        <h1>{{ t("preanalyst.analysis.heading") }}</h1>
+        <p class="chat-lead">{{ t("preanalyst.analysis.lead") }}</p>
+        {#- The notice that the answers are fake. It goes away with the mock. #}
+        <p class="chat-mock-note">{{ t("preanalyst.analysis.mock.notice") }}</p>
+      </div>
+
+      <div class="chat-layout">
+        {#- Where to write and what is left: the browser has neither the catalogues
+            nor the configuration, and gets the numbers it needs from the page. #}
+        <div class="chat-panel card reveal delay-1"
+             data-chat-project="{{ chat.project_id }}"
+             data-chat-turns-left="{{ chat.turns_left }}"
+             data-chat-warn-left="{{ chat.warn_when_left }}"
+             data-chat-credit="{{ chat.credit }}">
+          {#- `aria-live`: a message that arrives on its own must be announced, or
+              whoever is not looking at the screen does not know it came. #}
+          <ol class="chat-log" data-chat-log aria-live="polite">
+            <li class="chat-turn chat-turn-system">
+              <div class="chat-who">{{ t("preanalyst.analysis.system") }}</div>
+              <div class="chat-bubble"><p class="chat-text">{{ t("preanalyst.analysis.opening") }}</p></div>
+            </li>
+{%- for messaggio in chat.messages %}
+            <li class="chat-turn chat-turn-{{ "client" if messaggio.role == "client" else "system" }}">
+              <div class="chat-who">{{ t("preanalyst.analysis.you") if messaggio.role == "client" else t("preanalyst.analysis.system") }}</div>
+              <div class="chat-bubble"><p class="chat-text">{{ messaggio.text }}</p></div>
+            </li>
+{%- endfor %}
+          </ol>
+
+          <p class="chat-waiting" data-chat-waiting hidden>
+            <span class="chat-dots" aria-hidden="true"><i></i><i></i><i></i></span>
+            <span>{{ t("preanalyst.analysis.waiting") }}</span>
+          </p>
+
+          {#- One message at a time: until the answer has arrived the field and the
+              button stay disabled. Once the turns are gone it all disappears. #}
+          <form class="chat-composer" data-chat-form>
+            <textarea class="input chat-input" id="chat-message" name="message" rows="2"
+                      maxlength="{{ chat.max_chars }}"
+                      aria-label="{{ t('preanalyst.analysis.label') }}"
+                      placeholder="{{ t('preanalyst.analysis.placeholder') }}"
+                      data-chat-input></textarea>
+            <div class="chat-actions">
+              <p class="chat-hint">{{ t("preanalyst.analysis.hint") }}</p>
+              <button class="btn btn-primary" type="submit" data-chat-send>{{ t("preanalyst.analysis.send") }}</button>
+            </div>
+            {#- Switched on from `warn_from_turn` onwards. Small: it is information,
+                not an alarm, and somebody who is writing must not be interrupted.
+                It says what happens when they run out, because the number alone
+                would not.
+
+                The number comes before the noun ("available: 1 of 5") and not
+                after: that way the sentence does not change between one and more
+                than one, and the JavaScript writes a number instead of choosing a
+                form. #}
+            <p class="chat-turns-warning" data-chat-warning hidden>
+              {{- t_html("preanalyst.analysis.turns.warning", { left: chat.turns_left, max: chat.total }) }}
+            </p>
+            {#- When the call does not succeed. This text too lives in the catalogue
+                and in the page: the JavaScript only switches it on. #}
+            <p class="chat-error" data-chat-error hidden>{{ t("preanalyst.analysis.error") }}</p>
+          </form>
+
+          {#- It takes the field's place when the turns are gone. If the turns then
+              come back — from the credit or from a purchase — this is switched off
+              and the field reappears: it is not an end, it is an interruption.
+
+              With credit, the field for moving some onto the project is shown and
+              the purchase is hidden; without credit the field is disabled and the
+              purchase is shown. The two never appear together. #}
+          <div class="chat-exhausted" data-chat-exhausted hidden>
+            <h2 class="chat-exhausted-title">{{ t("preanalyst.analysis.exhausted.title") }}</h2>
+            <p class="chat-exhausted-lead">{{ t("preanalyst.analysis.exhausted.lead", { max: chat.total }) }}</p>
+
+            <div class="chat-credit">
+              <p class="chat-credit-line" data-chat-credit-line>
+                {{- t_html("preanalyst.analysis.exhausted.credit_available", { credit: chat.credit }) }}
+              </p>
+              <p class="chat-credit-line" data-chat-credit-empty hidden>{{ t("preanalyst.analysis.exhausted.credit_none") }}</p>
+              <div class="chat-credit-row">
+                <label class="chat-credit-label" for="chat-turns">{{ t("preanalyst.analysis.exhausted.credit_label") }}</label>
+                <input class="input chat-credit-input" type="number" id="chat-turns" name="turns"
+                       min="1" step="1" value="1" data-chat-turns-input>
+                <button class="btn" type="button" data-chat-use-credit>{{ t("preanalyst.analysis.exhausted.use_credit") }}</button>
+              </div>
+            </div>
+
+            <button class="btn btn-primary" type="button" data-chat-buy hidden>{{ t("preanalyst.analysis.exhausted.buy") }}</button>
+            <p class="chat-exhausted-hint">{{ t("preanalyst.analysis.exhausted.optional") }}</p>
+            <p class="chat-exhausted-hint">{{ t("preanalyst.analysis.exhausted.download_hint") }}</p>
+            <p class="chat-error" data-chat-exhausted-error hidden>{{ t("preanalyst.analysis.error") }}</p>
+          </div>
+        </div>
+
+        {#- The summary. It is read and not touched: these terms were settled when
+            the request set off and are not changed here. #}
+        <aside class="chat-aside card reveal delay-2" aria-labelledby="chat-summary-title">
+          <div class="card-head aside-head" id="chat-summary-title">{{ t("preanalyst.analysis.summary.title") }}</div>
+          <div class="chat-aside-body">
+{%- if summary.empty %}
+            <p class="chat-summary-empty">{{ t("preanalyst.analysis.summary.empty") }}</p>
+{%- else %}
+            <dl class="chat-summary">
+{%- if summary.driver %}
+              <dt>{{ t("preanalyst.analysis.summary.driver") }}</dt>
+              <dd>{{ summary.driver.name }}</dd>
+{%- endif %}
+{%- if summary.discount %}
+              <dt>{{ t("preanalyst.analysis.summary.discount") }}</dt>
+              <dd>{{ t("preanalyst.analysis.summary.discount_value", { percentage: summary.discount.percentage }) }}</dd>
+{%- endif %}
+{%- if summary.ambassador %}
+              <dt>{{ t("preanalyst.analysis.summary.ambassador") }}</dt>
+              <dd>{{ summary.ambassador.name }}</dd>
+{%- endif %}
+{%- if summary.autonomous %}
+              <dt>{{ t("preanalyst.analysis.summary.autonomous") }}</dt>
+              <dd>{{ t("preanalyst.analysis.summary.autonomous_value") }}</dd>
+{%- endif %}
+            </dl>
+{%- endif %}
+
+            <dl class="chat-summary chat-summary-turns">
+              <dt>{{ t("preanalyst.analysis.turns.label") }}</dt>
+              <dd>{{ t_html("preanalyst.analysis.turns.value", { used: chat.used, max: chat.total }) }}</dd>
+            </dl>
+
+            <div class="chat-aside-actions">
+              <button class="btn" type="button" data-chat-download>{{ t("preanalyst.analysis.summary.download") }}</button>
+              <button class="btn btn-primary" type="button" data-chat-go disabled>{{ t("preanalyst.analysis.summary.go") }}</button>
+            </div>
+          </div>
+        </aside>
+      </div>
+
+      {#- The models of the two messages. The browser clones them and fills in the
+          text only: the name of who is speaking is already written here, in the
+          right language. #}
+      <template data-chat-template="client">
+        <li class="chat-turn chat-turn-client">
+          <div class="chat-who">{{ t("preanalyst.analysis.you") }}</div>
+          <div class="chat-bubble"><p class="chat-text"></p></div>
+        </li>
+      </template>
+      <template data-chat-template="system">
+        <li class="chat-turn chat-turn-system">
+          <div class="chat-who">{{ t("preanalyst.analysis.system") }}</div>
+          <div class="chat-bubble"><p class="chat-text"></p></div>
+        </li>
+      </template>
+    </div>
+{% endblock %}
+
+{% block scripts %}
+<script src="/analysis.js" defer></script>
 {% endblock %}

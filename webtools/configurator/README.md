@@ -1,188 +1,195 @@
-# configurator — avvio e deployer
+# configurator — startup and deployers
 
-Qui stanno i programmi che **avviano il sistema**, la **configurazione di tutti i sottosistemi** e i
-programmi che **distribuiscono le parti comuni** dentro i sottosistemi che le usano.
+Here live the programs that **start the system**, the **configuration of every subsystem** and the
+programs that **distribute the shared parts** into the subsystems that use them.
 
-## La configurazione
+## The configuration
 
-Ogni valore configurabile di un sottosistema (indirizzi, porte, pool di IP, durate, limiti, prezzi,
-nomi di cookie…) sta in **un file JSON per sottosistema**, in `configuration/`:
+Every configurable value of a subsystem (addresses, ports, IP pools, durations, limits, prices,
+cookie names…) lives in **one JSON file per subsystem**, in `configuration/`:
 
-| File | Chi lo legge |
+| File | Who reads it |
 |---|---|
-| `configuration/anagraphics.json` | anagraphics, direttamente da Mongo |
-| `configuration/sso.json` | sso |
+| `configuration/anagraphics.json` | anagraphics, straight from Mongo |
+| `configuration/sso.json` | the sso |
 | `configuration/workspaces.json` | webtools-workspaces |
-| `configuration/preanalyst.json` | preanalyst |
-| `configuration/front-gate.json` | front-gate |
+| `configuration/preanalyst.json` | the preanalyst |
+| `configuration/front-gate.json` | the front-gate |
 
-I file sono **strutturati**: i campi si raggruppano per argomento (`listen`, `access`, `subsystems_infos`,
-`session`, `limits`, …), non si scrivono piatti. Il campo `subsystem` non si scrive: lo dà il nome
-del file. Il significato dei campi sta nella documentazione del sottosistema che li legge.
+The files are **structured**: the fields are grouped by subject (`listen`, `access`,
+`subsystems_infos`, `session`, `limits`, …), they are not written flat. The `subsystem` field is
+not written: the file's name gives it. What the fields mean is in the documentation of the
+subsystem that reads them.
 
-`load_configuration.sh` li porta nella collection `configuration` di anagraphics, che li serve con
-`GET /configuration/{subsystem}`. **La configurazione che vive sta lì, non nei file**: questi sono
-il seme — i valori con cui nasce un ambiente nuovo — e la forma attesa, cioè quali campi esistono.
-Quello che gira può divergere, ed è normale.
+`load_configuration.sh` brings them into anagraphics' `configuration` collection, which serves them
+with `GET /configuration/{subsystem}`. **The configuration that lives is there, not in the files**:
+these are the seed — the values a new environment is born with — and the expected shape, that is,
+which fields exist. What is running may diverge, and that is normal.
 
-Per questo il caricamento aggiunge **solo i campi che mancano**: un campo che c'è non si tocca
-qualunque valore abbia, un campo tolto da un file resta in Mongo, un sottosistema senza più un file
-non viene cancellato. Un campo nuovo introdotto da uno sviluppo entra da solo al primo avvio, e
-niente di quello che è stato cambiato in esercizio si perde. Lo dice mentre lo fa:
+For this reason the loading adds **only the fields that are missing**: a field that is there is not
+touched whatever its value, a field taken out of a file stays in Mongo, a subsystem with no file
+any more is not deleted. A new field introduced by a piece of development enters by itself at the
+first startup, and nothing that has been changed in service is lost. It says so while it does it:
 
 ```
-Configurazione di 'webtools': 5 sottosistemi letti da configuration/
-  preanalyst: aggiunti prevalidation.max_underspecified_attempts
+Configuration of 'webtools': 5 subsystems read from configuration/
+  preanalyst: added prevalidation.max_underspecified_attempts
 ```
 
-Per tornare ai file bisogna chiederlo — `./load_configuration.sh --reset [sottosistema …]` — ed è
-l'unico modo: cancella le modifiche di quei sottosistemi e li riporta a quello che dice il file. Un
-campo nuovo va aggiunto **anche** al file, o l'ambiente successivo nascerà senza.
+To go back to the files one has to ask — `./load_configuration.sh --reset [subsystem …]` — and it
+is the only way: it deletes those subsystems' changes and takes them back to what the file says. A
+new field is to be added to the file **as well**, or the next environment will be born without it.
 
-Non si carica niente se anche un solo file non è JSON valido.
+Nothing is loaded if even a single file is not valid JSON.
 
-Ogni sottosistema legge la sua configurazione **all'avvio**, e **non ha valori di default**: se il
-documento manca, o un campo manca o è del tipo sbagliato, scrive nel log `webtools_<nome> non
-parte: …` con il percorso del campo ed esce con 1. I sottosistemi Node la leggono con il client
-comune `commons/configuration/configuration_client.js` (vedi sotto, deployer `configuration`).
+Every subsystem reads its configuration **at startup**, and **has no default values**: if the
+document is missing, or a field is missing or is of the wrong type, it writes
+`webtools_<name> is not starting: …` in the log with the field's path and exits with 1. The Node
+subsystems read it with the shared client `commons/configuration/configuration_client.js` (see
+below, the `configuration` deployer).
 
 ### Bootstrap
 
-`bootstrap.env` contiene le sole informazioni che non possono stare nella configurazione, perché
-servono a raggiungerla:
+`bootstrap.env` holds the only pieces of information that cannot live in the configuration, because
+they are what reaches it:
 
-| Variabile | A che serve |
+| Variable | What it is for |
 |---|---|
-| `WEBTOOLS_ANAGRAPHICS_URL` | Dove sta anagraphics. Gli altri lo chiamano qui; anagraphics ne ricava host e porta di ascolto |
-| `WEBTOOLS_CONFIGURATION_TIMEOUT_MS` | Quanto aspettare mentre si legge la configurazione, all'avvio |
-| `WEBTOOLS_MONGO_URI`, `WEBTOOLS_MONGO_DB` | Il database di anagraphics, dove sta anche la configurazione |
+| `WEBTOOLS_ANAGRAPHICS_URL` | Where anagraphics is. The others call it here; anagraphics gets its listening host and port out of it |
+| `WEBTOOLS_CONFIGURATION_TIMEOUT_MS` | How long to wait while reading the configuration, at startup |
+| `WEBTOOLS_MONGO_URI`, `WEBTOOLS_MONGO_DB` | Anagraphics' database, where the configuration lives too |
 
-Lo caricano gli script di controllo (`webtools_*.sh --start`) e `load_configuration.sh`. Per un
-avvio a mano in primo piano: `set -a; source webtools/configurator/bootstrap.env; set +a`.
+The control scripts (`webtools_*.sh --start`) and `load_configuration.sh` load it. For starting by
+hand in the foreground: `set -a; source webtools/configurator/bootstrap.env; set +a`.
 
-### Cambiare un valore
+### Changing a value
 
 ```sh
 $EDITOR webtools/configurator/configuration/sso.json
-webtools/configurator/start.sh --restart     # carica la configurazione e riavvia tutto
+webtools/configurator/start.sh --restart     # loads the configuration and restarts everything
 ```
 
-Un servizio acceso continua con la configurazione letta quando è partito: senza riavvio un cambio
-non ha effetto.
+A running service goes on with the configuration read when it started: with no restart a change has
+no effect.
 
-## Avviare e fermare tutto
+## Starting and stopping everything
 
 ```sh
-webtools/configurator/start.sh             # avvia quello che non è già acceso
-webtools/configurator/start.sh --restart   # ferma prima quelli accesi, poi riavvia tutto
-webtools/configurator/stop.sh              # ferma tutto, in ordine inverso
+webtools/configurator/start.sh             # starts what is not already up
+webtools/configurator/start.sh --restart   # stops the ones that are up first, then restarts everything
+webtools/configurator/stop.sh              # stops everything, in reverse order
 ```
 
-`stop.sh` ferma ogni servizio con il suo script di controllo (file PID e riga di comando
-verificata, mai per nome o per porta). Un servizio già spento non è un errore; se uno non si
-ferma, si prosegue con gli altri e alla fine lo script esce con 1.
+`stop.sh` stops every service with its own control script (a PID file and a verified command line,
+never by name or by port). A service that is already off is not an error; if one does not stop, it
+goes on with the others and at the end the script exits with 1.
 
-Prima di avviare, `start.sh` lancia `load_configuration.sh`: se la configurazione non si carica
-(per esempio perché MongoDB è spento) si ferma lì, senza avviare niente. Gli indirizzi che stampa
-li legge da `configuration/*.json` e da `bootstrap.env`, non ne tiene una copia sua.
+Before starting, `start.sh` runs `load_configuration.sh`: if the configuration does not load (for
+instance because MongoDB is off) it stops there, starting nothing. The addresses it prints it reads
+from `configuration/*.json` and from `bootstrap.env`, it does not keep a copy of its own.
 
-L'ordine di avvio è `anagraphics` → `sso` → `workspaces` → `preanalyst` → `front-gate`: il primo
-tiene i dati, il secondo autentica, il terzo conserva i file dei progetti, il quarto li usa tutti e
-tre, e il sito vetrina viene per ultimo perché è la porta d'ingresso. All'arresto si va al contrario, così nessuno resta acceso
-a parlare con un servizio che non c'è più. Se un servizio non parte, ci si ferma lì: avviare
-quelli dopo servirebbe solo a riempire i log di errori.
+The startup order is `anagraphics` → `sso` → `workspaces` → `preanalyst` → `front-gate`: the first
+holds the data, the second authenticates, the third keeps the projects' files, the fourth uses all
+three, and the showcase site comes last because it is the front door. On stopping it goes the other
+way round, so that nobody is left running talking to a service that is no longer there. If a
+service does not start, one stops there: starting the ones after it would only fill the logs with
+errors.
 
-**Senza `--restart` un servizio già acceso non viene toccato**: il suo script risponde "è già in
-esecuzione" e si va avanti. `--restart` serve quando si è cambiato il codice e le istanze accese
-sono quelle vecchie.
+**Without `--restart` a service that is already up is not touched**: its script answers "already
+running" and things go on. `--restart` is for when the code has been changed and the running
+instances are the old ones.
 
-Ogni servizio si avvia e si ferma **con il proprio script di controllo**, che ferma solo il
-processo del file PID dopo averne verificato la riga di comando. Qui dentro non si cerca niente
-per nome né per porta: su questa macchina girano altri progetti.
+Every service is started and stopped **with its own control script**, which stops only the process
+of the PID file after checking its command line. Nothing is searched for by name or by port in
+here: other projects run on this machine.
 
 
-## Distribuire le parti comuni
+## Distributing the shared parts
 
-Le parti comuni vivono in `webtools/commons/` e sono l'originale. Dentro i sottosistemi ci finiscono
-delle **copie generate**, che non si modificano lì: si modifica l'originale e si rilancia il deployer.
+The shared parts live in `webtools/commons/` and are the original. What ends up inside the
+subsystems are **generated copies**, which are not edited there: the original is edited and the
+deployer is run again.
 
 ```sh
-webtools/configurator/deploy.sh            # tutti i sotto-deployer, nell'ordine scritto in deploy.sh
-webtools/configurator/deploy.sh style      # solo lo stile
-webtools/configurator/deploy.sh style sso  # solo quelli indicati
+webtools/configurator/deploy.sh            # every sub-deployer, in the order written in deploy.sh
+webtools/configurator/deploy.sh style      # the style only
+webtools/configurator/deploy.sh style sso  # only the ones named
 ```
 
-Un nome che non esiste fa uscire con codice 2 e stampa l'elenco di quelli disponibili.
+A name that does not exist exits with code 2 and prints the list of the ones available.
 
-## I sotto-deployer
+## The sub-deployers
 
-| Nome | Script | Che cosa distribuisce | A chi |
+| Name | Script | What it distributes | To whom |
 |---|---|---|---|
-| `style` | `style_deployer/deploy.sh` | `commons/style/commons.css` e `commons/style/fonts/` | front-gate, preanalyst, sso |
-| `template` | `template_deployer/deploy.sh` | `commons/templates/*.njk`: il guscio comune delle pagine, il selettore della lingua, il loader | preanalyst, sso; front-gate solo `locale_switch.njk` |
-| `script` | `script_deployer/deploy.sh` | `commons/script/*.js`, il JavaScript di **browser** comune (oggi il loader) | preanalyst, sso, front-gate (in `public/`) |
-| `documents` | `documents_deployer/deploy.sh` | `configurator/documents/*.njk` e `configurator/policies/*.md`: la forma dei documenti che il sistema produce e i criteri delle decisioni | preanalyst (in `templates/commons/` e `policies/`) |
-| `i18n` | `i18n_deployer/deploy.sh` | `commons/i18n/webtools_i18n.js` e **tutti** i cataloghi `commons/i18n/locales/*.json` | preanalyst, sso, front-gate (in `src/commons/i18n/`) |
-| `sso` | `sso_deployer/deploy.sh` | `commons/sso/sso_client.js` (server) e `commons/sso/sso_popup.js` (browser) | preanalyst |
-| `specs` | `specs_deployer/deploy.sh` | `commons/specs/spec_front_matter.js`, il front matter delle specifiche | preanalyst, webtools-workspaces (in `src/commons/`) |
-| `configuration` | `configuration_deployer/deploy.sh` | `commons/configuration/configuration_client.js`, il client della configurazione | sso, webtools-workspaces, preanalyst, front-gate (in `src/commons/`) |
+| `style` | `style_deployer/deploy.sh` | `commons/style/commons.css` and `commons/style/fonts/` | front-gate, preanalyst, sso |
+| `template` | `template_deployer/deploy.sh` | `commons/templates/*.njk`: the pages' shared shell, the language switcher, the loader | preanalyst, sso; front-gate only `locale_switch.njk` |
+| `script` | `script_deployer/deploy.sh` | `commons/script/*.js`, the shared **browser** JavaScript (today the loader) | preanalyst, sso, front-gate (in `public/`) |
+| `documents` | `documents_deployer/deploy.sh` | `configurator/documents/*.njk` and `configurator/policies/*.md`: the shape of the documents the system produces and the criteria of the decisions | preanalyst (in `templates/commons/` and `policies/`) |
+| `i18n` | `i18n_deployer/deploy.sh` | `commons/i18n/webtools_i18n.js` and **all** the `commons/i18n/locales/*.json` catalogues | preanalyst, sso, front-gate (in `src/commons/i18n/`) |
+| `sso` | `sso_deployer/deploy.sh` | `commons/sso/sso_client.js` (the server) and `commons/sso/sso_popup.js` (the browser) | preanalyst |
+| `specs` | `specs_deployer/deploy.sh` | `commons/specs/spec_front_matter.js`, the specifications' front matter | preanalyst, webtools-workspaces (in `src/commons/`) |
+| `configuration` | `configuration_deployer/deploy.sh` | `commons/configuration/configuration_client.js`, the configuration's client | sso, webtools-workspaces, preanalyst, front-gate (in `src/commons/`) |
 
-Il sso **non** riceve il client del sso: lui è il servizio, non un suo consumatore. Allo stesso
-modo anagraphics non riceve il client della configurazione: è lui a servirla. I template comuni
-invece li riceve, perché anche le sue pagine usano lo stesso guscio.
+The sso does **not** receive the sso's client: it is the service, not a consumer of it. In the same
+way anagraphics does not receive the configuration's client: it is the one serving it. The shared
+templates it does receive, because its pages use the same shell too.
 
-I template arrivano in `templates/commons/` e si estendono con `{% extends "commons/base.njk" %}`.
+The templates arrive in `templates/commons/` and are extended with
+`{% extends "commons/base.njk" %}`.
 
-Tutti i testi delle pagine, di tutti i sottosistemi, stanno nei cataloghi di `commons/i18n/locales/`
-(un file per lingua, chiavi in inglese divise per area): è l'unico posto dove si traduce o si
-aggiunge una lingua. Una chiave che manca in una lingua si prende dalla lingua di riserva
-(`i18n.fallback_locale`, l'inglese). La lingua scelta sta nel cookie `i18n.cookie_name`, comune a
-tutti i sottosistemi.
-Per controllare che ogni chiave usata esista, e vedere che cosa manca da tradurre:
+All the pages' texts, of every subsystem, live in the catalogues of `commons/i18n/locales/` (one
+file per language, English keys split by area): it is the only place where one translates or adds
+a language. A key missing from one language is taken from the fallback language
+(`i18n.fallback_locale`, English). The language chosen lives in the `i18n.cookie_name` cookie,
+shared by every subsystem.
+To check that every key used exists, and to see what is left to translate:
 `node webtools/commons/i18n/webtools_i18n_check.mjs`.
 
-## I segreti
+## The secrets
 
-Le chiavi delle API sono configurazione come tutto il resto, ma `configuration/` è in git. Stanno
-quindi in **`secrets/`**, che in git non c'è: un file per sottosistema, con lo stesso nome e la
-stessa forma annidata del file di configurazione.
+The API keys are configuration like everything else, but `configuration/` is in git. So they live
+in **`secrets/`**, which is not in git: one file per subsystem, with the same name and the same
+nested shape as the configuration file.
 
-`load_configuration.sh` li **fonde in profondità** sul file di configurazione prima di scrivere il
-documento in Mongo: le chiavi del segreto si affiancano a quelle della configurazione senza
-cancellare i rami vicini, e il sottosistema legge una configurazione sola da
-`GET /configuration/{subsystem}` senza sapere che un pezzo era segreto.
+`load_configuration.sh` **deep-merges** them onto the configuration file before writing the
+document into Mongo: the secret's keys sit beside the configuration's without deleting the
+neighbouring branches, and the subsystem reads a single configuration from
+`GET /configuration/{subsystem}` without knowing that a piece of it was secret.
 
 ```sh
 cd webtools/configurator/secrets
-cp preanalyst.json.example preanalyst.json    # poi ci si mette il valore vero
+cp preanalyst.json.example preanalyst.json    # then the real value goes in
 cd .. && ./load_configuration.sh && ./start.sh --restart
 ```
 
-In git restano soltanto il `README.md` della cartella e i file `*.example`.
+Only the folder's `README.md` and the `*.example` files stay in git.
 
-## I documenti e le policy
+## The documents and the policies
 
-Due cose che sembrano codice e non lo sono:
+Two things that look like code and are not:
 
-- **`documents/`** — la **forma** dei documenti che il sistema produce: oggi `prespec.md.njk`, il
-  template della pre-specifica;
-- **`policies/`** — i criteri delle decisioni, cioè che cosa si chiede a un modello e con quali
-  regole risponde: oggi `scope-v1.md`, la policy della prevalidazione.
+- **`documents/`** — the **shape** of the documents the system produces: today `prespec.md.njk`,
+  the pre-specification's template;
+- **`policies/`** — the criteria of the decisions, that is, what a model is asked and by what rules
+  it answers: today `scope-v1.md`, the prevalidation's policy.
 
-Dicono che cosa il sistema considera accettabile e che aspetto hanno i suoi documenti: sono
-configurazione, quindi stanno qui, e nei sottosistemi ci vanno copie generate (deployer
-`documents`). **Quale** policy si usa lo dice la configurazione del sottosistema
-(`prevalidation.policy`), non il deployer.
+They say what the system considers acceptable and what its documents look like: they are
+configuration, so they live here, and generated copies go into the subsystems (the `documents`
+deployer). **Which** policy is used is said by the subsystem's configuration
+(`prevalidation.policy`), not by the deployer.
 
-Le copie delle policy portano in testa un commento HTML con l'avviso «non modificare qui»: chi le
-manda a un modello toglie i commenti in testa, così l'avviso non finisce nel prompt.
+The policies' copies carry at their head an HTML comment with the «do not edit here» warning:
+whoever sends them to a model strips the leading comments, so the warning does not end up in the
+prompt.
 
-Un limite di `prespec.md.njk`: è accoppiato a `preanalyst/src/prespec.js`, che gli passa le
-variabili. Si può cambiare la forma del documento, non inventare campi che il codice non manda.
+One limit of `prespec.md.njk`: it is coupled to `preanalyst/src/prespec.js`, which passes it the
+variables. The document's shape can be changed, but fields the code does not send cannot be
+invented.
 
-## Come sono fatti
+## How they are made
 
-Ogni sotto-deployer ha **una funzione per ogni progetto**, con le destinazioni scritte per esteso:
+Every sub-deployer has **one function per project**, with the destinations written out in full:
 
 ```sh
 deploy_preanalyst() {
@@ -193,16 +200,16 @@ deploy_preanalyst() {
 }
 ```
 
-Niente cicli su un elenco di cartelle: la struttura dei progetti è diversa da progetto a progetto
-(uno è un sito statico, gli altri sono server Node) e non tutti ricevono tutto. Scrivere le
-destinazioni una per una costa tre righe e si legge senza dover indovinare niente.
+No loops over a list of folders: the projects' structure differs from project to project (one is a
+static site, the others are Node servers) and not everybody receives everything. Writing the
+destinations one by one costs three lines and reads without having to guess anything.
 
-Il deployer generale non sa che cosa fanno i sotto-deployer: sa solo quali esistono e in che
-ordine girano. Per aggiungerne uno, si crea la cartella con il suo `deploy.sh` e si aggiunge una
-voce alla lista `DEPLOYERS` in `deploy.sh`.
+The general deployer does not know what the sub-deployers do: it only knows which ones exist and in
+what order they run. To add one, the folder with its `deploy.sh` is created and an entry is added
+to the `DEPLOYERS` list in `deploy.sh`.
 
-## Aggiungere un progetto che riceve una parte comune
+## Adding a project that receives a shared part
 
-Una funzione nuova nel sotto-deployer giusto, più la sua chiamata in fondo allo script. Poi va
-aggiornata la tabella qui sopra e la documentazione del sottosistema, che deve dire quali dei suoi
-file sono copie generate.
+A new function in the right sub-deployer, plus its call at the bottom of the script. Then the table
+above and the subsystem's documentation are to be updated, which must say which of its files are
+generated copies.
