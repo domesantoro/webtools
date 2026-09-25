@@ -48,6 +48,8 @@
   var turnsField = panel.querySelector("[data-chat-turns-input]");
   var creditLine = panel.querySelector("[data-chat-credit-line]");
   var noCreditLine = panel.querySelector("[data-chat-credit-empty]");
+  var tooManyLine = panel.querySelector("[data-chat-turns-too-many]");
+  var invalidLine = panel.querySelector("[data-chat-turns-invalid]");
   var exhaustedError = panel.querySelector("[data-chat-exhausted-error]");
   // It sits in the summary, outside the panel: it is born disabled and becomes
   // active when the turns run out. While one can still write it is not a choice
@@ -137,11 +139,35 @@
     if (noCreditLine) noCreditLine.hidden = hasCredit;
     if (turnsField) {
       turnsField.disabled = !hasCredit;
+      // `max` is not a defence — it does not stop anybody typing a larger number —
+      // but it puts the field in the browser's invalid state, which the style
+      // shows, and it gives the arrows the right ceiling.
       turnsField.max = String(Math.max(1, credit));
-      if (Number(turnsField.value) > credit) turnsField.value = String(Math.max(1, credit));
     }
-    if (useCreditButton) useCreditButton.disabled = !hasCredit;
     if (buyButton) buyButton.hidden = hasCredit;
+    checkTurns();
+  }
+
+  // How many turns have been asked for, or 0 if the number cannot be used: it is
+  // not whole, it is not at least one, or it is more than the credit. Says so on
+  // the spot — while the number is being typed — and switches the button off:
+  // before this the click simply did nothing, which reads as a broken button.
+  //
+  // The empty field is not a mistake, it is the beginning of writing: the button
+  // is off and nothing is said.
+  function checkTurns() {
+    var written = turnsField ? turnsField.value.trim() : "";
+    var howMany = Number(written);
+    var usable = written !== "" && Number.isInteger(howMany) && howMany > 0;
+    var tooMany = usable && howMany > credit;
+    // With no credit the box already says there is none: a second sentence about
+    // the number would be saying the same thing twice.
+    var say = credit > 0;
+
+    if (tooManyLine) tooManyLine.hidden = !(say && tooMany);
+    if (invalidLine) invalidLine.hidden = !(say && written !== "" && !usable);
+    if (useCreditButton) useCreditButton.disabled = !say || !usable || tooMany;
+    return usable && !tooMany ? howMany : 0;
   }
 
   function showError(where, on) {
@@ -201,18 +227,34 @@
 
   /* --------------------------------------------------- the out-of-turns box */
 
+  if (turnsField) {
+    // Both events: `input` is the typing, `change` is the arrows and what a paste
+    // leaves behind.
+    turnsField.addEventListener("input", checkTurns);
+    turnsField.addEventListener("change", checkTurns);
+  }
+
   if (useCreditButton) {
     useCreditButton.addEventListener("click", function () {
-      var howMany = Number(turnsField ? turnsField.value : 0);
-      if (!Number.isInteger(howMany) || howMany <= 0 || howMany > credit) return;
+      // The button is already off when the number cannot be used; this is the same
+      // check, because a click can arrive anyway.
+      var howMany = checkTurns();
+      if (howMany <= 0) return;
 
       showError(exhaustedError, false);
       useCreditButton.disabled = true;
       ask("/turns", { turns: howMany }).then(function (result) {
-        useCreditButton.disabled = false;
-        if (!result.ok) return showError(exhaustedError, true);
+        if (!result.ok) {
+          // Back to whatever the number written deserves, not simply on.
+          checkTurns();
+          return showError(exhaustedError, true);
+        }
         turnsLeft = Number(result.data.turns_left);
         credit = Number(result.data.credit);
+        // What was spent is gone: the field goes back to one, or it would keep
+        // asking for turns that are no longer there. `refresh()` then says whether
+        // that one is still possible.
+        if (turnsField) turnsField.value = "1";
         refresh();
         field.focus();
       });

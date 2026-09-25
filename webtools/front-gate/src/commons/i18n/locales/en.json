@@ -190,6 +190,8 @@
         "credit_label": "Turns to add",
         "credit_available": "Credit available: <span data-chat-credit-value>{credit}</span>.",
         "credit_none": "You have no turns in credit.",
+        "credit_too_many": "The number is higher than the available credit.",
+        "credit_invalid": "Say how many turns to add: a whole number, at least 1.",
         "use_credit": "Add to the project"
       },
       "mock": {

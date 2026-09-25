@@ -190,6 +190,8 @@
         "credit_label": "Turni da aggiungere",
         "credit_available": "Credito disponibile: <span data-chat-credit-value>{credit}</span>.",
         "credit_none": "Non hai turni in credito.",
+        "credit_too_many": "Il numero supera il credito disponibile.",
+        "credit_invalid": "Indica quanti turni aggiungere: un numero intero, almeno 1.",
         "use_credit": "Aggiungi al progetto"
       },
       "mock": {

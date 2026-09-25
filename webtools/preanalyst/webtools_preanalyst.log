@@ -304,3 +304,29 @@ webtools_preanalyst listening on http://127.0.0.1:9200 (anagraphics: http://127.
 webtools_preanalyst listening on http://127.0.0.1:9200 (anagraphics: http://127.0.0.1:9100)
 === start 2026-09-24 17:05:49 ===
 webtools_preanalyst listening on http://127.0.0.1:9200 (anagraphics: http://127.0.0.1:9100)
+=== start 2026-09-25 13:57:13 ===
+webtools_preanalyst listening on http://127.0.0.1:9200 (anagraphics: http://127.0.0.1:9100)
+[preanalyst] logged in: dome.santoro@gmail.com
+[preanalyst] request from dome.santoro@gmail.com: project 775d364b-9089-4d31-ba03-d02dc9cfde2c, pre-specification v1
+[preanalyst] prevalidation of 775d364b-9089-4d31-ba03-d02dc9cfde2c: safe (0.95) → passed; 4456+199 tokens
+[preanalyst] chat turn on 775d364b-9089-4d31-ba03-d02dc9cfde2c: 4 left
+[preanalyst] chat turn on 775d364b-9089-4d31-ba03-d02dc9cfde2c: 3 left
+[preanalyst] chat turn on 775d364b-9089-4d31-ba03-d02dc9cfde2c: 2 left
+[preanalyst] chat turn on 775d364b-9089-4d31-ba03-d02dc9cfde2c: 1 left
+[preanalyst] chat turn on 775d364b-9089-4d31-ba03-d02dc9cfde2c: 0 left
+[preanalyst] FAKE PURCHASE: 10 turns granted to 8ff93901-673e-44ba-b05b-56011395dcba, credit 10
+[preanalyst] 10 turns from 8ff93901-673e-44ba-b05b-56011395dcba's credit to project 775d364b-9089-4d31-ba03-d02dc9cfde2c: now 10
+=== start 2026-09-25 14:01:49 ===
+webtools_preanalyst listening on http://127.0.0.1:9200 (anagraphics: http://127.0.0.1:9100)
+[preanalyst] chat turn on 775d364b-9089-4d31-ba03-d02dc9cfde2c: 9 left
+[preanalyst] chat turn on 775d364b-9089-4d31-ba03-d02dc9cfde2c: 8 left
+[preanalyst] chat turn on 775d364b-9089-4d31-ba03-d02dc9cfde2c: 7 left
+[preanalyst] chat turn on 775d364b-9089-4d31-ba03-d02dc9cfde2c: 6 left
+[preanalyst] chat turn on 775d364b-9089-4d31-ba03-d02dc9cfde2c: 5 left
+[preanalyst] chat turn on 775d364b-9089-4d31-ba03-d02dc9cfde2c: 4 left
+[preanalyst] chat turn on 775d364b-9089-4d31-ba03-d02dc9cfde2c: 3 left
+[preanalyst] chat turn on 775d364b-9089-4d31-ba03-d02dc9cfde2c: 2 left
+[preanalyst] chat turn on 775d364b-9089-4d31-ba03-d02dc9cfde2c: 1 left
+[preanalyst] chat turn on 775d364b-9089-4d31-ba03-d02dc9cfde2c: 0 left
+[preanalyst] FAKE PURCHASE: 10 turns granted to 8ff93901-673e-44ba-b05b-56011395dcba, credit 10
+[preanalyst] 5 turns from 8ff93901-673e-44ba-b05b-56011395dcba's credit to project 775d364b-9089-4d31-ba03-d02dc9cfde2c: now 5

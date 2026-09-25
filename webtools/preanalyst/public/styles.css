@@ -417,6 +417,10 @@
   border-top: 1.5px solid var(--ink);
   background: var(--paper-2);
 }
+/* `hidden` has to win over the `display` of the box: without this the field stays
+   on the page when the turns run out, and the JavaScript that switches it off has
+   no effect. */
+.chat-composer[hidden] { display: none; }
 
 /* The height is decided by analysis.js while one writes; the maximum is decided
    here, or a long message would eat the conversation. */
@@ -426,11 +430,44 @@
   overflow-y: auto;
   resize: none;
 }
-.chat-input:disabled { opacity: .6; cursor: default; }
 
 .chat-actions { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
 .chat-hint { margin: 0; color: var(--muted); font-size: 13px; }
-.chat-actions .btn:disabled { opacity: .5; cursor: default; box-shadow: none; transform: none; }
+
+/* ---------- what is disabled ---------- */
+
+/* Disabled means unusable, and it has to look it. Being a little paler reads as a
+   lighter style rather than as a state: here the hard shadow goes, the ink leaves
+   the border and the text, and the cursor refuses. One treatment for the whole
+   page, or every off control would say off in its own way. */
+.chat-input:disabled,
+.chat-credit-input:disabled {
+  opacity: 1;
+  color: var(--muted-2);
+  background: var(--paper-2);
+  border-color: var(--line-strong);
+  box-shadow: none;
+  cursor: not-allowed;
+}
+.chat-actions .btn:disabled,
+.chat-credit-row .btn:disabled,
+.chat-aside-actions .btn:disabled {
+  opacity: 1;
+  color: var(--muted-2);
+  background: var(--paper-2);
+  border-color: var(--line-strong);
+  border-style: dashed;
+  box-shadow: none;
+  transform: none;
+  cursor: not-allowed;
+}
+/* The hover of `.btn` would give back the ink the line above took away. */
+.chat-actions .btn:disabled:hover,
+.chat-credit-row .btn:disabled:hover,
+.chat-aside-actions .btn:disabled:hover {
+  color: var(--muted-2);
+  background: var(--paper-2);
+}
 
 /* ---------- the turns ---------- */
 
@@ -466,11 +503,22 @@
 .chat-credit-line { margin: 0; font-size: 14px; }
 .chat-credit-line[hidden] { display: none; }
 .chat-credit-line span { font-weight: 650; }
+/* One line: the label, how many turns, the button that adds them and the one that
+   buys them. It wraps on its own when the line is not wide enough — that is the
+   only reason the purchase is allowed to end up below. */
 .chat-credit-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .chat-credit-label { font-size: 14px; font-weight: 600; }
 .chat-credit-input { width: 88px; padding: 8px 10px; }
-.chat-credit-input:disabled { opacity: .5; }
-.chat-credit-row .btn:disabled { opacity: .5; cursor: default; }
+/* A number that cannot be used: the border says it, and the line below the row
+   says why. `:invalid` is the browser's own verdict on `min`, `step` and the `max`
+   that analysis.js keeps up to date, so there is no second rule to keep in step —
+   and an empty field is not invalid, because starting to write is not a mistake. */
+.chat-credit-input:invalid { border-color: var(--accent); background: var(--accent-soft); }
+/* With no credit there is nothing to add: the whole row goes quiet, the label
+   included, or a live label over a dead field says two different things. The
+   field is the one looked at, not the purchase button, which is disabled for the
+   instant its call lasts. */
+.chat-credit-row:has([data-chat-turns-input]:disabled) .chat-credit-label { color: var(--muted-2); }
 
 /* When a call does not succeed. It holds both below the field and in the box. */
 .chat-error { margin: 0; color: var(--accent-ink); font-size: 13px; font-weight: 600; line-height: 1.45; }

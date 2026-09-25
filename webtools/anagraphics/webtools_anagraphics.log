@@ -1330,3 +1330,93 @@ INFO:     127.0.0.1:63680 - "GET /configuration/preanalyst HTTP/1.1" 200 OK
 INFO:     127.0.0.1:63681 - "GET /configuration/front-gate HTTP/1.1" 200 OK
 INFO:     127.0.0.1:63683 - "GET /configuration/preanalyst HTTP/1.1" 200 OK
 INFO:     127.0.0.1:64322 - "GET /configuration/preanalyst HTTP/1.1" 200 OK
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [96246]
+=== start 2026-09-25 13:57:12 ===
+INFO:     Started server process [8450]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:9100 (Press CTRL+C to quit)
+INFO:     127.0.0.1:54669 - "GET /configuration/sso HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54671 - "GET /configuration/workspaces HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54672 - "GET /configuration/preanalyst HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54673 - "GET /configuration/front-gate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54688 - "GET /users/dome.santoro%40gmail.com HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54689 - "GET /users/dome.santoro%40gmail.com/credential HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54688 - "POST /sessions HTTP/1.1" 201 Created
+INFO:     127.0.0.1:54689 - "POST /tickets HTTP/1.1" 201 Created
+INFO:     127.0.0.1:54688 - "DELETE /tickets/2ghFFU0L28iByEpYwBLLKlPvBH4yxc2aXuPxooe6bnw HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54689 - "GET /sessions/CzalY45z4kDv08VPEVr0FX3SodmJV49Eoxv6SV8mSE0 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54688 - "GET /sessions/CzalY45z4kDv08VPEVr0FX3SodmJV49Eoxv6SV8mSE0 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54688 - "GET /sessions/CzalY45z4kDv08VPEVr0FX3SodmJV49Eoxv6SV8mSE0 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54695 - "POST /projects HTTP/1.1" 201 Created
+INFO:     127.0.0.1:54701 - "POST /projects/775d364b-9089-4d31-ba03-d02dc9cfde2c/pipeline/steps HTTP/1.1" 201 Created
+INFO:     127.0.0.1:54702 - "POST /projects/775d364b-9089-4d31-ba03-d02dc9cfde2c/pipeline/steps HTTP/1.1" 201 Created
+INFO:     127.0.0.1:54704 - "GET /sessions/CzalY45z4kDv08VPEVr0FX3SodmJV49Eoxv6SV8mSE0 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54701 - "GET /projects/775d364b-9089-4d31-ba03-d02dc9cfde2c HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54702 - "GET /users/dome.santoro%40gmail.com HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54708 - "GET /sessions/CzalY45z4kDv08VPEVr0FX3SodmJV49Eoxv6SV8mSE0 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54709 - "GET /projects/775d364b-9089-4d31-ba03-d02dc9cfde2c HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54710 - "PATCH /projects/775d364b-9089-4d31-ba03-d02dc9cfde2c/pipeline/steps/analysis HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54708 - "GET /sessions/CzalY45z4kDv08VPEVr0FX3SodmJV49Eoxv6SV8mSE0 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54709 - "GET /projects/775d364b-9089-4d31-ba03-d02dc9cfde2c HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54710 - "PATCH /projects/775d364b-9089-4d31-ba03-d02dc9cfde2c/pipeline/steps/analysis HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54708 - "GET /sessions/CzalY45z4kDv08VPEVr0FX3SodmJV49Eoxv6SV8mSE0 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54709 - "GET /projects/775d364b-9089-4d31-ba03-d02dc9cfde2c HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54710 - "PATCH /projects/775d364b-9089-4d31-ba03-d02dc9cfde2c/pipeline/steps/analysis HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54708 - "GET /sessions/CzalY45z4kDv08VPEVr0FX3SodmJV49Eoxv6SV8mSE0 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54709 - "GET /projects/775d364b-9089-4d31-ba03-d02dc9cfde2c HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54710 - "PATCH /projects/775d364b-9089-4d31-ba03-d02dc9cfde2c/pipeline/steps/analysis HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54714 - "GET /sessions/CzalY45z4kDv08VPEVr0FX3SodmJV49Eoxv6SV8mSE0 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54715 - "GET /projects/775d364b-9089-4d31-ba03-d02dc9cfde2c HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54716 - "PATCH /projects/775d364b-9089-4d31-ba03-d02dc9cfde2c/pipeline/steps/analysis HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54718 - "GET /sessions/CzalY45z4kDv08VPEVr0FX3SodmJV49Eoxv6SV8mSE0 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54719 - "GET /projects/775d364b-9089-4d31-ba03-d02dc9cfde2c HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54720 - "POST /users/8ff93901-673e-44ba-b05b-56011395dcba/billing/turns/grant HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54724 - "GET /sessions/CzalY45z4kDv08VPEVr0FX3SodmJV49Eoxv6SV8mSE0 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54725 - "GET /projects/775d364b-9089-4d31-ba03-d02dc9cfde2c HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54726 - "POST /users/8ff93901-673e-44ba-b05b-56011395dcba/billing/turns/spend HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54725 - "PATCH /projects/775d364b-9089-4d31-ba03-d02dc9cfde2c/pipeline/steps/analysis HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54739 - "GET /configuration/preanalyst HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54760 - "GET /sessions/CzalY45z4kDv08VPEVr0FX3SodmJV49Eoxv6SV8mSE0 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54761 - "GET /projects/775d364b-9089-4d31-ba03-d02dc9cfde2c HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54762 - "GET /users/dome.santoro%40gmail.com HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54767 - "GET /sessions/CzalY45z4kDv08VPEVr0FX3SodmJV49Eoxv6SV8mSE0 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54768 - "GET /projects/775d364b-9089-4d31-ba03-d02dc9cfde2c HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54769 - "PATCH /projects/775d364b-9089-4d31-ba03-d02dc9cfde2c/pipeline/steps/analysis HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54767 - "GET /sessions/CzalY45z4kDv08VPEVr0FX3SodmJV49Eoxv6SV8mSE0 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54768 - "GET /projects/775d364b-9089-4d31-ba03-d02dc9cfde2c HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54769 - "PATCH /projects/775d364b-9089-4d31-ba03-d02dc9cfde2c/pipeline/steps/analysis HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54767 - "GET /sessions/CzalY45z4kDv08VPEVr0FX3SodmJV49Eoxv6SV8mSE0 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54768 - "GET /projects/775d364b-9089-4d31-ba03-d02dc9cfde2c HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54769 - "PATCH /projects/775d364b-9089-4d31-ba03-d02dc9cfde2c/pipeline/steps/analysis HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54767 - "GET /sessions/CzalY45z4kDv08VPEVr0FX3SodmJV49Eoxv6SV8mSE0 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54768 - "GET /projects/775d364b-9089-4d31-ba03-d02dc9cfde2c HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54769 - "PATCH /projects/775d364b-9089-4d31-ba03-d02dc9cfde2c/pipeline/steps/analysis HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54767 - "GET /sessions/CzalY45z4kDv08VPEVr0FX3SodmJV49Eoxv6SV8mSE0 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54768 - "GET /projects/775d364b-9089-4d31-ba03-d02dc9cfde2c HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54769 - "PATCH /projects/775d364b-9089-4d31-ba03-d02dc9cfde2c/pipeline/steps/analysis HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54767 - "GET /sessions/CzalY45z4kDv08VPEVr0FX3SodmJV49Eoxv6SV8mSE0 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54768 - "GET /projects/775d364b-9089-4d31-ba03-d02dc9cfde2c HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54769 - "PATCH /projects/775d364b-9089-4d31-ba03-d02dc9cfde2c/pipeline/steps/analysis HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54767 - "GET /sessions/CzalY45z4kDv08VPEVr0FX3SodmJV49Eoxv6SV8mSE0 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54768 - "GET /projects/775d364b-9089-4d31-ba03-d02dc9cfde2c HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54769 - "PATCH /projects/775d364b-9089-4d31-ba03-d02dc9cfde2c/pipeline/steps/analysis HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54767 - "GET /sessions/CzalY45z4kDv08VPEVr0FX3SodmJV49Eoxv6SV8mSE0 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54768 - "GET /projects/775d364b-9089-4d31-ba03-d02dc9cfde2c HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54769 - "PATCH /projects/775d364b-9089-4d31-ba03-d02dc9cfde2c/pipeline/steps/analysis HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54767 - "GET /sessions/CzalY45z4kDv08VPEVr0FX3SodmJV49Eoxv6SV8mSE0 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54768 - "GET /projects/775d364b-9089-4d31-ba03-d02dc9cfde2c HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54769 - "PATCH /projects/775d364b-9089-4d31-ba03-d02dc9cfde2c/pipeline/steps/analysis HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54767 - "GET /sessions/CzalY45z4kDv08VPEVr0FX3SodmJV49Eoxv6SV8mSE0 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54768 - "GET /projects/775d364b-9089-4d31-ba03-d02dc9cfde2c HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54769 - "PATCH /projects/775d364b-9089-4d31-ba03-d02dc9cfde2c/pipeline/steps/analysis HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54767 - "GET /sessions/CzalY45z4kDv08VPEVr0FX3SodmJV49Eoxv6SV8mSE0 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54768 - "GET /projects/775d364b-9089-4d31-ba03-d02dc9cfde2c HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54769 - "POST /users/8ff93901-673e-44ba-b05b-56011395dcba/billing/turns/grant HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54772 - "GET /sessions/CzalY45z4kDv08VPEVr0FX3SodmJV49Eoxv6SV8mSE0 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54773 - "GET /projects/775d364b-9089-4d31-ba03-d02dc9cfde2c HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54774 - "POST /users/8ff93901-673e-44ba-b05b-56011395dcba/billing/turns/spend HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54773 - "PATCH /projects/775d364b-9089-4d31-ba03-d02dc9cfde2c/pipeline/steps/analysis HTTP/1.1" 200 OK

@@ -94,3 +94,6 @@ webtools_sso listening on http://127.0.0.1:9300 (anagraphics: http://127.0.0.1:9
 webtools_sso listening on http://127.0.0.1:9300 (anagraphics: http://127.0.0.1:9100, sessions: 28800s)
 === start 2026-09-24 17:05:48 ===
 webtools_sso listening on http://127.0.0.1:9300 (anagraphics: http://127.0.0.1:9100, sessions: 28800s)
+=== start 2026-09-25 13:57:13 ===
+webtools_sso listening on http://127.0.0.1:9300 (anagraphics: http://127.0.0.1:9100, sessions: 28800s)
+[sso] login of dome.santoro@gmail.com (uid 8ff93901-673e-44ba-b05b-56011395dcba)

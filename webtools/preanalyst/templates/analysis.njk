@@ -72,8 +72,12 @@
           </p>
 
           {#- One message at a time: until the answer has arrived the field and the
-              button stay disabled. Once the turns are gone it all disappears. #}
-          <form class="chat-composer" data-chat-form>
+              button stay disabled. Once the turns are gone it all disappears.
+
+              `hidden` is written here and not left to the JavaScript: a page that
+              opens with the turns already gone must not show, even for an instant,
+              a field that cannot be used. #}
+          <form class="chat-composer" data-chat-form{% if chat.turns_left <= 0 %} hidden{% endif %}>
             <textarea class="input chat-input" id="chat-message" name="message" rows="2"
                       maxlength="{{ chat.max_chars }}"
                       aria-label="{{ t('preanalyst.analysis.label') }}"
@@ -107,7 +111,7 @@
               With credit, the field for moving some onto the project is shown and
               the purchase is hidden; without credit the field is disabled and the
               purchase is shown. The two never appear together. #}
-          <div class="chat-exhausted" data-chat-exhausted hidden>
+          <div class="chat-exhausted" data-chat-exhausted{% if chat.turns_left > 0 %} hidden{% endif %}>
             <h2 class="chat-exhausted-title">{{ t("preanalyst.analysis.exhausted.title") }}</h2>
             <p class="chat-exhausted-lead">{{ t("preanalyst.analysis.exhausted.lead", { max: chat.total }) }}</p>
 
@@ -116,15 +120,25 @@
                 {{- t_html("preanalyst.analysis.exhausted.credit_available", { credit: chat.credit }) }}
               </p>
               <p class="chat-credit-line" data-chat-credit-empty hidden>{{ t("preanalyst.analysis.exhausted.credit_none") }}</p>
+              {#- The purchase sits on the same line as the adding, when the line
+                  has room for it: it is the other way of getting turns, not
+                  another subject. Without room it goes below on its own, because
+                  the row wraps. #}
               <div class="chat-credit-row">
                 <label class="chat-credit-label" for="chat-turns">{{ t("preanalyst.analysis.exhausted.credit_label") }}</label>
                 <input class="input chat-credit-input" type="number" id="chat-turns" name="turns"
                        min="1" step="1" value="1" data-chat-turns-input>
                 <button class="btn" type="button" data-chat-use-credit>{{ t("preanalyst.analysis.exhausted.use_credit") }}</button>
+                <button class="btn btn-primary" type="button" data-chat-buy hidden>{{ t("preanalyst.analysis.exhausted.buy") }}</button>
               </div>
+              {#- What is wrong with the number written, said while it is being
+                  written and not when the button is pressed: a button that answers
+                  nothing looks broken. Two sentences and not one, because asking
+                  for fewer turns and asking for a number at all are two different
+                  mistakes. Only one is ever on. #}
+              <p class="chat-error" data-chat-turns-too-many hidden>{{ t("preanalyst.analysis.exhausted.credit_too_many") }}</p>
+              <p class="chat-error" data-chat-turns-invalid hidden>{{ t("preanalyst.analysis.exhausted.credit_invalid") }}</p>
             </div>
-
-            <button class="btn btn-primary" type="button" data-chat-buy hidden>{{ t("preanalyst.analysis.exhausted.buy") }}</button>
             <p class="chat-exhausted-hint">{{ t("preanalyst.analysis.exhausted.optional") }}</p>
             <p class="chat-exhausted-hint">{{ t("preanalyst.analysis.exhausted.download_hint") }}</p>
             <p class="chat-error" data-chat-exhausted-error hidden>{{ t("preanalyst.analysis.error") }}</p>
