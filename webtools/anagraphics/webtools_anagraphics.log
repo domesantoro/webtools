@@ -1546,3 +1546,7 @@ INFO:     127.0.0.1:56761 - "GET /projects/76dbf921-3971-4fd3-a879-a5310d030376 
 INFO:     127.0.0.1:56765 - "PATCH /projects/76dbf921-3971-4fd3-a879-a5310d030376/pipeline/steps/analysis HTTP/1.1" 200 OK
 INFO:     127.0.0.1:56768 - "GET /sessions/CzalY45z4kDv08VPEVr0FX3SodmJV49Eoxv6SV8mSE0 HTTP/1.1" 200 OK
 INFO:     127.0.0.1:56769 - "GET /projects/76dbf921-3971-4fd3-a879-a5310d030376 HTTP/1.1" 200 OK
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [29858]
