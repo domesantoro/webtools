@@ -52,8 +52,8 @@ Order: working-tree / today's work first, then subsystem by subsystem
 | 38 | sso-runner | webtools/sso/webtools_sso.sh, package.json, public/styles.css | done | |
 | 39 | front-gate-server | webtools/front-gate/src/server.js | done | |
 | 40 | front-gate-settings-index-page | webtools/front-gate/src/settings.js, src/index.js, src/page.js | done | |
-| 41 | front-gate-templates | webtools/front-gate/templates/*.njk | pending | |
-| 42 | front-gate-public | webtools/front-gate/public/js/main.js, webtools/front-gate/public/css/styles.css | pending | |
+| 41 | front-gate-templates | webtools/front-gate/templates/*.njk | done | |
+| 42 | front-gate-public | webtools/front-gate/public/js/main.js, webtools/front-gate/public/css/styles.css | done | |
 | 43 | front-gate-runner | webtools/front-gate/webtools_front_gate.sh, package.json | pending | |
 | 44 | anagraphics-main | webtools/anagraphics/webtools_anagraphics/main.py | pending | |
 | 45 | anagraphics-db | webtools/anagraphics/webtools_anagraphics/db.py | pending | |

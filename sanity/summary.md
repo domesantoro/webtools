@@ -4,15 +4,15 @@ Run started 2026-09-25. Rewritten after every unit.
 
 ## Progress
 
-40 done / 0 skipped / 32 pending, out of 72.
+42 done / 0 skipped / 30 pending, out of 72.
 
 ## Counts by severity
 
 | severity | count |
 |---|---|
 | **`breaks-now`** | **14** |
-| `latent` | 72 |
-| `stylistic` | 20 (1 of them resolved during the run) |
+| `latent` | 75 |
+| `stylistic` | 21 (1 of them resolved during the run) |
 | of which flagged `uncertain` in part | 10 (4 of them recorded as `uncertain` only) |
 
 ## Counts by shape
@@ -20,11 +20,11 @@ Run started 2026-09-25. Rewritten after every unit.
 | shape | count |
 |---|---|
 | 1 — partial-class requirement | 8 (+1 as a secondary aspect) |
-| 2 — invented value | 12 (+1 as a secondary aspect) |
-| 3 — member logic outside its boundary | 3 (+1 as a secondary aspect) |
+| 2 — invented value | 13 (+1 as a secondary aspect) |
+| 3 — member logic outside its boundary | 5 (+1 as a secondary aspect) |
 | 4 — capability inferred from resemblance | 16 (+1 as a secondary aspect) |
 | 5 — only the success path | 25 |
-| 6 — world narrowed to fit the code | 46 (+2 as a secondary aspect) |
+| 6 — world narrowed to fit the code | 47 (+2 as a secondary aspect) |
 
 ## `breaks-now` findings
 
@@ -248,3 +248,5 @@ ledger silently starts under-reporting every prevalidation.
 | sso-runner | 1 `latent` |
 | front-gate-server | 2 `latent`, 1 `stylistic`, 1 `uncertain` |
 | front-gate-settings-index-page | **1 `breaks-now`**, 1 `latent`, 1 `stylistic` |
+| front-gate-templates | 2 `latent`, 1 `stylistic` |
+| front-gate-public | 1 `latent` |

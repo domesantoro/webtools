@@ -131,6 +131,12 @@ is not to be used). The visual reference for the flow is `struttura/design/Seque
   be checked, «la domanda più utile di tutte» cannot. **No unrequested text**: an extra sentence is
   added if it helps the reader, never as filler, and it must not assume where the user came from —
   the same page is reached by different routes.
+- **Never gender the reader.** In Italian that means no participle and no adjective that agrees
+  with them — «sei sicuro», «sei pronto», «registrato» — and the sentence is turned round instead:
+  «ti serve», «hai bisogno», «se vuoi». It holds for every language that agrees this way, and in
+  both places the user is spoken to: the catalogues, and what a model is told to write for them
+  (the policies). We do not know who is reading, and guessing wrong is worse than any clumsy
+  sentence written to avoid it.
 - **Nothing that opens by itself.** A window, a tab or an action that starts without the user having
   asked for it is a defect, even when it is convenient: first say what is about to happen, then wait
   to be asked.
