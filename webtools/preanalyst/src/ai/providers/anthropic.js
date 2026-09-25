@@ -19,21 +19,42 @@
 //   nothing, and because a longer policy, or a different model, makes it work
 //   without touching anything — entry 8 of `contesto/ottimizzazioni.md`.
 //
-// The model, the token limit and the timeout live in the configuration. The key
-// comes from the secrets (`configurator/secrets/preanalyst.json`), merged into
-// the configuration: here it is a field like any other.
+// This file is the only one that names `anthropic`: it reads its own section of
+// the configuration in `readConfiguration()` and receives it back in `decide()`.
+// Nobody upstream knows which fields a provider needs, which is what lets a
+// second provider ask for different ones.
+//
+// The model and the token limit live in the configuration, the timeout is shared
+// by every provider. The key comes from the secrets
+// (`configurator/secrets/preanalyst.json`), merged into the configuration: here
+// it is a field like any other.
 
 import Anthropic from "@anthropic-ai/sdk";
+
+export const NAME = "anthropic";
+
+// What this provider needs in order to work, read from the configuration
+// document with the usual accessors: no default values, and a missing field
+// throws ConfigurationError before the server is up. It is read **only if this
+// provider is the selected one**, so an environment that uses another one does
+// not have to carry an Anthropic key it would never spend.
+export function readConfiguration(configuration) {
+  return {
+    model: configuration.string("ai.providers.anthropic.model"),
+    maxTokens: configuration.integer("ai.providers.anthropic.max_tokens", { min: 1 }),
+    apiKey: configuration.string("ai.providers.anthropic.api_key"),
+  };
+}
 
 // One client per process: it keeps the connections open, and recreating it on
 // every request would mean redoing the TLS handshake every time.
 let client = null;
 
-function clientOf(settings) {
+function clientOf(ai) {
   if (client === null) {
     client = new Anthropic({
-      apiKey: settings.ai.providers.anthropic.apiKey,
-      timeout: settings.ai.timeoutMs,
+      apiKey: ai.configuration.apiKey,
+      timeout: ai.timeoutMs,
       // Retries are the SDK's business (429 and 5xx). Two are enough: beyond
       // that, the user is waiting in front of a page that is not moving.
       maxRetries: 2,
@@ -42,12 +63,12 @@ function clientOf(settings) {
   return client;
 }
 
-export async function decide(settings, { instructions, document, schema }) {
-  const configuration = settings.ai.providers.anthropic;
+export async function decide(ai, { instructions, document, schema }) {
+  const configuration = ai.configuration;
 
   let response;
   try {
-    response = await clientOf(settings).messages.create({
+    response = await clientOf(ai).messages.create({
       model: configuration.model,
       max_tokens: configuration.maxTokens,
       system: [{ type: "text", text: instructions, cache_control: { type: "ephemeral" } }],

@@ -22,8 +22,8 @@ a webtool, and it does not change the flow. The provider is reached through `src
 door, and is changed from the configuration (`ai.provider`). The criteria live in `policies/`,
 copies generated from `configurator/policies/`: they are not edited here.
 
-The provider's key is needed in `webtools/configurator/secrets/preanalyst.json` (outside git):
-without it, the server does not start.
+The key of the **selected** provider is needed in `webtools/configurator/secrets/preanalyst.json`
+(outside git): without it, the server does not start. The others are not read, and are not needed.
 
 Trying the prevalidator without going through the form — **it makes a real call, so it costs**:
 
@@ -137,7 +137,8 @@ npm test
 ```
 
 They cover the functions that **decide**: how the prevalidator's answer is read and what is done
-with it (`tests/prevalidator.test.js`), and the counting of the rounds of whoever has been sent
-back (`tests/server.test.js`). They do not call the provider, they need no servers running and
-they cost nothing. `src/driver_link.js` and the rest are left uncovered: a known hole, not a
+with it (`tests/prevalidator.test.js`), which provider is selected and whose configuration is read
+(`tests/ai.test.js`), and the counting of the rounds of whoever has been sent back
+(`tests/server.test.js`). They do not call the provider, they need no servers running and they
+cost nothing. `src/driver_link.js` and the rest are left uncovered: a known hole, not a
 choice.

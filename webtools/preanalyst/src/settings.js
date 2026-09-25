@@ -4,6 +4,7 @@
 // start.
 
 import { loadConfiguration } from "./commons/configuration_client.js";
+import { loadAiSettings } from "./ai/webtools_ai.js";
 import { loadI18n } from "./commons/i18n/webtools_i18n.js";
 
 export async function loadSettings() {
@@ -47,21 +48,13 @@ export async function loadSettings() {
     // How much text is accepted in an open answer. A long story fits in a few
     // thousand characters: beyond that it is a wrong paste, not an answer.
     answerMaxChars: configuration.integer("form.answer_max_chars", { min: 1 }),
-    // The AI module: which provider is used and how it is reached. The key comes
-    // from the secrets (configurator/secrets/preanalyst.json), merged into the
-    // configuration at load time: here it is a field like any other, and if it is
-    // missing the server does not start.
-    ai: {
-      provider: configuration.string("ai.provider"),
-      timeoutMs: configuration.integer("ai.timeout_ms", { min: 1 }),
-      providers: {
-        anthropic: {
-          model: configuration.string("ai.providers.anthropic.model"),
-          maxTokens: configuration.integer("ai.providers.anthropic.max_tokens", { min: 1 }),
-          apiKey: configuration.string("ai.providers.anthropic.api_key"),
-        },
-      },
-    },
+    // The AI module: which provider is used and how it is reached. What a
+    // provider needs is read by the provider itself, and only for the one that
+    // `ai.provider` selects: see src/ai/webtools_ai.js. Secrets included — the
+    // keys are merged into the configuration at load time
+    // (configurator/secrets/preanalyst.json), so down there they are fields like
+    // any other, and if one is missing the server does not start.
+    ai: loadAiSettings(configuration),
     // The first gate: see src/prevalidator.js.
     prevalidation: {
       // Which policy is used. The file lives in policies/, a copy generated from

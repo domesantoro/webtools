@@ -550,11 +550,12 @@ The **local** style is `public/styles.css`, and that is edited by hand.
 
 ## 11. Tests
 
-`npm test` (`node --test tests/*.test.js`), **16 tests**, no server up and no call to the provider:
+`npm test` (`node --test tests/*.test.js`), **21 tests**, no server up and no call to the provider:
 
 | File | What it covers |
 |---|---|
 | `tests/prevalidator.test.js` | How the model's answer is read (`normalize`), the refusal on two conditions and two outcomes (`rejects`) and the verdict with the ceiling on the rounds (`verdict`) |
+| `tests/ai.test.js` | Which provider is selected and whose configuration is read (`loadAiSettings`): an unknown provider stops the server, a provider that is not selected is not read |
 | `tests/server.test.js` | The counting of the rounds already made, read from the pipeline's steps |
 
 They are the functions that **decide**: the ones that can go wrong silently. The call to the
@@ -919,7 +920,7 @@ project up: it is one more round.
 which one is behind it:
 
 ```
-src/ai/webtools_ai.js          decide({ instructions, document, schema })
+src/ai/webtools_ai.js          loadAiSettings(configuration), decide(ai, { instructions, document, schema })
 src/ai/providers/anthropic.js  the Anthropic provider
 ```
 
@@ -928,8 +929,25 @@ with `reason` among `unavailable` (the provider does not answer), `rejected` (it
 with something usable) and `unknown_provider`. In `data`: `output`, `model` and `usage`, the tokens
 consumed.
 
-Adding a provider — Jev, for instance — is a file in `providers/` plus the value of `ai.provider`
-in the configuration: the prevalidator is not touched. It is Phase 1-2 of the strategy in
+**A provider's configuration is the provider's own business.** `ai.providers` is a map whose keys
+the configuration decides, so it is not read by enumerating it: `loadAiSettings()` reads
+`ai.provider` and `ai.timeout_ms`, and asks the selected provider to read its own section through
+its `readConfiguration()`. Two consequences. **Only the selected provider must be complete**: an
+environment that uses one does not carry the keys of the others, and does not refuse to start for
+want of a key it would never spend. And **what a provider needs is not known upstream**, so the
+second one may ask for different fields from the first — `decide(ai, …)` hands it back exactly
+`{ provider, timeoutMs, configuration }`, its own section and nothing else of the subsystem.
+
+An `ai.provider` that does not exist **stops the server at startup**, like any other wrong field,
+with a message naming the ones that do. It used to start and fail on the first client's
+prevalidation with `unknown_provider`, which is a configuration mistake discovered by whoever is
+least able to fix it. The `unknown_provider` reason stays in the contract as a net.
+
+Adding a provider — Jev, for instance — is a file in `providers/` exporting `NAME`,
+`readConfiguration()` and `decide()`, one line in the `PROVIDERS` registry, and the value of
+`ai.provider` in the configuration: the prevalidator is not touched. The registry is an allowlist
+and not a directory listing — the configuration chooses among the providers that exist, it does not
+name a module to load. It is Phase 1-2 of the strategy in
 `contesto/decision_engine_considerazioni.md` §25.
 
 The Anthropic provider uses the official SDK, not `fetch` by hand, and does three things to keep

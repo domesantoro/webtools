@@ -168,7 +168,7 @@ export async function prevalidate(settings, spec) {
   const { policy, specMaxChars } = settings.prevalidation;
   const instructions = await readPolicy(policy);
 
-  const answer = await decide(settings, {
+  const answer = await decide(settings.ai, {
     instructions,
     // The cut is a safety net, not a check: the open answers are already limited
     // at submission time (`form.answer_max_chars`).

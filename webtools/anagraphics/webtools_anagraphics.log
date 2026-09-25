@@ -1420,3 +1420,6 @@ INFO:     127.0.0.1:54772 - "GET /sessions/CzalY45z4kDv08VPEVr0FX3SodmJV49Eoxv6S
 INFO:     127.0.0.1:54773 - "GET /projects/775d364b-9089-4d31-ba03-d02dc9cfde2c HTTP/1.1" 200 OK
 INFO:     127.0.0.1:54774 - "POST /users/8ff93901-673e-44ba-b05b-56011395dcba/billing/turns/spend HTTP/1.1" 200 OK
 INFO:     127.0.0.1:54773 - "PATCH /projects/775d364b-9089-4d31-ba03-d02dc9cfde2c/pipeline/steps/analysis HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55451 - "GET /configuration/preanalyst HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55452 - "GET /configuration/preanalyst HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55453 - "GET /configuration/preanalyst HTTP/1.1" 200 OK
