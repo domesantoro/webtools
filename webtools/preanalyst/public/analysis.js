@@ -51,11 +51,16 @@
   var tooManyLine = panel.querySelector("[data-chat-turns-too-many]");
   var invalidLine = panel.querySelector("[data-chat-turns-invalid]");
   var exhaustedError = panel.querySelector("[data-chat-exhausted-error]");
+  // The notice that the analysis has been judged complete. The server decides
+  // whether it is on when the page is born; from then on this file follows what
+  // each turn answers.
+  var readyNotice = panel.querySelector("[data-chat-ready]");
   // It sits in the summary, outside the panel: it is born disabled and becomes
-  // active when the turns run out. While one can still write it is not a choice
-  // to put in front of anybody; once the turns are gone it is the other road,
-  // the one that is not buying more.
+  // active when the analysis is complete, or when the turns run out. Those are the
+  // two roads out of the conversation — while there are still questions to answer
+  // it is not a choice to put in front of anybody.
   var goButton = document.querySelector("[data-chat-go]");
+  var goError = document.querySelector("[data-chat-go-error]");
 
   // The numbers written inside the catalogues' sentences.
   var usedCount = document.querySelector("[data-chat-used]");
@@ -68,6 +73,9 @@
   var warnAtOrBelow = Number(panel.getAttribute("data-chat-warn-left"));
   var credit = Number(panel.getAttribute("data-chat-credit"));
   var rounds = log.querySelectorAll(".chat-turn-client").length;
+  // Read from the notice and not from an attribute of its own: the two could then
+  // disagree, and what is shown would not be what is held.
+  var ready = readyNotice ? !readyNotice.hidden : false;
   var busy = false;
 
   /* ------------------------------------------------------------- the calls */
@@ -115,9 +123,12 @@
     var writable = turnsLeft > 0;
     form.hidden = !writable;
     if (exhausted) exhausted.hidden = writable;
-    // If turns come back — from credit or from a purchase — the field reappears
-    // and the go button goes quiet again: it was an interruption, not an end.
-    if (goButton) goButton.disabled = writable;
+    if (readyNotice) readyNotice.hidden = !ready;
+    // Two ways to be able to go on: the analysis has been judged complete, or the
+    // turns have run out. If turns come back — from credit or from a purchase —
+    // and the analysis is not complete, the field reappears and the go button goes
+    // quiet again: it was an interruption, not an end.
+    if (goButton) goButton.disabled = writable && !ready;
 
     if (warning) {
       var warn = writable && turnsLeft <= warnAtOrBelow;
@@ -219,6 +230,9 @@
       append("system", result.data.reply);
       rounds += 1;
       turnsLeft = Number(result.data.turns_left);
+      // The verdict of this turn, not a door that stays open: the server judges
+      // every turn, and a later one can reopen the questions.
+      ready = Boolean(result.data.ready);
       lock(false);
       refresh();
       if (turnsLeft > 0) field.focus();
@@ -274,6 +288,99 @@
     });
   }
 
+  /* ----------------------------------------------------------- the opening */
+
+  // The analyst speaks first. A conversation that has not begun leaves the log
+  // empty, and the first question is asked for here — once: from then on it lives
+  // on the project like every other message, and a reload reads it back instead of
+  // paying for it again.
+  //
+  // It spends no turn, so nothing is counted here.
+  function askForOpening() {
+    lock(true);
+    ask("/opening", {}).then(function (result) {
+      waiting.hidden = true;
+      if (!result.ok) {
+        if (result.code === "ANALYSIS_ALREADY_OPENED") {
+          // Another page of ours got the first question written first. What is on
+          // this screen is older than the conversation, so the page is asked again
+          // for what is really there.
+          window.location.reload();
+          return;
+        }
+        // The field is given back: a reload tries again, and there is nothing to
+        // lose because nothing was written.
+        showError(errorLine, true);
+        lock(false);
+        return;
+      }
+      append("system", result.data.reply);
+      lock(false);
+      refresh();
+      if (turnsLeft > 0) field.focus();
+    });
+  }
+
+  /* ---------------------------------------------------------- the go button */
+
+  // TODO(placeholder): what the button does until the step that follows the
+  // analysis exists. It hands over the project's record as a file; when there is a
+  // real move to make, that is what goes here.
+  //
+  // The name comes from the server's `content-disposition`, so the file is named
+  // in one place only. If the header is not there — a proxy that drops it, a
+  // server answering another way — the project's id still names the file: a
+  // download has to be called something.
+  function nameFrom(response) {
+    var disposition = response.headers.get("content-disposition") || "";
+    var found = /filename="([^"]+)"/.exec(disposition);
+    return found ? found[1] : "webtools-project-" + projectId + ".json";
+  }
+
+  // A file that arrives from a fetch reaches the disk in one way only: a link that
+  // is made, clicked and thrown away. Nothing opens on its own here — this is the
+  // answer to a click on the button.
+  function save(file, name) {
+    var address = URL.createObjectURL(file);
+    var link = document.createElement("a");
+    link.href = address;
+    link.download = name;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    // The address keeps the file in memory until it is let go, and letting it go
+    // in the same breath as the click has been known to cut the download short:
+    // the browser is given its moment.
+    setTimeout(function () {
+      URL.revokeObjectURL(address);
+    }, 1000);
+  }
+
+  if (goButton) {
+    goButton.addEventListener("click", function () {
+      showError(goError, false);
+      goButton.disabled = true;
+      fetch("/analysis/" + encodeURIComponent(projectId) + "/project", { headers: { accept: "application/json" } })
+        .then(function (response) {
+          if (!response.ok) {
+            throw new Error("HTTP " + response.status);
+          }
+          return response.blob().then(function (file) {
+            save(file, nameFrom(response));
+          });
+        })
+        .catch(function (failure) {
+          console.error("[analysis] project record: " + failure.name + " " + failure.message);
+          showError(goError, true);
+        })
+        .then(function () {
+          // Back to whatever the state deserves, not simply on: if the turns and
+          // the verdict say the button should be off, it goes off.
+          refresh();
+        });
+    });
+  }
+
   /* ------------------------------------------------------------- the field */
 
   // The field grows with what it holds, up to the maximum the CSS decides. It is
@@ -302,4 +409,7 @@
   log.scrollTop = log.scrollHeight;
   fitField();
   refresh();
+  // Nothing in the log means the conversation has not begun: the analyst has yet
+  // to ask its first question.
+  if (log.querySelectorAll(".chat-turn").length === 0) askForOpening();
 })();

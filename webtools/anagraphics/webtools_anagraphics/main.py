@@ -36,6 +36,17 @@ async def allow_only_known_ips(request: Request, call_next):
     return await call_next(request)
 
 
+@app.get("/configuration")
+def get_configurations() -> dict:
+    """Every subsystem's configuration, as it is in Mongo.
+
+    Whoever has to look at the whole configuration — the configurator's front end
+    — cannot ask for it subsystem by subsystem: the list of the subsystems that
+    exist is here, not in whoever is asking.
+    """
+    return {"configurations": db.list_configurations(database)}
+
+
 @app.get("/configuration/{subsystem}")
 def get_configuration(subsystem: str) -> dict:
     document = db.find_configuration(database, subsystem)

@@ -71,3 +71,9 @@ webtools_workspaces listening on http://127.0.0.1:9400 (root: /Users/domenico/we
 === start 2026-09-25 13:57:13 ===
 webtools_workspaces listening on http://127.0.0.1:9400 (root: /Users/domenico/webtools_data/workspaces)
 [workspaces] 775d364b-9089-4d31-ba03-d02dc9cfde2c: specifica v1 (system, 1669 byte) da 8ff93901-673e-44ba-b05b-56011395dcba
+=== start 2026-09-25 15:57:03 ===
+webtools_workspaces listening on http://127.0.0.1:9400 (root: /Users/domenico/webtools_data/workspaces)
+[workspaces] 71560f42-9420-4c71-aabc-3e52ef533cd6: specifica v1 (system, 1563 byte) da 8ff93901-673e-44ba-b05b-56011395dcba
+=== start 2026-09-25 17:00:10 ===
+webtools_workspaces listening on http://127.0.0.1:9400 (root: /Users/domenico/webtools_data/workspaces)
+[workspaces] 76dbf921-3971-4fd3-a879-a5310d030376: specifica v1 (system, 1670 byte) da 8ff93901-673e-44ba-b05b-56011395dcba

@@ -90,15 +90,25 @@ export function decide(verdict, scores, threshold) {
 }
 
 // The material the judgement is made on: the form's answers and everything that
-// was said afterwards, as one document.
-export function dossierOf(spec, chat) {
-  const lines = [`# Pre-specification\n\n${spec}`, "\n# The conversation\n"];
+// was said afterwards.
+//
+// **It is a conversation, and it is sent as one** — the same shape `conversationOf`
+// builds for the analyst. Who said what is the `role` of each message, which
+// belongs to the call and not to the text.
+//
+// It used to be one document, with `**Client:**` and `**Analyst:**` written in
+// front of each turn. Those are ordinary characters: the client could type them
+// inside their own message and put words in the analyst's mouth, because there was
+// nothing else saying who had spoken. Now the client's text can say whatever it
+// likes — it stays inside a message whose role is `user`.
+export function materialOf(spec, chat) {
+  const messages = [{ role: "user", content: `# Pre-specification\n\n${spec}` }];
   for (const entry of chat ?? []) {
     const text = String(entry?.text ?? "");
     if (text === "") continue;
-    lines.push(`**${entry.role === "client" ? "Client" : "Analyst"}:** ${text}\n`);
+    messages.push({ role: entry.role === "client" ? "user" : "assistant", content: text });
   }
-  return lines.join("\n");
+  return messages;
 }
 
 export async function validate(settings, { spec, chat }) {
@@ -107,7 +117,7 @@ export async function validate(settings, { spec, chat }) {
 
   const answer = await converse(settings.analyst.validation.ai, {
     instructions,
-    messages: [{ role: "user", content: dossierOf(spec, chat) }],
+    messages: materialOf(spec, chat),
     schema: SCHEMA,
   });
   if (!answer.ok) return answer;

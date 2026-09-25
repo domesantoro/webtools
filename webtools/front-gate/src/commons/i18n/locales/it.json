@@ -42,7 +42,7 @@
       "heading": "Raccontaci che cosa ti serve.",
       "lead": "Da qui comincia la pre-analisi: ci racconti il tuo problema e noi capiamo se è una cosa che possiamo risolvere, e come. Non serve sapere nulla di informatica: rispondi con parole tue, e quello che non sai lascialo in bianco.",
       "submit": "Manda la richiesta",
-      "autonomous_appeared": "Sei registrato come driver: prima di mandare, scegli qui accanto se questo è un lavoro autonomo."
+      "autonomous_appeared": "Il tuo account è registrato come driver: prima di mandare, scegli qui accanto se questo è un lavoro autonomo."
     },
     "dialogs": {
       "title": "Serve un account",
@@ -76,9 +76,9 @@
       "discount_applied": "Codice sconto valido: <strong>{percentage}%</strong>.",
       "discount_expired": "Questo codice sconto non è applicabile: con ogni probabilità è scaduto. Vai avanti lo stesso: al tuo progetto assegniamo noi un driver.",
       "link_driver": "quello del link",
-      "discount_driver_missing": "Questo codice sconto non è applicabile: il driver a cui è collegato, {driver}, non si trova più. Contattalo per farti dare un codice nuovo. Puoi anche andare avanti così: al tuo progetto assegniamo noi un driver.",
-      "discount_driver_disabled": "Questo codice sconto non è applicabile: il driver a cui è collegato, <strong>{name}</strong>, non è abilitato a seguire progetti, e con lui non possiamo proseguire. Contattalo. Puoi anche andare avanti così: al tuo progetto assegniamo noi un driver.",
-      "driver_disabled": "Il driver di questo link, <strong>{name}</strong>, non è abilitato a seguire progetti, e con lui non possiamo proseguire. Contattalo. Puoi anche andare avanti così: al tuo progetto assegniamo noi un driver.",
+      "discount_driver_missing": "Questo codice sconto non è applicabile: il driver a cui è collegato, {driver}, non si trova più. Contatta il driver per farti dare un codice nuovo. Puoi anche andare avanti così: al tuo progetto assegniamo noi un driver.",
+      "discount_driver_disabled": "Questo codice sconto non è applicabile: il driver a cui è collegato, <strong>{name}</strong>, non è abilitato a seguire progetti, e non possiamo proseguire con questo driver. Mettiti in contatto per saperne di più. Puoi anche andare avanti così: al tuo progetto assegniamo noi un driver.",
+      "driver_disabled": "Il driver di questo link, <strong>{name}</strong>, non è abilitato a seguire progetti, e non possiamo proseguire con questo driver. Mettiti in contatto per saperne di più. Puoi anche andare avanti così: al tuo progetto assegniamo noi un driver.",
       "driver_unknown": "Il driver di questo link non si trova più. Contattalo per farti dare un link nuovo. Puoi anche andare avanti così: al tuo progetto assegniamo noi un driver.",
       "driver_unknown_with_uid": "Il driver di questo link (<code>{uid}</code>) non si trova più. Contattalo per farti dare un link nuovo. Puoi anche andare avanti così: al tuo progetto assegniamo noi un driver.",
       "ignored_discount": "Con il lavoro autonomo il codice sconto di {name} non viene applicato.",
@@ -156,7 +156,6 @@
       "eyebrow": "Secondo passo",
       "heading": "Mettiamo a fuoco la richiesta.",
       "lead": "Una domanda alla volta, per completare quello che la richiesta non dice ancora. Rispondi con parole tue; quello che non sai, dillo.",
-      "opening": "Ho letto la tua richiesta. Ti faccio qualche domanda per completarla, una alla volta.",
       "you": "Tu",
       "system": "webtools",
       "label": "Il tuo messaggio",
@@ -164,11 +163,12 @@
       "hint": "Invio manda il messaggio, Maiusc+Invio va a capo.",
       "send": "Manda",
       "waiting": "Sto scrivendo",
+    "ready": "L'analisi è completa. Puoi procedere con «Va bene così, procediamo!», oppure continuare a scrivere se c'è altro da aggiungere.",
       "summary": {
         "title": "Il progetto",
         "empty": "Nessuna condizione particolare: il driver lo assegniamo noi.",
         "driver": "Driver",
-        "ambassador": "Invitato da",
+        "ambassador": "Su invito di",
         "discount": "Sconto",
         "discount_value": "{percentage}%",
         "autonomous": "Lavoro autonomo",
@@ -215,7 +215,7 @@
         },
         "skill": {
           "legend": "Che cosa deve saper fare",
-          "hint": "Non sono funzioni del tuo strumento, ma capacità che potrebbe dovergli servire. Segna solo quelle di cui sei sicuro: il resto si vede dopo."
+          "hint": "Non sono funzioni del tuo strumento, ma capacità che potrebbe dovergli servire. Segna solo quelle che ti servono di sicuro: il resto si vede dopo."
         },
         "boundaries": {
           "legend": "Che cosa NON deve fare",

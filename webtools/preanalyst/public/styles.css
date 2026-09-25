@@ -457,6 +457,22 @@
   background: var(--paper-2);
 }
 
+/* ---------- the analysis is complete ---------- */
+
+/* It appears between the conversation and the field when the analysis has been
+   judged complete. A notice, not an alarm: sage and not vermilion, and it takes
+   nothing away — whoever still has turns goes on writing underneath it. */
+.chat-ready {
+  margin: 0 24px 12px;
+  padding: 10px 14px;
+  border: 1.5px solid var(--sage);
+  border-radius: var(--radius-sm);
+  background: var(--sage-soft);
+  font-size: 13px;
+  line-height: 1.45;
+}
+.chat-ready[hidden] { display: none; }
+
 /* ---------- the turns ---------- */
 
 /* It appears from `analysis.warn_from_turn` on. Small and below the field: it is

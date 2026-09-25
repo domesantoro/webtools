@@ -124,6 +124,16 @@ def test_configuration_found(client):
     assert response.json() == {"subsystem": "front-gate"}
 
 
+def test_configurations_listed(client):
+    # Both the documents in the database: the one of anagraphics, written before
+    # the import, and front-gate's. In order by subsystem.
+    response = client.get("/configuration")
+    assert response.status_code == 200
+    assert response.json() == {
+        "configurations": [ANAGRAPHICS_CONFIGURATION, {"subsystem": "front-gate"}]
+    }
+
+
 def test_configuration_not_found(client):
     response = client.get("/configuration/unknown")
     assert response.status_code == 404

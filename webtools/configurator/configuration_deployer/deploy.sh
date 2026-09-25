@@ -42,9 +42,18 @@ deploy_front_gate() {
   cp "$SOURCE/configuration_client.js" "$commons/configuration_client.js"
 }
 
+deploy_configurator_fe() {
+  local commons="$WEBTOOLS/configurator-fe/src/commons"
+  echo "→ configurator-fe"
+
+  mkdir -p "$commons"
+  cp "$SOURCE/configuration_client.js" "$commons/configuration_client.js"
+}
+
 deploy_sso
 deploy_workspaces
 deploy_preanalyst
 deploy_front_gate
+deploy_configurator_fe
 
 echo "Configuration client distributed."

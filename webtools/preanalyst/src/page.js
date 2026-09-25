@@ -194,10 +194,12 @@ function summaryData({ driverLink, ambassador, autonomous }) {
 // answer like any other, and no new configuration field is needed.
 export function renderAnalysis(ui, { access, settings, terms, project_id, chat }) {
   // The turns **used** are not counted separately: they are the rounds already
-  // done, that is, half the messages. The total is what has been used plus what is
-  // left, and not `max_turns`: with bought turns the starting cap is no longer the
-  // total.
-  const usati = Math.floor(chat.messages.length / 2);
+  // done, that is, the messages the client has written. Not half the messages:
+  // the analyst opens the conversation, so its messages are one more than the
+  // client's, and counting by halves would depend on that staying true. The total
+  // is what has been used plus what is left, and not `max_turns`: with bought
+  // turns the starting cap is no longer the total.
+  const usati = chat.messages.filter((message) => message.role === "client").length;
   return env.render("analysis.njk", {
     ...ui,
     title: ui.t("preanalyst.analysis.title"),
@@ -215,6 +217,10 @@ export function renderAnalysis(ui, { access, settings, terms, project_id, chat }
       // said from the other end — "from the twentieth of thirty" — but what holds
       // with bought turns too is how many are left, not how far along we are.
       warn_when_left: settings.analysis.maxTurns - settings.analysis.warnFromTurn,
+      // Whether the analysis has been judged complete. The page is born with the
+      // notice already on when it has: reloading must not lose what the
+      // conversation got to.
+      ready: Boolean(chat.ready),
       credit: chat.credit,
     },
     summary: summaryData(terms),

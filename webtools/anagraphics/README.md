@@ -41,6 +41,7 @@ though. `percentage` is in percentage points: `5` means 5%.
 ## Endpoints (`http://127.0.0.1:9100`)
 
 - `GET /configuration/{subsystem}`: the subsystem's configuration, or `404 {"error":"CONFIGURATION_NOT_FOUND","subsystem":…}`.
+- `GET /configuration`: `{"configurations":[…]}` with the configuration of every subsystem that is in Mongo, ordered by `subsystem`. No pagination. It is what the configurator's front end reads: the list of the subsystems that exist is here.
 - `GET /projects/{project_id}`: the project, or `404 {"error":"PROJECT_NOT_FOUND","project_id":…}`.
 - `POST /projects`: creates a project (anagraphics generates the id); the same `submission_id` a second time returns `200` and the project already born. `DELETE /projects/{project_id}`: deletes it.
 - Users, sessions and tickets: see the full documentation (§6.8–6.15).

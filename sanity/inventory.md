@@ -21,37 +21,37 @@ Order: working-tree / today's work first, then subsystem by subsystem
 | 7 | preanalyst-page | webtools/preanalyst/src/page.js | done | |
 | 8 | preanalyst-template-analysis | webtools/preanalyst/templates/analysis.njk | done | |
 | 9 | preanalyst-script-analyse | webtools/preanalyst/scripts/analyse.js | done | |
-| 10 | configurator-configuration-preanalyst | webtools/configurator/configuration/preanalyst.json | pending | |
-| 11 | configurator-secrets-preanalyst | webtools/configurator/secrets/preanalyst.json.example, webtools/configurator/secrets/preanalyst.json | pending | |
-| 12 | configurator-policies-analysis | webtools/configurator/policies/analysis-v1.md, webtools/configurator/policies/analysis-validation-v1.md | pending | copies in webtools/preanalyst/policies/ |
-| 13 | commons-i18n-locales | webtools/commons/i18n/locales/en.json, webtools/commons/i18n/locales/it.json | pending | copies in each subsystem |
-| 14 | preanalyst-tests-ai-analyst | webtools/preanalyst/tests/prevalidator_ai.test.js, webtools/preanalyst/tests/analyst.test.js | pending | ai.test.js renamed to prevalidator_ai.test.js during the run |
-| 15 | preanalyst-styles | webtools/preanalyst/public/styles.css | pending | |
-| 16 | preanalyst-prevalidator | webtools/preanalyst/src/prevalidator.js, webtools/preanalyst/scripts/prevalidate.js | pending | |
-| 17 | preanalyst-anagraphics-client | webtools/preanalyst/src/anagraphics.js | pending | |
-| 18 | preanalyst-questions | webtools/preanalyst/src/questions.js | pending | |
-| 19 | preanalyst-prespec | webtools/preanalyst/src/prespec.js | pending | |
-| 20 | preanalyst-driver-link | webtools/preanalyst/src/driver_link.js | pending | |
-| 21 | preanalyst-ambassador-project-driver | webtools/preanalyst/src/ambassador.js, webtools/preanalyst/src/project_driver.js | pending | |
-| 22 | preanalyst-workspaces-client | webtools/preanalyst/src/workspaces.js | pending | |
-| 23 | preanalyst-rejection-pdf | webtools/preanalyst/src/rejection_pdf.js | pending | |
-| 24 | preanalyst-index | webtools/preanalyst/src/index.js | pending | |
-| 25 | preanalyst-public-js | webtools/preanalyst/public/analysis.js, gate.js, rejection.js, upload.js | pending | |
-| 26 | preanalyst-templates | webtools/preanalyst/templates/*.njk (page, message, login_done, macros/, partials/, fragments/) | pending | |
-| 27 | configurator-policy-scope | webtools/configurator/policies/scope-v1.md | pending | copy in webtools/preanalyst/policies/ |
-| 28 | preanalyst-tests-rest | webtools/preanalyst/tests/prevalidator.test.js, webtools/preanalyst/tests/server.test.js | pending | |
-| 29 | preanalyst-runner | webtools/preanalyst/webtools_preanalyst.sh, webtools/preanalyst/package.json | pending | |
-| 30 | sso-server | webtools/sso/src/server.js | pending | |
-| 31 | sso-auth | webtools/sso/src/auth.js | pending | |
-| 32 | sso-sessions-tickets | webtools/sso/src/sessions.js, webtools/sso/src/tickets.js | pending | |
-| 33 | sso-credentials | webtools/sso/src/credentials.js | pending | |
-| 34 | sso-anagraphics-client | webtools/sso/src/anagraphics.js | pending | |
-| 35 | sso-settings-index-page | webtools/sso/src/settings.js, src/index.js, src/page.js | pending | |
-| 36 | sso-templates | webtools/sso/templates/login.njk, webtools/sso/templates/register.njk | pending | |
-| 37 | sso-tests | webtools/sso/tests/*.js | pending | |
-| 38 | sso-runner | webtools/sso/webtools_sso.sh, package.json, public/styles.css | pending | |
-| 39 | front-gate-server | webtools/front-gate/src/server.js | pending | |
-| 40 | front-gate-settings-index-page | webtools/front-gate/src/settings.js, src/index.js, src/page.js | pending | |
+| 10 | configurator-configuration-preanalyst | webtools/configurator/configuration/preanalyst.json | done | |
+| 11 | configurator-secrets-preanalyst | webtools/configurator/secrets/preanalyst.json.example, webtools/configurator/secrets/preanalyst.json | done | |
+| 12 | configurator-policies-analysis | webtools/configurator/policies/analysis-v1.md, webtools/configurator/policies/analysis-validation-v1.md | done | copies in webtools/preanalyst/policies/ |
+| 13 | commons-i18n-locales | webtools/commons/i18n/locales/en.json, webtools/commons/i18n/locales/it.json | done | copies in each subsystem |
+| 14 | preanalyst-tests-ai-analyst | webtools/preanalyst/tests/prevalidator_ai.test.js, webtools/preanalyst/tests/analyst.test.js | done | ai.test.js renamed to prevalidator_ai.test.js during the run |
+| 15 | preanalyst-styles | webtools/preanalyst/public/styles.css | done | |
+| 16 | preanalyst-prevalidator | webtools/preanalyst/src/prevalidator.js, webtools/preanalyst/scripts/prevalidate.js | done | |
+| 17 | preanalyst-anagraphics-client | webtools/preanalyst/src/anagraphics.js | done | |
+| 18 | preanalyst-questions | webtools/preanalyst/src/questions.js | done | |
+| 19 | preanalyst-prespec | webtools/preanalyst/src/prespec.js | done | |
+| 20 | preanalyst-driver-link | webtools/preanalyst/src/driver_link.js | done | |
+| 21 | preanalyst-ambassador-project-driver | webtools/preanalyst/src/ambassador.js, webtools/preanalyst/src/project_driver.js | done | |
+| 22 | preanalyst-workspaces-client | webtools/preanalyst/src/workspaces.js | done | |
+| 23 | preanalyst-rejection-pdf | webtools/preanalyst/src/rejection_pdf.js | done | |
+| 24 | preanalyst-index | webtools/preanalyst/src/index.js | done | |
+| 25 | preanalyst-public-js | webtools/preanalyst/public/analysis.js, gate.js, rejection.js, upload.js | done | |
+| 26 | preanalyst-templates | webtools/preanalyst/templates/*.njk (page, message, login_done, macros/, partials/, fragments/) | done | |
+| 27 | configurator-policy-scope | webtools/configurator/policies/scope-v1.md | done | copy in webtools/preanalyst/policies/ |
+| 28 | preanalyst-tests-rest | webtools/preanalyst/tests/prevalidator.test.js, webtools/preanalyst/tests/server.test.js | done | |
+| 29 | preanalyst-runner | webtools/preanalyst/webtools_preanalyst.sh, webtools/preanalyst/package.json | done | |
+| 30 | sso-server | webtools/sso/src/server.js | done | |
+| 31 | sso-auth | webtools/sso/src/auth.js | done | |
+| 32 | sso-sessions-tickets | webtools/sso/src/sessions.js, webtools/sso/src/tickets.js | done | |
+| 33 | sso-credentials | webtools/sso/src/credentials.js | done | |
+| 34 | sso-anagraphics-client | webtools/sso/src/anagraphics.js | done | |
+| 35 | sso-settings-index-page | webtools/sso/src/settings.js, src/index.js, src/page.js | done | |
+| 36 | sso-templates | webtools/sso/templates/login.njk, webtools/sso/templates/register.njk | done | |
+| 37 | sso-tests | webtools/sso/tests/*.js | done | |
+| 38 | sso-runner | webtools/sso/webtools_sso.sh, package.json, public/styles.css | done | |
+| 39 | front-gate-server | webtools/front-gate/src/server.js | done | |
+| 40 | front-gate-settings-index-page | webtools/front-gate/src/settings.js, src/index.js, src/page.js | done | |
 | 41 | front-gate-templates | webtools/front-gate/templates/*.njk | pending | |
 | 42 | front-gate-public | webtools/front-gate/public/js/main.js, webtools/front-gate/public/css/styles.css | pending | |
 | 43 | front-gate-runner | webtools/front-gate/webtools_front_gate.sh, package.json | pending | |

@@ -60,14 +60,20 @@ async function readPolicy(name) {
 // The **pre-specification is the first message**, always, and it never changes:
 // that makes it part of the stable prefix, so from the second turn on the policy
 // and the form's answers are read from the cache instead of being paid for again.
-export function conversationOf(spec, chat, message) {
+//
+// `message` is what the client has just written, and it is **optional**: on the
+// opening the analyst reads the pre-specification and asks the first question
+// without anybody having written anything. A turn with no client message is a
+// conversation all the same; an empty message is not turned into one.
+export function conversationOf(spec, chat, message = null) {
   const messages = [{ role: "user", content: `# Pre-specification\n\n${spec}` }];
   for (const entry of chat ?? []) {
     const text = String(entry?.text ?? "");
     if (text === "") continue;
     messages.push({ role: entry.role === "client" ? "user" : "assistant", content: text });
   }
-  messages.push({ role: "user", content: message });
+  const written = message === null || message === undefined ? "" : String(message);
+  if (written !== "") messages.push({ role: "user", content: written });
   return messages;
 }
 
@@ -85,15 +91,21 @@ export function conversationOf(spec, chat, message) {
 // are the points it is sent back for. It arrives the same way as everything else
 // about the state of the turn — at the end of the messages, out of the cached
 // prefix.
-export function operatorNote(turnsLeft, language, stillMissing = []) {
+export function operatorNote(turnsLeft, language, { stillMissing = [], opening = false } = {}) {
   const turns = turnsLeft === 1 ? "1 turn" : `${turnsLeft} turns`;
   const sentBack =
     stillMissing.length > 0
       ? `You proposed to close, and a separate check judged the analysis not complete yet. Still open: ${stillMissing.join("; ")}. Do not close now: ask about whichever of these matters most.`
       : "";
   return [
+    // The opening: nobody has written yet, and the client is looking at an empty
+    // page. Said out loud, because a model that has only the pre-specification in
+    // front of it could take the conversation to be already under way.
+    opening
+      ? "Nobody has written yet: the client has just arrived on the page and is reading you. This message is your first question, and there is no answer to reply to."
+      : "",
     `The conversation has ${turns} left, this one included.`,
-    turnsLeft <= 3 && sentBack === ""
+    turnsLeft <= 3 && sentBack === "" && !opening
       ? "Ask only what would change the tool the most, and close rather than run out mid-question."
       : "",
     sentBack,
@@ -103,7 +115,12 @@ export function operatorNote(turnsLeft, language, stillMissing = []) {
     .join(" ");
 }
 
-export async function ask(settings, { spec, chat, message, turnsLeft, language, stillMissing = [] }) {
+// `message` is absent on the opening, when the analyst asks the first question
+// before the client has written anything.
+export async function ask(
+  settings,
+  { spec, chat, message = null, turnsLeft, language, stillMissing = [], opening = false },
+) {
   const { policy, messageMaxChars } = settings.analyst.conversation;
   const instructions = await readPolicy(policy);
 
@@ -111,7 +128,7 @@ export async function ask(settings, { spec, chat, message, turnsLeft, language, 
     instructions,
     messages: conversationOf(spec, chat, message),
     schema: SCHEMA,
-    operator: operatorNote(turnsLeft, language, stillMissing),
+    operator: operatorNote(turnsLeft, language, { stillMissing, opening }),
   });
   if (!answer.ok) return answer;
 

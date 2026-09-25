@@ -70,6 +70,13 @@ def find_configuration(db: Database, subsystem: str) -> dict | None:
     return db[CONFIGURATION].find_one({"subsystem": subsystem}, PUBLIC)
 
 
+def list_configurations(db: Database) -> list[dict]:
+    # One document per subsystem: no pagination, a stable order by subsystem.
+    # Everything that is there comes out, including a subsystem that no longer has
+    # a seed file: the configuration that lives is this one, not the files'.
+    return list(db[CONFIGURATION].find({}, PUBLIC).sort("subsystem"))
+
+
 def find_project(db: Database, project_id: str) -> dict | None:
     return db[PROJECTS].find_one({"project_id": project_id}, PUBLIC)
 

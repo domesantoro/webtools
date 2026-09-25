@@ -1,7 +1,10 @@
 // Tries one turn of the analyst on a pre-specification, from the command line.
 //
 //   set -a; source ../configurator/bootstrap.env; set +a
-//   node scripts/analyse.js <file.md> "the client's message" [language]
+//   node scripts/analyse.js <file.md> ["the client's message"] [language]
+//
+// With no message it runs the **opening**: the first question, the one the analyst
+// asks after reading the pre-specification and before anybody has written.
 //
 // It is for looking at how a policy conducts the conversation without spending a
 // client's turn: write a pre-specification by hand, send a message, read the
@@ -20,10 +23,12 @@ import { ask } from "../src/analyst.js";
 import { loadSettings } from "../src/settings.js";
 
 const [file, message, language] = process.argv.slice(2);
-if (!file || !message) {
-  console.error('Usage: node scripts/analyse.js <file.md> "the client\'s message" [language]');
+if (!file) {
+  console.error('Usage: node scripts/analyse.js <file.md> ["the client\'s message"] [language]');
   process.exit(2);
 }
+// No message: the opening, which is a turn with nobody having written yet.
+const opening = !message;
 
 const settings = await loadSettings();
 const spec = await readFile(file, "utf8");
@@ -32,7 +37,8 @@ const start = Date.now();
 const answer = await ask(settings, {
   spec,
   chat: [],
-  message,
+  message: message ?? null,
+  opening,
   turnsLeft: settings.analysis.maxTurns,
   // The page passes the language of whoever is reading. Here it is said on the
   // command line, because the point of this script is to try a policy.

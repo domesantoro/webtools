@@ -444,6 +444,16 @@ Returns the subsystem's configuration.
 | Not found | `404` | `{"error":"CONFIGURATION_NOT_FOUND","subsystem":"<requested>"}` |
 | Other errors | `403` / `503` / `500` | see §6.1 |
 
+#### 6.2.1 `GET /configuration`
+Returns the configuration of **every** subsystem in Mongo, ordered by `subsystem`. No pagination: there is one document per subsystem.
+
+| Outcome | Status | Body |
+|---|---|---|
+| Always | `200` | `{"configurations":[ …the documents without `_id`, as in §6.2… ]}`; the empty list if the collection is empty |
+| Other errors | `403` / `503` / `500` | see §6.1 |
+
+A subsystem that no longer has a seed file in `configurator/configuration/` comes out here too: what lives is in Mongo, and the front end of the configurator has to show what is there, not what the files say. Whoever reads a single configuration keeps using §6.2: this route is for looking at the whole of it.
+
 ### 6.3 `GET /projects/{project_id}`
 Returns the project. Up to 0.4.0 it was `GET /anagraphics/{project_id}`, which no longer exists.
 

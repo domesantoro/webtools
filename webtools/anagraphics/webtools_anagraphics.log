@@ -1439,3 +1439,110 @@ INFO:     127.0.0.1:55855 - "GET /configuration/preanalyst HTTP/1.1" 200 OK
 INFO:     127.0.0.1:55878 - "GET /configuration/preanalyst HTTP/1.1" 200 OK
 INFO:     127.0.0.1:55879 - "GET /configuration/preanalyst HTTP/1.1" 200 OK
 INFO:     127.0.0.1:55889 - "GET /configuration/preanalyst HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56100 - "GET /configuration/sso HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56168 - "GET /configuration/sso HTTP/1.1" 200 OK
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [8450]
+=== start 2026-09-25 15:57:03 ===
+INFO:     Started server process [24589]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:9100 (Press CTRL+C to quit)
+INFO:     127.0.0.1:56209 - "GET /configuration/sso HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56211 - "GET /configuration/workspaces HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56212 - "GET /configuration/preanalyst HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56213 - "GET /configuration/front-gate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56218 - "GET /configuration/configurator-fe HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56219 - "GET /configuration HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56218 - "GET /configuration HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56218 - "GET /configuration HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56223 - "GET /configuration HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56223 - "GET /configuration HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56228 - "GET /configuration HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56239 - "GET /sessions/CzalY45z4kDv08VPEVr0FX3SodmJV49Eoxv6SV8mSE0 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56240 - "GET /projects/775d364b-9089-4d31-ba03-d02dc9cfde2c HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56241 - "GET /users/dome.santoro%40gmail.com HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56251 - "GET /sessions/CzalY45z4kDv08VPEVr0FX3SodmJV49Eoxv6SV8mSE0 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56287 - "GET /configuration/preanalyst HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56301 - "GET /sessions/CzalY45z4kDv08VPEVr0FX3SodmJV49Eoxv6SV8mSE0 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56302 - "POST /projects HTTP/1.1" 201 Created
+INFO:     127.0.0.1:56305 - "POST /projects/71560f42-9420-4c71-aabc-3e52ef533cd6/pipeline/steps HTTP/1.1" 201 Created
+INFO:     127.0.0.1:56306 - "POST /projects/71560f42-9420-4c71-aabc-3e52ef533cd6/pipeline/steps HTTP/1.1" 201 Created
+INFO:     127.0.0.1:56308 - "GET /sessions/CzalY45z4kDv08VPEVr0FX3SodmJV49Eoxv6SV8mSE0 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56305 - "GET /projects/71560f42-9420-4c71-aabc-3e52ef533cd6 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56306 - "GET /users/dome.santoro%40gmail.com HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56319 - "GET /sessions/CzalY45z4kDv08VPEVr0FX3SodmJV49Eoxv6SV8mSE0 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56320 - "GET /projects/71560f42-9420-4c71-aabc-3e52ef533cd6 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56323 - "PATCH /projects/71560f42-9420-4c71-aabc-3e52ef533cd6/pipeline/steps/analysis HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56328 - "GET /sessions/CzalY45z4kDv08VPEVr0FX3SodmJV49Eoxv6SV8mSE0 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56329 - "GET /projects/71560f42-9420-4c71-aabc-3e52ef533cd6 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56333 - "PATCH /projects/71560f42-9420-4c71-aabc-3e52ef533cd6/pipeline/steps/analysis HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56367 - "GET /sessions/CzalY45z4kDv08VPEVr0FX3SodmJV49Eoxv6SV8mSE0 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56368 - "GET /projects/71560f42-9420-4c71-aabc-3e52ef533cd6 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56372 - "PATCH /projects/71560f42-9420-4c71-aabc-3e52ef533cd6/pipeline/steps/analysis HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56439 - "GET /sessions/CzalY45z4kDv08VPEVr0FX3SodmJV49Eoxv6SV8mSE0 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56440 - "GET /projects/71560f42-9420-4c71-aabc-3e52ef533cd6 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56444 - "PATCH /projects/71560f42-9420-4c71-aabc-3e52ef533cd6/pipeline/steps/analysis HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56447 - "GET /sessions/CzalY45z4kDv08VPEVr0FX3SodmJV49Eoxv6SV8mSE0 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56448 - "GET /projects/71560f42-9420-4c71-aabc-3e52ef533cd6 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56452 - "PATCH /projects/71560f42-9420-4c71-aabc-3e52ef533cd6/pipeline/steps/analysis HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56456 - "GET /sessions/CzalY45z4kDv08VPEVr0FX3SodmJV49Eoxv6SV8mSE0 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56457 - "GET /projects/71560f42-9420-4c71-aabc-3e52ef533cd6 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56458 - "POST /users/8ff93901-673e-44ba-b05b-56011395dcba/billing/turns/spend HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56457 - "PATCH /projects/71560f42-9420-4c71-aabc-3e52ef533cd6/pipeline/steps/analysis HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56461 - "GET /sessions/CzalY45z4kDv08VPEVr0FX3SodmJV49Eoxv6SV8mSE0 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56462 - "GET /projects/71560f42-9420-4c71-aabc-3e52ef533cd6 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56467 - "PATCH /projects/71560f42-9420-4c71-aabc-3e52ef533cd6/pipeline/steps/analysis HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56484 - "GET /sessions/CzalY45z4kDv08VPEVr0FX3SodmJV49Eoxv6SV8mSE0 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56485 - "GET /projects/71560f42-9420-4c71-aabc-3e52ef533cd6 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56486 - "POST /users/8ff93901-673e-44ba-b05b-56011395dcba/billing/turns/grant HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56484 - "GET /sessions/CzalY45z4kDv08VPEVr0FX3SodmJV49Eoxv6SV8mSE0 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56485 - "GET /projects/71560f42-9420-4c71-aabc-3e52ef533cd6 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56486 - "POST /users/8ff93901-673e-44ba-b05b-56011395dcba/billing/turns/spend HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56485 - "PATCH /projects/71560f42-9420-4c71-aabc-3e52ef533cd6/pipeline/steps/analysis HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56491 - "GET /sessions/CzalY45z4kDv08VPEVr0FX3SodmJV49Eoxv6SV8mSE0 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56492 - "GET /projects/71560f42-9420-4c71-aabc-3e52ef533cd6 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56496 - "PATCH /projects/71560f42-9420-4c71-aabc-3e52ef533cd6/pipeline/steps/analysis HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56499 - "GET /sessions/CzalY45z4kDv08VPEVr0FX3SodmJV49Eoxv6SV8mSE0 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56500 - "GET /projects/71560f42-9420-4c71-aabc-3e52ef533cd6 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56635 - "GET /configuration HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56657 - "GET /configuration/preanalyst HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56663 - "GET /configuration/preanalyst HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56667 - "GET /configuration/preanalyst HTTP/1.1" 200 OK
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [24589]
+=== start 2026-09-25 17:00:10 ===
+INFO:     Started server process [29858]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:9100 (Press CTRL+C to quit)
+INFO:     127.0.0.1:56687 - "GET /configuration/sso HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56689 - "GET /configuration/workspaces HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56690 - "GET /configuration/preanalyst HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56691 - "GET /configuration/front-gate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56716 - "GET /configuration HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56716 - "GET /configuration HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56727 - "GET /sessions/CzalY45z4kDv08VPEVr0FX3SodmJV49Eoxv6SV8mSE0 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56735 - "GET /sessions/CzalY45z4kDv08VPEVr0FX3SodmJV49Eoxv6SV8mSE0 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56736 - "POST /projects HTTP/1.1" 201 Created
+INFO:     127.0.0.1:56739 - "POST /projects/76dbf921-3971-4fd3-a879-a5310d030376/pipeline/steps HTTP/1.1" 201 Created
+INFO:     127.0.0.1:56740 - "POST /projects/76dbf921-3971-4fd3-a879-a5310d030376/pipeline/steps HTTP/1.1" 201 Created
+INFO:     127.0.0.1:56742 - "GET /sessions/CzalY45z4kDv08VPEVr0FX3SodmJV49Eoxv6SV8mSE0 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56739 - "GET /projects/76dbf921-3971-4fd3-a879-a5310d030376 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56740 - "GET /users/dome.santoro%40gmail.com HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56742 - "GET /sessions/CzalY45z4kDv08VPEVr0FX3SodmJV49Eoxv6SV8mSE0 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56739 - "GET /projects/76dbf921-3971-4fd3-a879-a5310d030376 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56747 - "GET /projects/76dbf921-3971-4fd3-a879-a5310d030376 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56748 - "PATCH /projects/76dbf921-3971-4fd3-a879-a5310d030376/pipeline/steps/analysis HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56752 - "GET /sessions/CzalY45z4kDv08VPEVr0FX3SodmJV49Eoxv6SV8mSE0 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56753 - "GET /projects/76dbf921-3971-4fd3-a879-a5310d030376 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56756 - "PATCH /projects/76dbf921-3971-4fd3-a879-a5310d030376/pipeline/steps/analysis HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56760 - "GET /sessions/CzalY45z4kDv08VPEVr0FX3SodmJV49Eoxv6SV8mSE0 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56761 - "GET /projects/76dbf921-3971-4fd3-a879-a5310d030376 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56765 - "PATCH /projects/76dbf921-3971-4fd3-a879-a5310d030376/pipeline/steps/analysis HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56768 - "GET /sessions/CzalY45z4kDv08VPEVr0FX3SodmJV49Eoxv6SV8mSE0 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56769 - "GET /projects/76dbf921-3971-4fd3-a879-a5310d030376 HTTP/1.1" 200 OK

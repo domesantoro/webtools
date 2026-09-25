@@ -446,9 +446,11 @@ like "I enter in one place and I am logged out of another".
 | `GET /logout` | `303` towards the sso's `/ui/logout`, removing our cookie |
 | `POST /submit` | The form's submission (§14.1): `303` towards `/analysis/{id}`, or a message page with `400`/`401`/`413`/`503` |
 | `GET /analysis/{id}` | The analysis page, only for the project's owner. Otherwise `401` (logged out) or `404` (non-existent or somebody else's) |
+| `POST /analysis/{id}/opening` | The analyst's first question, on a conversation that has not begun (§14.3). It writes it onto the step and spends no turn; `409 ANALYSIS_ALREADY_OPENED` if the conversation is already there |
 | `POST /analysis/{id}/messages` | A turn of the chat: the two messages and the turn taken off (§14.3.1). A JSON API with stable codes |
 | `POST /analysis/{id}/turns` | Moves turns from the user's credit to the project (§14.3.1) |
 | `POST /analysis/{id}/turns/buy` | **A fake purchase**: it gives the user credit (§14.3.2) |
+| `GET /analysis/{id}/project` | The project's record in anagraphics, as a file (§14.3). A placeholder: it is what the go button does until the step after the analysis exists |
 | `POST /upload` | A specification already prepared (§14.4): a JSON API with stable codes |
 | `POST /locale` | The language switcher in the header (`locale`, `return_to`): it writes the shared cookie and returns to the page (`303`). For whoever has entered it also saves the language in the session and in the profile, through the sso. `400 INVALID_LOCALE`, `413 BODY_TOO_LARGE` |
 | `GET /<file>` | A file of `public/` with its content-type; `404` if it does not exist |
@@ -720,8 +722,22 @@ One arrives here when the prevalidation does **not** refuse (§16). A refused re
 to `/?rejected={id}`, with the refusal modal (§16.4).
 
 The **specification rounds** live here: a message is written, the answer is waited for, and on it
-goes. The chat and the turns are on the project and the server counts them (§14.3.1); still fake
-are the model's answer and the purchase of turns (§14.3.2).
+goes. The chat and the turns are on the project and the server counts them (§14.3.1).
+
+**The analyst speaks first.** There is no greeting written in the page. Whoever lands here has just
+answered a form and has nothing to say yet: a chat that opens with a salute and an empty field is a
+chat nobody knows how to begin. With an empty conversation the browser calls
+`POST /analysis/{id}/opening`, the analyst reads the pre-specification and asks the **first real
+question**, and that question is written onto the step like any other message — so a reload prints
+it without anything special, and pays nothing. It does **not** spend a turn: a turn is a question
+and its answer, and here nobody has answered anything. What it costs is one call to the model, once
+per analysis.
+
+If the conversation has begun in the meantime — two pages of the same project open together — the
+route answers `409 ANALYSIS_ALREADY_OPENED` and the page reloads: its view of the conversation was
+older than the conversation. The same check is made again **after** the model has answered and
+before writing, so two openings can never both land: two first questions in one conversation would
+be two different conversations.
 
 - `templates/analysis.njk`: the header, the conversation's register, the wait, the field, and
   **two `<template>`** with the markup of a message. The browser clones the model and fills
@@ -730,9 +746,10 @@ are the model's answer and the purchase of turns (§14.3.2).
 - `public/analysis.js`: the behaviour only — one message at a time, the field that locks until the
   answer has arrived, Enter that sends and Shift+Enter that goes to a new line, the field that
   grows with what it holds.
-- The texts live in the catalogues under `preanalyst.analysis.*`; the fake answers, grouped on
-  purpose, under `preanalyst.analysis.mock.*`. They are numbered keys and not a list because `t`
-  reads strings only.
+- The texts live in the catalogues under `preanalyst.analysis.*`. The register the analyst writes
+  in is not there but in its policy (§14.3.3): professional and not formal, the client given the
+  tu, never a word that genders them, everything explained and nothing implied
+  (`webtools/configurator/policies/analysis-v1.md`).
 - The message's limit is `form.answer_max_chars`, the same as the form's answers: a message is an
   answer like any other.
 
@@ -745,13 +762,22 @@ exactly as the form does when it comes back (§16.6). In autonomous work the dri
 looking, and is not shown as though they were somebody else: the autonomous work line says so. It
 is read and not touched: these conditions are not changed here.
 
-Below the summary there are two buttons, **both with no effect for now**: «Scarica la
-conversazione» and «Va bene così, procediamo!». The download is above, because it is the one that
-can be wanted while writing; the go is the end of the round and still has to be specified.
+Below the summary there are two buttons: «Scarica la conversazione», which has **no effect for
+now**, and «Va bene così, procediamo!». The download is above, because it is the one that can be
+wanted while writing; the go is the end of the round.
 
-**The go is born off and lights up when the turns run out.** As long as one can write, it is not a
-choice to put in front of anybody; when the field disappears it becomes the other road as against
-buying more turns, and the box of the exhausted turns names it.
+**The go is born off and lights up in two cases**: when the analysis has been judged complete
+(§14.3.3), or when the turns have run out. Those are the two ways out of the conversation — while
+there are still questions to answer it is not a choice to put in front of anybody, and the box of
+the exhausted turns names it as the road that is not buying more. If turns come back and the
+analysis is not complete, it goes off again.
+
+**What it does is a placeholder**: `GET /analysis/{id}/project` gives back the project's record in
+anagraphics as it is at that moment, and the browser saves it as
+`webtools-project-{id}.json`. The step that follows the analysis does not exist yet, and a button
+that answers nothing reads as broken; when the real move arrives, that is what goes in its place.
+What comes out is the document anagraphics returns, not a shape invented by the preanalyst: whoever
+reads the file is reading the project.
 
 **The turns.** A turn is a question and its answer, and it is counted **when the answer has
 arrived**: a message that has not been answered is not a turn spent. Two numbers, in the
@@ -814,11 +840,13 @@ stable code):
 
 | Route | What it does | Its own errors |
 |---|---|---|
+| `POST /analysis/{id}/opening` | the first question: it writes it onto the step, **without** touching `turns_left` | `409 ANALYSIS_ALREADY_OPENED` |
 | `POST /analysis/{id}/messages` | a turn: it writes the two messages and takes `turns_left` down, in **a single write** — the two messages and the turn spent are the same thing seen from two sides | `400 EMPTY_MESSAGE`, `409 NO_TURNS_LEFT` |
 | `POST /analysis/{id}/turns` | moves turns from the user's credit to the project | `400 INVALID_TURNS`, `409 NOT_ENOUGH_TURNS` |
 | `POST /analysis/{id}/turns/buy` | **a fake purchase** (see below) | — |
+| `GET /analysis/{id}/project` | the project's record as anagraphics returns it, `content-disposition: attachment` | — |
 
-All three: `401 NOT_LOGGED`, `404 PROJECT_NOT_FOUND` (for somebody else's project too, so that the
+All five: `401 NOT_LOGGED`, `404 PROJECT_NOT_FOUND` (for somebody else's project too, so that the
 address is of no use for discovering which ids exist), `409 ANALYSIS_NOT_OPEN`.
 
 **The credit sits on the user**, in `billing.turns_credit` (§5.5 of anagraphics). When the
@@ -836,19 +864,46 @@ shown.
 turns from the credit or buying some puts the page back as it was, and «Va bene così, procediamo!»
 goes off again. It is not an end, it is an interruption.
 
-### 14.3.2 The two mocks still standing
+### 14.3.2 The mock still standing
 
-They are in `contesto/todos.md` because they are to be dismantled, not fixed:
+It is in `contesto/todos.md` because it is to be dismantled, not fixed:
 
-- **The answer**: `POST .../messages` counts the turn, writes the chat and takes the credit down
-  for real, but the answer is picked at random from `preanalyst.analysis.mock.replies.*`. When the
-  model is there, the `mock.*` keys and `mockReplies()` in `src/page.js` go away together.
 - **The purchase**: `POST .../turns/buy` makes nobody buy anything, it gives 10 turns to the credit
   (`FAKE_PURCHASE_TURNS` in `src/server.js`). It is only there to try the round of the exhausted
   turns from beginning to end. The payment engine will go in its place.
 
-Without JavaScript the header, the first message and the field are left, but nothing is sent: the
-conversation lives in the browser. It is a limit of the mock, not a choice for what will come.
+The answer is no longer one of them: it comes from the analyst (§14.3.3 and `src/analyst.js`), with
+its own provider, its own policy and its own cost, written onto the step with the turn.
+
+Without JavaScript the header, the conversation as it stands, the field and the summary are left,
+but nothing is sent — and on a conversation that has not begun there is nothing to read yet, since
+the first question is asked for by the browser.
+
+### 14.3.3 When the analysis is complete
+
+Who says so is not one engine but two: the analyst (`src/analyst.js`) **proposes** `ready` when it
+believes the questions are over, and `src/analysis_validator.js` — another policy, another model —
+decides whether that is true. Nobody is a fair judge of their own work, and the check runs once per
+analysis, not once per message.
+
+Four ways it can go, and all four are handled:
+
+| The analyst | The validator | What is recorded |
+|---|---|---|
+| does not propose to close | is not asked | `ready: false` |
+| proposes to close | `pass` | `ready: true` |
+| proposes to close | `continue` | the analyst is sent back with what is still missing, its closing message is never shown, and `ready: false` — the second answer of that turn was judged by nobody |
+| proposes to close | the judgement did not arrive | `ready: false`: the conversation does not close on a claim nobody checked, and the analyst will propose again next turn |
+
+`ready` sits on the open step beside `turns_left`, so a reload finds it again, and `POST
+.../messages` returns it to the page along with the answer.
+
+**What the page does with it.** A notice appears between the conversation and the field
+(`preanalyst.analysis.ready`), and «Va bene così, procediamo!» lights up. The field does **not** go
+away: whoever has turns left goes on writing if there is something to add. It is the verdict of the
+last turn and nothing more — a later turn that reopens the questions takes the notice away and puts
+the button back off. The page is born with the notice already on when the step says so, because the
+server decides what is shown and a reload must not lose where the conversation got to.
 
 ### 14.4 `POST /upload`
 
@@ -1297,6 +1352,8 @@ when the questions change.
 
 | Date | Version | Change |
 |---|---|---|
+| 2026-09-25 | 0.25.0 | **The analyst speaks first** (§14.3). The fixed greeting goes out of `templates/analysis.njk` and out of the catalogues (`preanalyst.analysis.opening`): with an empty conversation the browser calls the new `POST /analysis/{id}/opening`, which has the analyst read the pre-specification and ask the first real question, writes it onto the step and spends **no turn**; `409 ANALYSIS_ALREADY_OPENED` covers two pages opened together, checked again after the model has answered and before writing. `conversationOf` and `ask` accept a turn with no client message. The turns used are counted as the client's messages and no longer as half of them, which the opening would have made false. **The analyst's policy is rewritten**: who is on the other side (a person not of the trade, with little confidence with computers), the register (professional and not formal, the tu, never a word that genders the client), clarity (no jargon, nothing implied, always an example) and the aim — one subject per turn, carrying concrete points, to reach the end in as few turns as possible. **Both policies** gain what is an instruction to the model and what is not, and that `missing` and `reason` are its own words. **The validator receives a conversation**, not a flattened document: `dossierOf` becomes `materialOf` and returns messages with their roles, so `**Analyst:**` typed by the client is just text. Italian catalogue: out the forms that gender the reader. |
+| 2026-09-25 | 0.24.0 | **The analysis says when it is complete** (§14.3.3). `POST .../messages` answers with `ready` as well — the verdict of that turn, which is stored on the step and so survives a reload. When it is true the page shows a notice between the conversation and the field (`preanalyst.analysis.ready`) and the go button lights up; the notice and the button follow the verdict, so a later turn that reopens the questions puts them back. A send-back from the validator now forces `ready: false`: the second answer of that turn was not judged by anybody, and `ready` is what the page acts on. **The go button does something**: `GET /analysis/{id}/project` hands over the project's record in anagraphics as a file. It is a placeholder until the step after the analysis exists. |
 | 2026-09-24 | 0.23.0 | **The chat and the turns sit on the project** (§14.3.1), no longer in the browser. When the prevalidation passes, an `analysis` step is opened with `result: "open"` and `{turns_left, chat}` inside it; it is also opened when the page is opened if it is missing, for the projects born before. **The server counts the turn**: three new routes — `POST /analysis/{id}/messages` (the two messages and the turn taken off in a single write), `POST .../turns` (moves turns from the user's credit, with a refund if crediting the project does not succeed) and `POST .../turns/buy` (a fake purchase). Reloading the page no longer loses anything. The user's **credit** sits in `billing.turns_credit` on anagraphics: in the box of the exhausted turns, with credit the field for moving it is shown and the purchase is hidden, with no credit the field is off and the purchase is shown. If the turns come back, the field for writing comes back and the go goes off again. The counter shows the used and the total (used + remaining), not `max_turns`, which with bought turns is no longer the total of anything. It requires anagraphics 0.10.0. |
 | 2026-09-24 | 0.22.0 | **The summary and the turns** in the analysis page (§14.3). The page goes to two columns: the conversation and, next to it, a box that reads back from the project what was decided at submission time — the driver, the discount, the ambassador, the autonomous work — showing only what is there (`projectSummary()` in `src/server.js`, with `driverLinkOfProject()`). In the box, the **turn counter** and two buttons with no effect: «Scarica la conversazione» above and «Va bene così, procediamo!» `disabled`. **A turn is a question and its answer**, counted when the answer arrives. From `analysis.warn_from_turn` a small notice appears below the field with how many are left; at `analysis.max_turns` the field **is removed** and in its place comes a box proposing to buy more — with the button that for now does nothing — and saying that it is not compulsory and that by downloading the conversation, the chat included, one can go on alone with one's own AI agent. New configuration: `analysis.max_turns` (30) and `analysis.warn_from_turn` (20); there was no limit on the turns before. The count lives in the browser only: when the turns are real it will go on the pipeline's steps, like the `underspecified` rounds. |
 | 2026-09-24 | 0.21.0 | **An almost empty form is no longer refused.** A request with «a» inside it came back `non_sequitur` at 95% and ended up in REJECTED, final and with no appeal: the policy listed «an empty form» among the cases of `non_sequitur` and did not say which outcome won when the request says nothing. Now `scope-v1` writes the **precedence** out: `non_sequitur` requires something said that cannot be built, emptiness is `underspecified`, and between the two the one that asks again is chosen, because they do not cost the same (§16.2). **A revision of `underspecified`**: out goes the signal of length — «it is one line long» meant nothing, one line can be a whole request and pages of text can say none of it. One question is left: does the request say what the tool has to do? **The refusal modal has three texts** (§16.4): `out_of_scope` for `run_out_certain` («we are in all likelihood not the right tool»), `not_software` for `non_sequitur` — the only one talking about the service instead of about the request: webtools builds only small software, to be used in a browser, and not a moodboard, texts or an opinion — and `not_recognised` for the `underspecified` that ran out of rounds («the analysis tool cannot decipher your request»). A single text on a `non_sequitur` would make one believe that the request had been read and set aside on the merits. `rejectionCase()` in `src/server.js` reads the outcome from the last step. **After the login the submission starts again by itself** (`public/gate.js`, §6.1), like the upload: before, the modal closed and the page stayed still saying nothing. It does not start again if the login made the **autonomous work** choice appear, and in that case a notice lights up above the button. Checked: the same pre-specification that had been refused now gives `underspecified` at 1.00, and the five examples of `scripts/examples/` hold their outcome. |

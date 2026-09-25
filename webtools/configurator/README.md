@@ -15,6 +15,7 @@ cookie names…) lives in **one JSON file per subsystem**, in `configuration/`:
 | `configuration/workspaces.json` | webtools-workspaces |
 | `configuration/preanalyst.json` | the preanalyst |
 | `configuration/front-gate.json` | the front-gate |
+| `configuration/configurator-fe.json` | the configurator's front end |
 
 The files are **structured**: the fields are grouped by subject (`listen`, `access`,
 `subsystems_infos`, `session`, `limits`, …), they are not written flat. The `subsystem` field is
@@ -71,6 +72,20 @@ webtools/configurator/start.sh --restart     # loads the configuration and resta
 
 A running service goes on with the configuration read when it started: with no restart a change has
 no effect.
+
+## Looking at what is loaded
+
+`webtools/configurator-fe/` is the front end of this subsystem: a page that shows the configuration
+**as it is in Mongo**, subsystem by subsystem, with the values that come from `secrets/` masked. It
+is read-only — it changes nothing — and it is started on its own, not by `start.sh`:
+
+```sh
+webtools/configurator-fe/webtools_configurator_fe.sh --start   # then http://127.0.0.1:9500
+```
+
+It reads `GET /configuration` on anagraphics, which returns every document in the collection: the
+list of the subsystems that exist is there, so a subsystem whose file has been removed is shown as
+well. Its own documentation is `webtools/configurator-fe/README.md`.
 
 ## Starting and stopping everything
 
@@ -129,7 +144,7 @@ A name that does not exist exits with code 2 and prints the list of the ones ava
 | `i18n` | `i18n_deployer/deploy.sh` | `commons/i18n/webtools_i18n.js` and **all** the `commons/i18n/locales/*.json` catalogues | preanalyst, sso, front-gate (in `src/commons/i18n/`) |
 | `sso` | `sso_deployer/deploy.sh` | `commons/sso/sso_client.js` (the server) and `commons/sso/sso_popup.js` (the browser) | preanalyst |
 | `specs` | `specs_deployer/deploy.sh` | `commons/specs/spec_front_matter.js`, the specifications' front matter | preanalyst, webtools-workspaces (in `src/commons/`) |
-| `configuration` | `configuration_deployer/deploy.sh` | `commons/configuration/configuration_client.js`, the configuration's client | sso, webtools-workspaces, preanalyst, front-gate (in `src/commons/`) |
+| `configuration` | `configuration_deployer/deploy.sh` | `commons/configuration/configuration_client.js`, the configuration's client | sso, webtools-workspaces, preanalyst, front-gate, configurator-fe (in `src/commons/`) |
 
 The sso does **not** receive the sso's client: it is the service, not a consumer of it. In the same
 way anagraphics does not receive the configuration's client: it is the one serving it. The shared

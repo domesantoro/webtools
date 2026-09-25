@@ -1,15 +1,19 @@
 # webtools_preanalyst
 
 The **pre-analysis**: the page the client enters the flow from, and the specification rounds in
-`/analysis/{id}`. The conversation and the turns live on the project; the model's answer and the
-purchase of turns are still fake (§14.3.2 of the documentation).
+`/analysis/{id}`. The conversation and the turns live on the project; the analyst opens it with the
+first question. The purchase of turns is still fake (§14.3.2 of the documentation).
 Node, with **nunjucks** for the pages and **yaml** for the specifications' front matter.
 
 - `POST /submit`: the form creates the project (anagraphics) with its .md pre-specification
   (webtools-workspaces), has it **prevalidated** and sends the browser to `/analysis/{id}` — or to
   `/?rejected={id}` if the request does not pass the gate.
+- `POST /analysis/{id}/opening`: the analyst's first question, on a conversation that has not
+  begun. It writes it onto the project and spends no turn.
 - `POST /analysis/{id}/messages`, `.../turns`, `.../turns/buy`: one turn of the chat, moving turns
   from the user's credit, and the fake purchase.
+- `GET /analysis/{id}/project`: the project's record in anagraphics, as a file. It is what the go
+  button does until the step after the analysis exists.
 - `POST /upload`: a ready-made .md specification, with the `project_id` in the front matter, for a
   project of the user's.
 - `GET /projects/{id}/rejection.pdf`: the form data after a refusal.

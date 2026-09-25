@@ -1,0 +1,187 @@
+{#
+  The configuration as it is in Mongo, read-only.
+
+  One page: the general matters, then one section per subsystem. The template
+  prints what src/view.js worked out — it walks, it does not compute: no
+  arithmetic, no decision about what a value means.
+
+  The page shell is its own, not `commons/base.njk`: the shared shell asks for the
+  language and the translation of a page of the product, and this is a piece of
+  internal instrumentation, whose labels are system terms and stay in English like
+  the rest of what is internal. See README.md, "Why not the shared shell".
+
+  Expected: view (src/view.js buildView).
+#}<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>configuration — webtools</title>
+  <meta name="robots" content="noindex">
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+
+{% macro value(shown) -%}
+  {%- if shown.type == "secret" -%}
+    <span class="value secret">(secret{% if shown.text %}, {{ shown.text }}{% endif %})</span>
+  {%- elif shown.type == "string" -%}
+    <span class="value string">{{ shown.text }}</span>
+  {%- elif shown.type == "empty-string" -%}
+    <span class="value absent">(empty string)</span>
+  {%- elif shown.type == "number" -%}
+    <span class="value number">{{ shown.text }}</span>{% if shown.hint %}<span class="hint">{{ shown.hint }}</span>{% endif %}
+  {%- elif shown.type == "boolean" -%}
+    <span class="value boolean">{{ shown.text }}</span>
+  {%- elif shown.type == "null" -%}
+    <span class="value absent">null</span>
+  {%- elif shown.type == "list" -%}
+    <span class="value list">{% for item in shown.items %}<span class="item">{{ item }}</span>{% endfor %}</span>
+  {%- elif shown.type == "empty-list" -%}
+    <span class="value absent">(empty list)</span>
+  {%- elif shown.type == "empty-object" -%}
+    <span class="value absent">(no fields)</span>
+  {%- endif -%}
+{%- endmacro %}
+
+<header class="top">
+  <div class="wrap">
+    <span class="brand">webtools <span>configurator</span></span>
+    <span class="read-at">read at {{ view.readAt }}</span>
+  </div>
+</header>
+
+<nav class="index">
+  <div class="wrap">
+    <a href="#general">general matters</a>
+    {%- for subsystem in view.subsystems %}
+    <a href="#{{ subsystem.anchor }}">{{ subsystem.name }}</a>
+    {%- endfor %}
+  </div>
+</nav>
+
+<main class="wrap">
+
+  {%- if view.failure %}
+  <section class="failure">
+    <h2>The configuration was not read</h2>
+    <p class="detail">{{ view.failure }}</p>
+    <p>Nothing below it is shown. The page reads anagraphics, which serves what is in Mongo.</p>
+  </section>
+  {%- endif %}
+
+  <section id="general">
+    <h2>General matters</h2>
+
+    <h3>Bootstrap</h3>
+    <p class="note">The <code>WEBTOOLS_*</code> variables this process received. They are not
+      configuration: they are what reaches it. Their source is
+      <code>webtools/configurator/bootstrap.env</code>.</p>
+    {%- if view.bootstrap.length %}
+    <table class="grid">
+      <tbody>
+        {%- for variable in view.bootstrap %}
+        <tr><th>{{ variable.name }}</th><td><span class="value string">{{ variable.value }}</span></td></tr>
+        {%- endfor %}
+      </tbody>
+    </table>
+    {%- else %}
+    <p class="absent">No <code>WEBTOOLS_*</code> variable in this process's environment.</p>
+    {%- endif %}
+
+    <h3>Subsystems</h3>
+    {%- if view.subsystems.length %}
+    <table class="grid">
+      <thead><tr><th>subsystem</th><th>listens on</th><th>fields</th><th>secret</th></tr></thead>
+      <tbody>
+        {%- for subsystem in view.subsystems %}
+        <tr>
+          <td><a href="#{{ subsystem.anchor }}">{{ subsystem.name }}</a></td>
+          <td>{% if subsystem.listen %}<span class="value string">{{ subsystem.listen }}</span>{% else %}<span class="absent">—</span>{% endif %}</td>
+          <td class="number-cell">{{ subsystem.leaves }}</td>
+          <td class="number-cell">{% if subsystem.secrets %}{{ subsystem.secrets }}{% else %}<span class="absent">—</span>{% endif %}</td>
+        </tr>
+        {%- endfor %}
+      </tbody>
+    </table>
+    {%- elif not view.failure %}
+    <p class="absent">The <code>configuration</code> collection holds no document.</p>
+    {%- endif %}
+
+    <h3>Shared values</h3>
+    <p class="note">Leaves that more than one subsystem holds with the same value. A path held with
+      different values is not here: that is a divergence, not a shared value.</p>
+    {%- if view.shared.length %}
+    <table class="grid">
+      <thead><tr><th>path</th><th>value</th><th>in</th></tr></thead>
+      <tbody>
+        {%- for entry in view.shared %}
+        <tr>
+          <th>{{ entry.path }}</th>
+          <td>{{ value(entry.value) }}</td>
+          <td class="who">{% for name in entry.subsystems %}<span class="item">{{ name }}</span>{% endfor %}</td>
+        </tr>
+        {%- endfor %}
+      </tbody>
+    </table>
+    {%- else %}
+    <p class="absent">No leaf is held with the same value by more than one subsystem.</p>
+    {%- endif %}
+
+    <h3>Secrets</h3>
+    {%- if view.secrets.available %}
+    <p class="note">A field is shown as <span class="value secret">(secret)</span> when it comes from
+      <code>webtools/configurator/secrets/</code>, which <code>load_configuration.sh</code>
+      deep-merges into the configuration. The values are not read by this page.</p>
+    {%- else %}
+    <p class="warning">The secrets folder was not read: <code>{{ view.secrets.reason }}</code>.
+      No field is marked as secret — which does not mean there are none in Mongo.</p>
+    {%- endif %}
+    {%- if view.secrets.problems.length %}
+    <ul class="warning">
+      {%- for problem in view.secrets.problems %}
+      <li>{{ problem }}</li>
+      {%- endfor %}
+    </ul>
+    {%- endif %}
+    {%- if view.secrets.orphans.length %}
+    <p class="warning">Secrets files with no configuration to merge into:
+      {% for name in view.secrets.orphans %}<code>{{ name }}</code>{% endfor %}.</p>
+    {%- endif %}
+  </section>
+
+  {%- for subsystem in view.subsystems %}
+  <section id="{{ subsystem.anchor }}">
+    <h2>{{ subsystem.name }}</h2>
+    <p class="meta">
+      {% if subsystem.listen %}listens on {{ subsystem.listen }} · {% endif %}{{ subsystem.leaves }} fields{% if subsystem.secrets %} · {{ subsystem.secrets }} secret{% endif %}
+    </p>
+    {%- if subsystem.secretsNotInMongo.length %}
+    <p class="warning">Declared in the secrets file and not in Mongo:
+      {% for path in subsystem.secretsNotInMongo %}<code>{{ path }}</code>{% endfor %}.
+      Usually <code>load_configuration.sh</code> has not been run since the file was written.</p>
+    {%- endif %}
+    <div class="tree">
+      {%- for row in subsystem.rows %}
+      <div class="row {{ row.kind }}" style="--depth: {{ row.depth }}">
+        <span class="key">{{ row.key }}</span>
+        {%- if row.kind == "branch" %}
+        <span class="size">{{ row.size }}</span>
+        {%- else %}
+        {{ value(row.value) }}
+        {%- endif %}
+      </div>
+      {%- endfor %}
+    </div>
+  </section>
+  {%- endfor %}
+
+  <footer>
+    <p>Read-only. The configuration that lives is in Mongo; the files in
+      <code>webtools/configurator/configuration/</code> are the seed. To change a value:
+      edit the file and run <code>webtools/configurator/load_configuration.sh</code>, which adds
+      only the missing fields, then restart whoever reads it.</p>
+  </footer>
+</main>
+</body>
+</html>

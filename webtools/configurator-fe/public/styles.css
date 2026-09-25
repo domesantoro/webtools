@@ -1,0 +1,170 @@
+/* ==========================================================
+   configurator-fe — the configuration, read-only
+
+   Self-contained: it does not receive commons.css from the style deployer, and
+   it does not load the project's font files. This is instrumentation, read on
+   one machine: it takes the shared palette so it does not look foreign, and the
+   system fonts so it has nothing to distribute.
+
+   Dense on purpose: the point is seeing a lot of configuration at once.
+   ========================================================== */
+
+:root {
+  --paper: #f4efe6;
+  --surface: #fbf8f2;
+  --ink: #1c1b18;
+  --muted: #5e5a52;
+  --muted-2: #7a7468;
+  --line: #d8cfbf;
+  --line-strong: #b9ae9b;
+  --accent: #d1411f;
+  --sage: #3f7d5a;
+  --sage-soft: #dbe8dd;
+  --note: #f5e2a0;
+
+  --sans: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--sans);
+  font-size: 14px;
+  line-height: 1.55;
+}
+.wrap { width: min(calc(100% - 40px), 1100px); margin-inline: auto; }
+code { font-family: var(--mono); font-size: .92em; background: var(--surface); border: 1px solid var(--line); border-radius: 4px; padding: 0 4px; }
+
+/* ---------- header and index ---------- */
+.top {
+  background: var(--ink);
+  color: var(--surface);
+  padding: 14px 0;
+}
+.top .wrap { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+.brand { font-weight: 650; letter-spacing: -.01em; }
+.brand span { font-family: var(--mono); font-size: 11px; text-transform: uppercase; letter-spacing: .08em; opacity: .7; margin-left: 8px; }
+.read-at { font-family: var(--mono); font-size: 12px; opacity: .75; }
+
+.index {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: var(--surface);
+  border-bottom: 1.5px solid var(--ink);
+}
+.index .wrap { display: flex; flex-wrap: wrap; gap: 4px 18px; padding: 9px 0; }
+.index a {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--muted);
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+}
+.index a:hover { color: var(--accent); border-bottom-color: var(--accent); }
+
+/* ---------- sections ---------- */
+main { padding: 28px 0 64px; }
+section { margin-bottom: 40px; scroll-margin-top: 48px; }
+h2 {
+  font-size: 19px;
+  margin: 0 0 4px;
+  padding-bottom: 6px;
+  border-bottom: 1.5px solid var(--ink);
+  font-family: var(--mono);
+  font-weight: 650;
+}
+h3 { font-size: 13px; margin: 26px 0 8px; text-transform: uppercase; letter-spacing: .07em; color: var(--muted); }
+p { margin: 8px 0; }
+.note, .meta { color: var(--muted); font-size: 13px; }
+.meta { font-family: var(--mono); font-size: 12px; margin-top: 6px; }
+.absent { color: var(--muted-2); font-style: italic; }
+.warning {
+  background: var(--note);
+  border: 1px solid var(--line-strong);
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-size: 13px;
+}
+ul.warning { margin: 8px 0; padding-left: 28px; }
+.failure {
+  background: var(--surface);
+  border: 1.5px solid var(--accent);
+  border-radius: 8px;
+  padding: 14px 18px;
+}
+.failure h2 { border: 0; color: var(--accent); padding: 0; }
+.failure .detail { font-family: var(--mono); font-size: 13px; word-break: break-all; }
+
+/* ---------- tables ---------- */
+table.grid { border-collapse: collapse; width: 100%; margin: 8px 0 4px; }
+table.grid th, table.grid td { text-align: left; vertical-align: top; padding: 5px 10px; border-bottom: 1px solid var(--line); }
+table.grid thead th {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  color: var(--muted);
+  border-bottom: 1.5px solid var(--line-strong);
+  font-weight: 600;
+}
+table.grid tbody th { font-family: var(--mono); font-weight: 500; white-space: nowrap; width: 1%; }
+table.grid td a { color: var(--accent); font-family: var(--mono); }
+.number-cell { font-family: var(--mono); text-align: right; width: 1%; }
+.who { width: 1%; white-space: nowrap; }
+
+/* ---------- the tree ---------- */
+.tree {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 8px 0;
+  margin-top: 10px;
+}
+.row {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 2px 14px 2px calc(14px + var(--depth) * 20px);
+}
+.row:hover { background: var(--paper); }
+.row .key { font-family: var(--mono); font-size: 13px; }
+.row.branch .key { font-weight: 600; }
+.row.branch .size { font-family: var(--mono); font-size: 11px; color: var(--muted-2); }
+.row.branch::after {
+  content: "";
+  flex: 1;
+  border-bottom: 1px dotted var(--line-strong);
+  transform: translateY(-3px);
+}
+.row.leaf .key { color: var(--muted); }
+.row.leaf .key::after { content: ":"; color: var(--muted-2); }
+
+/* ---------- values ---------- */
+.value { font-family: var(--mono); font-size: 13px; overflow-wrap: anywhere; }
+.value.string { color: var(--ink); }
+.value.number { color: var(--accent); }
+.value.boolean { color: var(--sage); font-weight: 600; }
+.value.absent, .absent .value { color: var(--muted-2); font-style: italic; }
+.value.secret {
+  color: var(--muted);
+  background: var(--note);
+  border: 1px solid var(--line-strong);
+  border-radius: 4px;
+  padding: 0 6px;
+}
+.value.list { display: inline-flex; flex-wrap: wrap; gap: 4px; }
+.item {
+  font-family: var(--mono);
+  font-size: 12px;
+  background: var(--sage-soft);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 0 6px;
+}
+.hint { font-family: var(--mono); font-size: 12px; color: var(--muted-2); margin-left: 8px; }
+.hint::before { content: "= "; }
+
+footer { border-top: 1px solid var(--line); padding-top: 14px; color: var(--muted); font-size: 13px; }

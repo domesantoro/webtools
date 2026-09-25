@@ -653,6 +653,83 @@ async function readJsonBody(request, response, settings, fail) {
   }
 }
 
+// `POST /analysis/{id}/opening` — the first question.
+//
+// **The analyst speaks first.** Whoever lands on this page has just answered a
+// form and has nothing to say yet: a chat that opens with a greeting and an empty
+// field is a chat nobody knows how to begin. So the first message is a real
+// question, asked by the analyst after reading the pre-specification.
+//
+// **It does not spend a turn.** A turn is a question and its answer, and here
+// nobody has answered anything. What it costs is one call to the model, once per
+// analysis: the question is written onto the step, and from then on it is read
+// back from there — a reload pays nothing.
+//
+// If the conversation has already begun, this answers `409 ANALYSIS_ALREADY_OPENED`.
+// That is not an error of the caller: it is a page whose view of the conversation
+// is older than the conversation, and reloading it shows what is really there.
+async function receiveChatOpening(request, projectId, settings, response, ui) {
+  const { answer, fail } = jsonReplier(response);
+
+  const context = await chatContext(request, projectId, settings, fail);
+  if (!context) return;
+
+  if ((context.step.data?.chat ?? []).length > 0) return fail(409, "ANALYSIS_ALREADY_OPENED");
+
+  // The form's answers: they are all the analyst has to go on here, and without
+  // them the first question would be a question about nothing.
+  const spec = await latestSpec(settings, projectId);
+  if (!spec.ok) {
+    console.error(`[preanalyst] specification of ${projectId} not read: ${spec.reason}`);
+    return fail(503, "WORKSPACES_UNAVAILABLE");
+  }
+
+  const opening = await ask(settings, {
+    spec: spec.data,
+    chat: [],
+    turnsLeft: Number(context.step.data?.turns_left ?? 0),
+    language: ui.locale,
+    opening: true,
+  });
+  if (!opening.ok) {
+    console.error(`[preanalyst] opening of ${projectId}: ${opening.reason}`);
+    return fail(503, "ANALYST_UNAVAILABLE");
+  }
+
+  // Two pages opened together both arrive here with an empty chat and both call
+  // the model. The project is read again before writing: whoever got there first
+  // keeps the question, and this one is thrown away. Two openings would be two
+  // different first questions in the same conversation.
+  const again = await findProject(settings, projectId);
+  if (again.ok && (openAnalysisOf(again.data)?.data?.chat ?? []).length > 0) {
+    console.warn(`[preanalyst] opening of ${projectId} written by somebody else first: this one dropped`);
+    return fail(409, "ANALYSIS_ALREADY_OPENED");
+  }
+
+  const stored = await updateOpenStep(settings, projectId, "analysis", {
+    set: { missing: opening.data.missing, ready: opening.data.ready },
+    push: {
+      chat: [
+        {
+          role: "system",
+          text: opening.data.message,
+          at: new Date().toISOString(),
+          model: opening.data.model,
+          usage: opening.data.usage,
+          reason: opening.data.reason,
+        },
+      ],
+    },
+  });
+  if (!stored.ok) {
+    console.error(`[preanalyst] opening not recorded on project ${projectId}: ${stored.reason}`);
+    return fail(503, "ANAGRAPHICS_UNAVAILABLE");
+  }
+
+  console.log(`[preanalyst] opening written on ${projectId}`);
+  return answer(200, { reply: opening.data.message });
+}
+
 // `POST /analysis/{id}/messages` — one turn of the chat.
 //
 // The turn is counted by **the server**, not the browser: the conversation and the
@@ -716,6 +793,10 @@ async function receiveChatMessage(request, projectId, settings, response, ui) {
           return fail(503, "ANALYST_UNAVAILABLE");
         }
         turnAnswer = again;
+        // The send-back was not judged: the validator ruled on the answer before
+        // it. Whatever the analyst proposes now, nothing has established that the
+        // analysis is complete this turn, and `ready` is what the page acts on.
+        turnAnswer.data.ready = false;
       }
     } else {
       // The judgement did not come. The conversation does not close on a claim
@@ -759,7 +840,9 @@ async function receiveChatMessage(request, projectId, settings, response, ui) {
   }
 
   console.log(`[preanalyst] chat turn on ${projectId}: ${left - 1} left`);
-  return answer(200, { reply, turns_left: left - 1 });
+  // `ready` is the verdict of this turn, not a door that stays open: it is what is
+  // stored on the step, and the page shows what the step says.
+  return answer(200, { reply, turns_left: left - 1, ready: Boolean(turnAnswer.data.ready) });
 }
 
 // `POST /analysis/{id}/turns` — moves turns from the user's credit to the project.
@@ -803,6 +886,36 @@ async function receiveTurnsFromCredit(request, projectId, settings, response) {
   const credit = Number(spent.data.billing?.turns_credit ?? 0);
   console.log(`[preanalyst] ${howMany} turns from ${uid}'s credit to project ${projectId}: now ${left}`);
   return answer(200, { turns_left: left, credit });
+}
+
+// `GET /analysis/{id}/project` — the project's record in anagraphics, as it is
+// now, to be saved as a file.
+//
+// TODO(placeholder): this is what the go button does **until it has a job of its
+// own**. Going on with the analysis is a step of the pipeline, and that step does
+// not exist yet; a button that does nothing is worse than a button that hands over
+// what the system knows. When the real move arrives, this route stays or goes with
+// whoever still wants the file — it is not part of the move.
+//
+// What comes out is the document anagraphics returns, not a shape invented here:
+// whoever reads the file is reading the project, and a summary of our own would be
+// one more thing to keep in step with it.
+async function serveProjectRecord(request, projectId, settings, response) {
+  const { fail } = jsonReplier(response);
+
+  const context = await chatContext(request, projectId, settings, fail);
+  if (!context) return;
+
+  const body = JSON.stringify(context.project, null, 2);
+  response.writeHead(200, {
+    "content-type": "application/json; charset=utf-8",
+    "content-length": Buffer.byteLength(body),
+    // The browser saves it instead of showing it, and the name carries the project
+    // it belongs to: these files end up in a downloads folder among others.
+    "content-disposition": `attachment; filename="webtools-project-${projectId}.json"`,
+    "cache-control": "no-store",
+  });
+  response.end(body);
 }
 
 // TODO(mock): remove when the real payment exists.
@@ -962,6 +1075,10 @@ async function serveAnalysis(request, projectId, settings, response, ui) {
     chat: {
       messages: step.data?.chat ?? [],
       turnsLeft: Number(step.data?.turns_left ?? 0),
+      // Whether the analysis has been judged complete. It lives on the step like
+      // the turns, so a reload finds it again; a step that has never got there has
+      // no `ready` at all, which is not a `false` someone decided.
+      ready: Boolean(step.data?.ready),
       credit: await turnsCredit(settings, session.session.username),
     },
   }));
@@ -1165,6 +1282,10 @@ export function createServer(settings) {
       if (request.method === "POST" && message) {
         return await receiveChatMessage(request, message[1], settings, response, ui);
       }
+      const opening = /^\/analysis\/([^/]+)\/opening$/.exec(url.pathname);
+      if (request.method === "POST" && opening) {
+        return await receiveChatOpening(request, opening[1], settings, response, ui);
+      }
       const purchase = /^\/analysis\/([^/]+)\/turns\/buy$/.exec(url.pathname);
       if (request.method === "POST" && purchase) {
         return await receiveTurnsPurchase(request, purchase[1], settings, response);
@@ -1175,6 +1296,11 @@ export function createServer(settings) {
       }
       if (request.method !== "GET") {
         return send(response, 405, "text/plain; charset=utf-8", "Method not allowed");
+      }
+
+      const record = /^\/analysis\/([^/]+)\/project$/.exec(url.pathname);
+      if (record) {
+        return await serveProjectRecord(request, record[1], settings, response);
       }
 
       if (url.pathname === "/") {

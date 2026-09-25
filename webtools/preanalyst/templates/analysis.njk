@@ -5,10 +5,15 @@
   The analysis page: the specification rounds, one message at a time, with the
   summary of what was settled when the request set off next to them.
 
-  TODAY ONLY THE ANSWER IS FAKE: the server picks it from a fixed list in the
-  catalogue. Everything else is real — the conversation and the turns live on the
-  open step of the project's pipeline, the credit on the user's record, and
-  reloading the page loses nothing.
+  The conversation and the turns live on the open step of the project's pipeline,
+  the credit on the user's record, and reloading the page loses nothing.
+
+  **The analyst speaks first.** There is no opening message written here: whoever
+  arrives has just answered a form and has nothing to say yet, so with an empty
+  conversation the browser asks `POST /analysis/{id}/opening` and the first real
+  question comes back from the analyst. It is written onto the step like any other
+  message, which is why the loop below prints it on a reload without anything
+  special.
 
   The turns — a question and its answer — are counted by the server. When
   `chat.warn_when_left` are left the warning appears; at zero the field for writing
@@ -23,8 +28,9 @@
   are already here, switched off: the JavaScript switches them on and writes no
   text.
 
-  Without JavaScript the page stays readable — heading, first message, field,
-  summary — but nothing is sent: the conversation lives in the browser.
+  Without JavaScript the page stays readable — heading, the conversation as it
+  stands, field, summary — but nothing is sent, and on a conversation that has not
+  begun there is nothing to read yet: the first question is asked by the browser.
 #}
 
 {% block header_extra %}
@@ -52,10 +58,6 @@
           {#- `aria-live`: a message that arrives on its own must be announced, or
               whoever is not looking at the screen does not know it came. #}
           <ol class="chat-log" data-chat-log aria-live="polite">
-            <li class="chat-turn chat-turn-system">
-              <div class="chat-who">{{ t("preanalyst.analysis.system") }}</div>
-              <div class="chat-bubble"><p class="chat-text">{{ t("preanalyst.analysis.opening") }}</p></div>
-            </li>
 {%- for messaggio in chat.messages %}
             <li class="chat-turn chat-turn-{{ "client" if messaggio.role == "client" else "system" }}">
               <div class="chat-who">{{ t("preanalyst.analysis.you") if messaggio.role == "client" else t("preanalyst.analysis.system") }}</div>
@@ -63,6 +65,18 @@
             </li>
 {%- endfor %}
           </ol>
+
+          {#- The analysis has been judged complete: the analyst proposed to close
+              and `src/analysis_validator.js` agreed. It is a notice, not the end
+              of anything — whoever has turns left goes on writing if there is
+              something to add, and the verdict is that of the last turn, so it
+              goes away again if a later turn reopens the questions.
+
+              `hidden` is decided by the server: the verdict lives on the step, and
+              a page reloaded after it must open with the notice already there. #}
+          <p class="chat-ready" data-chat-ready{% if not chat.ready %} hidden{% endif %}>
+            {{- t("preanalyst.analysis.ready") }}
+          </p>
 
           <p class="chat-waiting" data-chat-waiting hidden>
             <span class="chat-dots" aria-hidden="true"><i></i><i></i><i></i></span>
@@ -176,9 +190,14 @@
               <dd>{{ t_html("preanalyst.analysis.turns.value", { used: chat.used, max: chat.total }) }}</dd>
             </dl>
 
+            {#- The go button is born `disabled` and stays so without JavaScript:
+                what it does lives there. `public/analysis.js` switches it on when
+                the analysis has been judged complete, or when the turns have run
+                out — the two roads out of the conversation. #}
             <div class="chat-aside-actions">
               <button class="btn" type="button" data-chat-download>{{ t("preanalyst.analysis.summary.download") }}</button>
               <button class="btn btn-primary" type="button" data-chat-go disabled>{{ t("preanalyst.analysis.summary.go") }}</button>
+              <p class="chat-error" data-chat-go-error hidden>{{ t("preanalyst.analysis.error") }}</p>
             </div>
           </div>
         </aside>
