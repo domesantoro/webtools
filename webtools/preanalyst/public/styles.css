@@ -304,18 +304,6 @@
 }
 .chat-lead { color: var(--muted); margin: 0; font-size: 17px; }
 
-/* The notice that the answers are fake. It goes away with the mock. */
-.chat-mock-note {
-  margin: 16px 0 0;
-  padding: 9px 13px;
-  border: 1.5px dashed var(--line-strong);
-  border-radius: var(--radius-sm);
-  background: var(--note);
-  color: var(--ink-2);
-  font-size: 13px;
-  line-height: 1.45;
-}
-
 /* Two columns: the conversation and, next to it, the project's summary. The same
    arrangement as the form's page, with the right-hand column a little narrower. */
 .chat-layout {

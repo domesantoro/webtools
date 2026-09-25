@@ -194,17 +194,6 @@
         "credit_invalid": "Say how many turns to add: a whole number, at least 1.",
         "use_credit": "Add to the project"
       },
-      "mock": {
-        "notice": "Test page: the answers are fake, picked at random from a fixed list. There is no analysis behind them.",
-        "replies": {
-          "1": "Who will use the tool besides you? It matters whether everyone sees the same things or each person should only see their own part.",
-          "2": "When you record an entry, what do you write down every time? List it as it comes to mind, in any order.",
-          "3": "Do you already keep this somewhere — a sheet, a notebook, another program? If so, tell me what shape it is in: starting from scratch is not the same as starting from data that already exists.",
-          "4": "You mentioned searching: do you search by name, by date, by category? And do you need to find the single entry or the list of the ones like it?",
-          "5": "What happens to an entry once it is closed? Does it leave the list, stay with a mark, or move to a history you look at separately?",
-          "6": "Is there anything the tool should not do? Everything you rule out now is one round of questions less."
-        }
-      },
       "error": "The operation could not be completed. Please try again."
     },
     "login_done": {

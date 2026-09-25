@@ -194,17 +194,6 @@
         "credit_invalid": "Indica quanti turni aggiungere: un numero intero, almeno 1.",
         "use_credit": "Aggiungi al progetto"
       },
-      "mock": {
-        "notice": "Pagina di prova: le risposte sono finte, prese a caso da un elenco fisso. Dietro non c'è nessuna analisi.",
-        "replies": {
-          "1": "Chi userà lo strumento oltre a te? Serve sapere se tutti vedono le stesse cose o se ognuno deve vedere solo la sua parte.",
-          "2": "Quando registri una voce, quali informazioni scrivi ogni volta? Elencale come ti vengono, anche in disordine.",
-          "3": "Queste informazioni le tieni già da qualche parte — un foglio, un quaderno, un altro programma? Se sì, dimmi che forma hanno: cambia se si parte da zero o da dati che esistono già.",
-          "4": "Hai detto che vuoi cercare: cerchi per nome, per data, per categoria? E ti serve trovare la singola voce o l'elenco di quelle che le somigliano?",
-          "5": "Che cosa succede a una voce quando è chiusa? Sparisce dall'elenco, resta con un segno, o finisce in uno storico che si guarda a parte?",
-          "6": "C'è qualcosa che lo strumento non deve fare? Ogni cosa che escludi ora è un giro di domande in meno."
-        }
-      },
       "error": "Non è stato possibile completare l'operazione. Riprova."
     },
     "login_done": {

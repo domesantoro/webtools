@@ -90,7 +90,7 @@ when we leave localhost.
 
 ## 5. The prevalidator sits inside the preanalyst
 
-_Opened on 2026-09-23. Concerns: the preanalyst — `src/ai/`, `src/prevalidator.js`._
+_Opened on 2026-09-23. Concerns: the preanalyst — `src/prevalidator_ai/`, `src/prevalidator.js`._
 
 **How it is now.** The AI module and the prevalidation's policy live inside the preanalyst. The
 provider is interchangeable, the subsystem is not.
@@ -101,7 +101,7 @@ same register. The next gates — the analysis' validation, the drivers' pooling
 will do the same things again: if each of them rewrites them at home, the register of the decisions
 does not exist.
 
-**To weigh up.** When it is worth extracting `src/ai/` into a subsystem; whether the second gate is
+**To weigh up.** When it is worth extracting `src/prevalidator_ai/` into a subsystem; whether the second gate is
 already the right moment; what stays in the subsystem (the policy) and what leaves it (the
 transport).
 
@@ -203,7 +203,7 @@ ran it was fine: now they are five and one calls a provider that charges.
 
 ## 8. The policy's cache does not switch on
 
-_Opened on 2026-09-23. Concerns: the preanalyst — `src/ai/providers/anthropic.js`, §16.1 of the
+_Opened on 2026-09-23. Concerns: the preanalyst — `src/prevalidator_ai/providers/anthropic.js`, §16.1 of the
 README._
 
 **How it is now.** Every prevalidation sends the provider two things: the **policy**, which is

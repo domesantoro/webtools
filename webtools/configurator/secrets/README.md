@@ -10,7 +10,8 @@ writing the document into Mongo: the subsystem reads a single configuration from
 `GET /configuration/{subsystem}` and does not know that a piece of it was secret.
 
 Deep-merging means that the secret adds its keys without deleting the others:
-`ai.providers.anthropic.api_key` sits beside `ai.providers.anthropic.model`, it
+`prevalidation.providers.anthropic.api_key` sits beside
+`prevalidation.providers.anthropic.model`, it
 does not replace it.
 
 This folder is in `.gitignore`, except this README and the `*.example` files.

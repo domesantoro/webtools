@@ -42,7 +42,9 @@ import * as anthropic from "./providers/anthropic.js";
 // configuration chooses among these, it does not name a module to load.
 const PROVIDERS = { [anthropic.NAME]: anthropic };
 
-// The `ai` settings, read at startup from the configuration document.
+// The settings of this engine, read at startup from `base` — the part of the
+// configuration document this engine owns. Which part that is, is the caller's
+// to say and not this module's to assume.
 //   → { provider, timeoutMs, configuration }
 //
 // **Only the selected provider's section is read**, and therefore only that one
@@ -50,34 +52,34 @@ const PROVIDERS = { [anthropic.NAME]: anthropic };
 // the keys of the others. The provider reads it itself, so this function does not
 // know which fields exist down there.
 //
-// An unknown `ai.provider` throws here, like any other wrong field: the server
-// does not start. It used to start and fail on the first client's prevalidation,
+// An unknown provider throws here, like any other wrong field: the server does
+// not start. It used to start and fail on the first client's prevalidation,
 // which is a configuration mistake discovered by whoever is least able to fix it.
-export function loadAiSettings(configuration) {
-  const provider = configuration.string("ai.provider");
+export function loadPrevalidatorAiSettings(configuration, base) {
+  const provider = configuration.string(`${base}.provider`);
   const module = PROVIDERS[provider];
   if (!module) {
     const known = Object.keys(PROVIDERS).join(", ");
     throw new ConfigurationError(
-      `configuration of ${configuration.subsystem}: ai.provider must be one of ${known}, found ${JSON.stringify(provider)}`,
+      `configuration of ${configuration.subsystem}: ${base}.provider must be one of ${known}, found ${JSON.stringify(provider)}`,
     );
   }
   return {
     provider,
     // The cut-off of the call, the same for every provider: it is how long the
     // user is left standing in front of a page, not a property of the model.
-    timeoutMs: configuration.integer("ai.timeout_ms", { min: 1 }),
-    configuration: module.readConfiguration(configuration),
+    timeoutMs: configuration.integer(`${base}.timeout_ms`, { min: 1 }),
+    configuration: module.readConfiguration(configuration, base),
   };
 }
 
 export async function decide(ai, { instructions, document, schema }) {
   const module = PROVIDERS[ai.provider];
-  // `loadAiSettings` has already refused to start with an unknown provider, so
+  // `loadPrevalidatorAiSettings` has already refused to start with an unknown provider, so
   // this is a net and not a check. It stays: the settings could be built by
   // other hands one day, and answering `unknown_provider` costs one line.
   if (!module) {
-    console.error(`[ai] unknown provider: ${ai.provider}`);
+    console.error(`[prevalidator_ai] unknown provider: ${ai.provider}`);
     return { ok: false, reason: "unknown_provider" };
   }
   return module.decide(ai, { instructions, document, schema });

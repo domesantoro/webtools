@@ -4,7 +4,8 @@
 // start.
 
 import { loadConfiguration } from "./commons/configuration_client.js";
-import { loadAiSettings } from "./ai/webtools_ai.js";
+import { loadPrevalidatorAiSettings } from "./prevalidator_ai/webtools_prevalidator_ai.js";
+import { loadAnalystAiSettings } from "./analyst_ai/webtools_analyst_ai.js";
 import { loadI18n } from "./commons/i18n/webtools_i18n.js";
 
 export async function loadSettings() {
@@ -48,15 +49,14 @@ export async function loadSettings() {
     // How much text is accepted in an open answer. A long story fits in a few
     // thousand characters: beyond that it is a wrong paste, not an answer.
     answerMaxChars: configuration.integer("form.answer_max_chars", { min: 1 }),
-    // The AI module: which provider is used and how it is reached. What a
-    // provider needs is read by the provider itself, and only for the one that
-    // `ai.provider` selects: see src/ai/webtools_ai.js. Secrets included — the
-    // keys are merged into the configuration at load time
-    // (configurator/secrets/preanalyst.json), so down there they are fields like
-    // any other, and if one is missing the server does not start.
-    ai: loadAiSettings(configuration),
     // The first gate: see src/prevalidator.js.
     prevalidation: {
+      // Its AI, which is its own structure: src/prevalidator_ai/. What a provider
+      // needs is read by the provider itself, and only for the one selected.
+      // Secrets included — the keys are merged into the configuration at load
+      // time (configurator/secrets/preanalyst.json), so down there they are
+      // fields like any other, and if one is missing the server does not start.
+      ai: loadPrevalidatorAiSettings(configuration, "prevalidation"),
       // Which policy is used. The file lives in policies/, a copy generated from
       // the original in configurator/policies/.
       policy: configuration.string("prevalidation.policy"),
@@ -73,6 +73,32 @@ export async function loadSettings() {
       // Whether the extended reason for the refusal ends up in the PDF for
       // non-drivers too. Drivers see it anyway.
       rejectionReasonInPdf: configuration.boolean("prevalidation.rejection_reason_in_pdf"),
+    },
+    // The chat's AI, which is **not** the prevalidator's: another structure,
+    // another door (src/analyst_ai/), another provider, another key. One can run
+    // on one provider and the other on a different one, and neither knows.
+    //
+    // Two engines, each with its own configuration: the analyst conducts the
+    // conversation, the validator judges whether what came out of it is an
+    // analysis. The analyst is not asked to grade itself.
+    analyst: {
+      conversation: {
+        ai: loadAnalystAiSettings(configuration, "analyst.conversation"),
+        // Which policy the analyst follows. The file lives in policies/, a copy
+        // generated from the original in configurator/policies/.
+        policy: configuration.string("analyst.conversation.policy"),
+        // How long a message to the client may be. Not a rule for the model —
+        // the policy asks for one question — but a ceiling on what reaches the
+        // page.
+        messageMaxChars: configuration.integer("analyst.conversation.message_max_chars", { min: 1 }),
+      },
+      validation: {
+        ai: loadAnalystAiSettings(configuration, "analyst.validation"),
+        policy: configuration.string("analyst.validation.policy"),
+        // Every axis must be above this for a `pass` the model asked for to
+        // become a `pass`: the weakest one decides. See src/analysis_validator.js.
+        passThreshold: configuration.number("analyst.validation.pass_threshold", { min: 0, max: 1 }),
+      },
     },
     // The specification rounds in /analysis/{id}: see §14.3 of the documentation.
     analysis: {

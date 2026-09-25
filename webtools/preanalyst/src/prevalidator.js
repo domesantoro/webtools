@@ -44,7 +44,7 @@
 import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 
-import { decide } from "./ai/webtools_ai.js";
+import { decide } from "./prevalidator_ai/webtools_prevalidator_ai.js";
 
 const POLICIES_DIR = fileURLToPath(new URL("../policies/", import.meta.url));
 
@@ -168,7 +168,7 @@ export async function prevalidate(settings, spec) {
   const { policy, specMaxChars } = settings.prevalidation;
   const instructions = await readPolicy(policy);
 
-  const answer = await decide(settings.ai, {
+  const answer = await decide(settings.prevalidation.ai, {
     instructions,
     // The cut is a safety net, not a check: the open answers are already limited
     // at submission time (`form.answer_max_chars`).
@@ -200,7 +200,7 @@ export async function prevalidate(settings, spec) {
       },
       reason: String(output.reason ?? ""),
       policy,
-      provider: settings.ai.provider,
+      provider: settings.prevalidation.ai.provider,
       model,
       usage,
     },

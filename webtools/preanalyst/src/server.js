@@ -43,13 +43,14 @@ import {
 } from "./commons/sso_client.js";
 import { driverLinkOfProject, NONE, resolveDriverLink, withoutOwnLink } from "./driver_link.js";
 import {
-  mockReplies,
   renderAccessFragments,
   renderAnalysis,
   renderLoginDone,
   renderMessage,
   renderPage,
 } from "./page.js";
+import { ask } from "./analyst.js";
+import { validate } from "./analysis_validator.js";
 import { readAnswers, renderPrespec } from "./prespec.js";
 import { prevalidate, verdict } from "./prevalidator.js";
 import { linkTermsOf } from "./project_driver.js";
@@ -658,9 +659,15 @@ async function readJsonBody(request, response, settings, fail) {
 // remaining turns live on the project's open step, and whoever reloads the page
 // finds again what was there. A message with no turns left is not accepted.
 //
-// THE ANSWER IS STILL FAKE: `mockReplies` picks it from the language catalogue.
-// What is real is everything else — the turn spent, the chat written, the round
-// trip that survives a reload.
+// The answer comes from the analyst (`src/analyst.js`), a structure of its own
+// with its own provider: see src/analyst_ai/.
+//
+// When the analyst proposes to close, the validator (`src/analysis_validator.js`)
+// is asked whether that is true. It is a second engine on purpose — nobody is a
+// fair judge of their own work — and it runs here and nowhere else: once per
+// analysis, not once per message. If it refuses, the analyst is sent back with
+// what is still missing and the client gets a question instead of a goodbye: the
+// closing message it had written is never shown.
 async function receiveChatMessage(request, projectId, settings, response, ui) {
   const { answer, fail } = jsonReplier(response);
 
@@ -676,19 +683,74 @@ async function receiveChatMessage(request, projectId, settings, response, ui) {
   const left = Number(context.step.data?.turns_left ?? 0);
   if (left <= 0) return fail(409, "NO_TURNS_LEFT");
 
-  const replies = mockReplies(ui);
-  const reply = replies.length > 0 ? replies[Math.floor(Math.random() * replies.length)] : "";
+  // The form's answers: the analyst reads them as the first message of the
+  // conversation, and never asks again for what is in them.
+  const spec = await latestSpec(settings, projectId);
+  if (!spec.ok) {
+    console.error(`[preanalyst] specification of ${projectId} not read: ${spec.reason}`);
+    return fail(503, "WORKSPACES_UNAVAILABLE");
+  }
+
+  const chat = context.step.data?.chat ?? [];
+  const turn = { spec: spec.data, chat, message: text, turnsLeft: left, language: ui.locale };
+
+  let turnAnswer = await ask(settings, turn);
+  if (!turnAnswer.ok) {
+    console.error(`[preanalyst] analyst on ${projectId}: ${turnAnswer.reason}`);
+    return fail(503, "ANALYST_UNAVAILABLE");
+  }
+
+  // The analyst believes the questions are over. It does not get to decide that.
+  let validation = null;
+  if (turnAnswer.data.ready) {
+    const judged = await validate(settings, { spec: spec.data, chat: [...chat, { role: "client", text }] });
+    if (judged.ok) {
+      validation = judged.data;
+      if (validation.verdict === "continue") {
+        const again = await ask(settings, { ...turn, stillMissing: validation.missing });
+        // If the second call fails, the first answer is still there: closing a
+        // turn the validator has refused is worse than losing the send-back, so
+        // the turn is not spent at all.
+        if (!again.ok) {
+          console.error(`[preanalyst] analyst sent back on ${projectId}: ${again.reason}`);
+          return fail(503, "ANALYST_UNAVAILABLE");
+        }
+        turnAnswer = again;
+      }
+    } else {
+      // The judgement did not come. The conversation does not close on a claim
+      // nobody checked: the client is told nothing about it and the analyst will
+      // propose again next turn.
+      console.error(`[preanalyst] validation on ${projectId}: ${judged.reason}`);
+      turnAnswer.data.ready = false;
+    }
+  }
+
+  const reply = turnAnswer.data.message;
   const now = new Date().toISOString();
 
   // One single write: the two messages and the turn spent are the same thing seen
-  // from two sides, and must not be able to exist separately.
+  // from two sides, and must not be able to exist separately. The cost of the
+  // turn goes in with them — a cost that is not recorded is not measured.
   const stored = await updateOpenStep(settings, projectId, "analysis", {
-    set: { turns_left: left - 1 },
+    set: {
+      turns_left: left - 1,
+      missing: turnAnswer.data.missing,
+      ready: turnAnswer.data.ready,
+    },
     push: {
       chat: [
         { role: "client", text, at: now },
-        { role: "system", text: reply, at: now },
+        {
+          role: "system",
+          text: reply,
+          at: now,
+          model: turnAnswer.data.model,
+          usage: turnAnswer.data.usage,
+          reason: turnAnswer.data.reason,
+        },
       ],
+      ...(validation ? { validations: [{ at: now, ...validation }] } : {}),
     },
   });
   if (!stored.ok) {

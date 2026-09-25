@@ -18,8 +18,8 @@ The **prevalidator** (`src/prevalidator.js`) asks a model whether the request si
 perimeter of the service: six outcomes with their probability, plus the internal `off_domain`
 flag. Two outcomes refuse — too big, or something we could not build at any size — one sends the
 user back to the form, three pass; the flag says it is software that could be developed but is not
-a webtool, and it does not change the flow. The provider is reached through `src/ai/`, a single
-door, and is changed from the configuration (`ai.provider`). The criteria live in `policies/`,
+a webtool, and it does not change the flow. The provider is reached through `src/prevalidator_ai/`, a
+single door of its own, and is changed from the configuration (`prevalidation.provider`). The criteria live in `policies/`,
 copies generated from `configurator/policies/`: they are not edited here.
 
 The key of the **selected** provider is needed in `webtools/configurator/secrets/preanalyst.json`
@@ -138,7 +138,7 @@ npm test
 
 They cover the functions that **decide**: how the prevalidator's answer is read and what is done
 with it (`tests/prevalidator.test.js`), which provider is selected and whose configuration is read
-(`tests/ai.test.js`), and the counting of the rounds of whoever has been sent back
+(`tests/prevalidator_ai.test.js`), and the counting of the rounds of whoever has been sent back
 (`tests/server.test.js`). They do not call the provider, they need no servers running and they
 cost nothing. `src/driver_link.js` and the rest are left uncovered: a known hole, not a
 choice.

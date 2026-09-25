@@ -51,6 +51,22 @@ is not to be used). The visual reference for the flow is `struttura/design/Seque
 
 ## General rules
 
+- **MANDATORY, INVIOLABLE: write for the class, never for the instance.**
+  What is in front of you is an instance of what the code has to serve. It is evidence about the
+  class, never a stand-in for it. Code that holds only for the instance is a defect of the worst
+  kind: it passes the tests, because the tests are drawn from that same instance, and it fails on
+  the first other instance, which was legitimate all along. Recognising the path that works and
+  building on it **is** that defect — not a shortcut, not a first version, not a pragmatic choice.
+  Four things follow, and none of them is negotiable.
+  - **What only part of the class offers is optional.** The code works without it, and nothing is
+    put in its place. Absent is absent, which is not a default.
+  - **What holds only for part of the class lives at the boundary that deals with that part**, and
+    is established there explicitly. It is never inferred from resemblance.
+  - **Every outcome is handled, not only the one that succeeds.** The rest is part of the work, not
+    of a later pass.
+  - **Never narrow the world to fit the code.** If what you wrote holds only under a restriction
+    you imposed, the code is wrong and the world is not.
+
 - **Everything internal is written in English.** Code (identifiers, comments, docstrings),
   commit messages, log lines, API routes and fields, error codes, data, the pre-specification, and
   all documentation — `docs/`, the subsystem `README.md` files, `contesto/`, this file. **The only

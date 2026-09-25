@@ -160,22 +160,6 @@ export function renderMessage(ui, kind) {
   return env.render("message.njk", { ...ui, title: message.title, noindex: true, home_link: "/", message });
 }
 
-// The fake answers of the chat (see the TODO in `src/server.js`).
-//
-// They are numbered keys and not a list because `t` reads strings only: the
-// catalogue is made of keys and values, and an array would not fit. We go on while
-// the next key is there, so adding one is a line in the catalogue and nothing
-// else.
-//
-// It all goes away together when the answer becomes real.
-export function mockReplies(ui) {
-  const replies = [];
-  for (let number = 1; ui.has(`preanalyst.analysis.mock.replies.${number}`); number += 1) {
-    replies.push(ui.t(`preanalyst.analysis.mock.replies.${number}`));
-  }
-  return replies;
-}
-
 // The summary next to the chat: what was decided when the request set off. Only
 // what is there is shown — with no driver, no discount, no ambassador and no
 // autonomous work the box is left with the turn counter alone, which is the reason
