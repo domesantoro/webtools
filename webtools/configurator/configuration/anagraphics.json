@@ -4,5 +4,12 @@
   },
   "mongo": {
     "server_selection_timeout_ms": 30000
+  },
+  "subsystems_infos": {
+    "metrics": { "url": "http://127.0.0.1:9600", "timeout_ms": 2000 }
+  },
+  "metrics": {
+    "log_failures": false,
+    "pending_max": 1000
   }
 }

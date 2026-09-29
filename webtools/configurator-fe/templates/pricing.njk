@@ -1,0 +1,174 @@
+{#
+  The prices of what the providers' models consume: the page where they are
+  written.
+
+  It is a page of its own, and not a part of the one that shows the
+  configuration. That one is read: it says what is running, and it is opened
+  precisely when something has to be checked. This one changes something. A form
+  in the middle of a reading is a click away from a write nobody meant, and the
+  two are not looked at for the same reason.
+
+  It writes **one key** of one provider object: `pricing`. Everything else is
+  changed the way everything else is changed — the file, load_configuration.sh,
+  a restart.
+
+  Expected: view (src/view.js buildPricingView).
+#}{% extends "layout.njk" %}
+
+{% block title %}providers' prices — webtools{% endblock %}
+
+{% block nav %}
+<nav class="index">
+  <div class="wrap">
+    <a class="elsewhere" href="/">← the configuration</a>
+    {%- for entry in view.providers %}
+    <a href="#provider-{{ entry.provider }}">{{ entry.provider }}</a>
+    {%- endfor %}
+  </div>
+</nav>
+{% endblock %}
+
+{% block content %}
+  {%- if view.failure %}
+  <section class="failure">
+    <h2>The configuration was not read</h2>
+    <p class="detail">{{ view.failure }}</p>
+    <p>Nothing below it is shown, and nothing can be written: the prices go into the documents this
+      page did not manage to read.</p>
+  </section>
+  {%- endif %}
+
+  <section>
+    <h2>Providers' prices</h2>
+    <p class="note">One entry per provider object that <strong>names a model</strong>: those are
+      the ones with something to price. What the configuration holds besides them — a provider
+      object that only declares which kinds of token that provider counts, for instance — is on
+      <a href="/#providers">the configuration</a>.</p>
+    <p class="note">A price is the price of what a door's model consumes: <strong>one amount per
+      kind of token</strong>, in hundredths of the currency's unit, per million tokens —
+      <code>1500</code> is <code>15.00</code>. The kinds are the ones the provider declares in
+      <code>token_kinds</code>: two kinds of token are not the same thing, and one amount for both
+      would be a rate between them that nobody decided.</p>
+    <p class="note">It is written into the <code>pricing</code> key of that provider object in
+      Mongo, and nothing else is touched. The seed files in
+      <code>webtools/configurator/configuration/</code> carry no prices: a new environment is born
+      without them.</p>
+
+    {%- if view.orphanOutcome %}
+    <p class="warning">The last write was about <code>{{ view.orphanOutcome.subsystem }}</code>,
+      <code>{{ view.orphanOutcome.path }}</code>, which is not among the provider objects below.
+      {% if view.orphanOutcome.written %}It says it was written.{% else %}It was not written:
+      <code>{{ view.orphanOutcome.reason }}</code>.{% endif %}</p>
+    {%- endif %}
+  </section>
+
+  {%- for entry in view.providers %}
+  <section id="provider-{{ entry.provider }}">
+    <h2>{{ entry.provider }}</h2>
+    {%- if entry.kinds and entry.kinds.agree %}
+    <p class="note">Counts <span class="value list">{% for kind in entry.kinds.kinds %}<span class="item">{{ kind }}</span>{% endfor %}</span>
+      — declared in <span class="value list">{% for where in entry.kinds.declaredIn %}<span class="item">{{ where }}</span>{% endfor %}</span></p>
+    {%- elif entry.kinds %}
+    <p class="warning">The kinds declared for this provider are not the same everywhere:
+      <span class="value list">{% for where in entry.kinds.declaredIn %}<span class="item">{{ where }}</span>{% endfor %}</span></p>
+    {%- else %}
+    <p class="warning">No <code>token_kinds</code> is declared for this provider anywhere in the
+      configuration.</p>
+    {%- endif %}
+
+    {%- for door in entry.doors %}
+    <div class="door" id="{{ door.anchor }}">
+      <p class="door-head">
+        <code>{{ door.subsystem }}</code>
+        <code class="path">{{ door.path }}</code>
+        {%- if door.modelIsSecret %}<span class="value secret">(model: secret)</span>
+        {%- else %}<span class="value string">{{ door.model }}</span>{% endif %}
+      </p>
+
+      {%- if door.outcome %}
+      {%- if door.outcome.written %}
+      <p class="written">Written.</p>
+      {%- else %}
+      <p class="warning">Not written: <code>{{ door.outcome.reason }}</code>.</p>
+      {%- endif %}
+      {%- endif %}
+
+      {%- if door.unreadable %}
+      <p class="warning">There is a <code>pricing</code> here and no amount in it can be read. What
+        is stored is in the configuration, as it is stored:
+        <a href="/#{{ door.subsystemAnchor }}">{{ door.subsystem }}</a>.</p>
+      {%- endif %}
+
+      {%- if door.writable %}
+      <form class="pricing" method="post" action="/providers/pricing">
+        <input type="hidden" name="subsystem" value="{{ door.subsystem }}">
+        <input type="hidden" name="provider_path" value="{{ door.path }}">
+        <table class="grid">
+          <thead><tr><th>kind of token</th><th>hundredths per million</th><th>stored</th></tr></thead>
+          <tbody>
+            {%- for row in door.rows %}
+            <tr>
+              <th>{{ row.kind }}{% if not row.declared %}<span class="hint">not declared</span>{% endif %}</th>
+              <td><input type="number" name="kind.{{ row.kind }}" min="0" step="1" inputmode="numeric"
+                {%- if row.cents != null %} value="{{ row.cents }}"{% endif %}></td>
+              <td>{% if row.text %}<span class="value number">{{ row.text }}{% if door.currency %} {{ door.currency }}{% endif %}</span>{% else %}<span class="absent">—</span>{% endif %}</td>
+            </tr>
+            {%- endfor %}
+          </tbody>
+        </table>
+        <p class="door-foot">
+          <label>currency
+            <select name="currency">
+              <option value=""{% if not door.currency %} selected{% endif %}>—</option>
+              {%- for option in door.currencies %}
+              <option value="{{ option.code }}"{% if option.selected %} selected{% endif %}>{{ option.code }}{% if not option.known %} (stored){% endif %}</option>
+              {%- endfor %}
+            </select>
+          </label>
+          <button type="submit">write the price</button>
+          {%- if door.updatedAt %}<span class="updated">last written {{ door.updatedAt }}</span>
+          {%- else %}<span class="absent">never written</span>{% endif %}
+        </p>
+        <p class="note">An amount left empty is a kind that is not priced: it is left out of what is
+          written. A form with every amount empty writes nothing.</p>
+      </form>
+      {%- else %}
+      <p class="warning">
+        {%- if door.refusal == "NO_TOKEN_KINDS" %}No price can be asked for: which kinds of token
+        <code>{{ entry.provider }}</code> counts is declared nowhere in the configuration.
+        {%- elif door.refusal == "TOKEN_KINDS_DISAGREE" %}No price can be asked for: the kinds
+        declared for <code>{{ entry.provider }}</code> differ from one declaration to another.
+        {%- elif door.refusal == "PRICING_IS_SECRET" %}This price comes from
+        <code>webtools/configurator/secrets/</code>, which replaces what is in Mongo at every
+        <code>load_configuration.sh</code>. Written from here it would not last: change the file.
+        {%- endif %}
+      </p>
+      {%- if door.rows.length %}
+      <table class="grid">
+        <thead><tr><th>kind of token</th><th>stored</th></tr></thead>
+        <tbody>
+          {%- for row in door.rows %}
+          <tr><th>{{ row.kind }}</th><td><span class="value number">{{ row.text }}{% if door.currency %} {{ door.currency }}{% endif %}</span></td></tr>
+          {%- endfor %}
+        </tbody>
+      </table>
+      {%- endif %}
+      {%- endif %}
+    </div>
+    {%- endfor %}
+  </section>
+  {%- endfor %}
+
+  {%- if not view.providers.length and not view.failure %}
+  <p class="absent">No provider object names a model: there is nothing to price. What the
+    configuration does hold is on <a href="/#providers">the configuration</a>.</p>
+  {%- endif %}
+{% endblock %}
+
+{% block footer %}
+    <p>This page writes one key, <code>pricing</code>, inside a provider object. Everything else in
+      the configuration is changed the way everything else is changed: edit the file in
+      <code>webtools/configurator/configuration/</code>, run
+      <code>webtools/configurator/load_configuration.sh</code>, restart whoever reads it. What is
+      running is on <a href="/">the configuration</a>.</p>
+{% endblock %}

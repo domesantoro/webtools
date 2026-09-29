@@ -17,7 +17,7 @@ const I18N = {
 
 const configuration = (i18n) => new Configuration("sso", { i18n }, "http://127.0.0.1:9100");
 
-const richiesta = (headers) => ({ headers });
+const aRequest = (headers) => ({ headers });
 
 // Catalogues written here: the tests do not depend on the real texts.
 const i18n = new I18n({
@@ -33,11 +33,11 @@ const i18n = new I18n({
 });
 
 test("the language: cookie, then Accept-Language, then the fallback", () => {
-  assert.equal(i18n.localeOf(richiesta({ cookie: "altro=1; webtools_locale=it" })), "it");
-  assert.equal(i18n.localeOf(richiesta({ cookie: "webtools_locale=xx", "accept-language": "it-IT,it;q=0.9" })), "it");
-  assert.equal(i18n.localeOf(richiesta({ "accept-language": "de-DE,en;q=0.5,it;q=0.8" })), "it");
-  assert.equal(i18n.localeOf(richiesta({ "accept-language": "de-DE" })), "en");
-  assert.equal(i18n.localeOf(richiesta({})), "en");
+  assert.equal(i18n.localeOf(aRequest({ cookie: "other=1; webtools_locale=it" })), "it");
+  assert.equal(i18n.localeOf(aRequest({ cookie: "webtools_locale=xx", "accept-language": "it-IT,it;q=0.9" })), "it");
+  assert.equal(i18n.localeOf(aRequest({ "accept-language": "de-DE,en;q=0.5,it;q=0.8" })), "it");
+  assert.equal(i18n.localeOf(aRequest({ "accept-language": "de-DE" })), "en");
+  assert.equal(i18n.localeOf(aRequest({})), "en");
 });
 
 test("a missing key is taken from the fallback language", () => {
@@ -59,9 +59,9 @@ test("the switcher shows each language in that language", () => {
 });
 
 test("the real catalogues are there for the languages in the configuration", () => {
-  const vero = loadI18n(configuration(I18N));
-  assert.equal(vero.translate("it", "common.locale.name"), "Italiano");
-  assert.equal(vero.translate("en", "common.locale.name"), "English");
+  const real = loadI18n(configuration(I18N));
+  assert.equal(real.translate("it", "common.locale.name"), "Italiano");
+  assert.equal(real.translate("en", "common.locale.name"), "English");
 });
 
 test("incomplete or wrong configuration: we do not start", () => {

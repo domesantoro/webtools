@@ -13,29 +13,22 @@
 // value of `ai.provider` in the configuration.
 //
 // The shape is that of the decision engine's conceptual API
-// (`contesto/decision_engine_considerazioni.md` §11): you give the state and the
+// (`contesto/decision_engine_considerations.md` §11): you give the state and the
 // admissible outputs, you get back a typed answer. Here the admissible outputs
 // are a JSON schema, which the provider imposes on the model.
 //
-// Same contract as the anagraphics and workspaces clients — no exceptions towards
-// the caller:
+// The contract — what is asked, what comes back, and in whose words — is
+// `./contract.js`, this door's own. Nothing about a provider travels through
+// here: not its field names, not its roles, not its reasons for stopping.
 //
-//   { ok: true, data: { output, model, usage } }
-//   { ok: false, reason: "unavailable" }   the provider does not answer
-//   { ok: false, reason: "rejected", usage, model }
-//                                          it answered, but not with anything usable
-//   { ok: false, reason: "unknown_provider" }
-//
-// `usage` is the tokens consumed: it is the measure of the real cost, which the
-// PoC has to collect. It is not converted into money here.
-//
-// It is there **even when the answer is not usable**, because those tokens were
-// paid for all the same: a truncated or off-schema answer costs as much as a good
-// one, and a cost that is not recorded is not measured. It is missing only when
-// the provider did not answer at all, which is the one case where nothing was
-// spent.
+// `spend` is the tokens consumed, by kind. It is there **even when the answer is
+// not usable**, because the model ran all the same: a truncated or off-schema
+// answer spends as much as a good one, and a consumption that is not recorded is
+// not measured. It is missing only when the provider did not answer at all, which
+// is the one case where nothing was spent.
 
 import { ConfigurationError } from "../commons/configuration_client.js";
+import { check, noAnswer } from "./contract.js";
 import * as anthropic from "./providers/anthropic.js";
 
 // The providers that exist. It is an allowlist, not a directory listing: the
@@ -69,6 +62,10 @@ export function loadPrevalidatorAiSettings(configuration, base) {
     // The cut-off of the call, the same for every provider: it is how long the
     // user is left standing in front of a page, not a property of the model.
     timeoutMs: configuration.integer(`${base}.timeout_ms`, { min: 1 }),
+    // How many times we are willing to ask. Ours, not the provider's: it is a
+    // decision about what we spend, so it is configured here and the adapter
+    // obeys it, instead of being a number inside somebody's SDK.
+    maxAttempts: configuration.integer(`${base}.max_attempts`, { min: 1 }),
     configuration: module.readConfiguration(configuration, base),
   };
 }
@@ -80,7 +77,8 @@ export async function decide(ai, { instructions, document, schema }) {
   // other hands one day, and answering `unknown_provider` costs one line.
   if (!module) {
     console.error(`[prevalidator_ai] unknown provider: ${ai.provider}`);
-    return { ok: false, reason: "unknown_provider" };
+    return noAnswer({ provider: ai.provider, failure: "unknown_provider" });
   }
-  return module.decide(ai, { instructions, document, schema });
+  // Checked here, where the adapter hands over: a drift is caught at the door.
+  return check(await module.decide(ai, { instructions, document, schema }));
 }

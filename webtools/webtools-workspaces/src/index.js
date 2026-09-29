@@ -26,6 +26,9 @@ server.listen(settings.port, settings.host, () => {
     `webtools_workspaces listening on http://${settings.host}:${settings.port} ` +
       `(root: ${settings.root})`
   );
+  // A start that worked. The ones that did not are above, where there is no
+  // configuration yet and so nowhere to send a measurement.
+  settings.metrics.measure("process.started", { dims: { outcome: "ok" } });
 });
 
 for (const signal of ["SIGTERM", "SIGINT"]) {

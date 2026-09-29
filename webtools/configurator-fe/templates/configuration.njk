@@ -1,67 +1,37 @@
 {#
-  The configuration as it is in Mongo, read-only.
+  The configuration as it is in Mongo: what is running, read.
 
-  One page: the general matters, then one section per subsystem. The template
-  prints what src/view.js worked out — it walks, it does not compute: no
-  arithmetic, no decision about what a value means.
+  One page: the general matters, the providers, then one section per subsystem.
+  The template prints what src/view.js worked out — it walks, it does not compute:
+  no arithmetic, no decision about what a value means.
 
-  The page shell is its own, not `commons/base.njk`: the shared shell asks for the
-  language and the translation of a page of the product, and this is a piece of
-  internal instrumentation, whose labels are system terms and stay in English like
-  the rest of what is internal. See README.md, "Why not the shared shell".
+  **Nothing is configured here.** The providers are listed with the price of their
+  tokens as it is stored; writing one is another page, `/providers/pricing`, and
+  this one links to it. A page that shows the configuration and a page that
+  changes it are two different things to be looking at, and a form in the middle
+  of a reading is a click away from a write nobody meant.
+
+  The shell and the macro that prints a value are shared with that other page:
+  `layout.njk` and `value.njk`.
 
   Expected: view (src/view.js buildView).
-#}<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>configuration — webtools</title>
-  <meta name="robots" content="noindex">
-  <link rel="stylesheet" href="/styles.css">
-</head>
-<body>
+#}{% extends "layout.njk" %}
+{% import "value.njk" as show %}
 
-{% macro value(shown) -%}
-  {%- if shown.type == "secret" -%}
-    <span class="value secret">(secret{% if shown.text %}, {{ shown.text }}{% endif %})</span>
-  {%- elif shown.type == "string" -%}
-    <span class="value string">{{ shown.text }}</span>
-  {%- elif shown.type == "empty-string" -%}
-    <span class="value absent">(empty string)</span>
-  {%- elif shown.type == "number" -%}
-    <span class="value number">{{ shown.text }}</span>{% if shown.hint %}<span class="hint">{{ shown.hint }}</span>{% endif %}
-  {%- elif shown.type == "boolean" -%}
-    <span class="value boolean">{{ shown.text }}</span>
-  {%- elif shown.type == "null" -%}
-    <span class="value absent">null</span>
-  {%- elif shown.type == "list" -%}
-    <span class="value list">{% for item in shown.items %}<span class="item">{{ item }}</span>{% endfor %}</span>
-  {%- elif shown.type == "empty-list" -%}
-    <span class="value absent">(empty list)</span>
-  {%- elif shown.type == "empty-object" -%}
-    <span class="value absent">(no fields)</span>
-  {%- endif -%}
-{%- endmacro %}
-
-<header class="top">
-  <div class="wrap">
-    <span class="brand">webtools <span>configurator</span></span>
-    <span class="read-at">read at {{ view.readAt }}</span>
-  </div>
-</header>
-
+{% block nav %}
 <nav class="index">
   <div class="wrap">
     <a href="#general">general matters</a>
+    <a href="#providers">providers</a>
     {%- for subsystem in view.subsystems %}
     <a href="#{{ subsystem.anchor }}">{{ subsystem.name }}</a>
     {%- endfor %}
+    <a class="elsewhere" href="/providers/pricing">providers' prices →</a>
   </div>
 </nav>
+{% endblock %}
 
-<main class="wrap">
-
+{% block content %}
   {%- if view.failure %}
   <section class="failure">
     <h2>The configuration was not read</h2>
@@ -118,7 +88,7 @@
         {%- for entry in view.shared %}
         <tr>
           <th>{{ entry.path }}</th>
-          <td>{{ value(entry.value) }}</td>
+          <td>{{ show.value(entry.value) }}</td>
           <td class="who">{% for name in entry.subsystems %}<span class="item">{{ name }}</span>{% endfor %}</td>
         </tr>
         {%- endfor %}
@@ -150,6 +120,48 @@
     {%- endif %}
   </section>
 
+
+  <section id="providers">
+    <h2>Providers</h2>
+    <p class="note">One row per <strong>door</strong>: a place where a subsystem asks a model of a
+      provider. A door is an object hanging from a <code>providers</code> branch that names a
+      <code>model</code>, wherever in the document that branch is. The list comes out of the
+      documents, so a door added tomorrow is here.</p>
+    <p class="note">An object under a <code>providers</code> branch that names no model is not a
+      door and is not here: nothing is asked of a provider through it. What it is, is what its own
+      fields say — <code>token_kinds</code> declares which kinds of token that provider counts —
+      and it is read in its subsystem's section below, with the rest of that document.</p>
+    <p class="note">The price is the price of what that door's model consumes: one amount per kind
+      of token, in hundredths of the currency's unit, per million tokens. It is shown here as it is
+      stored. To write one: <a href="/providers/pricing">providers' prices</a>.</p>
+    {%- if view.providers.length %}
+    <table class="grid">
+      <thead><tr><th>provider</th><th>in</th><th>model</th><th>price</th><th>last written</th></tr></thead>
+      <tbody>
+        {%- for entry in view.providers %}
+        {%- for door in entry.doors %}
+        <tr>
+          <th>{{ entry.provider }}</th>
+          <td><a href="#{{ door.subsystemAnchor }}"><code>{{ door.subsystem }}</code></a> <code class="path">{{ door.path }}</code></td>
+          <td>
+            {%- if door.modelIsSecret %}<span class="value secret">(secret)</span>
+            {%- else %}<span class="value string">{{ door.model }}</span>{% endif %}
+          </td>
+          <td>
+            {%- if door.rows.length %}<span class="value list">{% for row in door.rows %}<span class="item">{{ row.kind }} {{ row.text }}{% if door.currency %} {{ door.currency }}{% endif %}</span>{% endfor %}</span>
+            {%- else %}<span class="absent">—</span>{% endif %}
+          </td>
+          <td>{% if door.updatedAt %}<span class="updated">{{ door.updatedAt }}</span>{% else %}<span class="absent">never</span>{% endif %}</td>
+        </tr>
+        {%- endfor %}
+        {%- endfor %}
+      </tbody>
+    </table>
+    {%- elif not view.failure %}
+    <p class="absent">No subsystem asks a model of a provider.</p>
+    {%- endif %}
+  </section>
+
   {%- for subsystem in view.subsystems %}
   <section id="{{ subsystem.anchor }}">
     <h2>{{ subsystem.name }}</h2>
@@ -168,20 +180,20 @@
         {%- if row.kind == "branch" %}
         <span class="size">{{ row.size }}</span>
         {%- else %}
-        {{ value(row.value) }}
+        {{ show.value(row.value) }}
         {%- endif %}
       </div>
       {%- endfor %}
     </div>
   </section>
   {%- endfor %}
+{% endblock %}
 
-  <footer>
+{% block footer %}
     <p>Read-only. The configuration that lives is in Mongo; the files in
-      <code>webtools/configurator/configuration/</code> are the seed. To change a value:
+      <code>webtools/configurator/configuration/</code> are the seed. The one value written from the configurator's front end is the price of a provider's
+      tokens, on its own page: <a href="/providers/pricing">providers' prices</a>. To change any
+      other:
       edit the file and run <code>webtools/configurator/load_configuration.sh</code>, which adds
       only the missing fields, then restart whoever reads it.</p>
-  </footer>
-</main>
-</body>
-</html>
+{% endblock %}

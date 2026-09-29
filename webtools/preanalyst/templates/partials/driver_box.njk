@@ -30,10 +30,10 @@
           {%- elif box.link.state == "discount_expired" %}
           <p class="notice notice-warn">{{ t("preanalyst.driver_box.discount_expired") }}</p>
           {%- elif box.link.state == "discount_driver_missing" %}
-          {%- set chi %}{% if box.link.driverName %}<strong>{{ box.link.driverName }}</strong>
+          {%- set who %}{% if box.link.driverName %}<strong>{{ box.link.driverName }}</strong>
             {%- elif box.link.driverUid %}<code>{{ box.link.driverUid }}</code>
             {%- else %}{{ t("preanalyst.driver_box.link_driver") }}{% endif %}{% endset %}
-          <p class="notice notice-warn">{{ t_html("preanalyst.driver_box.discount_driver_missing", { driver: chi | safe }) }}</p>
+          <p class="notice notice-warn">{{ t_html("preanalyst.driver_box.discount_driver_missing", { driver: who | safe }) }}</p>
           {%- elif box.link.state == "discount_driver_disabled" %}
           <p class="notice notice-warn">{{ t_html("preanalyst.driver_box.discount_driver_disabled", { name: box.link.driver.screen_name }) }}</p>
           {%- elif box.link.state == "driver_disabled" %}
@@ -59,8 +59,8 @@
           </p>
           {%- endif %}
 
-          {%- for campo in box.hidden %}
-          <input type="hidden" name="{{ campo.name }}" value="{{ campo.value }}" form="gate-form">
+          {%- for field in box.hidden %}
+          <input type="hidden" name="{{ field.name }}" value="{{ field.value }}" form="gate-form">
           {%- endfor %}
         </div>
       </aside>

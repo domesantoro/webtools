@@ -42,6 +42,14 @@ though. `percentage` is in percentage points: `5` means 5%.
 
 - `GET /configuration/{subsystem}`: the subsystem's configuration, or `404 {"error":"CONFIGURATION_NOT_FOUND","subsystem":…}`.
 - `GET /configuration`: `{"configurations":[…]}` with the configuration of every subsystem that is in Mongo, ordered by `subsystem`. No pagination. It is what the configurator's front end reads: the list of the subsystems that exist is here.
+- `PUT /configuration/{subsystem}/pricing`: the price of what one provider consumes. Body
+  `{"provider_path":"preanalyst.conversation.providers.anthropic","currency":"USD","cents_per_million_tokens":{"input":1500,"output":7500}}`;
+  answers `{"pricing":{…}}` with the `updated_at` it wrote. It writes the **`pricing` key of that
+  provider object and nothing else**: `provider_path` must name one — `<anything>.providers.<name>`
+  — or it is `400 {"error":"NOT_A_PROVIDER_OBJECT","path":…}`; a path the document does not hold is
+  `404 {"error":"PROVIDER_NOT_FOUND","path":…}`. The amounts are hundredths of the currency's unit,
+  per million tokens, **one per kind of token**: the kinds are not a list here, they are the ones
+  the provider declares. `updated_at` is written here and is not taken from the body.
 - `GET /projects/{project_id}`: the project, or `404 {"error":"PROJECT_NOT_FOUND","project_id":…}`.
 - `POST /projects`: creates a project (anagraphics generates the id); the same `submission_id` a second time returns `200` and the project already born. `DELETE /projects/{project_id}`: deletes it.
 - Users, sessions and tickets: see the full documentation (§6.8–6.15).
@@ -88,4 +96,4 @@ uv run pytest        # 70 tests
 
 The tests use the `webtools_test` database, which is dropped at the end.
 
-`drivers` also holds a test driver (`Prova`, `639718a3-…`), with no discount codes.
+`drivers` also holds a test driver (`Test`, `639718a3-…`), with no discount codes.

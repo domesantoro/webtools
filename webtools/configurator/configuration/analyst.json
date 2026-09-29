@@ -1,0 +1,102 @@
+{
+  "listen": {
+    "host": "127.0.0.1",
+    "port": 9800
+  },
+  "access": {
+    "allowed_ips": [
+      "127.0.0.1",
+      "::1"
+    ]
+  },
+  "limits": {
+    "body_max_bytes": 8192
+  },
+  "subsystems_infos": {
+    "anagraphics": {
+      "timeout_ms": 5000
+    },
+    "workspaces": {
+      "url": "http://127.0.0.1:9400",
+      "timeout_ms": 5000
+    },
+    "drivers_pool": {
+      "url": "http://127.0.0.1:9001",
+      "timeout_ms": 5000
+    },
+    "comm_center": {
+      "url": "http://127.0.0.1:9002",
+      "timeout_ms": 5000
+    },
+    "metrics": {
+      "url": "http://127.0.0.1:9600",
+      "timeout_ms": 2000
+    }
+  },
+  "metrics": {
+    "log_failures": false,
+    "pending_max": 1000
+  },
+  "handover": {
+    "max_attempts": 3
+  },
+  "i18n": {
+    "locales": [
+      "en",
+      "it"
+    ],
+    "fallback_locale": "en"
+  },
+  "analysis": {
+    "technical": {
+      "provider": "anthropic",
+      "timeout_ms": 2400000,
+      "max_attempts": 3,
+      "providers": {
+        "anthropic": {
+          "model": "claude-opus-5",
+          "max_tokens": 128000,
+          "effort": "high"
+        }
+      },
+      "policy": "analysis-technical-v1",
+      "stack_preferences": {
+        "web": {
+          "language": "JavaScript, Node.js 22 LTS",
+          "http": "Express 5",
+          "pages": "server-rendered Nunjucks templates, autoescape on",
+          "browser": "no client framework; plain CSS, and vanilla JavaScript only where a page cannot work without it",
+          "store": "SQLite, one file beside the application, through node:sqlite",
+          "tests": "node:test"
+        }
+      }
+    },
+    "judgement": {
+      "provider": "anthropic",
+      "timeout_ms": 2400000,
+      "max_attempts": 3,
+      "providers": {
+        "anthropic": {
+          "model": "claude-opus-5",
+          "max_tokens": 16000,
+          "effort": "high"
+        }
+      },
+      "policy": "analysis-sustainability-v1",
+      "take_on_threshold": 0.5
+    },
+    "points": {
+      "provider": "anthropic",
+      "timeout_ms": 2400000,
+      "max_attempts": 3,
+      "providers": {
+        "anthropic": {
+          "model": "claude-opus-5",
+          "max_tokens": 16000,
+          "effort": "medium"
+        }
+      },
+      "policy": "functional-points-v1"
+    }
+  }
+}

@@ -42,17 +42,17 @@ const env = nunjucks.configure(TEMPLATES_DIR, {
 // recognised their uid is sent; when nothing could be resolved, what arrived is
 // sent back — if the failure is ours, the user must not pay for it.
 function hiddenFields(driverLink, params, driversAvailable) {
-  const campi = [];
+  const fields = [];
   // The discount of a driver who is not enabled does not apply: it does not travel with the form.
   if (params.discountCode && driverLink.state !== DISCOUNT_DRIVER_DISABLED) {
-    campi.push({ name: "discount", value: params.discountCode });
+    fields.push({ name: "discount", value: params.discountCode });
   }
   if (driversAvailable && isResolved(driverLink)) {
-    campi.push({ name: "driver", value: driverLink.driver.uid });
+    fields.push({ name: "driver", value: driverLink.driver.uid });
   } else if (!driversAvailable && params.driverUid) {
-    campi.push({ name: "driver", value: params.driverUid });
+    fields.push({ name: "driver", value: params.driverUid });
   }
-  return campi;
+  return fields;
 }
 
 // Where the sso sends the browser after the login: **not** the starting page, but
@@ -66,7 +66,7 @@ function afterLogin(settings) {
 
 // The "Autonomous work" section of the showcase site's "Work with us" page.
 function workWithUsUrl(settings) {
-  return `${settings.frontGateUrl}/lavora-con-noi.html#lavoro-autonomo`;
+  return `${settings.frontGateUrl}/work-with-us.html#autonomous-work`;
 }
 
 // The fragments that depend on who has logged in. They are the same macros the
@@ -75,13 +75,13 @@ function workWithUsUrl(settings) {
 // The fragments to replace after the login, each with its container's selector.
 // The whole right-hand column is not replaced: the upload block is in there, and
 // redoing it would throw away the file the user has already chosen.
-export function renderAccessFragments(ui, access, settings, colonna) {
-  const dati = accessData(access, settings);
-  const aside = asideData({ ...colonna, moreUrl: workWithUsUrl(settings) });
+export function renderAccessFragments(ui, access, settings, column) {
+  const data = accessData(access, settings);
+  const aside = asideData({ ...column, moreUrl: workWithUsUrl(settings) });
   return {
-    logged: dati.logged,
+    logged: data.logged,
     fragments: {
-      "[data-sso-header]": env.render("fragments/access_header.njk", { ...ui, access: dati }),
+      "[data-sso-header]": env.render("fragments/access_header.njk", { ...ui, access: data }),
       "[data-sso-driver]": env.render("fragments/driver.njk", { ...ui, aside }),
     },
   };
@@ -145,17 +145,18 @@ function asideData({
   };
 }
 
-// The outcome pages of the submission and of the analysis, when something goes
+// The outcome pages of the submission and of the rounds of questions, when
+// something goes
 // wrong. One sentence on what happened, one on what to do: the texts live in the
 // catalogues, under `preanalyst.messages.<kind>.title` and `.text`.
 //
 // `ui`, in every page rendered here, is what `settings.i18n.pageContext(…)` gives:
 // language, `t` and the language switcher, which the shared layout uses on every
 // page.
-export function renderMessage(ui, kind) {
+export function renderMessage(ui, kind, values) {
   const message = {
     title: ui.t(`preanalyst.messages.${kind}.title`),
-    text: ui.t(`preanalyst.messages.${kind}.text`),
+    text: ui.t(`preanalyst.messages.${kind}.text`, values),
   };
   return env.render("message.njk", { ...ui, title: message.title, noindex: true, home_link: "/", message });
 }
@@ -185,43 +186,49 @@ function summaryData({ driverLink, ambassador, autonomous }) {
   };
 }
 
-// The analysis page: the specification rounds.
+// The pre-analysis page: the rounds of questions.
 //
-// The conversation and the turns live on the project, read by `serveAnalysis`;
+// The conversation and the turns live on the project, read by `servePreanalysis`;
 // **only the answer is fake**, chosen by the server from a fixed list.
 //
 // `answer_max_chars` is the same limit as the form's answers: a message is an
 // answer like any other, and no new configuration field is needed.
-export function renderAnalysis(ui, { access, settings, terms, project_id, chat }) {
+export function renderPreanalysis(ui, { access, settings, terms, project_id, chat }) {
   // The turns **used** are not counted separately: they are the rounds already
   // done, that is, the messages the client has written. Not half the messages:
-  // the analyst opens the conversation, so its messages are one more than the
+  // the preanalyst opens the conversation, so its messages are one more than the
   // client's, and counting by halves would depend on that staying true. The total
   // is what has been used plus what is left, and not `max_turns`: with bought
   // turns the starting cap is no longer the total.
-  const usati = chat.messages.filter((message) => message.role === "client").length;
-  return env.render("analysis.njk", {
+  const usedTurns = chat.messages.filter((message) => message.role === "client").length;
+  return env.render("preanalysis.njk", {
     ...ui,
-    title: ui.t("preanalyst.analysis.title"),
+    title: ui.t("preanalyst.preanalysis.title"),
     noindex: true,
     home_link: "/",
     access: accessData(access, settings),
     chat: {
       project_id,
+      // The longest message accepted. It is not written into the field as a
+      // `maxlength` — that would cut a paste in the browser — but into the line
+      // that says why a message was refused.
       max_chars: settings.answerMaxChars,
       messages: chat.messages,
       turns_left: chat.turnsLeft,
-      used: usati,
-      total: usati + chat.turnsLeft,
+      used: usedTurns,
+      total: usedTurns + chat.turnsLeft,
       // At how many remaining turns we warn. In the configuration the number is
       // said from the other end — "from the twentieth of thirty" — but what holds
       // with bought turns too is how many are left, not how far along we are.
-      warn_when_left: settings.analysis.maxTurns - settings.analysis.warnFromTurn,
-      // Whether the analysis has been judged complete. The page is born with the
-      // notice already on when it has: reloading must not lose what the
+      warn_when_left: settings.preanalysis.maxTurns - settings.preanalysis.warnFromTurn,
+      // Whether the pre-analysis has been judged complete. The page is born with
+      // the notice already on when it has: reloading must not lose what the
       // conversation got to.
       ready: Boolean(chat.ready),
       credit: chat.credit,
+      // The rounds of questions are over and this page is a reading of them: no
+      // field to write in, no turns to buy for a round that has closed.
+      closed: Boolean(chat.closed),
     },
     summary: summaryData(terms),
   });
@@ -265,8 +272,8 @@ function localizedSections(ui, answers) {
 // for a radio, so the template does one thing only.
 function answered(field, value) {
   if (field.kind === "radio" || field.kind === "checkbox") {
-    const codici = Array.isArray(value) ? value : value ? [value] : [];
-    return { selected: codici };
+    const codes = Array.isArray(value) ? value : value ? [value] : [];
+    return { selected: codes };
   }
   return { value: typeof value === "string" ? value : "" };
 }

@@ -54,7 +54,7 @@ configuration makes true.
   the cheap answer and the final one are the same answer, and the document says the opposite.
 - `prevalidation.max_underspecified_attempts` is `100` today
   (`webtools/configurator/configuration/preanalyst.json:45`), which is why nobody has met this: 100
-  reads like "switched off". It is a configured integer, and the PoC exists to find out how many
+  reads like "switched off". It is a configured integer, and we are trying to find out how many
   rounds a pre-analysis really takes; setting it to 2 or 3 is the natural outcome of that
   measurement, and it is made in Mongo, far from this paragraph.
 - Severity: `latent`

@@ -5,6 +5,7 @@
 
 import { loadConfiguration } from "./commons/configuration_client.js";
 import { loadI18n } from "./commons/i18n/webtools_i18n.js";
+import { loadMetrics } from "./commons/metrics/webtools_metrics_client.js";
 
 export async function loadSettings() {
   const configuration = await loadConfiguration("front-gate");
@@ -18,5 +19,9 @@ export async function loadSettings() {
     standardPriceCents: configuration.integer("screen_infos.pricing.standard_price_cents", { min: 0 }),
     // Languages, catalogues and the language cookie: see src/commons/i18n/webtools_i18n.js.
     i18n: loadI18n(configuration),
+    // Where measurements go. It neither waits nor throws: see
+    // src/commons/metrics/webtools_metrics_client.js. This is the front door, so what
+    // arrives here is the only count of the people who never go any further.
+    metrics: loadMetrics(configuration),
   };
 }

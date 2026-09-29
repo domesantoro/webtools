@@ -22,6 +22,11 @@ if __name__ == "__main__":
     except ConfigurationError as error:
         print(f"webtools_anagraphics is not starting: {error}", file=sys.stderr)
         sys.exit(1)
+    # It started: the configuration was there and was whole. The other two outcomes
+    # the vocabulary allows cannot be sent from here — a subsystem that could not read
+    # its configuration has no metrics client to say so with, because the client is
+    # built out of that same configuration.
+    settings.metrics.measure("process.started", dims={"outcome": "ok"})
     uvicorn.run(
         app,
         host=settings.host,

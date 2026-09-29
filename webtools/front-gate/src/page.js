@@ -21,12 +21,12 @@ const env = nunjucks.configure(TEMPLATES_DIR, {
 export const PAGES = {
   "/": "index.njk",
   "/index.html": "index.njk",
-  "/che-cos-e.html": "che-cos-e.njk",
-  "/esempi.html": "esempi.njk",
-  "/come-funziona.html": "come-funziona.njk",
-  "/quanto-costa.html": "quanto-costa.njk",
-  "/contatti.html": "contatti.njk",
-  "/lavora-con-noi.html": "lavora-con-noi.njk",
+  "/what-it-is.html": "what-it-is.njk",
+  "/examples.html": "examples.njk",
+  "/how-it-works.html": "how-it-works.njk",
+  "/pricing.html": "pricing.njk",
+  "/contacts.html": "contacts.njk",
+  "/work-with-us.html": "work-with-us.njk",
 };
 
 // `ui` is what `settings.i18n.pageContext(…)` gives: language, `t` and the

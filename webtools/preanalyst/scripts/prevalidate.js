@@ -32,11 +32,24 @@ const outcome = await prevalidate(settings, spec);
 const elapsed = Date.now() - start;
 
 if (!outcome.ok) {
-  console.error(`Prevalidation failed: ${outcome.reason} (${elapsed} ms)`);
+  console.error(
+    `Prevalidation ended ${outcome.ended}${outcome.failure ? ` (${outcome.failure})` : ""} ` +
+      `after ${outcome.attempts} attempt(s), ${elapsed} ms`,
+  );
   process.exit(1);
 }
 
-const { outcome: verdictName, distribution, off_domain, reason, policy, provider, model, usage } = outcome.data;
+// The spend printed as it comes: the names of the kinds are the adapter's, and a
+// list of them written here would be a provider's vocabulary in a script.
+const spendLine = (answer) =>
+  answer.spend
+    ? Object.entries(answer.spend.kinds)
+        .map(([kind, units]) => `${kind} ${units}`)
+        .join(", ")
+    : "nothing recorded";
+
+const { outcome: verdictName, distribution, off_domain, reason } = outcome.output;
+const { policy, provider, model } = outcome;
 // The verdict as the server would take it, on the **first** round: there is no
 // project here, so there are no rounds already done to count.
 const decision = verdict(distribution, verdictName, {
@@ -47,7 +60,8 @@ const decision = verdict(distribution, verdictName, {
 
 console.log(`file      ${file}`);
 console.log(`policy    ${policy} · ${provider} · ${model} · ${elapsed} ms`);
-console.log(`tokens    ${usage.input_tokens} in, ${usage.output_tokens} out`);
+console.log(`attempts  ${outcome.attempts}${outcome.fell_back ? " · fell back to another model" : ""}`);
+console.log(`spend     ${spendLine(outcome)}`);
 console.log("");
 for (const [name, value] of Object.entries(distribution)) {
   const bar = "█".repeat(Math.round(value * 40));

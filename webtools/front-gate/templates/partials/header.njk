@@ -1,10 +1,10 @@
 {#- The header of every page. `page` says which item is the current one. -#}
 {%- set items = [
-  ["che-cos-e", "front_gate.nav.what"],
-  ["esempi", "front_gate.nav.examples"],
-  ["come-funziona", "front_gate.nav.how"],
-  ["quanto-costa", "front_gate.nav.pricing"],
-  ["lavora-con-noi", "front_gate.nav.work_with_us"]
+  ["what-it-is", "front_gate.nav.what"],
+  ["examples", "front_gate.nav.examples"],
+  ["how-it-works", "front_gate.nav.how"],
+  ["pricing", "front_gate.nav.pricing"],
+  ["work-with-us", "front_gate.nav.work_with_us"]
 ] %}
 <header class="site-header">
   <div class="container header-inner">
@@ -18,7 +18,7 @@
       {%- endfor %}
       {% include "partials/start.njk" %}
     </nav>
-    <a class="btn utility-link" href="contatti.html"{% if page == "contatti" %} aria-current="page"{% endif %}>{{ t("front_gate.nav.contacts") }}</a>
+    <a class="btn utility-link" href="contacts.html"{% if page == "contacts" %} aria-current="page"{% endif %}>{{ t("front_gate.nav.contacts") }}</a>
     <button class="menu-toggle" aria-label="{{ t("front_gate.nav.open_menu") }}" aria-expanded="false"><span></span><span></span></button>
   </div>
 </header>

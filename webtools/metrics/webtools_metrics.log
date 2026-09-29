@@ -1,0 +1,2072 @@
+=== start 2026-09-26 13:39:46 ===
+INFO:     Started server process [11833]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:9600 (Press CTRL+C to quit)
+INFO:     127.0.0.1:52933 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52934 - "POST /measurements HTTP/1.1" 400 Bad Request
+INFO:     127.0.0.1:52935 - "GET /metrics/funnel?from=2026-09-26&to=2026-09-26 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52937 - "GET /metrics/projects/smoke-test-project HTTP/1.1" 200 OK
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [11833]
+=== start 2026-09-26 15:07:36 ===
+INFO:     Started server process [18202]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:9600 (Press CTRL+C to quit)
+INFO:     127.0.0.1:54141 - "GET /vocabulary HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54142 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:54143 - "POST /measurements HTTP/1.1" 400 Bad Request
+INFO:     127.0.0.1:54144 - "POST /measurements HTTP/1.1" 400 Bad Request
+INFO:     127.0.0.1:54145 - "GET /metrics/cost?from=2026-09-26&to=2026-09-26 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54146 - "GET /metrics/projects/e2e-1790428067 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54147 - "GET /metrics/cost?from=2026-09-26&to=2026-09-26 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54148 - "GET /metrics/economics?from=2026-09-26&to=2026-09-26 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54149 - "GET /metrics/daily?from=2026-09-26&to=2026-09-26&metric=ai.call HTTP/1.1" 200 OK
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [18202]
+=== start 2026-09-26 15:35:07 ===
+INFO:     Started server process [20315]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:9600 (Press CTRL+C to quit)
+INFO:     127.0.0.1:54498 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:54501 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [20315]
+=== start 2026-09-26 15:37:13 ===
+INFO:     Started server process [20759]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:9600 (Press CTRL+C to quit)
+INFO:     127.0.0.1:54518 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:54521 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [20759]
+=== start 2026-09-26 17:22:28 ===
+INFO:     Started server process [27271]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:9600 (Press CTRL+C to quit)
+INFO:     127.0.0.1:55579 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:55582 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:55598 - "GET /metrics/cost?from=2026-08-28&to=2026-09-26 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55599 - "GET /metrics/analysis?from=2026-08-28&to=2026-09-26 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55601 - "GET /metrics/economics?from=2026-08-28&to=2026-09-26 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55602 - "GET /metrics/health?from=2026-08-28&to=2026-09-26 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55600 - "GET /metrics/providers?from=2026-08-28&to=2026-09-26 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55603 - "GET /metrics/daily?from=2026-08-28&to=2026-09-26 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55597 - "GET /metrics/funnel?from=2026-08-28&to=2026-09-26 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55612 - "GET /metrics/funnel?from=2026-08-28&to=2026-09-26 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55612 - "GET /metrics/cost?from=2026-08-28&to=2026-09-26 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55612 - "GET /metrics/analysis?from=2026-08-28&to=2026-09-26 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55612 - "GET /metrics/providers?from=2026-08-28&to=2026-09-26 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55612 - "GET /metrics/http?from=2026-08-28&to=2026-09-26 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55612 - "GET /metrics/economics?from=2026-08-28&to=2026-09-26 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55612 - "GET /metrics/timing?from=2026-08-28&to=2026-09-26 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55612 - "GET /metrics/health?from=2026-08-28&to=2026-09-26 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55612 - "GET /metrics/daily?from=2026-08-28&to=2026-09-26 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55615 - "GET /vocabulary HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55612 - "GET /vocabulary HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55618 - "GET /metrics/analysis?from=2026-08-28&to=2026-09-26 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55622 - "GET /metrics/daily?from=2026-08-28&to=2026-09-26 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55619 - "GET /metrics/providers?from=2026-08-28&to=2026-09-26 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55617 - "GET /metrics/cost?from=2026-08-28&to=2026-09-26 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55620 - "GET /metrics/economics?from=2026-08-28&to=2026-09-26 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55621 - "GET /metrics/health?from=2026-08-28&to=2026-09-26 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55616 - "GET /metrics/funnel?from=2026-08-28&to=2026-09-26 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55627 - "GET /vocabulary HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55626 - "GET /metrics/daily?from=2026-08-28&to=2026-09-26 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55626 - "GET /metrics/health?from=2026-08-28&to=2026-09-26 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55626 - "GET /metrics/timing?from=2026-08-28&to=2026-09-26 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55629 - "GET /metrics/economics?from=2026-08-28&to=2026-09-26 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55629 - "GET /metrics/http?from=2026-08-28&to=2026-09-26 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55629 - "GET /metrics/providers?from=2026-08-28&to=2026-09-26 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55632 - "GET /metrics/analysis?from=2026-08-28&to=2026-09-26 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56155 - "GET /metrics/analysis?from=2026-08-28&to=2026-09-26 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56158 - "GET /metrics/providers?from=2026-08-28&to=2026-09-26 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56156 - "GET /metrics/cost?from=2026-08-28&to=2026-09-26 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56157 - "GET /metrics/analysis?from=2026-08-28&to=2026-09-26 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56160 - "GET /metrics/health?from=2026-08-28&to=2026-09-26 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56161 - "GET /metrics/daily?from=2026-08-28&to=2026-09-26 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56159 - "GET /metrics/economics?from=2026-08-28&to=2026-09-26 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56155 - "GET /metrics/funnel?from=2026-08-28&to=2026-09-26 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56164 - "GET /metrics/funnel?from=2026-08-28&to=2026-09-26 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56164 - "GET /metrics/cost?from=2026-08-28&to=2026-09-26 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56167 - "GET /metrics/analysis?from=2026-08-28&to=2026-09-26 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56169 - "GET /metrics/providers?from=2026-08-28&to=2026-09-26 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56169 - "GET /metrics/http?from=2026-08-28&to=2026-09-26 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56169 - "GET /metrics/economics?from=2026-08-28&to=2026-09-26 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56169 - "GET /metrics/timing?from=2026-08-28&to=2026-09-26 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56169 - "GET /metrics/health?from=2026-08-28&to=2026-09-26 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56171 - "GET /vocabulary HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56169 - "GET /metrics/daily?from=2026-08-28&to=2026-09-26 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56169 - "GET /vocabulary HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56687 - "GET /vocabulary HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56687 - "GET /vocabulary HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56690 - "GET /metrics/providers?from=2026-08-28&to=2026-09-26 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56692 - "GET /metrics/health?from=2026-08-28&to=2026-09-26 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56693 - "GET /metrics/daily?from=2026-08-28&to=2026-09-26 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56688 - "GET /metrics/cost?from=2026-08-28&to=2026-09-26 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56691 - "GET /metrics/economics?from=2026-08-28&to=2026-09-26 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56689 - "GET /metrics/analysis?from=2026-08-28&to=2026-09-26 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56687 - "GET /metrics/funnel?from=2026-08-28&to=2026-09-26 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56687 - "GET /metrics/funnel?from=2026-08-28&to=2026-09-26 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56687 - "GET /metrics/cost?from=2026-08-28&to=2026-09-26 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56687 - "GET /metrics/analysis?from=2026-08-28&to=2026-09-26 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56687 - "GET /metrics/providers?from=2026-08-28&to=2026-09-26 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56687 - "GET /metrics/http?from=2026-08-28&to=2026-09-26 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56687 - "GET /metrics/economics?from=2026-08-28&to=2026-09-26 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56687 - "GET /metrics/timing?from=2026-08-28&to=2026-09-26 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56687 - "GET /metrics/health?from=2026-08-28&to=2026-09-26 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56696 - "GET /vocabulary HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56687 - "GET /metrics/daily?from=2026-08-28&to=2026-09-26 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56701 - "GET /metrics/funnel?from=2026-08-28&to=2026-09-26 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56761 - "GET /metrics/daily?from=2020-01-01&to=2026-09-26 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56762 - "GET /metrics/funnel?from=2026-08-28&to=2026-09-26 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56761 - "GET /metrics/providers?from=2026-08-28&to=2026-09-26 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56762 - "GET /metrics/analysis?from=2026-08-28&to=2026-09-26 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56761 - "GET /metrics/http?from=2026-08-28&to=2026-09-26 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56762 - "GET /metrics/economics?from=2026-08-28&to=2026-09-26 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56761 - "GET /metrics/health?from=2026-08-28&to=2026-09-26 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56762 - "GET /metrics/cost?from=2026-08-28&to=2026-09-26 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56912 - "GET /vocabulary HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56917 - "GET /vocabulary HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56919 - "GET /vocabulary HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57029 - "GET /vocabulary HTTP/1.1" 200 OK
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [27271]
+=== start 2026-09-26 19:05:26 ===
+INFO:     Started server process [33185]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:9600 (Press CTRL+C to quit)
+INFO:     127.0.0.1:57174 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:57176 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:57178 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:57180 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:57184 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:57184 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:57187 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:57188 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:57190 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:57192 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:57193 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:57194 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:57196 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:57197 - "GET /metrics/daily?from=2026-09-26&to=2026-09-26 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57200 - "GET /metrics/http?from=2026-07-29&to=2026-08-27 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57199 - "GET /metrics/http?from=2026-08-28&to=2026-09-26 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57221 - "GET /metrics/cost?from=2026-08-28&to=2026-09-26 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57225 - "GET /metrics/health?from=2026-08-28&to=2026-09-26 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57223 - "GET /metrics/providers?from=2026-08-28&to=2026-09-26 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57232 - "GET /metrics/daily?from=2026-08-28&to=2026-09-26 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57222 - "GET /metrics/analysis?from=2026-08-28&to=2026-09-26 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57224 - "GET /metrics/economics?from=2026-08-28&to=2026-09-26 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57229 - "GET /metrics/providers?from=2026-07-29&to=2026-08-27 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57230 - "GET /metrics/economics?from=2026-07-29&to=2026-08-27 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57231 - "GET /metrics/health?from=2026-07-29&to=2026-08-27 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57228 - "GET /metrics/analysis?from=2026-07-29&to=2026-08-27 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57227 - "GET /metrics/cost?from=2026-07-29&to=2026-08-27 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57220 - "GET /metrics/funnel?from=2026-08-28&to=2026-09-26 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57226 - "GET /metrics/funnel?from=2026-07-29&to=2026-08-27 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57245 - "GET /vocabulary HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57258 - "GET /vocabulary HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57265 - "GET /metrics/health?from=2026-08-28&to=2026-09-26 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57263 - "GET /metrics/providers?from=2026-08-28&to=2026-09-26 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57261 - "GET /metrics/cost?from=2026-08-28&to=2026-09-26 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57272 - "GET /metrics/daily?from=2026-08-28&to=2026-09-26 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57262 - "GET /metrics/analysis?from=2026-08-28&to=2026-09-26 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57267 - "GET /metrics/cost?from=2026-07-29&to=2026-08-27 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57264 - "GET /metrics/economics?from=2026-08-28&to=2026-09-26 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57271 - "GET /metrics/health?from=2026-07-29&to=2026-08-27 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57269 - "GET /metrics/providers?from=2026-07-29&to=2026-08-27 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57270 - "GET /metrics/economics?from=2026-07-29&to=2026-08-27 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57268 - "GET /metrics/analysis?from=2026-07-29&to=2026-08-27 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57260 - "GET /metrics/funnel?from=2026-08-28&to=2026-09-26 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57266 - "GET /metrics/funnel?from=2026-07-29&to=2026-08-27 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57278 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:57280 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:57281 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:57284 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:57286 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:57287 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [33185]
+=== start 2026-09-28 15:07:34 ===
+INFO:     Started server process [34618]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:9600 (Press CTRL+C to quit)
+INFO:     127.0.0.1:61870 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:61872 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:61874 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:61876 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:61879 - "GET /metrics/specification?from=2026-09-01&to=2026-09-28 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61880 - "GET /metrics/analysis?from=2026-09-01&to=2026-09-28 HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:61881 - "GET /vocabulary HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61883 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:61885 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:61883 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:61888 - "GET /metrics/specification?from=2026-08-30&to=2026-09-28 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61889 - "GET /metrics/specification?from=2026-07-31&to=2026-08-29 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61888 - "GET /metrics/specification?from=2026-08-30&to=2026-09-28 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61889 - "GET /metrics/specification?from=2026-07-31&to=2026-08-29 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62189 - "GET /metrics/providers?from=2026-08-30&to=2026-09-28 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62187 - "GET /metrics/cost?from=2026-08-30&to=2026-09-28 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62188 - "GET /metrics/specification?from=2026-08-30&to=2026-09-28 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62191 - "GET /metrics/health?from=2026-08-30&to=2026-09-28 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62193 - "GET /metrics/cost?from=2026-07-31&to=2026-08-29 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62197 - "GET /metrics/health?from=2026-07-31&to=2026-08-29 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62195 - "GET /metrics/providers?from=2026-07-31&to=2026-08-29 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62196 - "GET /metrics/economics?from=2026-07-31&to=2026-08-29 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62190 - "GET /metrics/economics?from=2026-08-30&to=2026-09-28 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62198 - "GET /metrics/daily?from=2026-08-30&to=2026-09-28 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62194 - "GET /metrics/specification?from=2026-07-31&to=2026-08-29 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62186 - "GET /metrics/funnel?from=2026-08-30&to=2026-09-28 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62192 - "GET /metrics/funnel?from=2026-07-31&to=2026-08-29 HTTP/1.1" 200 OK
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [34618]
+=== start 2026-09-28 15:48:41 ===
+INFO:     Started server process [40450]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:9600 (Press CTRL+C to quit)
+INFO:     127.0.0.1:62603 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:62608 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [40450]
+=== start 2026-09-28 15:49:16 ===
+INFO:     Started server process [40803]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:9600 (Press CTRL+C to quit)
+INFO:     127.0.0.1:62632 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:62634 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:62636 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:62638 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:62643 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:62645 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:62643 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:62647 - "GET /metrics/preanalysis?from=2026-09-01&to=2026-09-28 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62649 - "GET /metrics/preanalysis?from=2026-08-30&to=2026-09-28 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62650 - "GET /metrics/preanalysis?from=2026-07-31&to=2026-08-29 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62652 - "GET /vocabulary HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62653 - "GET /metrics/preanalysis?from=2026-09-01&to=2026-09-28 HTTP/1.1" 200 OK
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [40803]
+=== start 2026-09-28 15:50:01 ===
+INFO:     Started server process [41394]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:9600 (Press CTRL+C to quit)
+INFO:     127.0.0.1:62674 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:62676 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:62678 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:62680 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [41394]
+=== start 2026-09-28 16:49:24 ===
+INFO:     Started server process [48065]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:9600 (Press CTRL+C to quit)
+INFO:     127.0.0.1:63153 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:63155 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:63157 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:63159 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:63207 - "POST /measurements HTTP/1.1" 400 Bad Request
+INFO:     127.0.0.1:63208 - "POST /measurements HTTP/1.1" 400 Bad Request
+INFO:     127.0.0.1:63210 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:63211 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:63210 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [48065]
+=== start 2026-09-28 20:19:22 ===
+webtools_metrics is not starting: GET http://127.0.0.1:9100/configuration/metrics: ConnectError [Errno 61] Connection refused
+=== start 2026-09-28 20:19:46 ===
+INFO:     Started server process [7675]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:9600 (Press CTRL+C to quit)
+INFO:     127.0.0.1:50483 - "GET /health HTTP/1.1" 404 Not Found
+invalid body on /metrics/funnel: [{'type': 'missing', 'loc': ('query', 'from'), 'msg': 'Field required', 'input': None}, {'type': 'missing', 'loc': ('query', 'to'), 'msg': 'Field required', 'input': None}]
+INFO:     127.0.0.1:50484 - "GET /metrics/funnel HTTP/1.1" 400 Bad Request
+invalid body on /metrics/funnel: [{'type': 'missing', 'loc': ('query', 'from'), 'msg': 'Field required', 'input': None}, {'type': 'missing', 'loc': ('query', 'to'), 'msg': 'Field required', 'input': None}]
+INFO:     127.0.0.1:50518 - "GET /metrics/funnel HTTP/1.1" 400 Bad Request
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [7675]
+=== start 2026-09-28 20:32:37 ===
+INFO:     Started server process [8522]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:9600 (Press CTRL+C to quit)
+INFO:     127.0.0.1:50714 - "GET /vocabulary HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50718 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50786 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50916 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50916 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50916 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50925 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50935 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [8522]
+=== start 2026-09-28 20:56:29 ===
+INFO:     Started server process [10607]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:9600 (Press CTRL+C to quit)
+INFO:     127.0.0.1:51178 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [10607]
+=== start 2026-09-28 21:41:17 ===
+INFO:     Started server process [12999]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:9600 (Press CTRL+C to quit)
+INFO:     127.0.0.1:51622 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51628 - "GET /metrics/daily?from=2026-09-28&to=2026-09-28 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51630 - "GET /metrics/daily?from=2026-09-28&to=2026-09-28 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51648 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51649 - "GET /metrics/daily?from=2026-09-28&to=2026-09-28 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51661 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51663 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51663 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51664 - "GET /metrics/daily?from=2026-09-28&to=2026-09-28 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51730 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51752 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51752 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51757 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51787 - "GET /metrics/daily?from=2026-09-28&to=2026-09-28 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52470 - "POST /measurements HTTP/1.1" 400 Bad Request
+INFO:     127.0.0.1:52470 - "POST /measurements HTTP/1.1" 400 Bad Request
+INFO:     127.0.0.1:52470 - "POST /measurements HTTP/1.1" 400 Bad Request
+INFO:     127.0.0.1:52470 - "POST /measurements HTTP/1.1" 400 Bad Request
+INFO:     127.0.0.1:52470 - "POST /measurements HTTP/1.1" 400 Bad Request
+INFO:     127.0.0.1:52470 - "POST /measurements HTTP/1.1" 400 Bad Request
+INFO:     127.0.0.1:52470 - "POST /measurements HTTP/1.1" 400 Bad Request
+INFO:     127.0.0.1:52470 - "POST /measurements HTTP/1.1" 400 Bad Request
+INFO:     127.0.0.1:52470 - "POST /measurements HTTP/1.1" 400 Bad Request
+INFO:     127.0.0.1:52470 - "POST /measurements HTTP/1.1" 400 Bad Request
+INFO:     127.0.0.1:52470 - "POST /measurements HTTP/1.1" 400 Bad Request
+INFO:     127.0.0.1:52470 - "POST /measurements HTTP/1.1" 400 Bad Request
+INFO:     127.0.0.1:52470 - "POST /measurements HTTP/1.1" 400 Bad Request
+INFO:     127.0.0.1:52470 - "POST /measurements HTTP/1.1" 400 Bad Request
+INFO:     127.0.0.1:52470 - "POST /measurements HTTP/1.1" 400 Bad Request
+INFO:     127.0.0.1:52470 - "POST /measurements HTTP/1.1" 400 Bad Request
+INFO:     127.0.0.1:52470 - "POST /measurements HTTP/1.1" 400 Bad Request
+INFO:     127.0.0.1:52470 - "POST /measurements HTTP/1.1" 400 Bad Request
+INFO:     127.0.0.1:52470 - "POST /measurements HTTP/1.1" 400 Bad Request
+INFO:     127.0.0.1:52470 - "POST /measurements HTTP/1.1" 400 Bad Request
+INFO:     127.0.0.1:52470 - "POST /measurements HTTP/1.1" 400 Bad Request
+INFO:     127.0.0.1:52470 - "POST /measurements HTTP/1.1" 400 Bad Request
+INFO:     127.0.0.1:52470 - "POST /measurements HTTP/1.1" 400 Bad Request
+INFO:     127.0.0.1:52470 - "POST /measurements HTTP/1.1" 400 Bad Request
+INFO:     127.0.0.1:52470 - "POST /measurements HTTP/1.1" 400 Bad Request
+INFO:     127.0.0.1:52470 - "POST /measurements HTTP/1.1" 400 Bad Request
+INFO:     127.0.0.1:52470 - "POST /measurements HTTP/1.1" 400 Bad Request
+INFO:     127.0.0.1:52470 - "POST /measurements HTTP/1.1" 400 Bad Request
+INFO:     127.0.0.1:52470 - "POST /measurements HTTP/1.1" 400 Bad Request
+INFO:     127.0.0.1:52470 - "POST /measurements HTTP/1.1" 400 Bad Request
+INFO:     127.0.0.1:52470 - "POST /measurements HTTP/1.1" 400 Bad Request
+INFO:     127.0.0.1:52470 - "POST /measurements HTTP/1.1" 400 Bad Request
+INFO:     127.0.0.1:52470 - "POST /measurements HTTP/1.1" 400 Bad Request
+INFO:     127.0.0.1:52470 - "POST /measurements HTTP/1.1" 400 Bad Request
+INFO:     127.0.0.1:52470 - "POST /measurements HTTP/1.1" 400 Bad Request
+INFO:     127.0.0.1:52470 - "POST /measurements HTTP/1.1" 400 Bad Request
+INFO:     127.0.0.1:52470 - "POST /measurements HTTP/1.1" 400 Bad Request
+INFO:     127.0.0.1:52470 - "POST /measurements HTTP/1.1" 400 Bad Request
+INFO:     127.0.0.1:52470 - "POST /measurements HTTP/1.1" 400 Bad Request
+INFO:     127.0.0.1:52470 - "POST /measurements HTTP/1.1" 400 Bad Request
+INFO:     127.0.0.1:52470 - "POST /measurements HTTP/1.1" 400 Bad Request
+INFO:     127.0.0.1:52470 - "POST /measurements HTTP/1.1" 400 Bad Request
+INFO:     127.0.0.1:52470 - "POST /measurements HTTP/1.1" 400 Bad Request
+INFO:     127.0.0.1:52470 - "POST /measurements HTTP/1.1" 400 Bad Request
+INFO:     127.0.0.1:52470 - "POST /measurements HTTP/1.1" 400 Bad Request
+INFO:     127.0.0.1:52470 - "POST /measurements HTTP/1.1" 400 Bad Request
+INFO:     127.0.0.1:52470 - "POST /measurements HTTP/1.1" 400 Bad Request
+INFO:     127.0.0.1:52470 - "POST /measurements HTTP/1.1" 400 Bad Request
+INFO:     127.0.0.1:52470 - "POST /measurements HTTP/1.1" 400 Bad Request
+INFO:     127.0.0.1:52470 - "POST /measurements HTTP/1.1" 400 Bad Request
+INFO:     127.0.0.1:52470 - "POST /measurements HTTP/1.1" 400 Bad Request
+INFO:     127.0.0.1:52470 - "POST /measurements HTTP/1.1" 400 Bad Request
+INFO:     127.0.0.1:52470 - "POST /measurements HTTP/1.1" 400 Bad Request
+INFO:     127.0.0.1:52470 - "POST /measurements HTTP/1.1" 400 Bad Request
+INFO:     127.0.0.1:52470 - "POST /measurements HTTP/1.1" 400 Bad Request
+INFO:     127.0.0.1:52470 - "POST /measurements HTTP/1.1" 400 Bad Request
+INFO:     127.0.0.1:52470 - "POST /measurements HTTP/1.1" 400 Bad Request
+INFO:     127.0.0.1:52470 - "POST /measurements HTTP/1.1" 400 Bad Request
+INFO:     127.0.0.1:52470 - "POST /measurements HTTP/1.1" 400 Bad Request
+INFO:     127.0.0.1:52470 - "POST /measurements HTTP/1.1" 400 Bad Request
+INFO:     127.0.0.1:52470 - "POST /measurements HTTP/1.1" 400 Bad Request
+INFO:     127.0.0.1:52470 - "POST /measurements HTTP/1.1" 400 Bad Request
+INFO:     127.0.0.1:52470 - "POST /measurements HTTP/1.1" 400 Bad Request
+INFO:     127.0.0.1:52470 - "POST /measurements HTTP/1.1" 400 Bad Request
+INFO:     127.0.0.1:52470 - "POST /measurements HTTP/1.1" 400 Bad Request
+INFO:     127.0.0.1:52470 - "POST /measurements HTTP/1.1" 400 Bad Request
+INFO:     127.0.0.1:52470 - "POST /measurements HTTP/1.1" 400 Bad Request
+INFO:     127.0.0.1:52470 - "POST /measurements HTTP/1.1" 400 Bad Request
+INFO:     127.0.0.1:52470 - "POST /measurements HTTP/1.1" 400 Bad Request
+INFO:     127.0.0.1:52470 - "POST /measurements HTTP/1.1" 400 Bad Request
+INFO:     127.0.0.1:52470 - "POST /measurements HTTP/1.1" 400 Bad Request
+INFO:     127.0.0.1:52470 - "POST /measurements HTTP/1.1" 400 Bad Request
+INFO:     127.0.0.1:52470 - "POST /measurements HTTP/1.1" 400 Bad Request
+INFO:     127.0.0.1:52470 - "POST /measurements HTTP/1.1" 400 Bad Request
+INFO:     127.0.0.1:52470 - "POST /measurements HTTP/1.1" 400 Bad Request
+INFO:     127.0.0.1:52470 - "POST /measurements HTTP/1.1" 400 Bad Request
+INFO:     127.0.0.1:52470 - "POST /measurements HTTP/1.1" 400 Bad Request
+INFO:     127.0.0.1:52470 - "POST /measurements HTTP/1.1" 400 Bad Request
+INFO:     127.0.0.1:52470 - "POST /measurements HTTP/1.1" 400 Bad Request
+INFO:     127.0.0.1:52470 - "POST /measurements HTTP/1.1" 400 Bad Request
+INFO:     127.0.0.1:52470 - "POST /measurements HTTP/1.1" 400 Bad Request
+INFO:     127.0.0.1:52473 - "POST /measurements HTTP/1.1" 400 Bad Request
+INFO:     127.0.0.1:52473 - "POST /measurements HTTP/1.1" 400 Bad Request
+INFO:     127.0.0.1:52473 - "POST /measurements HTTP/1.1" 400 Bad Request
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [12999]
+=== start 2026-09-28 22:45:06 ===
+INFO:     Started server process [17156]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:9600 (Press CTRL+C to quit)
+INFO:     127.0.0.1:52485 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52485 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52487 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52488 - "GET /metrics/daily?from=2026-09-28&to=2026-09-28 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52491 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52491 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52491 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52494 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52516 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52516 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52516 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52516 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52516 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52516 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52516 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52516 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52516 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52516 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52517 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52517 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52517 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52517 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52517 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52517 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52517 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52517 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52517 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52517 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52517 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52517 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52517 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52517 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52517 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52517 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52517 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52517 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52517 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52517 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52517 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52517 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52517 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52517 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52517 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52517 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52517 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52517 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52517 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52517 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52517 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52517 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52517 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52517 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52517 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52517 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52517 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52517 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52517 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52517 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52517 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52517 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52517 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52517 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52517 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52517 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52517 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52517 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52517 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52517 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52517 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52517 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52517 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52517 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52517 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52517 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52517 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52517 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52517 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52517 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52517 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52517 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52517 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52517 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52517 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52517 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52517 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52517 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52517 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52517 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52517 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52517 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52517 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52517 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52517 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52517 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52517 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52517 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52517 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52517 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52517 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52517 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52517 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52517 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52517 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52517 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52517 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52517 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52517 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52517 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52517 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52517 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52517 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52517 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52517 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52517 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52517 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52517 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52517 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52517 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52517 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52517 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52517 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52517 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52517 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52517 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52517 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52517 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52517 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52517 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52517 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52517 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52517 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52517 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52517 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52517 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52517 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52517 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52517 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52517 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52517 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52517 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52517 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52517 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52517 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52517 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52517 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52517 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52517 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52517 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52517 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52517 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52517 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52517 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52517 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52517 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52517 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52517 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52517 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52517 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52517 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52517 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52517 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52517 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52517 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52517 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52518 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52518 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52518 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52518 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52518 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52518 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52518 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52518 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52518 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52518 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52518 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52518 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52518 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52518 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52518 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52518 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52518 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52518 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52518 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52522 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52524 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52526 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52522 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52522 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52522 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52524 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52524 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52524 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52524 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52531 - "GET /metrics/daily?from=2026-09-28&to=2026-09-28 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52551 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52551 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52551 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52551 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52551 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52551 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52551 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52551 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52551 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52551 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52552 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52552 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52552 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52552 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52552 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52552 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52552 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52552 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52552 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52552 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52552 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52552 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52552 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52552 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52552 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52552 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52552 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52552 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52552 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52552 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52552 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52552 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52552 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52552 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52552 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52552 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52552 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52552 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52552 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52552 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52552 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52552 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52552 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52552 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52552 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52552 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52552 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52552 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52552 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52552 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52552 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52552 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52552 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52552 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52552 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52552 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52552 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52552 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52552 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52552 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52552 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52552 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52552 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52552 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52552 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52552 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52552 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52552 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52552 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52552 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52552 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52552 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52552 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52552 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52552 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52552 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52552 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52552 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52552 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52552 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52552 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52552 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52552 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52552 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52552 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52552 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52552 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52552 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52552 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52552 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52552 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52552 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52552 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52552 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52552 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52552 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52552 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52552 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52552 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52552 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52552 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52552 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52552 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52552 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52552 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52552 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52552 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52552 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52552 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52552 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52552 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52552 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52552 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52552 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52552 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52552 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52552 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52552 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52552 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52552 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52552 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52552 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52552 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52552 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52552 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52552 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52552 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52552 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52552 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52552 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52552 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52552 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52552 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52552 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52552 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52552 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52552 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52552 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52552 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52552 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52552 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52552 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52552 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52552 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52552 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52552 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52552 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52552 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52552 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52552 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52552 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52552 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52552 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52552 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52552 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52552 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52553 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52553 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52553 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52553 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52553 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52553 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52553 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52553 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52553 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52553 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52553 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52553 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52553 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52553 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52553 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52553 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52553 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52553 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52553 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52726 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52726 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52726 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52726 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52726 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52726 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52726 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52726 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52726 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52726 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52748 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52748 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52748 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52748 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52748 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52748 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52748 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52748 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52748 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52748 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52748 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52748 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52748 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52748 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52748 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52748 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52748 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52748 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52748 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52748 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52748 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52748 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52748 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52748 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52748 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52748 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52748 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52748 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52748 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52748 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52748 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52748 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52748 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52748 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52748 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52748 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52748 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52748 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52748 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52748 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52748 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52748 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52748 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52748 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52748 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52748 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52748 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52748 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52748 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52748 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52748 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52748 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52748 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52748 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52748 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52748 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52748 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52748 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52748 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52748 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52748 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52748 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52748 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52748 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52748 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52748 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52748 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52748 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52748 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52748 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52748 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52748 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52748 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52748 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52748 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52748 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52748 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52748 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52748 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52748 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52748 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52748 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52748 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52748 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52748 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52748 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52748 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52748 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52748 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52748 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52748 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52748 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52748 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52748 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52748 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52748 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52748 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52748 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52748 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52748 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52748 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52748 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52748 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52748 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52748 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52748 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52748 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52748 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52748 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52748 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52748 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52748 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52748 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52748 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52748 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52748 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52748 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52748 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52748 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52748 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52748 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52748 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52748 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52748 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52748 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52748 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52748 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52748 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52748 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52748 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52748 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52748 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52748 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52748 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52748 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52748 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52748 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52748 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52748 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52748 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52748 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52749 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52749 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52749 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52749 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52749 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52749 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52749 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52749 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52749 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52749 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52749 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52749 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52749 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52749 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52749 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52749 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52749 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52749 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52749 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [17156]
+=== start 2026-09-29 11:54:17 ===
+INFO:     Started server process [16663]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:9600 (Press CTRL+C to quit)
+INFO:     127.0.0.1:53468 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:53470 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:53472 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:53474 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:53479 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:53478 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:53492 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:53492 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:53492 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:53492 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:53492 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:53495 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:53596 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:53596 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:53601 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:53601 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:53635 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:53635 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:53635 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:53638 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:53637 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:53635 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:53637 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:53638 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:53635 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:53635 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:53635 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:53644 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:53635 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:53644 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:53644 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:53635 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:53635 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:53635 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:53647 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:53647 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:53678 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:53678 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:53678 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:53678 - "POST /measurements HTTP/1.1" 202 Accepted
+invalid body on /metrics/cost: [{'type': 'missing', 'loc': ('query', 'from'), 'msg': 'Field required', 'input': None}, {'type': 'missing', 'loc': ('query', 'to'), 'msg': 'Field required', 'input': None}]
+INFO:     127.0.0.1:53692 - "GET /metrics/cost HTTP/1.1" 400 Bad Request
+INFO:     127.0.0.1:53695 - "GET /metrics/projects/8bf6975d-7eef-4900-ac14-fa668d18c219 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53697 - "GET /metrics/projects/8bf6975d-7eef-4900-ac14-fa668d18c219 HTTP/1.1" 200 OK
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [16663]
+=== start 2026-09-29 12:52:18 ===
+webtools_metrics is not starting: GET http://127.0.0.1:9100/configuration/metrics: ConnectError [Errno 61] Connection refused
+=== start 2026-09-29 12:52:26 ===
+INFO:     Started server process [24302]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:9600 (Press CTRL+C to quit)
+INFO:     127.0.0.1:58744 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:58744 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:58744 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:58744 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:58744 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:58744 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:58747 - "GET /metrics/daily?from=2026-09-29&to=2026-09-29 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58750 - "GET /metrics/daily?from=2026-09-29&to=2026-09-29 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58751 - "POST /measurements HTTP/1.1" 400 Bad Request
+INFO:     127.0.0.1:58753 - "GET /metrics/daily?from=2026-09-29&to=2026-09-29&metric=measurement.refused HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58760 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:58760 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:58761 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:58760 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:58760 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:58763 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:58760 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:58760 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:58765 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:58767 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:58768 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:58771 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:58767 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:58771 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:58771 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:58771 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:58767 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:58768 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:58774 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:58775 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:58771 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:58767 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:58768 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:58774 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:58775 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:58771 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:58767 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:58771 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:58771 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:58771 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:58768 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:58774 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:58775 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:58780 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:58781 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:58782 - "GET /metrics/daily?from=2026-09-29&to=2026-09-29&metric=driver_link.resolved HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58784 - "GET /metrics/health?from=2026-09-29&to=2026-09-29 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58789 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:58789 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:58789 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:58790 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:58791 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:58792 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:58793 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:58794 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:58795 - "GET /metrics/daily?from=2026-09-29&to=2026-09-29&metric=dependency.call HTTP/1.1" 200 OK
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [24302]
+=== start 2026-09-29 15:58:14 ===
+INFO:     Started server process [34656]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:9600 (Press CTRL+C to quit)
+INFO:     127.0.0.1:65190 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65190 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65191 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65190 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65190 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65193 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65190 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65190 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65195 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65190 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65190 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65197 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65190 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65190 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65199 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65190 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65190 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65201 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65190 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65190 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65203 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65190 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65190 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65205 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65190 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65190 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65279 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65279 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65280 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65279 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65279 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65282 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65279 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65279 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65280 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65282 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65284 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65285 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65296 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65296 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65297 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65298 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65299 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65300 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65296 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65296 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65299 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65300 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65303 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65304 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65299 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65308 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65310 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65310 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65311 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65310 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65312 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65310 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65308 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65317 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65318 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65316 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65307 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65325 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65325 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65327 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65326 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65328 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65325 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65325 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65330 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65325 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65325 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65328 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65330 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65325 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65325 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65337 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65337 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65338 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65340 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65339 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65337 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65342 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65337 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65340 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65344 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65346 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65348 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65349 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65348 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65348 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65348 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65346 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65348 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65349 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65348 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65348 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65364 - "GET /metrics/preanalysis?from=2026-08-31&to=2026-09-29 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65367 - "GET /metrics/health?from=2026-08-31&to=2026-09-29 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65365 - "GET /metrics/providers?from=2026-08-31&to=2026-09-29 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65369 - "GET /metrics/cost?from=2026-08-01&to=2026-08-30 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65373 - "GET /metrics/health?from=2026-08-01&to=2026-08-30 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65372 - "GET /metrics/economics?from=2026-08-01&to=2026-08-30 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65371 - "GET /metrics/providers?from=2026-08-01&to=2026-08-30 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65370 - "GET /metrics/preanalysis?from=2026-08-01&to=2026-08-30 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65362 - "GET /metrics/funnel?from=2026-08-31&to=2026-09-29 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65368 - "GET /metrics/funnel?from=2026-08-01&to=2026-08-30 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65382 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65374 - "GET /metrics/daily?from=2026-08-31&to=2026-09-29 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65366 - "GET /metrics/economics?from=2026-08-31&to=2026-09-29 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65363 - "GET /metrics/cost?from=2026-08-31&to=2026-09-29 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65382 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65382 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65382 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65382 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65386 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65382 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65387 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65388 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65382 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65390 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65382 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65388 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65392 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65395 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65397 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65397 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65395 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65400 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65397 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65399 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65398 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65397 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65397 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65403 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65403 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65408 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65408 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65409 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65411 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65410 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65413 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65408 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65411 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65408 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65415 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65420 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65422 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65422 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65420 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65422 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65423 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65424 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65425 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65422 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65422 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65430 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65430 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65431 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65432 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65433 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65430 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65435 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65430 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65433 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65437 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65441 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65443 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65443 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65441 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65446 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65443 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65445 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65444 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65443 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65443 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65454 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65457 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65454 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65455 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65456 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65454 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65459 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65457 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65454 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65461 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65465 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65467 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65467 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65465 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65467 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65470 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65468 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65469 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65467 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65467 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65477 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65478 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65479 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65480 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65477 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65477 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65482 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65480 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65477 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65485 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65486 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65489 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65490 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65492 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65492 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65492 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65489 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65492 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65490 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65493 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65494 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65495 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65492 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65492 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65492 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65500 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65500 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65502 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65501 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65504 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65500 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65505 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65500 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65500 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65508 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65500 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65500 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65508 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65500 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65508 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65502 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65505 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65508 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65508 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65508 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65511 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65518 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65518 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65522 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:65522 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:49176 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:49178 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:49176 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:49178 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:49176 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:49176 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:49220 - "GET /metrics/analysis HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:49222 - "GET / HTTP/1.1" 404 Not Found
+invalid body on /metrics/preanalysis: [{'type': 'missing', 'loc': ('query', 'from'), 'msg': 'Field required', 'input': None}, {'type': 'missing', 'loc': ('query', 'to'), 'msg': 'Field required', 'input': None}]
+INFO:     127.0.0.1:49223 - "GET /metrics/preanalysis HTTP/1.1" 400 Bad Request
+INFO:     127.0.0.1:49237 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:49237 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:49254 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:49254 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:49255 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:49254 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:49254 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:49263 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:49263 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:49373 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:49373 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:49374 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:49375 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:49376 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:49373 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:49378 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:49373 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:49373 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:49381 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:49373 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:49373 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:49381 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:49373 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:49376 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:49378 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:49381 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:49381 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:49381 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:49381 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:49384 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:49381 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:49381 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:49373 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:49381 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:49373 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:49381 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:49381 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:49624 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:49624 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:49630 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:49630 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:49632 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:49632 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:49643 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:49643 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:49648 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:49648 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:49651 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:49651 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:49651 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:49651 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:49655 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:49655 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [34656]
+=== start 2026-09-29 16:46:29 ===
+INFO:     Started server process [39777]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:9600 (Press CTRL+C to quit)
+INFO:     127.0.0.1:49916 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:49916 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:49917 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:49916 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:49916 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:49919 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:49916 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:49916 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:49921 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:49916 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:49916 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:49923 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:49916 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:49916 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:49925 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:49916 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:49916 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:49927 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:49916 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:49916 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:49929 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:49916 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:49916 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:49931 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:49916 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:49916 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:49916 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:49916 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:49937 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:49937 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:49937 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:49937 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:49943 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:49943 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:49949 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:49949 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:49952 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:49952 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:49954 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:49954 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:49954 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:49954 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:49958 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:49959 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:49960 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:49954 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:49954 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:49960 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:49954 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:49954 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:49964 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:49954 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:49964 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:49954 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:49964 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:49964 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:49960 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:49964 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:49967 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:49964 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:49969 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:49973 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:49973 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:49977 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:49977 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:49980 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:49980 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:49982 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:49982 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:49989 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:49989 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:49992 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:49992 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:49996 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:49996 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50002 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50002 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50006 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50006 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50010 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50010 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50013 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50013 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50015 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50015 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50017 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50017 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50020 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50020 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50022 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50022 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50022 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50022 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50027 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50027 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50029 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50029 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50031 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50031 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50034 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50034 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50040 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50040 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50045 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50045 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50047 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50047 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50049 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50049 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50052 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50052 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50055 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50055 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50060 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50060 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50063 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50063 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50068 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50068 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50070 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50070 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50072 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50072 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50075 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50075 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50079 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50079 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50082 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50082 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50085 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50085 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50094 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50094 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50099 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50099 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50104 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50104 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50107 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50107 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50109 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50109 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50111 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50111 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50115 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50115 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50118 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50118 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50121 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50121 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50124 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50124 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50127 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50127 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50130 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50130 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50132 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50132 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50135 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50135 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50139 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50139 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50147 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50147 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50151 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50151 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50156 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50156 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50159 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50159 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50159 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50162 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50159 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50162 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50159 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50159 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50162 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50162 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50167 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50167 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50173 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50173 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50183 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50183 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50191 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50191 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50233 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50233 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50255 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50255 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50256 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50255 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50255 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50303 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50303 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50304 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50303 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50303 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50314 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50314 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50315 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50316 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50317 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50314 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50314 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50317 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50314 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50321 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50314 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50314 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50321 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50314 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50321 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50317 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50321 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50323 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50321 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50321 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50325 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50339 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50339 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50342 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50342 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50344 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50344 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50347 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50347 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50349 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50349 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50352 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50352 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50358 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50358 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50368 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50368 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50384 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50384 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50387 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50387 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50389 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50389 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50394 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50394 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50408 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50408 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50414 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50414 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50416 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50416 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50419 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50419 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50421 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50421 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50424 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50424 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50429 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50429 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50432 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50432 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50437 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50437 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50439 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50439 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50441 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50441 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50443 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50443 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50451 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50451 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50457 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50457 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50459 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50459 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50465 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50465 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50467 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50467 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50470 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50470 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50475 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50475 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50478 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50478 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50480 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50480 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50484 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50484 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50488 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50488 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50490 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50490 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50493 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50493 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50504 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50504 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50508 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50508 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50510 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50510 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50515 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50515 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50518 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50518 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50522 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50522 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50534 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50534 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50537 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50537 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50540 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50540 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50543 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50543 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50546 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50546 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50547 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50547 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50550 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50550 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50557 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50557 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50560 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50560 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50562 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50562 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50567 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50567 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50570 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50570 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50571 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50571 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50571 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50574 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50573 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50571 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50573 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50574 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50570 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50571 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50570 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50571 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50571 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50570 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50580 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50571 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50580 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50580 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50570 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50570 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50571 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50570 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50571 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50571 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50583 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50583 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50587 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50587 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50591 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:50591 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51383 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51383 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51383 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51383 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51383 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51383 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51383 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51383 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51383 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51383 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51383 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51383 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51383 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51383 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51383 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51383 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51383 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51383 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51383 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51383 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51383 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51406 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51406 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51406 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51406 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51406 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51406 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51406 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51406 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51406 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51406 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51406 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51406 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51406 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51406 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51406 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51406 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51406 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51406 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51406 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51406 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51406 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51421 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51421 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51422 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51421 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51421 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51435 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51435 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51436 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51437 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51438 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51435 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51435 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51438 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51435 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51442 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51435 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51435 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51442 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51435 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51442 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51438 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51442 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51444 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51442 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51442 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51446 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51442 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51435 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51442 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51435 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51442 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51442 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51468 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51468 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51473 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51473 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51672 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51672 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51673 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51672 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51672 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51682 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51682 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51683 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51684 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51685 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51682 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51682 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51685 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51682 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51689 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51682 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51682 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51689 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51682 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51685 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51691 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51689 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51689 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51689 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51689 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51693 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51707 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51707 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51712 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51712 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51715 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51715 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51717 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51717 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51720 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51720 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51723 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51723 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51725 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51725 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51727 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51727 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51730 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51730 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51732 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51732 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51734 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51734 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51736 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51736 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51738 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51738 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51743 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51743 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51745 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51745 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51766 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51766 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51773 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51773 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51775 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51775 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51777 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51777 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51779 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51779 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51790 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51790 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51796 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51796 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51799 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51799 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51801 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51801 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51805 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51805 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51807 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51807 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51810 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51810 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51812 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51812 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51814 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51814 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51816 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51816 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51821 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51821 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51824 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51824 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51837 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51837 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51839 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51839 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51889 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51889 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51891 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51891 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51895 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51895 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51899 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51899 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51904 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51904 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51910 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51910 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51915 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51915 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51918 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51918 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51921 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51921 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51943 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51943 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51944 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51944 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51947 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51947 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51950 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51950 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51951 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51951 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51955 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51955 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51958 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51958 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51961 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51961 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51963 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51963 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51966 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51966 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51969 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51969 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51970 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51970 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51970 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51972 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51973 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51970 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51973 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51972 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51976 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51970 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51976 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51970 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51970 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51976 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51979 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51970 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51979 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51979 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51976 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51976 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51970 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51976 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51970 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51970 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51982 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51982 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51976 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51976 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51987 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51987 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51993 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51993 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51997 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51997 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52000 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52000 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52002 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52002 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52009 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52009 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52011 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52011 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52013 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52013 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52020 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52020 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52023 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52023 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52028 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52028 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52033 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52033 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52046 - "POST /measurements HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:52046 - "POST /measurements HTTP/1.1" 202 Accepted

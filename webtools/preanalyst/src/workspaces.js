@@ -5,12 +5,17 @@
 //
 //   reason "rejected"     → 400 or 413: the file is no good, retrying does not help
 //   reason "unavailable"  → service unreachable, timeout, 5xx, 403, broken JSON
+//
+// Every call is measured as a `dependency.call` towards `workspaces`, with the four
+// outcomes the vocabulary closes: `ok`, `failed`, `timed_out` — we gave up waiting,
+// which is not the same as nothing being there — and `not_found`, which is an answer.
 
 // POST /projects/{id}/specs → { project_id, version }.
 // The origin is decided by the caller, from the channel the file arrived through:
 // the service writes it into the front matter, over whatever the file declares.
 export async function storeSpec(settings, projectId, text, { origin, uploadedBy }) {
   const path = `/projects/${encodeURIComponent(projectId)}/specs`;
+  const report = reporter(settings, "store_spec");
   let response;
   try {
     response = await fetch(`${settings.workspacesUrl}${path}`, {
@@ -26,6 +31,7 @@ export async function storeSpec(settings, projectId, text, { origin, uploadedBy 
     });
   } catch (error) {
     console.error(`[workspaces] POST ${path}: ${error.name} ${error.message}`);
+    report(error.name === "TimeoutError" ? "timed_out" : "failed");
     return { ok: false, reason: "unavailable" };
   }
 
@@ -34,15 +40,32 @@ export async function storeSpec(settings, projectId, text, { origin, uploadedBy 
     body = await response.json();
   } catch {
     console.error(`[workspaces] POST ${path}: response is not JSON (HTTP ${response.status})`);
+    report("failed");
     return { ok: false, reason: "unavailable" };
   }
 
-  if (response.ok) return { ok: true, data: body };
+  if (response.ok) {
+    report("ok");
+    return { ok: true, data: body };
+  }
   console.error(`[workspaces] POST ${path}: HTTP ${response.status} ${body?.error ?? "?"}`);
+  report(response.status === 404 ? "not_found" : "failed");
   if (response.status === 400 || response.status === 413) {
     return { ok: false, reason: "rejected", code: body?.error };
   }
   return { ok: false, reason: "unavailable", code: body?.error };
+}
+
+// One measurement per call, with the duration. `operation` is a stable word, never the
+// path: a path carries a project id, and a bucket per project would make the number of
+// documents grow with the traffic.
+function reporter(settings, operation) {
+  const elapsed = settings.metrics.timer();
+  return (outcome) =>
+    settings.metrics.measure("dependency.call", {
+      dims: { target: "workspaces", operation, outcome },
+      duration_ms: elapsed(),
+    });
 }
 
 // GET /projects/{id}/specs/latest → the .md of the last specification stored.
@@ -51,6 +74,7 @@ export async function storeSpec(settings, projectId, text, { origin, uploadedBy 
 // workspaces stores and does not decide.
 export async function latestSpec(settings, projectId) {
   const path = `/projects/${encodeURIComponent(projectId)}/specs/latest`;
+  const report = reporter(settings, "latest_spec");
   let response;
   try {
     response = await fetch(`${settings.workspacesUrl}${path}`, {
@@ -59,13 +83,20 @@ export async function latestSpec(settings, projectId) {
     });
   } catch (error) {
     console.error(`[workspaces] GET ${path}: ${error.name} ${error.message}`);
+    report(error.name === "TimeoutError" ? "timed_out" : "failed");
     return { ok: false, reason: "unavailable" };
   }
 
-  if (response.status === 404) return { ok: false, reason: "not_found" };
+  if (response.status === 404) {
+    // A project with no specification yet. It answered, and that is the answer.
+    report("not_found");
+    return { ok: false, reason: "not_found" };
+  }
   if (!response.ok) {
     console.error(`[workspaces] GET ${path}: HTTP ${response.status}`);
+    report("failed");
     return { ok: false, reason: "unavailable" };
   }
+  report("ok");
   return { ok: true, data: await response.text() };
 }

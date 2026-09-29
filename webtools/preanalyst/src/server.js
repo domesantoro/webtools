@@ -3,8 +3,8 @@
 //   GET  /                     the page with the form
 //                              with ?rejected={id}: the refused-request modal
 //   POST /submit               the form: the project, the pre-specification and the prevalidation
-//   GET  /analysis/{id}        the analysis page: the specification rounds
-//   POST /analysis/{id}/messages, /turns, /turns/buy   the chat and its turns
+//   GET  /preanalysis/{id}   the page of the rounds of questions
+//   POST /preanalysis/{id}/messages, /turns, /turns/buy   the chat and its turns
 //   GET  /projects/{id}/rejection.pdf   the form data after a refusal
 //   POST /upload               a ready-made specification, for an existing project
 //   GET  /login-done, /session-fragment, /logout   the login round trip
@@ -18,7 +18,7 @@ import http from "node:http";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { ambassadorOf, resolveAmbassador } from "./ambassador.js";
+import { AMBASSADOR_SUPERSEDED, ambassadorOf, resolveAmbassador } from "./ambassador.js";
 import {
   addPipelineStep,
   createProject,
@@ -44,17 +44,18 @@ import {
 import { driverLinkOfProject, NONE, resolveDriverLink, withoutOwnLink } from "./driver_link.js";
 import {
   renderAccessFragments,
-  renderAnalysis,
+  renderPreanalysis,
   renderLoginDone,
   renderMessage,
   renderPage,
 } from "./page.js";
-import { ask } from "./analyst.js";
-import { validate } from "./analysis_validator.js";
+import { ask } from "./preanalyst.js";
+import { validate } from "./preanalysis_validator.js";
 import { readAnswers, renderPrespec } from "./prespec.js";
-import { prevalidate, verdict } from "./prevalidator.js";
+import { REJECTING, prevalidate, verdict } from "./prevalidator.js";
 import { linkTermsOf } from "./project_driver.js";
 import { writeRejectionPdf } from "./rejection_pdf.js";
+import { startAnalysis } from "./analyst.js";
 import { latestSpec, storeSpec } from "./workspaces.js";
 
 const PUBLIC_DIR = fileURLToPath(new URL("../public/", import.meta.url));
@@ -185,7 +186,15 @@ async function receiveUpload(request, settings, response) {
     });
     response.end(body);
   };
-  const fail = (status, code) => answer(status, { error: code });
+  // The code is kept on the response, as `jsonReplier` does for the chat's routes, so
+  // the one measurement per request can say **which** error it was. Without it the
+  // seven ways an upload can be refused — too large, not text, no front matter,
+  // somebody else's project — were the only errors in the subsystem that no number
+  // counted, on the one route where material we did not write comes in.
+  const fail = (status, code, headers = {}) => {
+    response.webtoolsErrorCode = code;
+    return answer(status, { error: code }, headers);
+  };
 
   // Uploading is an action, not a read: you have to be in.
   const access = await currentSession(settings, request);
@@ -196,7 +205,7 @@ async function receiveUpload(request, settings, response) {
   if (!name) return fail(400, "MISSING_FILE_NAME");
 
   const body = await readBody(request, response, settings.uploadMaxBytes, () =>
-    answer(413, { error: "FILE_TOO_LARGE" }, { connection: "close" })
+    fail(413, "FILE_TOO_LARGE", { connection: "close" })
   );
   if (body === null) return;
   if (body.length === 0) return fail(400, "EMPTY_FILE");
@@ -280,15 +289,17 @@ function leave(settings, response) {
 
 /* ------------------------------------------------- submitting the form */
 
-function sendMessage(response, ui, status, kind) {
-  send(response, status, "text/html; charset=utf-8", renderMessage(ui, kind));
+// `values` is there for the messages whose text names something: which question was
+// too long, how long it may be. A message that needs none is sent without them.
+function sendMessage(response, ui, status, kind, values) {
+  send(response, status, "text/html; charset=utf-8", renderMessage(ui, kind, values));
 }
 
 // `POST /submit` — the pre-analysis form.
 //
 // In order: the project is born in anagraphics, the answers become the
 // pre-specification, the pre-specification goes into the project's workspace, the
-// browser goes to the analysis page. The `303` means that reloading that page does
+// browser goes to the pre-analysis page. The `303` means that reloading that page does
 // not resend the form.
 //
 // Two safeguards:
@@ -297,21 +308,65 @@ function sendMessage(response, ui, status, kind) {
 // - if the pre-specification cannot be written, the project is deleted: a project
 //   with no pre-specification has nothing to start from.
 async function receiveForm(request, settings, response, ui) {
+  // How long the whole submission took, and how it ended. A form that was filled in and
+  // refused, or that asked for a login and was abandoned there, leaves no trace anywhere
+  // else in the system: these three words are the only record of it.
+  const filling = settings.metrics.timer();
+  // `reason` is why it was refused, and only a refusal has one. Five refusals under
+  // one word read as "the form does not work": one of them is a question people
+  // cannot answer, one is a limit the form does not state anywhere, and one is our
+  // own fault. They are not the same thing to go and fix.
+  const submitted = (outcome, reason = null) =>
+    settings.metrics.measure("form.submitted", {
+      dims: { outcome, ...(reason ? { reason } : {}) },
+      duration_ms: filling(),
+    });
+
   const access = await currentSession(settings, request);
-  if (!access.ok) return sendMessage(response, ui, 503, "unavailable");
-  if (!access.logged) return sendMessage(response, ui, 401, "not_logged");
+  if (!access.ok) {
+    submitted("refused", "sso_unavailable");
+    return sendMessage(response, ui, 503, "unavailable");
+  }
+  if (!access.logged) {
+    // Not a refusal: the form was good and whoever wrote it has to log in first. It is
+    // the most interesting of the three, because it is where people leave.
+    submitted("login_required");
+    return sendMessage(response, ui, 401, "not_logged");
+  }
 
   const body = await readBody(request, response, settings.formMaxBytes, () =>
     send(response, 413, "text/html; charset=utf-8", renderMessage(ui, "too_large"))
   );
-  if (body === null) return;
+  if (body === null) {
+    submitted("refused", "too_large");
+    return;
+  }
   const form = new URLSearchParams(body.toString("utf8"));
 
   const submissionId = form.get("submission_id") ?? "";
-  if (!isProjectId(submissionId)) return sendMessage(response, ui, 400, "invalid");
+  if (!isProjectId(submissionId)) {
+    submitted("refused", "invalid_submission");
+    return sendMessage(response, ui, 400, "invalid");
+  }
 
-  const { answers, missing } = readAnswers(form, settings.answerMaxChars);
-  if (missing.length > 0) return sendMessage(response, ui, 400, "missing");
+  const { answers, missing, tooLong } = readAnswers(form, settings.answerMaxChars);
+  if (missing.length > 0) {
+    submitted("refused", "missing_answers");
+    return sendMessage(response, ui, 400, "missing");
+  }
+  // An answer past the limit does not go through, and is not shortened to make it
+  // go through: what would be filed is a document the client never wrote. The page
+  // names the questions it happened to and says how long an answer may be, because
+  // the form does not state a limit anywhere.
+  if (tooLong.length > 0) {
+    submitted("refused", "answer_too_long");
+    return sendMessage(response, ui, 413, "too_long", {
+      fields: tooLong.map((name) => ui.t(`preanalyst.questions.fields.${name}.label`)).join(", "),
+      limit: settings.answerMaxChars,
+    });
+  }
+  // Everything below this line is a form that arrived whole and was taken.
+  submitted("sent");
 
   // A rewrite: somebody sent back because a few more details were needed resends
   // the form with the id of their project. We start again from that one instead of
@@ -350,7 +405,7 @@ async function receiveForm(request, settings, response, ui) {
   // have gone the first time.
   if (created.status === 200) {
     console.log(`[preanalyst] repeated submission from ${access.session.username}: project ${projectId}`);
-    return redirect(response, `/analysis/${projectId}`);
+    return redirect(response, `/preanalysis/${projectId}`);
   }
 
   return await writeAndPrevalidate(settings, response, ui, {
@@ -429,13 +484,19 @@ async function writeAndPrevalidate(settings, response, ui, { projectId, answers,
 
   if (outcome === "rejected") return redirect(response, `/?rejected=${projectId}`);
   if (outcome === "underspecified") {
+    // Sent back to the form for more detail, and which round it is: the second round is
+    // not the same fact as the fourth, and a single counter would not say which.
+    settings.metrics.measure("underspecified.returned", {
+      dims: { attempt: String(attempts + 1) },
+      project_id: projectId,
+    });
     // Here we do **not** redirect: the page is rendered with the answers already
     // in it. Asking for a few more details and handing back an empty form would be
     // an invitation impossible to accept. The price is that reloading resends the
     // form — see §16.7 of the README.
     return await serveFormAgain(settings, response, ui, { projectId, answers, session });
   }
-  return redirect(response, `/analysis/${projectId}`);
+  return redirect(response, `/preanalysis/${projectId}`);
 }
 
 // The form again, holding what the user had already written, because the request
@@ -501,7 +562,7 @@ async function serveFormAgain(settings, response, ui, { projectId, answers, sess
 // Where the pipeline goes for each of the three decisions. The step says two
 // things — how it went and where we go — and this gate is what decides them.
 const STATE_AFTER = {
-  passed: "ANALYSIS",
+  passed: "PREANALYSIS",
   rejected: "REJECTED",
   underspecified: "UNDERSPECIFIED",
 };
@@ -515,29 +576,58 @@ const STATE_AFTER = {
 // **stays**: the step is marked `failed` and we go on. A valid request is not
 // thrown away because a check did not work; a refusal is a decision, not a
 // failure.
+// What one interaction with a model was, in the words of the doors' contracts —
+// stored on the step as they came. Whoever reads a project next year must not
+// have to know which provider was in use the day it ran, and this file must not
+// know either: `spend.kinds` is written whole, whatever the names in it are.
+function interactionOf(answer) {
+  return {
+    provider: answer.provider,
+    model: answer.model,
+    ended: answer.ended,
+    attempts: answer.attempts,
+    fell_back: answer.fell_back,
+    ...(answer.failure ? { failure: answer.failure } : {}),
+    ...(answer.spend ? { spend: answer.spend } : {}),
+  };
+}
+
+// The same, for a log line. The kinds are printed as they come: a list of names
+// written here would be a provider's vocabulary in the last place anybody would
+// think to look for it.
+function spendLine(answer) {
+  if (!answer.spend) return "";
+  const kinds = Object.entries(answer.spend.kinds)
+    .map(([kind, units]) => `${kind}=${units}`)
+    .join(" ");
+  return kinds === "" ? "" : `; spend ${kinds}`;
+}
+
 async function runPrevalidation(settings, projectId, prespec, attempts) {
-  const outcome = await prevalidate(settings, prespec);
+  const outcome = await prevalidate(settings, prespec, { projectId });
 
   if (!outcome.ok) {
-    // If the model answered — badly, but it answered — the tokens were paid for
-    // all the same, and they go on the step together with the error: the cost of
-    // an attempt gone wrong is cost, and the PoC measures the real one. If the
-    // provider did not answer at all there is no `usage` to write.
-    const { usage, model } = outcome;
+    // If the model ran — and answered badly, or was cut short, or refused — what
+    // it spent was spent all the same, and it goes on the step together with how
+    // it ended: an attempt gone wrong consumes, and what was consumed is
+    // measured. `ended` says which of those it was, `failure` says why nothing
+    // came back at all, and the two are not the same question.
     console.error(
-      `[preanalyst] prevalidation failed for ${projectId}: ${outcome.reason}` +
-        (usage ? `; ${usage.input_tokens}+${usage.output_tokens} tokens spent anyway` : "")
+      `[preanalyst] prevalidation of ${projectId} ended ${outcome.ended}` +
+        (outcome.failure ? ` (${outcome.failure})` : "") +
+        ` after ${outcome.attempts} attempt(s)` +
+        spendLine(outcome)
     );
     await savePipelineStep(settings, projectId, {
       step: "prevalidation",
       result: "failed",
       state: "PREVALIDATION",
-      data: { error: outcome.reason, ...(usage ? { usage, model } : {}) },
+      data: interactionOf(outcome),
     });
     return "failed";
   }
 
-  const { outcome: verdictName, distribution } = outcome.data;
+  const { outcome: verdictName, distribution } = outcome.output;
   const decision = verdict(distribution, verdictName, {
     threshold: settings.prevalidation.rejectThreshold,
     attempts,
@@ -547,44 +637,91 @@ async function runPrevalidation(settings, projectId, prespec, attempts) {
   console.log(
     `[preanalyst] prevalidation of ${projectId}: ${verdictName} ` +
       `(${distribution[verdictName].toFixed(2)}) → ${decision}` +
-      `${outcome.data.off_domain.flag ? ", off domain" : ""}; ` +
-      `${outcome.data.usage.input_tokens}+${outcome.data.usage.output_tokens} tokens`
+      `${outcome.output.off_domain.flag ? ", off domain" : ""}` +
+      spendLine(outcome)
   );
 
   await savePipelineStep(settings, projectId, {
     step: "prevalidation",
     result: decision,
     state: STATE_AFTER[decision],
-    data: outcome.data,
+    data: { ...outcome.output, policy: outcome.policy, ...interactionOf(outcome) },
+    // Which refusal it was, for the gate's own measurement. Only a decision that refuses
+    // has one: `rejects()` is what says whether this verdict is a refusal, and the name is
+    // the verdict's. Absent is absent.
+    reason: REJECTING.includes(verdictName) && decision === "rejected" ? verdictName : null,
   });
 
-  // Past the gate the project **arrives** at the specification rounds: the step is
+  // Past the gate the project **arrives** at the rounds of questions: the step is
   // opened here, with the included turns and an empty chat. It is an `open` step,
   // one that has not decided anything yet and that grows; it will be closed by
-  // another step when the analysis ends.
-  if (decision === "passed") await openAnalysisStep(settings, projectId);
+  // another step when the rounds of questions end.
+  if (decision === "passed") await openPreanalysisStep(settings, projectId);
   return decision;
 }
 
-// Opens the `analysis` step: the included turns and the conversation, which starts
+// Opens the `preanalysis` step: the included turns and the conversation, which starts
 // empty.
 //
 // It is called when the prevalidation passes, and again when the page is opened if
-// the step is not there — projects born before this code sit in `ANALYSIS` with no
+// the step is not there — projects born before this code sit in `PREANALYSIS` with no
 // open step, and without one there would be no writing and no counting.
-async function openAnalysisStep(settings, projectId) {
-  return savePipelineStep(settings, projectId, {
-    step: "analysis",
+async function openPreanalysisStep(settings, projectId) {
+  const opened = await savePipelineStep(settings, projectId, {
+    step: "preanalysis",
     result: "open",
-    state: "ANALYSIS",
-    data: { turns_left: settings.analysis.maxTurns, chat: [] },
+    state: "PREANALYSIS",
+    data: { turns_left: settings.preanalysis.maxTurns, chat: [] },
   });
+  // The turns the pre-analysis is born with. Counted only if the step was really written:
+  // turns on a step that does not exist are turns nobody has.
+  if (opened.ok) {
+    settings.metrics.measure("turns.granted", {
+      dims: { source: "included" },
+      count: settings.preanalysis.maxTurns,
+    });
+  }
+  return opened;
 }
 
-// The project's last open `analysis` step, or null.
-export function openAnalysisOf(project) {
+// The project's last open `preanalysis` step, or null. This is the step that can be
+// **written to**: a step that is still open is one that has not decided anything.
+export function openPreanalysisOf(project) {
   const steps = project.pipeline?.steps ?? [];
-  return [...steps].reverse().find((entry) => entry.step === "analysis" && entry.result === "open") ?? null;
+  return [...steps].reverse().find((entry) => entry.step === "preanalysis" && entry.result === "open") ?? null;
+}
+
+// The project's last `preanalysis` step whatever became of it. This is the step that
+// can be **read**: a conversation that is over is still the project's conversation,
+// and it is shown as it stands.
+//
+// The two are separate on purpose. Reading a conversation and going on with it are
+// different questions, and the absence of an open step answers only the second.
+export function preanalysisStepOf(project) {
+  const steps = project.pipeline?.steps ?? [];
+  return [...steps].reverse().find((entry) => entry.step === "preanalysis") ?? null;
+}
+
+// The states in which a project may have a `preanalysis` step opened for it.
+//
+// `PREANALYSIS` is the pre-analysis itself. `PREVALIDATION` is the state of a check
+// that did not succeed: the project stays and its client is sent to this page on
+// purpose, so the rounds of questions have to be able to begin there too.
+//
+// Everywhere else the answer is not a new step. The absence of an open step is not
+// the proof that a project is waiting for one — a project that has been through the
+// pre-analysis has no open step either, and that is what finishing means — so what
+// decides is where the project is, not what is missing from it. Opening a step on the
+// strength of an absence is how a refused request got a fresh allowance of turns by
+// having its address retyped, and how every reload of a finished conversation would
+// grant another one.
+const OPENS_PREANALYSIS = Object.freeze(["PREANALYSIS", "PREVALIDATION"]);
+
+// Whether a project in this state may have a step opened for it. A state that is
+// not one of the pipeline's is not one of these either, and a project with no
+// pipeline at all answers the same way: nothing is opened on a state we cannot read.
+export function opensPreanalysis(state) {
+  return OPENS_PREANALYSIS.includes(state);
 }
 
 // The user's turn credit. If it cannot be read it counts as zero: the page will
@@ -600,7 +737,7 @@ async function turnsCredit(settings, username) {
   return Number(user.data.billing?.turns_credit ?? 0);
 }
 
-/* ------------------------------------------- the routes of the analysis chat */
+/* --------------------------------------- the routes of the pre-analysis chat */
 
 // These three answer the page's JavaScript, not a person: HTTP status plus a
 // stable code, as `POST /upload` does.
@@ -614,7 +751,15 @@ function jsonReplier(response) {
     });
     response.end(body);
   };
-  return { answer, fail: (status, code) => answer(status, { error: code }) };
+  return {
+    answer,
+    fail: (status, code) => {
+      // Kept on the response so the one measurement per request can say **which** error
+      // it was, without any branch of the routing having to count itself.
+      response.webtoolsErrorCode = code;
+      return answer(status, { error: code });
+    },
+  };
 }
 
 // Who is calling, and the project with its open step. All the checks the three
@@ -634,8 +779,8 @@ async function chatContext(request, projectId, settings, fail) {
     return fail(404, "PROJECT_NOT_FOUND") ?? null;
   }
 
-  const step = openAnalysisOf(project.data);
-  if (step === null) return fail(409, "ANALYSIS_NOT_OPEN") ?? null;
+  const step = openPreanalysisOf(project.data);
+  if (step === null) return fail(409, "PREANALYSIS_NOT_OPEN") ?? null;
 
   return { session: access.session, project: project.data, step };
 }
@@ -653,19 +798,20 @@ async function readJsonBody(request, response, settings, fail) {
   }
 }
 
-// `POST /analysis/{id}/opening` — the first question.
+// `POST /preanalysis/{id}/opening` — the first question.
 //
-// **The analyst speaks first.** Whoever lands on this page has just answered a
+// **The preanalyst speaks first.** Whoever lands on this page has just answered a
 // form and has nothing to say yet: a chat that opens with a greeting and an empty
 // field is a chat nobody knows how to begin. So the first message is a real
-// question, asked by the analyst after reading the pre-specification.
+// question, asked by the preanalyst after reading the pre-specification.
 //
 // **It does not spend a turn.** A turn is a question and its answer, and here
-// nobody has answered anything. What it costs is one call to the model, once per
-// analysis: the question is written onto the step, and from then on it is read
-// back from there — a reload pays nothing.
+// nobody has answered anything. It is one call to the model, once per pre-analysis:
+// the question is written onto the step, and from then on it is read back from
+// there — a reload asks the model nothing.
 //
-// If the conversation has already begun, this answers `409 ANALYSIS_ALREADY_OPENED`.
+// If the conversation has already begun, this answers
+// `409 PREANALYSIS_ALREADY_OPENED`.
 // That is not an error of the caller: it is a page whose view of the conversation
 // is older than the conversation, and reloading it shows what is really there.
 async function receiveChatOpening(request, projectId, settings, response, ui) {
@@ -674,9 +820,9 @@ async function receiveChatOpening(request, projectId, settings, response, ui) {
   const context = await chatContext(request, projectId, settings, fail);
   if (!context) return;
 
-  if ((context.step.data?.chat ?? []).length > 0) return fail(409, "ANALYSIS_ALREADY_OPENED");
+  if ((context.step.data?.chat ?? []).length > 0) return fail(409, "PREANALYSIS_ALREADY_OPENED");
 
-  // The form's answers: they are all the analyst has to go on here, and without
+  // The form's answers: they are all the preanalyst has to go on here, and without
   // them the first question would be a question about nothing.
   const spec = await latestSpec(settings, projectId);
   if (!spec.ok) {
@@ -690,10 +836,16 @@ async function receiveChatOpening(request, projectId, settings, response, ui) {
     turnsLeft: Number(context.step.data?.turns_left ?? 0),
     language: ui.locale,
     opening: true,
+    projectId,
   });
   if (!opening.ok) {
-    console.error(`[preanalyst] opening of ${projectId}: ${opening.reason}`);
-    return fail(503, "ANALYST_UNAVAILABLE");
+    console.error(
+      `[preanalyst] opening of ${projectId} ended ${opening.ended}` +
+        (opening.failure ? ` (${opening.failure})` : "") +
+        ` after ${opening.attempts} attempt(s)` +
+        spendLine(opening)
+    );
+    return fail(503, "PREANALYST_UNAVAILABLE");
   }
 
   // Two pages opened together both arrive here with an empty chat and both call
@@ -701,22 +853,21 @@ async function receiveChatOpening(request, projectId, settings, response, ui) {
   // keeps the question, and this one is thrown away. Two openings would be two
   // different first questions in the same conversation.
   const again = await findProject(settings, projectId);
-  if (again.ok && (openAnalysisOf(again.data)?.data?.chat ?? []).length > 0) {
+  if (again.ok && (openPreanalysisOf(again.data)?.data?.chat ?? []).length > 0) {
     console.warn(`[preanalyst] opening of ${projectId} written by somebody else first: this one dropped`);
-    return fail(409, "ANALYSIS_ALREADY_OPENED");
+    return fail(409, "PREANALYSIS_ALREADY_OPENED");
   }
 
-  const stored = await updateOpenStep(settings, projectId, "analysis", {
-    set: { missing: opening.data.missing, ready: opening.data.ready },
+  const stored = await updateOpenStep(settings, projectId, "preanalysis", {
+    set: { missing: opening.output.missing, ready: opening.output.ready },
     push: {
       chat: [
         {
           role: "system",
-          text: opening.data.message,
+          text: opening.output.message,
           at: new Date().toISOString(),
-          model: opening.data.model,
-          usage: opening.data.usage,
-          reason: opening.data.reason,
+          reason: opening.output.reason,
+          ...interactionOf(opening),
         },
       ],
     },
@@ -727,22 +878,23 @@ async function receiveChatOpening(request, projectId, settings, response, ui) {
   }
 
   console.log(`[preanalyst] opening written on ${projectId}`);
-  return answer(200, { reply: opening.data.message });
+  return answer(200, { reply: opening.output.message });
 }
 
-// `POST /analysis/{id}/messages` — one turn of the chat.
+// `POST /preanalysis/{id}/messages` — one turn of the chat.
 //
 // The turn is counted by **the server**, not the browser: the conversation and the
 // remaining turns live on the project's open step, and whoever reloads the page
 // finds again what was there. A message with no turns left is not accepted.
 //
-// The answer comes from the analyst (`src/analyst.js`), a structure of its own
-// with its own provider: see src/analyst_ai/.
+// The answer comes from the preanalyst's engine (`src/preanalyst.js`), a structure of its own
+// with its own provider: see src/preanalyst_ai/.
 //
-// When the analyst proposes to close, the validator (`src/analysis_validator.js`)
+// When the preanalyst proposes to close, the validator
+// (`src/preanalysis_validator.js`)
 // is asked whether that is true. It is a second engine on purpose — nobody is a
 // fair judge of their own work — and it runs here and nowhere else: once per
-// analysis, not once per message. If it refuses, the analyst is sent back with
+// pre-analysis, not once per message. If it refuses, the preanalyst is sent back with
 // what is still missing and the client gets a question instead of a goodbye: the
 // closing message it had written is never shown.
 async function receiveChatMessage(request, projectId, settings, response, ui) {
@@ -754,13 +906,18 @@ async function receiveChatMessage(request, projectId, settings, response, ui) {
   const body = await readJsonBody(request, response, settings, fail);
   if (body === null) return;
 
-  const text = String(body.message ?? "").trim().slice(0, settings.answerMaxChars);
+  const text = String(body.message ?? "").trim();
   if (text === "") return fail(400, "EMPTY_MESSAGE");
+  // Over the limit the turn does not happen, and the message is not shortened to
+  // make it happen. It used to be cut here: the preanalyst answered a message the
+  // client had not written, the turn was spent on it, and nothing anywhere said so.
+  // The limit is the form's, because a message is an answer like any other.
+  if (text.length > settings.answerMaxChars) return fail(413, "MESSAGE_TOO_LONG");
 
   const left = Number(context.step.data?.turns_left ?? 0);
   if (left <= 0) return fail(409, "NO_TURNS_LEFT");
 
-  // The form's answers: the analyst reads them as the first message of the
+  // The form's answers: the preanalyst reads them as the first message of the
   // conversation, and never asks again for what is in them.
   const spec = await latestSpec(settings, projectId);
   if (!spec.ok) {
@@ -769,55 +926,103 @@ async function receiveChatMessage(request, projectId, settings, response, ui) {
   }
 
   const chat = context.step.data?.chat ?? [];
-  const turn = { spec: spec.data, chat, message: text, turnsLeft: left, language: ui.locale };
+  const turn = { spec: spec.data, chat, message: text, turnsLeft: left, language: ui.locale, projectId };
+
+  // How long the client waited for this turn. Not the same as the model call inside it: a
+  // turn that the validator sends back asks the model twice, and the client waited for
+  // both.
+  const turnDuration = settings.metrics.timer();
+  // A turn the client asked for and did not get. It is the turn seen from their side:
+  // they waited, and what came back was an error. Why it failed is on `ai.call` and
+  // `ai.failed`, which is the technical question; this is the other one — how often
+  // somebody sitting in front of the chat gets nothing — and the vocabulary has had a
+  // word for it that nothing could send.
+  //
+  // The model is named only when one answered: nothing came back at all may mean the
+  // call was refused before a model was chosen. Absent is absent.
+  const turnFailed = (answer) =>
+    settings.metrics.measure("preanalysis.turn", {
+      dims: {
+        provider: answer.provider,
+        ...(answer.model ? { model: answer.model } : {}),
+        outcome: "failed",
+      },
+      duration_ms: turnDuration(),
+      project_id: projectId,
+    });
 
   let turnAnswer = await ask(settings, turn);
   if (!turnAnswer.ok) {
-    console.error(`[preanalyst] analyst on ${projectId}: ${turnAnswer.reason}`);
-    return fail(503, "ANALYST_UNAVAILABLE");
+    console.error(
+      `[preanalyst] engine on ${projectId} ended ${turnAnswer.ended}` +
+        (turnAnswer.failure ? ` (${turnAnswer.failure})` : "") +
+        ` after ${turnAnswer.attempts} attempt(s)` +
+        spendLine(turnAnswer)
+    );
+    turnFailed(turnAnswer);
+    return fail(503, "PREANALYST_UNAVAILABLE");
   }
 
-  // The analyst believes the questions are over. It does not get to decide that.
+  // The preanalyst believes the questions are over. It does not get to decide that.
   let validation = null;
-  if (turnAnswer.data.ready) {
-    const judged = await validate(settings, { spec: spec.data, chat: [...chat, { role: "client", text }] });
+  if (turnAnswer.output.ready) {
+    const judged = await validate(settings, { spec: spec.data, chat: [...chat, { role: "client", text }], projectId });
+    // What the validation decided. Its cost is already counted by the door
+    // (`preanalysis_validation` phase); this is the verdict, and the two are different
+    // questions about the same call.
+    settings.metrics.measure("preanalysis.validation", {
+      dims: { outcome: !judged.ok ? "failed" : judged.output.verdict === "continue" ? "sent_back" : "accepted" },
+      project_id: projectId,
+    });
     if (judged.ok) {
-      validation = judged.data;
+      validation = judged.output;
       if (validation.verdict === "continue") {
         const again = await ask(settings, { ...turn, stillMissing: validation.missing });
         // If the second call fails, the first answer is still there: closing a
         // turn the validator has refused is worse than losing the send-back, so
         // the turn is not spent at all.
         if (!again.ok) {
-          console.error(`[preanalyst] analyst sent back on ${projectId}: ${again.reason}`);
-          return fail(503, "ANALYST_UNAVAILABLE");
+          console.error(
+            `[preanalyst] engine sent back on ${projectId} ended ${again.ended}` +
+              (again.failure ? ` (${again.failure})` : "") +
+              spendLine(again)
+          );
+          // The turn is not spent, so it is not a turn the project took — and it is
+          // still a turn the client asked for and did not get.
+          turnFailed(again);
+          return fail(503, "PREANALYST_UNAVAILABLE");
         }
         turnAnswer = again;
         // The send-back was not judged: the validator ruled on the answer before
-        // it. Whatever the analyst proposes now, nothing has established that the
-        // analysis is complete this turn, and `ready` is what the page acts on.
-        turnAnswer.data.ready = false;
+        // it. Whatever the preanalyst proposes now, nothing has established that the
+        // pre-analysis is complete this turn, and `ready` is what the page acts on.
+        turnAnswer.output.ready = false;
       }
     } else {
       // The judgement did not come. The conversation does not close on a claim
-      // nobody checked: the client is told nothing about it and the analyst will
+      // nobody checked: the client is told nothing about it and the preanalyst will
       // propose again next turn.
-      console.error(`[preanalyst] validation on ${projectId}: ${judged.reason}`);
-      turnAnswer.data.ready = false;
+      console.error(
+        `[preanalyst] validation on ${projectId} ended ${judged.ended}` +
+          (judged.failure ? ` (${judged.failure})` : "") +
+          spendLine(judged)
+      );
+      turnAnswer.output.ready = false;
     }
   }
 
-  const reply = turnAnswer.data.message;
+  const reply = turnAnswer.output.message;
   const now = new Date().toISOString();
 
   // One single write: the two messages and the turn spent are the same thing seen
-  // from two sides, and must not be able to exist separately. The cost of the
-  // turn goes in with them — a cost that is not recorded is not measured.
-  const stored = await updateOpenStep(settings, projectId, "analysis", {
+  // from two sides, and must not be able to exist separately. What the turn
+  // consumed goes in with them — a consumption that is not recorded is not
+  // measured.
+  const stored = await updateOpenStep(settings, projectId, "preanalysis", {
     set: {
       turns_left: left - 1,
-      missing: turnAnswer.data.missing,
-      ready: turnAnswer.data.ready,
+      missing: turnAnswer.output.missing,
+      ready: turnAnswer.output.ready,
     },
     push: {
       chat: [
@@ -826,9 +1031,8 @@ async function receiveChatMessage(request, projectId, settings, response, ui) {
           role: "system",
           text: reply,
           at: now,
-          model: turnAnswer.data.model,
-          usage: turnAnswer.data.usage,
-          reason: turnAnswer.data.reason,
+          reason: turnAnswer.output.reason,
+          ...interactionOf(turnAnswer),
         },
       ],
       ...(validation ? { validations: [{ at: now, ...validation }] } : {}),
@@ -836,16 +1040,49 @@ async function receiveChatMessage(request, projectId, settings, response, ui) {
   });
   if (!stored.ok) {
     console.error(`[preanalyst] turn not recorded on project ${projectId}: ${stored.reason}`);
+    // The model answered and the client got nothing: the write is what makes a turn a
+    // turn the project took, and this one was not written. Counted as failed for the
+    // same reason as the two above — from where the client sits it is the same event —
+    // while what the call cost is already on `ai.call`, which does not care that we
+    // could not store the result.
+    turnFailed(turnAnswer);
     return fail(503, "ANAGRAPHICS_UNAVAILABLE");
+  }
+
+  // A turn that really happened: counted after the write, because a turn that was not
+  // recorded is not a turn the project took. What it cost is already on `ai.call` — the
+  // tokens are not repeated here, or the whole system's consumption would double.
+  settings.metrics.measure("preanalysis.turn", {
+    dims: {
+      provider: turnAnswer.provider,
+      model: turnAnswer.model,
+      // The turn was answered: the failures returned earlier, before this write.
+      outcome: "answered",
+    },
+    duration_ms: turnDuration(),
+    project_id: projectId,
+  });
+  settings.metrics.measure("turns.spent", { dims: { phase: "preanalysis_turn" }, project_id: projectId });
+
+  // Whether this turn was the last. Two ways a pre-analysis gets to its end, and they are
+  // not the same fact: the validator agreed, or the turns ran out with it still
+  // unfinished. A pre-analysis nobody came back to is a third, and it cannot be seen from
+  // here — nothing happens when somebody stops writing.
+  const ready = Boolean(turnAnswer.output.ready);
+  if (ready || left - 1 <= 0) {
+    settings.metrics.measure("preanalysis.closed", {
+      dims: { outcome: ready ? "ready" : "turns_exhausted" },
+      project_id: projectId,
+    });
   }
 
   console.log(`[preanalyst] chat turn on ${projectId}: ${left - 1} left`);
   // `ready` is the verdict of this turn, not a door that stays open: it is what is
   // stored on the step, and the page shows what the step says.
-  return answer(200, { reply, turns_left: left - 1, ready: Boolean(turnAnswer.data.ready) });
+  return answer(200, { reply, turns_left: left - 1, ready: Boolean(turnAnswer.output.ready) });
 }
 
-// `POST /analysis/{id}/turns` — moves turns from the user's credit to the project.
+// `POST /preanalysis/{id}/turns` — moves turns from the user's credit to the project.
 //
 // First the credit is drawn down, then the turns are added: the credit is the part
 // that must not be spendable twice, and anagraphics checks it inside the write. If
@@ -871,7 +1108,7 @@ async function receiveTurnsFromCredit(request, projectId, settings, response) {
   }
 
   const left = Number(context.step.data?.turns_left ?? 0) + howMany;
-  const stored = await updateOpenStep(settings, projectId, "analysis", { set: { turns_left: left } });
+  const stored = await updateOpenStep(settings, projectId, "preanalysis", { set: { turns_left: left } });
   if (!stored.ok) {
     console.error(
       `[preanalyst] turns drawn but not added to project ${projectId}: ${stored.reason}; giving them back`
@@ -883,19 +1120,54 @@ async function receiveTurnsFromCredit(request, projectId, settings, response) {
     return fail(503, "ANAGRAPHICS_UNAVAILABLE");
   }
 
+  // The turns are on the pre-analysis now. Counted here and not where the credit was drawn:
+  // a draw that could not be added to the project is given back, and turns that came and
+  // went are not turns the pre-analysis got.
+  settings.metrics.measure("turns.granted", { dims: { source: "purchase" }, count: howMany });
+
   const credit = Number(spent.data.billing?.turns_credit ?? 0);
   console.log(`[preanalyst] ${howMany} turns from ${uid}'s credit to project ${projectId}: now ${left}`);
   return answer(200, { turns_left: left, credit });
 }
 
-// `GET /analysis/{id}/project` — the project's record in anagraphics, as it is
-// now, to be saved as a file.
+// `POST /preanalysis/{id}/analysis` — the client says the pre-analysis is over.
 //
-// TODO(placeholder): this is what the go button does **until it has a job of its
-// own**. Going on with the analysis is a step of the pipeline, and that step does
-// not exist yet; a button that does nothing is worse than a button that hands over
-// what the system knows. When the real move arrives, this route stays or goes with
-// whoever still wants the file — it is not part of the move.
+// It is the move the go button makes, and the only thing it does here is hand the
+// project to the analyst: what is written, what it costs and where the project goes
+// next are that subsystem's, and repeating any of it here would be a second answer to
+// the same question.
+//
+// **It answers `202`, not `200`.** The analysis is several model calls over minutes:
+// what is true when this answers is that the analyst has recorded that a run has
+// begun. The page says so and no more, because there is nothing else that can be
+// promised — no page shows the analysis yet, and there is no channel that tells
+// anybody it is ready.
+//
+// A second click is answered like the first. The analyst refuses a second run, and
+// that refusal is not something to show the client: a run already begun is the thing
+// they asked for, already happening.
+async function startAnalysisOf(request, projectId, settings, response) {
+  const { answer, fail } = jsonReplier(response);
+
+  const context = await chatContext(request, projectId, settings, fail);
+  if (!context) return;
+
+  const started = await startAnalysis(settings, projectId);
+  if (started.ok || started.code === "ANALYSIS_ALREADY_STARTED") {
+    console.log(`[preanalyst] analysis of ${projectId} begun`);
+    return answer(202, { started: true });
+  }
+  // The project is not where a run can start — it was refused, or it is not there
+  // yet. The code is the analyst's and is passed on as it is: renaming it here would
+  // make one fact have two names.
+  if (started.reason === "rejected") return fail(409, started.code ?? "ANALYSIS_NOT_STARTED");
+  return fail(503, "ANALYST_UNAVAILABLE");
+}
+
+// `GET /preanalysis/{id}/project` — the project's record in anagraphics, as it is
+// now, to be saved as a file. It is what the download button hands over, and it is
+// not part of the move above: whoever wants the conversation as a file gets it
+// whether or not the analysis has been asked for.
 //
 // What comes out is the document anagraphics returns, not a shape invented here:
 // whoever reads the file is reading the project, and a summary of our own would be
@@ -919,7 +1191,7 @@ async function serveProjectRecord(request, projectId, settings, response) {
 }
 
 // TODO(mock): remove when the real payment exists.
-// `POST /analysis/{id}/turns/buy` buys nothing: it grants turns to the user's
+// `POST /preanalysis/{id}/turns/buy` buys nothing: it grants turns to the user's
 // credit without anybody paying. It is only there so the out-of-turns page can be
 // tried from beginning to end. When the payment arrives, this route and this
 // constant go away together. It is in `contesto/todos.md`.
@@ -932,8 +1204,19 @@ async function receiveTurnsPurchase(request, projectId, settings, response) {
   if (!context) return;
 
   const uid = context.session.uid;
-  const granted = await grantUserTurns(settings, uid, FAKE_PURCHASE_TURNS);
+  const granted = await grantUserTurns(settings, uid, FAKE_PURCHASE_TURNS, { source: "fake_purchase" });
   if (!granted.ok) return fail(503, "ANAGRAPHICS_UNAVAILABLE");
+
+  // Turns that have entered a credit. It is the one side of `turns.granted` nothing
+  // was counting: `included` and `purchase` are both measured where turns land on a
+  // **project**, so the credit — which is the part somebody will one day have paid
+  // for — grew without appearing in `/metrics/economics` at all. The source says the
+  // purchase was not one: the day a real payment replaces this route, that value
+  // goes with it and the figure stays comparable across the change.
+  settings.metrics.measure("turns.granted", {
+    dims: { source: "fake_purchase" },
+    count: FAKE_PURCHASE_TURNS,
+  });
 
   const credit = Number(granted.data.billing?.turns_credit ?? 0);
   console.warn(`[preanalyst] FAKE PURCHASE: ${FAKE_PURCHASE_TURNS} turns granted to ${uid}, credit ${credit}`);
@@ -1034,14 +1317,14 @@ function rejectionReasonOf(project) {
   return [step.data.reason, offDomain].filter(Boolean).join("\n\n");
 }
 
-// `GET /analysis/{id}` — the specification rounds. Only the project's owner sees
+// `GET /preanalysis/{id}` — the rounds of questions. Only the project's owner sees
 // it: for everybody else the project does not exist.
 //
 // Next to the chat there is the summary of what was settled at submission time —
 // driver, discount, ambassador, autonomous work. It is not read from the address,
 // which carries nothing here: it is on the project, and it is read from there just
 // as the form does when it comes back (`serveFormAgain`).
-async function serveAnalysis(request, projectId, settings, response, ui) {
+async function servePreanalysis(request, projectId, settings, response, ui) {
   const session = await currentSession(settings, request);
   if (!session.ok) return sendMessage(response, ui, 503, "unavailable");
   if (!session.logged) return sendMessage(response, ui, 401, "not_logged");
@@ -1053,19 +1336,39 @@ async function serveAnalysis(request, projectId, settings, response, ui) {
     return sendMessage(response, ui, 404, "not_found");
   }
 
-  // The specification-rounds step. If it is not there it is opened now: that is
-  // how projects born before this step existed get one.
-  let step = openAnalysisOf(project.data);
+  // The rounds-of-questions step, and what to do when there is not one open.
+  const state = project.data.pipeline?.state ?? null;
+  let step = openPreanalysisOf(project.data);
+  let closed = false;
   if (step === null) {
-    const opened = await openAnalysisStep(settings, projectId);
-    step = opened.ok ? openAnalysisOf(opened.data) : null;
+    if (opensPreanalysis(state)) {
+      // It is opened now: that is how projects born before this step existed get
+      // one, and how a project whose prevalidation failed begins its rounds.
+      const opened = await openPreanalysisStep(settings, projectId);
+      step = opened.ok ? openPreanalysisOf(opened.data) : null;
+      // Without an open step there is no writing and no counting: the page would
+      // say something false, so it is not shown.
+      if (step === null) return sendMessage(response, ui, 503, "unavailable");
+    } else if (state === "REJECTED") {
+      // The refusal has a page of its own, with the reason and the document to
+      // keep. Sending them there is the answer; opening a conversation on a
+      // request that was refused is not.
+      return redirect(response, `${settings.publicUrl}/?rejected=${projectId}`);
+    } else if (state === "UNDERSPECIFIED") {
+      // The request went back to be rewritten, and it is rewritten from the form.
+      // There is no conversation here yet, and none to start.
+      return sendMessage(response, ui, 409, "sent_back");
+    } else {
+      // The pre-analysis is over: the conversation is read and not continued. A
+      // project that has none at all has nothing to show here.
+      step = preanalysisStepOf(project.data);
+      if (step === null) return sendMessage(response, ui, 404, "not_found");
+      closed = true;
+    }
   }
-  // Without an open step there is no writing and no counting: the page would say
-  // something false, so it is not shown.
-  if (step === null) return sendMessage(response, ui, 503, "unavailable");
 
   const access = { logged: true, session: session.session, ssoAvailable: true };
-  send(response, 200, "text/html; charset=utf-8", renderAnalysis(ui, {
+  send(response, 200, "text/html; charset=utf-8", renderPreanalysis(ui, {
     access,
     settings,
     terms: await projectSummary(settings, project.data),
@@ -1075,11 +1378,14 @@ async function serveAnalysis(request, projectId, settings, response, ui) {
     chat: {
       messages: step.data?.chat ?? [],
       turnsLeft: Number(step.data?.turns_left ?? 0),
-      // Whether the analysis has been judged complete. It lives on the step like
+      // Whether the pre-analysis has been judged complete. It lives on the step like
       // the turns, so a reload finds it again; a step that has never got there has
       // no `ready` at all, which is not a `false` someone decided.
       ready: Boolean(step.data?.ready),
       credit: await turnsCredit(settings, session.session.username),
+      // The conversation is over: it is shown, and there is nothing left to do to
+      // it — neither writing nor buying turns for a round that has closed.
+      closed,
     },
   }));
 }
@@ -1150,9 +1456,36 @@ async function pageState(request, url, settings) {
 
   // Without the driver list the ambassador cannot be checked: the box is not there.
   let ambassador = null;
+  let ambassadorState = null;
   if (ambassadorAsked) {
     const driversResult = await listDrivers(settings);
-    ambassador = driversResult.ok ? resolveAmbassador(params, driversResult.data, ownDriverUid) : null;
+    if (driversResult.ok) {
+      const resolved = resolveAmbassador(params, driversResult.data, ownDriverUid);
+      ambassador = resolved.driver;
+      ambassadorState = resolved.state;
+    } else {
+      // The link arrived and we could not check it: it is not the link's fault, and
+      // that is the point of telling the two apart.
+      ambassadorState = NONE;
+    }
+  } else if (params.ambassadorUid) {
+    // Named together with a discount or a driver's link, which carry the economic
+    // effect and win. Decided here, because it is here that the two are known
+    // together.
+    ambassadorState = AMBASSADOR_SUPERSEDED;
+  }
+
+  // What somebody's link did when a client arrived on one. Nothing else keeps this:
+  // the project is written with `driver_uid: null` whether the link was absent or
+  // expired, so `project.created` says `has_discount: no` for both and the difference
+  // cannot be recovered from anything afterwards. Five of the driver states and three
+  // of the ambassador ones are money somebody was owed and will not be paid, and from
+  // outside a link that quietly stopped working looks exactly like a link nobody used.
+  //
+  // No project: the link is read while the page is being built, before anything has
+  // been created, and most of these never become a project at all.
+  for (const state of [showDriverBox ? driverLink.state : null, ambassadorState]) {
+    if (state) settings.metrics.measure("driver_link.resolved", { dims: { state } });
   }
 
   return {
@@ -1212,6 +1545,9 @@ async function servePage(request, url, settings, response, ui) {
   const state = await pageState(request, url, settings);
   // An id for this form: if the same submission arrives twice, there is still one project.
   const html = renderPage(ui, { ...state, settings, submissionId: randomUUID() });
+  // The form was opened. It is the widest step of the funnel and the only count of the
+  // people who look and never write: nothing else in the system records them.
+  settings.metrics.measure("form.opened");
   send(response, 200, "text/html; charset=utf-8", html);
 }
 
@@ -1260,9 +1596,62 @@ async function changeLocale(request, settings, response) {
   return redirect(response, change.location, { "set-cookie": change.cookie });
 }
 
+// The label a request is counted under. **Not** the path: an id in a dimension
+// would open a new bucket for every project, and a counter split a thousand ways
+// is a counter nobody reads. The list is explicit, so a route added tomorrow is
+// counted as `(other)` — a fact — instead of being guessed at by a pattern.
+const ROUTE_LABELS = [
+  [/^\/$/, "/"],
+  [/^\/upload$/, "/upload"],
+  [/^\/submit$/, "/submit"],
+  [/^\/locale$/, "/locale"],
+  [/^\/login-done$/, "/login-done"],
+  [/^\/session-fragment$/, "/session-fragment"],
+  [/^\/logout$/, "/logout"],
+  [/^\/preanalysis\/[^/]+\/messages$/, "/preanalysis/{id}/messages"],
+  [/^\/preanalysis\/[^/]+\/opening$/, "/preanalysis/{id}/opening"],
+  [/^\/preanalysis\/[^/]+\/turns\/buy$/, "/preanalysis/{id}/turns/buy"],
+  [/^\/preanalysis\/[^/]+\/turns$/, "/preanalysis/{id}/turns"],
+  [/^\/preanalysis\/[^/]+\/analysis$/, "/preanalysis/{id}/analysis"],
+  [/^\/preanalysis\/[^/]+\/project$/, "/preanalysis/{id}/project"],
+  [/^\/preanalysis\/[^/]+$/, "/preanalysis/{id}"],
+  [/^\/projects\/[^/]+\/rejection\.pdf$/, "/projects/{id}/rejection.pdf"],
+  [/^\/(styles\.css|commons\.css|[a-z_]+\.js|fonts\/.+)$/, "(static)"],
+];
+
+export function routeLabel(pathname) {
+  for (const [pattern, label] of ROUTE_LABELS) {
+    if (pattern.test(pathname)) return label;
+  }
+  return "(other)";
+}
+
+// One measurement per request, sent when the response is done — the status and
+// the duration are only known then. It is attached here and nowhere else, so no
+// branch of the routing has to remember to count itself.
+function countRequest(settings, request, response, pathname) {
+  const elapsed = settings.metrics.timer();
+  response.on("finish", () => {
+    settings.metrics.measure("http.request", {
+      dims: {
+        route: routeLabel(pathname),
+        method: request.method,
+        status: String(response.statusCode),
+      },
+      duration_ms: elapsed(),
+    });
+    // The error's own code, where there was one. A status says how it went; the code says
+    // what it was, and only one of the two can be acted on.
+    if (response.webtoolsErrorCode) {
+      settings.metrics.measure("http.error", { dims: { code: response.webtoolsErrorCode } });
+    }
+  });
+}
+
 export function createServer(settings) {
   return http.createServer(async (request, response) => {
     const url = new URL(request.url, `http://${request.headers.host ?? "localhost"}`);
+    countRequest(settings, request, response, url.pathname);
     // Language and switcher for the pages. Pages rendered in answer to a POST
     // cannot be reopened with a GET: changing language from there goes back to the
     // pre-analysis.
@@ -1278,27 +1667,31 @@ export function createServer(settings) {
       if (request.method === "POST" && url.pathname === "/locale") {
         return await changeLocale(request, settings, response);
       }
-      const message = /^\/analysis\/([^/]+)\/messages$/.exec(url.pathname);
+      const message = /^\/preanalysis\/([^/]+)\/messages$/.exec(url.pathname);
       if (request.method === "POST" && message) {
         return await receiveChatMessage(request, message[1], settings, response, ui);
       }
-      const opening = /^\/analysis\/([^/]+)\/opening$/.exec(url.pathname);
+      const opening = /^\/preanalysis\/([^/]+)\/opening$/.exec(url.pathname);
       if (request.method === "POST" && opening) {
         return await receiveChatOpening(request, opening[1], settings, response, ui);
       }
-      const purchase = /^\/analysis\/([^/]+)\/turns\/buy$/.exec(url.pathname);
+      const purchase = /^\/preanalysis\/([^/]+)\/turns\/buy$/.exec(url.pathname);
       if (request.method === "POST" && purchase) {
         return await receiveTurnsPurchase(request, purchase[1], settings, response);
       }
-      const turns = /^\/analysis\/([^/]+)\/turns$/.exec(url.pathname);
+      const turns = /^\/preanalysis\/([^/]+)\/turns$/.exec(url.pathname);
       if (request.method === "POST" && turns) {
         return await receiveTurnsFromCredit(request, turns[1], settings, response);
+      }
+      const analysis = /^\/preanalysis\/([^/]+)\/analysis$/.exec(url.pathname);
+      if (request.method === "POST" && analysis) {
+        return await startAnalysisOf(request, analysis[1], settings, response);
       }
       if (request.method !== "GET") {
         return send(response, 405, "text/plain; charset=utf-8", "Method not allowed");
       }
 
-      const record = /^\/analysis\/([^/]+)\/project$/.exec(url.pathname);
+      const record = /^\/preanalysis\/([^/]+)\/project$/.exec(url.pathname);
       if (record) {
         return await serveProjectRecord(request, record[1], settings, response);
       }
@@ -1315,9 +1708,9 @@ export function createServer(settings) {
       if (url.pathname === "/logout") {
         return leave(settings, response);
       }
-      const analysis = /^\/analysis\/([^/]+)$/.exec(url.pathname);
-      if (analysis) {
-        return await serveAnalysis(request, analysis[1], settings, response, ui);
+      const preanalysis = /^\/preanalysis\/([^/]+)$/.exec(url.pathname);
+      if (preanalysis) {
+        return await servePreanalysis(request, preanalysis[1], settings, response, ui);
       }
       const rejection = /^\/projects\/([^/]+)\/rejection\.pdf$/.exec(url.pathname);
       if (rejection) {

@@ -138,6 +138,14 @@
         "title": "Request too long",
         "text": "The request exceeds the maximum length and was not recorded. Shorten your answers and try again."
       },
+      "too_long": {
+        "title": "Answer too long",
+        "text": "The limit is {limit} characters per answer. Over the limit: {fields}. The request was not recorded: go back, shorten it and send it again."
+      },
+      "sent_back": {
+        "title": "Request to complete",
+        "text": "This request came back because more detail is needed. It is taken up again from the pre-analysis form."
+      },
       "unavailable": {
         "title": "Service unreachable",
         "text": "The request was not recorded because a service is not responding. Try again in a few minutes."
@@ -151,7 +159,7 @@
       "title": "A few more details are needed",
       "text": "What you wrote does not yet say what the tool should do. Add some detail to the answers below and send the request again: what you had written is still here."
     },
-    "analysis": {
+    "preanalysis": {
       "title": "Analysis",
       "eyebrow": "Second step",
       "heading": "Let us bring the request into focus.",
@@ -164,6 +172,8 @@
       "send": "Send",
       "waiting": "Writing",
     "ready": "The analysis is complete. You can go on with «This is fine, let's go!», or keep writing if there is anything to add.",
+    "closed": "The questions are over. This page shows the conversation as it was left.",
+    "too_long": "The message is longer than {limit} characters and was not sent. Shorten it and send it again: no turn was used.",
       "summary": {
         "title": "The project",
         "empty": "No particular terms: we assign the driver.",
@@ -174,7 +184,8 @@
         "autonomous": "Autonomous work",
         "autonomous_value": "On",
         "download": "Download the conversation",
-        "go": "This is fine, let's go!"
+        "go": "This is fine, let's go!",
+        "started": "The analysis has started. It takes a few minutes."
       },
       "turns": {
         "label": "Turns used",
@@ -349,6 +360,12 @@
         "lead": "The answers you sent through the webtools form.",
         "reason_title": "Why the request was not accepted"
       }
+    }
+  },
+  "analyst": {
+    "proposal": {
+      "title": "What you will be able to do",
+      "intro": "Each row is something you will be able to do with your webtool. The demo is checked against this list, point by point."
     }
   },
   "front_gate": {

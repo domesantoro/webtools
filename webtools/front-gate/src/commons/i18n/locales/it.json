@@ -138,6 +138,14 @@
         "title": "Richiesta troppo lunga",
         "text": "La richiesta supera la lunghezza massima e non è stata registrata. Accorcia le risposte e riprova."
       },
+      "too_long": {
+        "title": "Risposta troppo lunga",
+        "text": "Il limite è di {limit} caratteri per risposta. Oltre il limite: {fields}. La richiesta non è stata registrata: torna indietro, accorcia e mandala di nuovo."
+      },
+      "sent_back": {
+        "title": "Richiesta da completare",
+        "text": "Questa richiesta è tornata indietro perché servono altri dettagli. Si riprende dal modulo della pre-analisi."
+      },
       "unavailable": {
         "title": "Servizio non raggiungibile",
         "text": "La richiesta non è stata registrata perché un servizio non risponde. Riprova tra qualche minuto."
@@ -151,7 +159,7 @@
       "title": "Serve qualche dettaglio in più",
       "text": "Da quello che hai scritto non si capisce ancora che cosa deve fare lo strumento. Aggiungi qualche dettaglio nelle risposte qui sotto e manda di nuovo la richiesta: quello che avevi scritto è rimasto."
     },
-    "analysis": {
+    "preanalysis": {
       "title": "Analisi",
       "eyebrow": "Secondo passo",
       "heading": "Mettiamo a fuoco la richiesta.",
@@ -164,6 +172,8 @@
       "send": "Manda",
       "waiting": "Sto scrivendo",
     "ready": "L'analisi è completa. Puoi procedere con «Va bene così, procediamo!», oppure continuare a scrivere se c'è altro da aggiungere.",
+    "closed": "Le domande sono finite. Questa pagina mostra la conversazione com'è stata lasciata.",
+    "too_long": "Il messaggio supera i {limit} caratteri e non è stato mandato. Accorcialo e mandalo di nuovo: non hai consumato nessun turno.",
       "summary": {
         "title": "Il progetto",
         "empty": "Nessuna condizione particolare: il driver lo assegniamo noi.",
@@ -174,7 +184,8 @@
         "autonomous": "Lavoro autonomo",
         "autonomous_value": "Attivo",
         "download": "Scarica la conversazione",
-        "go": "Va bene così, procediamo!"
+        "go": "Va bene così, procediamo!",
+        "started": "L'analisi è partita. Ci vogliono alcuni minuti."
       },
       "turns": {
         "label": "Turni usati",
@@ -349,6 +360,12 @@
         "lead": "Le risposte che hai mandato con il form di webtools.",
         "reason_title": "Perché la richiesta non è stata accolta"
       }
+    }
+  },
+  "analyst": {
+    "proposal": {
+      "title": "Cosa potrai fare",
+      "intro": "Ogni riga è una cosa che potrai fare con il tuo webtool. La demo viene controllata punto per punto contro questa lista."
     }
   },
   "front_gate": {

@@ -26,6 +26,10 @@ server.listen(settings.port, settings.host, () => {
     `webtools_configurator_fe listening on http://${settings.host}:${settings.port} ` +
       `(anagraphics: ${settings.anagraphicsUrl}, secrets: ${settings.secretsDirectory})`
   );
+  // A count that grows by itself is a process that keeps dying and coming back. The
+  // starts that did not happen are the lines above, where there is no configuration
+  // yet and so nowhere to send a measurement.
+  settings.metrics.measure("process.started", { dims: { outcome: "ok" } });
 });
 
 for (const signal of ["SIGTERM", "SIGINT"]) {

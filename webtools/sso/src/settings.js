@@ -4,10 +4,13 @@
 
 import { loadConfiguration } from "./commons/configuration_client.js";
 import { loadI18n } from "./commons/i18n/webtools_i18n.js";
+import { loadMetrics } from "./commons/metrics/webtools_metrics_client.js";
 
 export async function loadSettings() {
   const configuration = await loadConfiguration("sso");
   return {
+    // Where the measurements go. Nothing waits for it.
+    metrics: loadMetrics(configuration),
     host: configuration.string("listen.host"),
     port: configuration.port("listen.port"),
     // An internal subsystem: it answers only callers from the pool's IPs. It is a

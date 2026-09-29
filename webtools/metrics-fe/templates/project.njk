@@ -1,0 +1,163 @@
+{#
+  One project's accumulator: what this webtool cost, gate by gate and phase by phase.
+
+  **It is not the invoice.** What a project consumed for the price at the demo is written
+  on its own pipeline steps in anagraphics, in the same awaited write that records the
+  step. This is the same arithmetic done again from measurements nobody waited for, and
+  when the two disagree the project's record is the one that is right.
+
+  Expected: view (src/views/project.js buildProject), plus the shell's own.
+#}{% extends "layout.njk" %}
+{% import "figures.njk" as figure %}
+
+{% block title %}project — webtools metrics{% endblock %}
+
+{% block content %}
+<h1>Project</h1>
+<p class="subtitle">One accumulator per project: everything it ever did, not a period of it.</p>
+<section>
+  <form class="lookup" method="get" action="/projects">
+    <label>project id <input type="text" name="id" value="{{ view.projectId or '' }}" size="40" autocomplete="off"></label>
+    <button type="submit">read</button>
+  </form>
+</section>
+
+{%- if not view.projectId %}
+<section>
+  <p class="absent">No project asked for. A project id is the one anagraphics gave it; the measurements that
+    name it land in its accumulator as well as in the day's bucket.</p>
+</section>
+{%- elif view.unknown %}
+<section>
+  <p class="absent">No accumulator for <code>{{ view.projectId }}</code>. Either no measurement ever named that
+    project, or the id is not the one anagraphics gave it. It is not a project that consumed nothing.</p>
+</section>
+{%- elif view.project %}
+
+<section>
+  <h2>{{ view.project.id }}</h2>
+  <table class="grid">
+    <tbody>
+      <tr><th>first measurement</th><td class="mono">{% if view.project.firstAt %}{{ view.project.firstAt }}{% else %}<span class="absent">&mdash;</span>{% endif %}</td></tr>
+      <tr><th>last measurement</th><td class="mono">{% if view.project.lastAt %}{{ view.project.lastAt }}{% else %}<span class="absent">&mdash;</span>{% endif %}</td></tr>
+    </tbody>
+  </table>
+  <p class="note">Not the invoice: the price is on this project's pipeline steps in anagraphics. A measurement may be lost; an invoice may not.</p>
+</section>
+
+<section>
+  <h2>What it consumed</h2>
+  {%- if not view.project.tokens.length %}
+  <p class="absent">This project carries no tokens.</p>
+  {%- else %}
+  <dl class="kinds wide">
+    {%- for kind in view.project.tokens %}
+    <div><dt>{{ kind.kind }}</dt><dd>{{ kind.text }}</dd></div>
+    {%- endfor %}
+  </dl>
+  {%- endif %}
+</section>
+
+<section>
+  <h2>By phase</h2>
+  {%- if view.project.phases.empty %}
+  <p class="absent">No measurement of this project carried a phase.</p>
+  {%- else %}
+  <table class="grid ranked">
+    <thead>
+      <tr><th>phase</th><th class="number-cell">count</th><th class="bar-cell"></th>{% for kind in view.project.phases.kinds %}<th class="number-cell">{{ kind }}</th>{% endfor %}</tr>
+    </thead>
+    <tbody>
+      {%- for row in view.project.phases.rows %}
+      <tr>
+        <th>{{ row.label }}</th>
+        <td class="number-cell">{{ row.count }}</td>
+        <td class="bar-cell">{{ figure.bar(row.percent) }}</td>
+        {%- for kind in view.project.phases.kinds %}
+        <td class="number-cell">{% if row.tokens and row.tokens[kind] is defined %}{{ row.tokens[kind] | number_text }}{% else %}<span class="absent">&mdash;</span>{% endif %}</td>
+        {%- endfor %}
+      </tr>
+      {%- endfor %}
+    </tbody>
+  </table>
+  {%- endif %}
+</section>
+
+<section>
+  <h2>How its gates decided</h2>
+  {%- if view.project.gates.empty %}
+  <p class="absent">No gate of this project has decided anything yet.</p>
+  {%- else %}
+  <table class="grid ranked">
+    <thead><tr><th>outcome</th><th class="number-cell">decisions</th><th class="bar-cell"></th></tr></thead>
+    <tbody>
+      {%- for row in view.project.gates.rows %}
+      <tr><th>{{ row.label }}</th><td class="number-cell">{{ row.text }}</td><td class="bar-cell">{{ figure.bar(row.percent) }}</td></tr>
+      {%- endfor %}
+    </tbody>
+  </table>
+  {%- endif %}
+
+  {%- if not view.project.reasons.empty %}
+  <h3>And why</h3>
+  <table class="grid ranked">
+    <thead><tr><th>reason</th><th class="number-cell">times</th><th class="bar-cell"></th></tr></thead>
+    <tbody>
+      {%- for row in view.project.reasons.rows %}
+      <tr><th>{{ row.label }}</th><td class="number-cell">{{ row.text }}</td><td class="bar-cell">{{ figure.bar(row.percent) }}</td></tr>
+      {%- endfor %}
+    </tbody>
+  </table>
+  {%- endif %}
+</section>
+
+<section>
+  <h2>Metric by metric</h2>
+  {%- if view.project.metrics.empty %}
+  <p class="absent">This accumulator carries no metric.</p>
+  {%- else %}
+  <table class="grid rows">
+    <thead>
+      <tr>
+        <th>metric</th><th class="number-cell">count</th>
+        {%- for kind in view.project.metrics.kinds %}<th class="number-cell">{{ kind }}</th>{% endfor %}
+        <th class="number-cell">mean</th><th class="number-cell">min</th><th class="number-cell">max</th><th class="number-cell">bytes</th>
+      </tr>
+    </thead>
+    <tbody>
+      {%- for row in view.project.metrics.rows %}
+      <tr>
+        <th class="mono">{{ row.label }}{% if row.stored %} <span class="absent" title="this field name matches no metric in the vocabulary, so it is shown as it is stored">(stored)</span>{% endif %}</th>
+        <td class="number-cell">{{ row.count }}</td>
+        {%- for kind in view.project.metrics.kinds %}
+        <td class="number-cell">{% if row.tokens and row.tokens[kind] is defined %}{{ row.tokens[kind] | number_text }}{% else %}<span class="absent">&mdash;</span>{% endif %}</td>
+        {%- endfor %}
+        <td class="number-cell">{% if row.duration %}{{ figure.number(row.duration.mean.text) }}{% else %}<span class="absent">&mdash;</span>{% endif %}</td>
+        <td class="number-cell">{% if row.duration %}{{ figure.number(row.duration.min.text) }}{% else %}<span class="absent">&mdash;</span>{% endif %}</td>
+        <td class="number-cell">{% if row.duration %}{{ figure.number(row.duration.max.text) }}{% else %}<span class="absent">&mdash;</span>{% endif %}</td>
+        <td class="number-cell">{% if row.bytes %}{{ row.bytes.text }}{% else %}<span class="absent">&mdash;</span>{% endif %}</td>
+      </tr>
+      {%- endfor %}
+    </tbody>
+  </table>
+
+  {%- for row in view.project.metrics.rows %}
+  {%- if row.duration and row.duration.histogram %}
+  <h3>{{ row.label }} &mdash; how long they took</h3>
+  {{ figure.histogram(row.duration.histogram, "duration") }}
+  {%- endif %}
+  {%- endfor %}
+  {%- endif %}
+</section>
+
+{%- if view.project.rest.length %}
+<section>
+  <h2>Also on the document</h2>
+  <table class="grid">
+    <tbody>{% for entry in view.project.rest %}<tr><th>{{ entry.key }}</th><td><code>{{ entry.value }}</code></td></tr>{% endfor %}</tbody>
+  </table>
+  <p class="note">Carried by the accumulator, not written into this page.</p>
+</section>
+{%- endif %}
+{%- endif %}
+{% endblock %}

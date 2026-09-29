@@ -1,0 +1,65 @@
+{#
+  What may be sent. A closed list is only fair if it can be read, so metrics answers it
+  and this page prints it. It is the page to open when a measurement was refused: the
+  dimension that was wrong, or the value a closed dimension does not allow, is on it.
+
+  Expected: view (src/views/vocabulary.js buildVocabulary), plus the shell's own.
+#}{% extends "layout.njk" %}
+
+{% block title %}vocabulary — webtools metrics{% endblock %}
+
+{% block content %}
+<h1>Vocabulary</h1>
+<p class="subtitle">{{ view.metricsText }} metrics. A name that is not here is refused with a <code>400</code>, and so is a dimension a metric does not declare.</p>
+
+<section>
+  <h2>Who may send</h2>
+  {%- if view.subsystems.length %}
+  <p class="chooser">{% for subsystem in view.subsystems %}<span class="current">{{ subsystem }}</span>{% endfor %}</p>
+
+  {%- else %}
+  <p class="absent">The vocabulary could not be read.</p>
+  {%- endif %}
+</section>
+
+<section>
+  <h2>The metrics</h2>
+  {%- if not view.metrics.length %}
+  <p class="absent">No metric could be read.</p>
+  {%- else %}
+  <table class="grid vocabulary">
+    <thead>
+      <tr><th>metric</th><th>required</th><th>optional</th><th>may carry</th><th>project</th><th></th></tr>
+    </thead>
+    <tbody>
+      {%- for metric in view.metrics %}
+      <tr>
+        <th class="mono">{{ metric.name }}</th>
+        <td>
+          {%- if metric.required.length %}
+          {%- for dimension in metric.required %}
+          <span class="dim"><span class="name">{{ dimension.name }}</span>{% if dimension.open %}<span class="open" title="the values cannot be listed in advance: only the key is closed">open</span>{% else %}{{ dimension.values | join(" · ") }}{% endif %}</span>
+          {%- endfor %}
+          {%- else %}<span class="absent">none</span>{% endif %}
+        </td>
+        <td>
+          {%- if metric.optional.length %}
+          {%- for dimension in metric.optional %}
+          <span class="dim"><span class="name">{{ dimension.name }}</span>{% if dimension.open %}<span class="open">open</span>{% else %}{{ dimension.values | join(" · ") }}{% endif %}</span>
+          {%- endfor %}
+          {%- else %}<span class="absent">none</span>{% endif %}
+        </td>
+        <td>{% if metric.values.length %}{% for value in metric.values %}<code>{{ value }}</code> {% endfor %}{% else %}<span class="absent">count only</span>{% endif %}</td>
+        <td>{% if metric.project %}yes{% else %}<span class="absent">no</span>{% endif %}</td>
+        <td><a href="/daily?metric={{ metric.name }}">buckets &rarr;</a></td>
+      </tr>
+      {%- endfor %}
+    </tbody>
+  </table>
+  <p class="note"><strong>required</strong>: without it the measurement is refused.
+    <strong>optional</strong>: it exists only in some cases, and absent is absent.
+    <strong>open</strong>: the values cannot be listed, the key is closed.
+    <strong>project</strong>: a measurement of it may name a project, and then it lands in that project's accumulator too.</p>
+  {%- endif %}
+</section>
+{% endblock %}

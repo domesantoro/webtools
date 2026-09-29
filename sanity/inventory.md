@@ -2,9 +2,13 @@
 
 Run started: 2026-09-25
 Branch at start: `preanalyst-chat`
-Total units: 72 (66 to audit, 6 skipped groups listed at the bottom)
+Total units: 73 (67 to audit, 6 skipped groups listed at the bottom)
 
 Computed once. **Never recompute.** Resume at the first `pending` row.
+
+A file written after the inventory was computed belongs to no row, so it is appended at the end
+rather than folded into a row that was already judged: row 73 was added on 2026-09-26 for
+`analysis_page.test.js`, created on 2026-09-25 after rows 14 and 28 were `done`.
 
 Order: working-tree / today's work first, then subsystem by subsystem
 (`preanalyst`, `sso`, `front-gate`, `anagraphics`, `configurator`, `webtools-workspaces`,
@@ -54,36 +58,37 @@ Order: working-tree / today's work first, then subsystem by subsystem
 | 40 | front-gate-settings-index-page | webtools/front-gate/src/settings.js, src/index.js, src/page.js | done | |
 | 41 | front-gate-templates | webtools/front-gate/templates/*.njk | done | |
 | 42 | front-gate-public | webtools/front-gate/public/js/main.js, webtools/front-gate/public/css/styles.css | done | |
-| 43 | front-gate-runner | webtools/front-gate/webtools_front_gate.sh, package.json | pending | |
-| 44 | anagraphics-main | webtools/anagraphics/webtools_anagraphics/main.py | pending | |
-| 45 | anagraphics-db | webtools/anagraphics/webtools_anagraphics/db.py | pending | |
-| 46 | anagraphics-settings-credentials-errors | webtools/anagraphics/webtools_anagraphics/settings.py, credentials.py, errors.py, __main__.py | pending | |
-| 47 | anagraphics-scripts | webtools/anagraphics/scripts/load_configuration.py, seed.py, migrate_pipeline.py, migrate_user_billing.py | pending | |
-| 48 | anagraphics-tests | webtools/anagraphics/tests/test_api.py, test_load_configuration.py | pending | |
-| 49 | anagraphics-runner | webtools/anagraphics/webtools_anagraphics.sh, pyproject.toml | pending | |
-| 50 | configurator-deployers | webtools/configurator/deploy.sh, */deploy.sh | pending | |
-| 51 | configurator-start-stop | webtools/configurator/start.sh, webtools/configurator/stop.sh | pending | |
-| 52 | configurator-load-configuration | webtools/configurator/load_configuration.sh, webtools/configurator/bootstrap.env | pending | |
-| 53 | configurator-configuration-rest | webtools/configurator/configuration/{anagraphics,front-gate,sso,workspaces}.json | pending | |
-| 54 | configurator-documents | webtools/configurator/documents/prespec.md.njk | pending | copy in webtools/preanalyst/templates/commons/ |
-| 55 | configurator-readme | webtools/configurator/README.md, webtools/configurator/secrets/README.md | pending | |
-| 56 | workspaces-server | webtools/webtools-workspaces/src/server.js | pending | |
-| 57 | workspaces-store | webtools/webtools-workspaces/src/store.js | pending | |
-| 58 | workspaces-settings-index | webtools/webtools-workspaces/src/settings.js, src/index.js | pending | |
-| 59 | workspaces-tests | webtools/webtools-workspaces/tests/api.test.js, tests/store.test.js | pending | |
-| 60 | workspaces-runner | webtools/webtools-workspaces/webtools_workspaces.sh, package.json, README.md | pending | |
-| 61 | commons-configuration-client | webtools/commons/configuration/configuration_client.js | pending | copies in every subsystem |
-| 62 | commons-i18n-lib | webtools/commons/i18n/webtools_i18n.js, webtools/commons/i18n/webtools_i18n_check.mjs | pending | copies in every subsystem |
-| 63 | commons-sso-client | webtools/commons/sso/sso_client.js, webtools/commons/sso/sso_popup.js | pending | copies in preanalyst |
-| 64 | commons-loader | webtools/commons/script/webtools_loader.js | pending | copies in every subsystem public/ |
-| 65 | commons-specs | webtools/commons/specs/spec_front_matter.js | pending | copies in preanalyst, workspaces |
-| 66 | commons-templates | webtools/commons/templates/base.njk, loader.njk, locale_switch.njk | pending | copies in every subsystem |
-| 67 | commons-style | webtools/commons/style/commons.css | pending | copies in every subsystem |
-| 68 | docs-preanalyst | docs/subsystems/preanalyst/README.md | pending | |
-| 69 | docs-anagraphics | docs/subsystems/anagraphics/README.md | pending | |
-| 70 | docs-sso-workspaces | docs/subsystems/sso/README.md, docs/subsystems/workspaces/README.md | pending | |
-| 71 | subsystem-readmes | webtools/{preanalyst,sso,front-gate,anagraphics}/README.md | pending | |
-| 72 | claude-md | CLAUDE.md | pending | |
+| 43 | front-gate-runner | webtools/front-gate/webtools_front_gate.sh, package.json | done | |
+| 44 | anagraphics-main | webtools/anagraphics/webtools_anagraphics/main.py | done | |
+| 45 | anagraphics-db | webtools/anagraphics/webtools_anagraphics/db.py | done | |
+| 46 | anagraphics-settings-credentials-errors | webtools/anagraphics/webtools_anagraphics/settings.py, credentials.py, errors.py, __main__.py | done | |
+| 47 | anagraphics-scripts | webtools/anagraphics/scripts/load_configuration.py, seed.py, migrate_pipeline.py, migrate_user_billing.py | done | |
+| 48 | anagraphics-tests | webtools/anagraphics/tests/test_api.py, test_load_configuration.py | done | |
+| 49 | anagraphics-runner | webtools/anagraphics/webtools_anagraphics.sh, pyproject.toml | done | |
+| 50 | configurator-deployers | webtools/configurator/deploy.sh, */deploy.sh | done | |
+| 51 | configurator-start-stop | webtools/configurator/start.sh, webtools/configurator/stop.sh | done | |
+| 52 | configurator-load-configuration | webtools/configurator/load_configuration.sh, webtools/configurator/bootstrap.env | done | |
+| 53 | configurator-configuration-rest | webtools/configurator/configuration/{anagraphics,front-gate,sso,workspaces}.json | done | configurator-fe.json, in no row, examined with them |
+| 54 | configurator-documents | webtools/configurator/documents/prespec.md.njk | done | copy in webtools/preanalyst/templates/commons/ |
+| 55 | configurator-readme | webtools/configurator/README.md, webtools/configurator/secrets/README.md | done | |
+| 56 | workspaces-server | webtools/webtools-workspaces/src/server.js | done | |
+| 57 | workspaces-store | webtools/webtools-workspaces/src/store.js | done | |
+| 58 | workspaces-settings-index | webtools/webtools-workspaces/src/settings.js, src/index.js | done | |
+| 59 | workspaces-tests | webtools/webtools-workspaces/tests/api.test.js, tests/store.test.js | done | |
+| 60 | workspaces-runner | webtools/webtools-workspaces/webtools_workspaces.sh, package.json, README.md | done | |
+| 61 | commons-configuration-client | webtools/commons/configuration/configuration_client.js | done | copies in every subsystem |
+| 62 | commons-i18n-lib | webtools/commons/i18n/webtools_i18n.js, webtools/commons/i18n/webtools_i18n_check.mjs | done | copies in every subsystem |
+| 63 | commons-sso-client | webtools/commons/sso/sso_client.js, webtools/commons/sso/sso_popup.js | done | copies in preanalyst |
+| 64 | commons-loader | webtools/commons/script/webtools_loader.js | done | copies in every subsystem public/ |
+| 65 | commons-specs | webtools/commons/specs/spec_front_matter.js | done | copies in preanalyst, workspaces |
+| 66 | commons-templates | webtools/commons/templates/base.njk, loader.njk, locale_switch.njk | done | copies in every subsystem |
+| 67 | commons-style | webtools/commons/style/commons.css | done | copies in every subsystem |
+| 68 | docs-preanalyst | docs/subsystems/preanalyst/README.md | done | |
+| 69 | docs-anagraphics | docs/subsystems/anagraphics/README.md | done | |
+| 70 | docs-sso-workspaces | docs/subsystems/sso/README.md, docs/subsystems/workspaces/README.md | done | |
+| 71 | subsystem-readmes | webtools/{preanalyst,sso,front-gate,anagraphics}/README.md | done | |
+| 72 | claude-md | CLAUDE.md | done | |
+| 73 | preanalyst-tests-analysis-page | webtools/preanalyst/tests/analysis_page.test.js | done | written 2026-09-25, after the inventory was computed; belongs to neither row 14 nor row 28 |
 
 ## Skipped
 

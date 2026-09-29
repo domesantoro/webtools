@@ -1,0 +1,261 @@
+{#
+  One page per question metrics answers, drawn from the same template. What differs
+  between the eight is in src/views/questions.js, not here.
+
+  Every figure carries its change against the period of the same length before it:
+  a number on its own says how the system is, the two together say how it is going.
+
+  No page explains itself in prose. What a figure means is in README.md and in the
+  header of its own column; a sentence stays only where leaving it out would let a
+  number be misread.
+
+  Expected: view (src/views/questions.js buildQuestion), plus the shell's own.
+#}{% extends "layout.njk" %}
+{% import "figures.njk" as figure %}
+{% import "charts.njk" as chart %}
+
+{% block title %}{{ view.heading | lower }} — webtools metrics{% endblock %}
+
+{% block content %}
+<h1>{{ view.heading }}</h1>
+<p class="subtitle">{{ view.intent }}</p>
+
+{%- if view.question == "funnel" %}
+<section id="gates">
+  <h2>From one gate to the next</h2>
+  {{ figure.chain(view.gates, "gate", "decisions") }}
+</section>
+
+<section id="entry">
+  <h2>The way in</h2>
+  {{ figure.chain(view.entry, "stage", "count") }}
+</section>
+
+<section id="reconciliation">
+  <h2>Reconciliation {{ figure.change(view.delta) }}</h2>
+  {%- if view.reconciliation.available %}
+  <table class="grid">
+    <tbody>
+      <tr><th>projects in anagraphics</th><td class="number-cell">{{ view.reconciliation.projects }}</td><td class="note">written down, true by construction</td></tr>
+      <tr><th>projects measured here</th><td class="number-cell">{% if view.reconciliation.measured !== null %}{{ view.reconciliation.measured }}{% else %}<span class="absent">&mdash;</span>{% endif %}</td><td class="note">folded from <code>project.created</code></td></tr>
+      <tr><th>lost</th><td class="number-cell strong">{% if view.reconciliation.lost !== null %}{{ view.reconciliation.lost }}{% else %}<span class="absent">&mdash;</span>{% endif %}</td><td class="note">nobody waits for a measurement, and nobody retries one</td></tr>
+    </tbody>
+  </table>
+  {%- else %}
+  <p class="warning-inline">The projects could not be counted: <code>{{ view.reconciliation.reason }}</code>. How much of the funnel was lost cannot be said.</p>
+  {%- endif %}
+  {%- if view.reconciliation.rest.length %}
+  <table class="grid">
+    <tbody>{% for entry in view.reconciliation.rest %}<tr><th>{{ entry.key }}</th><td><code>{{ entry.value }}</code></td></tr>{% endfor %}</tbody>
+  </table>
+  {%- endif %}
+</section>
+
+<section id="stages">
+  <h2>Every stage</h2>
+  {%- for group in view.groups %}
+  <h3>{{ group.name }}</h3>
+  <div class="with-ring">
+    <div class="beside">{{ figure.counts(group.table, "stage") }}</div>
+    {{ chart.whole(group.ring, group.name) }}
+  </div>
+  {%- endfor %}
+  {%- if not view.groups.length %}
+  <p class="absent">No stage of the funnel was folded in this period.</p>
+  {%- endif %}
+</section>
+{%- endif %}
+
+{%- if view.question == "cost" %}
+<section>
+  <h2>Altogether {{ figure.change(view.delta) }}</h2>
+  <table class="grid tokens">
+    <thead><tr><th>kind</th><th class="number-cell">tokens</th><th class="number-cell">against the period before</th><th class="number-cell each">each</th></tr></thead>
+    <tbody>
+      {%- for entry in view.consumed %}
+      <tr>
+        <th>{{ entry.kind }}</th>
+        <td class="number-cell strong">{{ entry.text }}</td>
+        <td class="number-cell">{{ figure.change(entry.delta) }}</td>
+        <td class="number-cell each">{% if view.each and view.each[entry.kind] is defined %}{{ view.each[entry.kind] | number_text }}{% else %}<span class="absent">&mdash;</span>{% endif %}</td>
+      </tr>
+      {%- endfor %}
+      {%- if not view.consumed.length %}
+      <tr><td colspan="4" class="absent">No bucket in this period carries tokens.</td></tr>
+      {%- endif %}
+    </tbody>
+  </table>
+  <p class="note"><strong>each</strong> is the kind over the {{ view.total.countText }} buckets that carry tokens.</p>
+</section>
+
+<section id="per-project">
+  <h2>What a webtool consumes</h2>
+  {%- if not view.perProject.projects %}
+  <p class="absent">No project accumulator exists yet.</p>
+  {%- elif not view.perProject.kinds.length %}
+  <p class="absent">{{ view.perProject.projects }} accumulators, none carrying tokens.</p>
+  {%- else %}
+  {%- for kind in view.perProject.kinds %}
+  <h3>{{ kind.kind }} <span class="muted">over {{ view.perProject.projects }} projects</span></h3>
+  {{ figure.spread(kind.spread, kind.kind) }}
+  {%- endfor %}
+  <p class="note">One distribution per kind, and none of the kinds together: a single figure would weigh one kind against another, and that weight is a price.</p>
+  {%- endif %}
+</section>
+{%- endif %}
+
+{%- if view.question == "preanalysis" %}
+<section>
+  <h2>Turns {{ figure.change(view.delta) }}</h2>
+  {{ figure.summary(view.turns, "turns folded") }}
+  {%- if view.each %}
+  <table class="grid tokens">
+    <thead><tr><th>what one turn costs</th>{% for kind, value in view.each %}<th class="number-cell">{{ kind }}</th>{% endfor %}</tr></thead>
+    <tbody><tr><th>per turn</th>{% for kind, value in view.each %}<td class="number-cell strong">{{ value | number_text }}</td>{% endfor %}</tr></tbody>
+  </table>
+  {%- endif %}
+  {{ figure.spans(view.duration, "how long a turn takes") }}
+</section>
+
+<section id="per-preanalysis">
+  <h2>Turns a pre-analysis takes {{ figure.change(view.medianDelta) }}</h2>
+  {%- if not view.preanalyses %}
+  <p class="absent">No pre-analysis has taken a turn yet.</p>
+  {%- else %}
+  {{ figure.spread(view.perPreanalysis, "turns per pre-analysis") }}
+  <p class="note">Out of the {{ view.preanalyses }} pre-analys{% if view.preanalyses == 1 %}is{% else %}es{% endif %} that took at least one turn {{ figure.change(view.preanalysesDelta) }}. A pre-analysis with no turn has not started, and is not counted.</p>
+  {%- endif %}
+</section>
+{%- endif %}
+
+{%- if view.question == "providers" %}
+<section>
+  <h2>Where a call ends up</h2>
+  <div class="stats">
+    {{ figure.rate(view.failureRate, "calls where nothing came back") }}
+    <div class="stat">
+      <span class="label">over the period before</span>
+      <span class="value">{% if view.failureRateBefore.known %}{{ view.failureRateBefore.percentText }}{% else %}<span class="absent">&mdash;</span>{% endif %}</span>
+      <span class="of">{{ figure.change(view.failureRateDelta) }} per thousand</span>
+    </div>
+  </div>
+  <p class="note">Out of the calls plus the failures: a call that was refused is a call that happened, and the model ran.</p>
+</section>
+{%- endif %}
+
+{%- if view.question == "economics" %}
+<section id="per-accepted-demo">
+  <h2>What a sale consumed {{ figure.change(view.acceptedDelta) }}</h2>
+  {%- if not view.perAcceptedDemo.accepted %}
+  <p class="absent">No demo was accepted in this period, so there is nothing to divide by. Not a consumption of nothing.</p>
+  {%- else %}
+  <p><span class="inline-figure">{{ view.perAcceptedDemo.accepted }}</span> demo{% if view.perAcceptedDemo.accepted != 1 %}s{% endif %} accepted.</p>
+  {%- if view.perDemoDeltas.length %}
+  <table class="grid tokens">
+    <thead><tr><th>per accepted demo</th><th class="number-cell">tokens</th><th class="number-cell">against the period before</th></tr></thead>
+    <tbody>
+      {%- for entry in view.perDemoDeltas %}
+      <tr><th>{{ entry.kind }}</th><td class="number-cell strong">{{ entry.text }}</td><td class="number-cell">{{ figure.change(entry.delta) }}</td></tr>
+      {%- endfor %}
+    </tbody>
+  </table>
+  {%- endif %}
+  {%- endif %}
+</section>
+
+<section id="refusals">
+  <h2>What produced nothing</h2>
+  {%- if not view.refusals.projects %}
+  <p class="absent">No project has been refused by a gate.</p>
+  {%- else %}
+  <p>{{ view.refusals.projects }} project{% if view.refusals.projects != 1 %}s{% endif %} refused.</p>
+  {%- if view.wasted.length %}
+  <table class="grid tokens">
+    <thead><tr><th>kind</th><th class="number-cell">spent on them</th><th class="number-cell">of the period's</th><th class="bar-cell">share</th></tr></thead>
+    <tbody>
+      {%- for entry in view.wasted %}
+      <tr>
+        <th>{{ entry.kind }}</th>
+        <td class="number-cell">{{ entry.text }}</td>
+        <td class="number-cell muted">{{ entry.of }}</td>
+        <td class="bar-cell">{{ figure.bar(entry.percent) }}<span class="of-first">{{ entry.percent }} %</span></td>
+      </tr>
+      {%- endfor %}
+    </tbody>
+  </table>
+  {%- elif view.refusals.tokens %}
+  <dl class="kinds wide">
+    {%- for kind, value in view.refusals.tokens %}
+    <div><dt>{{ kind }}</dt><dd>{{ value | number_text }}</dd></div>
+    {%- endfor %}
+  </dl>
+  {%- endif %}
+
+  {%- if view.refusals.rows.length %}
+  <h3>By the reason the gate gave</h3>
+  <table class="grid ranked">
+    <thead>
+      <tr><th>reason</th><th class="number-cell">projects</th><th class="bar-cell"></th>{% for kind in view.refusals.kinds %}<th class="number-cell">{{ kind }}</th>{% endfor %}</tr>
+    </thead>
+    <tbody>
+      {%- for row in view.refusals.rows %}
+      <tr>
+        <th>{{ row.label }}</th>
+        <td class="number-cell">{{ row.projects }}</td>
+        <td class="bar-cell">{{ figure.bar(row.percent) }}</td>
+        {%- for kind in view.refusals.kinds %}
+        <td class="number-cell">{% if row.tokens[kind] is defined %}{{ row.tokens[kind] | number_text }}{% else %}<span class="absent">&mdash;</span>{% endif %}</td>
+        {%- endfor %}
+      </tr>
+      {%- endfor %}
+    </tbody>
+  </table>
+  {%- if view.refusals.hidden %}<p class="note">{{ view.refusals.hidden }} more reason{% if view.refusals.hidden != 1 %}s{% endif %}, not shown.</p>{% endif %}
+  <p class="note">A project's whole consumption is counted against every reason its gates gave, so these columns are not parts of a sum.</p>
+  {%- endif %}
+  {%- endif %}
+</section>
+
+<section>
+  <h2>Charged to drivers</h2>
+  {{ figure.summary(view.charged, "measurements of tokens charged") }}
+</section>
+{%- endif %}
+
+{%- if view.question == "http" %}
+<section>
+  <h2>Refused by the IP pool {{ figure.change(view.refusedIpsDelta) }}</h2>
+  <p><span class="inline-figure">{{ view.refusedIps }}</span> request{% if view.refusedIps != 1 %}s{% endif %} from an IP outside a subsystem's pool.</p>
+</section>
+{%- endif %}
+
+{%- if view.question == "health" %}
+<section>
+  <h2>Calls between subsystems</h2>
+  <div class="stats">
+    {{ figure.rate(view.dependencyFailureRate, "calls that did not end ok") }}
+    <div class="stat">
+      <span class="label">against the period before</span>
+      <span class="value">{{ figure.change(view.dependencyFailureRateDelta) }}</span>
+      <span class="of">per thousand</span>
+    </div>
+  </div>
+</section>
+{%- endif %}
+
+{#- The sections, the same shape for every question. -#}
+{%- for section in view.sections %}
+<section id="{{ section.key }}">
+  <h2>{{ section.heading }} {{ figure.change(section.delta) }}</h2>
+  {%- if section.note %}<p class="note">{{ section.note }}</p>{% endif %}
+  <div class="with-ring">
+    <div class="beside">{{ figure.counts(section.table, section.heading | lower) }}</div>
+    {{ chart.whole(section.ring, section.heading | lower) }}
+  </div>
+  {{ figure.tokens(section.table.rows, section.table.kinds, section.heading | lower) }}
+  {%- if section.spans %}
+  {{ figure.spans(section.spans, section.heading | lower) }}
+  {%- endif %}
+</section>
+{%- endfor %}
+{% endblock %}

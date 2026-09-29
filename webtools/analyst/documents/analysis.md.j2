@@ -1,0 +1,45 @@
+{#-
+  The technical analysis: the document the tool is built from.
+
+  Its reader is whoever builds — an AI developer under a driver's supervision — so it
+  is in English, and there is no catalogue behind it: this document is never read by
+  the client.
+
+  Rendered by the analyst (`webtools_analyst/documents.py`) with Jinja2, because that
+  subsystem is Python. The pre-specification's model next door is nunjucks, rendered by
+  the preanalyst, which is Node. Whoever produces a document holds its template.
+
+  What arrives here: `project_id` and `template`, which are ours, and `analysis` and
+  `assumptions`, which are a model's words. The model's words go in the **body** only.
+  Nothing written by a model is ever put in the front matter, where it would be YAML
+  that somebody else parses.
+
+  **There is no title above the analysis.** The policy says the model's answer is the
+  document, whole, with its own headings, so a heading of ours on top would be a second
+  title. What is added here is what is ours and nowhere else: the front matter, and the
+  assumptions as a closing section.
+
+  This comment's tags carry the minus sign that strips the whitespace around them, so
+  the rendered file **begins** with the front matter's first dash. A document whose
+  first line is anything else has no front matter as far as workspaces is concerned,
+  and it would be given a fresh one with ours pushed down into the body.
+-#}
+---
+project_id: {{ project_id }}
+kind: analysis
+template: {{ template }}
+---
+{{ analysis }}
+
+## Assumptions
+
+What the analysis took for granted because the material did not say: where the
+supervising driver finds what to check with the client.
+
+{% if assumptions %}
+{% for assumption in assumptions %}
+- {{ assumption }}
+{% endfor %}
+{% else %}
+None declared.
+{% endif %}

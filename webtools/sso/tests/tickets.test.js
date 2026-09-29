@@ -4,14 +4,14 @@ import { test } from "node:test";
 import { buildTicket, isExpired, newTicket, serviceOf, withTicket } from "../src/tickets.js";
 
 test("the ticket is long and does not repeat", () => {
-  const biglietti = new Set();
+  const tickets = new Set();
   for (let i = 0; i < 100; i += 1) {
     const ticket = newTicket();
     assert.equal(ticket.length, 43);
     assert.match(ticket, /^[A-Za-z0-9_-]+$/);
-    biglietti.add(ticket);
+    tickets.add(ticket);
   }
-  assert.equal(biglietti.size, 100);
+  assert.equal(tickets.size, 100);
 });
 
 test("the ticket says who it was given to and for which session", () => {
@@ -40,7 +40,7 @@ test("the service is the subsystem's address, without a path", () => {
 
 test("the ticket is added without losing the parameters already there", () => {
   const next = "http://127.0.0.1:9200/?discount=e8013cf2";
-  const url = new URL(withTicket(next, "biglietto"));
+  const url = new URL(withTicket(next, "a-ticket"));
   assert.equal(url.searchParams.get("discount"), "e8013cf2");
-  assert.equal(url.searchParams.get("ticket"), "biglietto");
+  assert.equal(url.searchParams.get("ticket"), "a-ticket");
 });

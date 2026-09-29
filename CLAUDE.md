@@ -41,13 +41,9 @@ Drivers sign up from **Work with us**: only **enabled** ones (after an interview
 projects; every driver can be an **ambassador** (inviting clients, taking half the fee) and do
 **autonomous work** (their own projects, paid with their own tokens plus the fee).
 
-We are in the **PoC** phase: a reduced slice of the pipeline is being built, to measure the real AI
-cost of a webtool, how often demos are accepted, and how many turns a pre-analysis really takes.
-**The PoC limits the perimeter, not the quality**: same standards as a real system.
-
 The detail — actors, architecture, flow, pricing model, open questions — is in
-`contesto/02. contesto_aggiornato.md`, which is the current document (the one in `contesto/outdated/`
-is not to be used). The visual reference for the flow is `struttura/design/Sequence.drawio.pdf`.
+`contesto/02. current_context.md`, which is the current document (the one in `contesto/outdated/`
+is not to be used). The visual reference for the flow is `structure/design/Sequence.drawio.pdf`.
 
 ## General rules
 
@@ -66,6 +62,44 @@ is not to be used). The visual reference for the flow is `struttura/design/Seque
     of a later pass.
   - **Never narrow the world to fit the code.** If what you wrote holds only under a restriction
     you imposed, the code is wrong and the world is not.
+
+- **MANDATORY, INVIOLABLE: the system talks to an AI only through a contract, and is never
+  tied to one provider.**
+  A **door** is one question the system asks a model. Every door owns a contract of its own — what
+  it sends and what comes back, in our words — and **contracts are not shared between doors**: two
+  doors may run on different providers, with different keys, different models and different
+  consumption, and each has to be able to change without the others being disentangled first. Two
+  contracts looking alike is the price of that independence, and it is paid on purpose.
+  - **A provider is an adapter.** It receives the request in the contract's words, speaks whatever
+    language its API speaks, and answers in the contract's words. It is the **only** file that may
+    name that provider, import its SDK, or know its fields, its roles, its error codes, its reasons
+    for stopping and what it calls a unit of consumption.
+  - **Nothing above an adapter may contain a provider's vocabulary.** Not the callers, not the logs,
+    not the tests, not the scripts, not the metrics, not what we store on a project. Passing a
+    provider's own object through "because only two fields of it are read" is the same defect as
+    importing its SDK upstairs, and it is slower to notice and worse to undo.
+  - **What it consumed is counted, never converted.** The kinds of consumption are named by the
+    adapter — one provider counts input and output, another a cache it writes and a cache it reads,
+    another reasoning or images — and no list of those names exists in code anywhere outside an
+    adapter. Above it they are carried and added up under the names they arrived with, and nothing
+    turns them into money: what a unit is worth is not the system's to say, and a figure in a
+    currency would be a claim about a price nobody configured. For the same reason kinds are never
+    added to one another: a token of one kind and a token of another are not the same thing, and a
+    sum of the two is a rate between them that nobody decided.
+  - **One consumption is reported once.** What a call consumed is carried by **one** measurement, and
+    the same tokens under a second name are the same tokens counted twice: whoever adds up the
+    consumption adds up everything that carries tokens, and cannot tell one report of a call from two.
+    A call may well be measured by more than one metric — what it cost, and what it was a turn of —
+    and then only one of them carries the tokens, while the others carry the count. Which one is a
+    decision, and it is written where it would be undone.
+  - **Every outcome belongs to the contract, and different outcomes are different words.** An answer
+    cut short, an answer refused, an answer that does not fit, and nothing coming back at all are
+    four facts; why nothing came back is a fifth question. Collapsing them into one is how a system
+    stops knowing what happens to it — and in each of the first three the model ran, so what it
+    consumed is real and is reported.
+  - **The door checks the contract** on whatever the adapter hands over, so an adapter that drifts is
+    caught at the boundary instead of three files downstream, where it shows up only as a number
+    that quietly stays at zero.
 
 - **Everything internal is written in English.** Code (identifiers, comments, docstrings),
   commit messages, log lines, API routes and fields, error codes, data, the pre-specification, and
@@ -140,6 +174,16 @@ is not to be used). The visual reference for the flow is `struttura/design/Seque
 - **Nothing that opens by itself.** A window, a tab or an action that starts without the user having
   asked for it is a defect, even when it is convenient: first say what is about to happen, then wait
   to be asked.
+- **What is built is measured, and the vocabulary is extended to say so.** A piece of work that
+  produces a fact somebody will want to know later — how big the thing it made was, how many of
+  something it found, how it decided, how long it took — measures it, and the name goes into
+  `webtools/metrics/webtools_metrics/vocabulary.py` as part of that same work. The vocabulary is a
+  closed list so that a typo cannot invent a counter nobody reads; it is **not** a list of what
+  deserves measuring, and "the vocabulary does not have it" is the reason to add a line, never the
+  reason not to measure. Finding what is worth measuring is part of building the thing, not a pass
+  afterwards: whoever writes the code is the only one who knows which of its numbers will be asked
+  for, and by the time somebody asks, the occasion to record it has gone.
+
 - **Amounts in euro cents**, integers, throughout the project: data, API, configuration
   (`40000` = 400 €). Field names end in `_cents`. Conversion to euro happens only for display.
 - **Cost estimates: always the worst case** — every conversion lost after the demo, so 5 full
@@ -152,6 +196,24 @@ is not to be used). The visual reference for the flow is `struttura/design/Seque
   plans, no changes beyond what was asked.
 - When the user says **"stop"** or "fermo", stop immediately.
 - **Short, concrete answers.** One session per subject, to keep the context small.
+- **A reason is written out, not alluded to.** Short means without padding; it does not mean
+  compressed. Every step of an argument is stated in plain sentences, including the one that seems
+  obvious, and what a claim rests on is said rather than left to be worked out. A `file:line`
+  reference is where a claim can be **checked**; on its own it is not the argument, and a paragraph
+  built out of references says nothing. Trade vocabulary used as shorthand — a term standing in for
+  the sentence it replaced — makes an explanation sound technical while carrying less: it is a defect
+  like any other, and it costs a round of questions to undo. One reason per paragraph, each ending
+  where it could be disagreed with on its own terms. This holds for what is said to the user and for
+  what is written in `contesto/` and in the documentation.
+- **The design is discussed before it is produced.** A document, a plan or a piece of code written
+  before the decision has been talked through is work done in the wrong order, even when the thinking
+  behind it is right.
+- **Before designing variants, look for how the system already solves that problem.** A question that
+  feels new has usually been answered once already, somewhere in the subsystems, and the answer is
+  the convention the rest of the code runs on. Finding it is the work; three invented alternatives
+  put in front of somebody are not a design discussion, they are the discussion not having been
+  prepared. Changing strategy is a decision of its own, and it needs a reason of its own — that the
+  existing one was looked at and does not hold here.
 - Decisions and the state at the end of the day are recorded in `contesto/sessions/`. There is **one
   checkpoint per day**, not one per session: if the day's file already exists, the next session
   **appends** to it at closing time, without rewriting or deleting what is there.

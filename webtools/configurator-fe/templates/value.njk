@@ -1,0 +1,30 @@
+{#
+  One value of a configuration, printed as what it is.
+
+  Both pages show values, so the macro is here and not in either of them: every
+  JSON type a configuration can hold has a case, the empty ones included — an
+  empty list and an absent list are different facts and read differently.
+
+  Expected: what src/view.js describeValue returned.
+#}
+{% macro value(shown) -%}
+  {%- if shown.type == "secret" -%}
+    <span class="value secret">(secret{% if shown.text %}, {{ shown.text }}{% endif %})</span>
+  {%- elif shown.type == "string" -%}
+    <span class="value string">{{ shown.text }}</span>
+  {%- elif shown.type == "empty-string" -%}
+    <span class="value absent">(empty string)</span>
+  {%- elif shown.type == "number" -%}
+    <span class="value number">{{ shown.text }}</span>{% if shown.hint %}<span class="hint">{{ shown.hint }}</span>{% endif %}
+  {%- elif shown.type == "boolean" -%}
+    <span class="value boolean">{{ shown.text }}</span>
+  {%- elif shown.type == "null" -%}
+    <span class="value absent">null</span>
+  {%- elif shown.type == "list" -%}
+    <span class="value list">{% for item in shown.items %}<span class="item">{{ item }}</span>{% endfor %}</span>
+  {%- elif shown.type == "empty-list" -%}
+    <span class="value absent">(empty list)</span>
+  {%- elif shown.type == "empty-object" -%}
+    <span class="value absent">(no fields)</span>
+  {%- endif -%}
+{%- endmacro %}

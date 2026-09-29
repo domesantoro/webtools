@@ -1,19 +1,19 @@
 # webtools_preanalyst
 
-The **pre-analysis**: the page the client enters the flow from, and the specification rounds in
-`/analysis/{id}`. The conversation and the turns live on the project; the analyst opens it with the
-first question. The purchase of turns is still fake (§14.3.2 of the documentation).
+The **pre-analysis**: the page the client enters the flow from, and the rounds of questions in
+`/preanalysis/{id}`. The conversation and the turns live on the project; the preanalyst opens it
+with the first question. The purchase of turns is still fake (§14.3.2 of the documentation).
 Node, with **nunjucks** for the pages and **yaml** for the specifications' front matter.
 
 - `POST /submit`: the form creates the project (anagraphics) with its .md pre-specification
-  (webtools-workspaces), has it **prevalidated** and sends the browser to `/analysis/{id}` — or to
-  `/?rejected={id}` if the request does not pass the gate.
-- `POST /analysis/{id}/opening`: the analyst's first question, on a conversation that has not
-  begun. It writes it onto the project and spends no turn.
-- `POST /analysis/{id}/messages`, `.../turns`, `.../turns/buy`: one turn of the chat, moving turns
-  from the user's credit, and the fake purchase.
-- `GET /analysis/{id}/project`: the project's record in anagraphics, as a file. It is what the go
-  button does until the step after the analysis exists.
+  (webtools-workspaces), has it **prevalidated** and sends the browser to `/preanalysis/{id}` —
+  or to `/?rejected={id}` if the request does not pass the gate.
+- `POST /preanalysis/{id}/opening`: the preanalyst's first question, on a conversation that has
+  not begun. It writes it onto the project and spends no turn.
+- `POST /preanalysis/{id}/messages`, `.../turns`, `.../turns/buy`: one turn of the chat, moving
+  turns from the user's credit, and the fake purchase.
+- `GET /preanalysis/{id}/project`: the project's record in anagraphics, as a file. It is what the
+  go button does until the step after the pre-analysis exists.
 - `POST /upload`: a ready-made .md specification, with the `project_id` in the front matter, for a
   project of the user's.
 - `GET /projects/{id}/rejection.pdf`: the form data after a refusal.
@@ -115,8 +115,8 @@ copy.
 ## Where the HTML is
 
 In `templates/`, not in the code: `page.njk` is the page, `macros/fields.njk` draws the fields
-from the data of `src/questions.js`, `partials/driver_box.njk` is the driver box, `analysis.njk`
-is the specification-rounds page. `templates/commons/base.njk` is the shared shell, and it is a
+from the data of `src/questions.js`, `partials/driver_box.njk` is the driver box,
+`preanalysis.njk` is the page of the rounds of questions. `templates/commons/base.njk` is the shared shell, and it is a
 generated copy.
 
 `src/page.js` holds no HTML: it prepares the data and nothing else. Escaping is done by nunjucks
@@ -142,7 +142,9 @@ npm test
 
 They cover the functions that **decide**: how the prevalidator's answer is read and what is done
 with it (`tests/prevalidator.test.js`), which provider is selected and whose configuration is read
-(`tests/prevalidator_ai.test.js`), and the counting of the rounds of whoever has been sent back
-(`tests/server.test.js`). They do not call the provider, they need no servers running and they
+(`tests/prevalidator_ai.test.js`), the counting of the rounds of whoever has been sent back and
+which states may have a pre-analysis step opened for them (`tests/server.test.js`), and what the
+form's answers become, an over-long one included (`tests/prespec.test.js`). They do not call the
+provider, they need no servers running and they
 cost nothing. `src/driver_link.js` and the rest are left uncovered: a known hole, not a
 choice.

@@ -15,12 +15,27 @@
 
 import { findDriver } from "./anagraphics.js";
 
-// For the page: the ambassador's driver, looked up in the list already loaded, or
-// null.
+// What the ambassador box shows, and **why**. `{ state, driver }`: the driver when
+// there is one, and always a word for what was decided.
+//
+// It used to answer the driver or null, which said nothing about the difference
+// between "nobody was named" and "somebody was named and is not a driver". The second
+// is an invitation that will pay nobody, and it is worth a number: from outside, a
+// link that quietly stopped working looks exactly like a link nobody used.
+export const AMBASSADOR_APPLIED = "ambassador_applied";
+export const AMBASSADOR_UNKNOWN = "ambassador_unknown";
+export const AMBASSADOR_OWN_LINK = "ambassador_own_link";
+// A discount or a driver's link came with it, and those carry the economic effect.
+// Decided by the caller, which is where the two are known together.
+export const AMBASSADOR_SUPERSEDED = "ambassador_superseded";
+
 export function resolveAmbassador(params, drivers, ownDriverUid) {
-  if (!params.ambassadorUid || params.discountCode || params.driverUid) return null;
-  if (params.ambassadorUid === ownDriverUid) return null;
-  return drivers.find((driver) => driver.uid === params.ambassadorUid) ?? null;
+  if (!params.ambassadorUid || params.discountCode || params.driverUid) {
+    return { state: AMBASSADOR_SUPERSEDED, driver: null };
+  }
+  if (params.ambassadorUid === ownDriverUid) return { state: AMBASSADOR_OWN_LINK, driver: null };
+  const driver = drivers.find((one) => one.uid === params.ambassadorUid) ?? null;
+  return driver ? { state: AMBASSADOR_APPLIED, driver } : { state: AMBASSADOR_UNKNOWN, driver: null };
 }
 
 // For the submission: the ambassador's uid to write into `billing`, or null. The

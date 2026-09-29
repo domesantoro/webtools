@@ -1,0 +1,77 @@
+=== start 2026-09-28 22:45:07 ===
+INFO:     Started server process [17189]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:9002 (Press CTRL+C to quit)
+INFO:     127.0.0.1:52486 - "POST /communications/analysis-ready HTTP/1.1" 202 Accepted
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [17189]
+=== start 2026-09-28 22:45:49 ===
+INFO:     Started server process [17282]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:9002 (Press CTRL+C to quit)
+2026-09-28 22:45:50,554 INFO analysis-ready → Dome <dome@example.test> about project 71560f42-9420-4c71-aabc-3e52ef533cd6
+INFO:     127.0.0.1:52493 - "POST /communications/analysis-ready HTTP/1.1" 202 Accepted
+2026-09-28 22:45:50,560 INFO HTTP Request: POST http://127.0.0.1:9600/measurements "HTTP/1.1 202 Accepted"
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [17282]
+=== start 2026-09-28 22:51:54 ===
+INFO:     Started server process [17675]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:9002 (Press CTRL+C to quit)
+2026-09-28 22:51:54,776 INFO HTTP Request: POST http://127.0.0.1:9600/measurements "HTTP/1.1 202 Accepted"
+INFO:     127.0.0.1:52529 - "GET /non-esiste HTTP/1.1" 404 Not Found
+2026-09-28 22:51:56,549 INFO HTTP Request: POST http://127.0.0.1:9600/measurements "HTTP/1.1 202 Accepted"
+2026-09-28 22:51:56,552 INFO HTTP Request: POST http://127.0.0.1:9600/measurements "HTTP/1.1 202 Accepted"
+2026-09-28 22:51:56,556 WARNING invalid body on /communications/analysis-ready: [{'type': 'missing', 'loc': ('body', 'project_id'), 'msg': 'Field required', 'input': {}}, {'type': 'missing', 'loc': ('body', 'driver'), 'msg': 'Field required', 'input': {}}]
+INFO:     127.0.0.1:52530 - "POST /communications/analysis-ready HTTP/1.1" 400 Bad Request
+2026-09-28 22:51:56,558 INFO HTTP Request: POST http://127.0.0.1:9600/measurements "HTTP/1.1 202 Accepted"
+2026-09-28 22:51:56,560 INFO HTTP Request: POST http://127.0.0.1:9600/measurements "HTTP/1.1 202 Accepted"
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [17675]
+=== start 2026-09-29 11:54:18 ===
+2026-09-29 11:54:18,723 INFO HTTP Request: POST http://127.0.0.1:9600/measurements "HTTP/1.1 202 Accepted"
+INFO:     Started server process [16732]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:9002 (Press CTRL+C to quit)
+2026-09-29 11:57:55,881 INFO analysis-ready → Prova <driver.prova@example.com> about project 8bf6975d-7eef-4900-ac14-fa668d18c219
+INFO:     127.0.0.1:53646 - "POST /communications/analysis-ready HTTP/1.1" 202 Accepted
+2026-09-29 11:57:55,885 INFO HTTP Request: POST http://127.0.0.1:9600/measurements "HTTP/1.1 202 Accepted"
+2026-09-29 11:57:55,887 INFO HTTP Request: POST http://127.0.0.1:9600/measurements "HTTP/1.1 202 Accepted"
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [16732]
+=== start 2026-09-29 15:58:16 ===
+2026-09-29 15:58:16,970 INFO HTTP Request: POST http://127.0.0.1:9600/measurements "HTTP/1.1 202 Accepted"
+INFO:     Started server process [34782]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:9002 (Press CTRL+C to quit)
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [34782]
+=== start 2026-09-29 16:46:30 ===
+2026-09-29 16:46:31,136 INFO HTTP Request: POST http://127.0.0.1:9600/measurements "HTTP/1.1 202 Accepted"
+INFO:     Started server process [39905]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:9002 (Press CTRL+C to quit)
+2026-09-29 17:16:30,220 INFO analysis-ready → Dome <dome.santoro@gmail.com> about project c0816dd0-e147-4cd1-8134-82f42b5ba678
+INFO:     127.0.0.1:50582 - "POST /communications/analysis-ready HTTP/1.1" 202 Accepted
+2026-09-29 17:16:30,224 INFO HTTP Request: POST http://127.0.0.1:9600/measurements "HTTP/1.1 202 Accepted"
+2026-09-29 17:16:30,227 INFO HTTP Request: POST http://127.0.0.1:9600/measurements "HTTP/1.1 202 Accepted"
+2026-09-29 17:49:09,291 INFO analysis-ready → Dome <dome.santoro@gmail.com> about project c0816dd0-e147-4cd1-8134-82f42b5ba678
+INFO:     127.0.0.1:51981 - "POST /communications/analysis-ready HTTP/1.1" 202 Accepted
+2026-09-29 17:49:09,295 INFO HTTP Request: POST http://127.0.0.1:9600/measurements "HTTP/1.1 202 Accepted"
+2026-09-29 17:49:09,297 INFO HTTP Request: POST http://127.0.0.1:9600/measurements "HTTP/1.1 202 Accepted"

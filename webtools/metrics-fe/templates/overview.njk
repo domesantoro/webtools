@@ -1,0 +1,144 @@
+{#
+  The first page: the three questions this front end exists to answer, each against the period
+  of the same length before it, and whether the system is standing up.
+
+  A question that cannot be answered yet says so. Nothing is filled in with a zero.
+
+  Expected: view (src/views/overview.js buildOverview), plus the shell's own.
+#}{% extends "layout.njk" %}
+{% import "figures.njk" as figure %}
+{% import "charts.njk" as chart %}
+
+{% block title %}overview — webtools metrics{% endblock %}
+
+{% block content %}
+<section class="hero-row">
+  <div class="hero">
+    {%- if view.hero.figure %}
+    <span class="figure">{{ view.hero.figure }}</span>
+    <span class="label">{{ view.hero.label }}</span>
+    <span class="of">{{ figure.change(view.hero.change) }} {% if view.hero.exact %}{{ view.hero.exact }} &middot; {% endif %}{{ view.hero.source }}</span>
+    {%- else %}
+    <span class="figure absent">&mdash;</span>
+    <span class="label">projects in the period</span>
+    <span class="of">neither counted nor measured</span>
+    {%- endif %}
+  </div>
+  <div class="hero-notes">
+    {%- if view.hero.reason %}
+    <p class="warning-inline">The projects could not be counted in anagraphics: <code>{{ view.hero.reason }}</code>. What is shown is what was measured, and a measurement may be lost.</p>
+    {%- elif view.hero.lost %}
+    <p>{{ view.hero.lostText }} of them reached no measurement ({{ view.hero.measuredText }} measured):
+      <a href="/funnel?from={{ view.period.from }}&to={{ view.period.to }}">the funnel</a>.</p>
+    {%- else %}
+    <p>Every project that exists in this period was also measured.</p>
+    {%- endif %}
+  </div>
+</section>
+
+<section>
+  <h2>The three questions</h2>
+  <div class="cards">
+    {%- for question in view.questions %}
+    <article class="card">
+      <h3>{{ question.heading }} {{ figure.change(question.change) }}</h3>
+      <p class="asks">{{ question.asks }}</p>
+      {%- if question.absent %}
+      <p class="absent">{{ question.absent }}</p>
+      {%- else %}
+      {%- if question.figure %}
+      <p class="stat"><span class="value">{{ question.figure }}</span>{% if question.unit %} <span class="unit">{{ question.unit }}</span>{% endif %}</p>
+      {%- endif %}
+      {%- if question.rows %}
+      <table class="grid card-table">
+        <tbody>
+          {%- for row in question.rows %}
+          <tr>
+            <th>{{ row.name }}</th>
+            <td class="number-cell">{{ figure.number(row.value) }}</td>
+            <td class="number-cell muted">{% if row.aside %}{{ row.aside }}{% endif %}</td>
+            <td class="number-cell">{{ figure.change(row.delta) }}</td>
+          </tr>
+          {%- endfor %}
+        </tbody>
+      </table>
+      {%- endif %}
+      {%- if question.outOf %}<p class="of">{{ question.outOf }}</p>{% endif %}
+      {%- endif %}
+      <p class="more"><a href="{{ question.link }}?from={{ view.period.from }}&to={{ view.period.to }}">in full &rarr;</a></p>
+    </article>
+    {%- endfor %}
+  </div>
+</section>
+
+<section>
+  <h2>What was consumed</h2>
+  {%- if not view.consumed.length %}
+  <p class="absent">No bucket in this period carries tokens.</p>
+  {%- else %}
+  <table class="grid tokens">
+    <thead>
+      <tr>
+        <th>kind</th>
+        <th class="number-cell">tokens</th>
+        <th class="number-cell">against the period before</th>
+        <th class="number-cell each">each</th>
+        <th class="number-cell">produced nothing</th>
+        <th class="bar-cell">share of it</th>
+      </tr>
+    </thead>
+    <tbody>
+      {%- for entry in view.consumed %}
+      <tr>
+        <th>{{ entry.kind }}</th>
+        <td class="number-cell strong">{{ entry.text }}</td>
+        <td class="number-cell">{{ figure.change(entry.delta) }}</td>
+        <td class="number-cell each">{{ figure.number(entry.eachText) }}</td>
+        <td class="number-cell">{% if entry.waste %}{{ entry.waste.text }}{% else %}<span class="absent">&mdash;</span>{% endif %}</td>
+        <td class="bar-cell">{% if entry.waste %}{{ figure.bar(entry.waste.percent) }}<span class="of-first">{{ entry.waste.percent }} %</span>{% endif %}</td>
+      </tr>
+      {%- endfor %}
+    </tbody>
+  </table>
+  <p class="note"><strong>each</strong> is the kind over the buckets that carry tokens. <strong>produced nothing</strong> is what was spent on the
+    {{ view.refusals.projectsText }} project{% if view.refusals.projects != 1 %}s{% endif %} a gate refused. No kind is added to another.</p>
+  {%- endif %}
+</section>
+
+{%- if view.closed %}
+<section>
+  <h2>How a pre-analysis ends up</h2>
+  {{ chart.whole(view.closed, "pre-analyses closed") }}
+</section>
+{%- endif %}
+
+<section>
+  <h2>Whether it is standing up</h2>
+  <div class="with-ring">
+    <div class="beside">
+  <div class="stats">
+    {{ figure.rate(view.failureRate, "calls where nothing came back from a provider") }}
+    <div class="stat">
+      <span class="label">against the period before</span>
+      <span class="value">{{ figure.change(view.failureRateDelta) }}</span>
+      <span class="of">per thousand</span>
+    </div>
+    {{ figure.rate(view.dependencyFailureRate, "calls between subsystems that did not end ok") }}
+    <div class="stat">
+      <span class="label">against the period before</span>
+      <span class="value">{{ figure.change(view.dependencyFailureRateDelta) }}</span>
+      <span class="of">per thousand</span>
+    </div>
+  </div>
+    </div>
+    {{ chart.whole(view.callOutcomes, "calls to a model") }}
+  </div>
+</section>
+
+{%- if view.chart %}
+<section>
+  <h2>What was folded, day by day</h2>
+  {{ chart.series(view.chart, view.series, "buckets folded") }}
+</section>
+{%- endif %}
+{% endblock %}

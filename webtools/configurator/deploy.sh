@@ -23,6 +23,7 @@ DEPLOYERS=(
   "sso:$DIR/sso_deployer/deploy.sh"
   "specs:$DIR/specs_deployer/deploy.sh"
   "configuration:$DIR/configuration_deployer/deploy.sh"
+  "metrics:$DIR/metrics_deployer/deploy.sh"
 )
 
 run() {

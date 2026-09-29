@@ -2,8 +2,10 @@
 # Distributes the configurator's documents and policies to the subsystems that use
 # them.
 #
-#   configurator/documents/   the models of the documents the system produces
-#                             (the shape of the pre-specification, for now)
+#   configurator/documents/   the models of the documents the system produces. One
+#                             per document, named after the engine that renders it:
+#                             `.md.njk` for the preanalyst (Node, nunjucks),
+#                             `.md.j2` for the analyst (Python, Jinja2)
 #   configurator/policies/    the decision policies: what a model is asked and by
 #                             what criteria it answers
 #
@@ -49,6 +51,27 @@ deploy_preanalyst() {
   done
 }
 
+# analyst — writes the technical analysis and the proposal, and renders both: whoever
+# produces a document holds its model. They go in documents/, next to nothing else,
+# because they are configuration and not code; the policies go in policies/.
+#
+# The models are named one by one and not copied with a glob: a model this subsystem
+# does not render has no business being here, and a glob would bring it in the day
+# somebody adds one for another subsystem.
+deploy_analyst() {
+  echo "→ analyst"
+
+  mkdir -p "$WEBTOOLS/analyst/documents"
+  cp "$DOCUMENTS/analysis.md.j2" "$WEBTOOLS/analyst/documents/analysis.md.j2"
+  cp "$DOCUMENTS/proposal.md.j2" "$WEBTOOLS/analyst/documents/proposal.md.j2"
+
+  mkdir -p "$WEBTOOLS/analyst/policies"
+  for policy in "$POLICIES"/*.md; do
+    copy_policy "$policy" "$WEBTOOLS/analyst/policies/$(basename "$policy")"
+  done
+}
+
 deploy_preanalyst
+deploy_analyst
 
 echo "Documents and policies distributed."

@@ -1,0 +1,36 @@
+{#-
+  The proposal: the list of functional points the client reads and agrees to.
+
+  It is the only document the analyst produces that somebody outside ever sees, and
+  everything about it follows from that. It is written in the client's language — the
+  one the pre-specification's front matter carries, never one guessed from the text —
+  and the fixed words in it come from the language catalogues, which is where every
+  text a person reads lives. There is none written here.
+
+  The points are a table and not a paragraph: each row carries the identifier the
+  system knows the point by, so that a point can be named without counting rows. The
+  client validates the analysis point by point, and the demo is later accepted or
+  refused against this same list.
+
+  The texts of the points are a model's words, so they go through `cell`, which keeps
+  one point on one row. Nothing written by a model is ever put in the front matter.
+
+  This comment's tags carry the minus sign that strips the whitespace around them, so
+  the rendered file begins with the front matter's first dash. A document whose first
+  line is anything else has no front matter as far as workspaces is concerned.
+-#}
+---
+project_id: {{ project_id }}
+kind: proposal
+template: {{ template }}
+language: {{ language }}
+---
+# {{ title }}
+
+{{ intro }}
+
+| | |
+|---|---|
+{% for point in points %}
+| {{ point.id }} | {{ point.text | cell }} |
+{% endfor %}

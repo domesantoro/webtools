@@ -1,7 +1,7 @@
 // The pre-specification: the form's answers, written out as a .md document.
 //
-// It is the starting point of the analysis, so it is written for whoever reads it
-// afterwards:
+// It is the starting point of the rounds of questions, so it is written for whoever
+// reads it afterwards:
 // - the front matter carries **codes** only, taken from the form's options, so a
 //   program (the prevalidator) reads them without interpreting anything. Never
 //   text written by the user: that could not inject YAML keys;
@@ -12,7 +12,7 @@
 //   section of the document;
 // - an empty field is written `Not provided.`, not omitted, and ends up in the
 //   "Open points" together with the "I do not know" answers: that is the list of
-//   what the analysis chat has to ask about;
+//   what the pre-analysis chat has to ask about;
 // - no name, email, discount or driver: the document goes to an AI provider, and
 //   who the client is and where they came from stay on the project.
 //
@@ -60,8 +60,17 @@ const FIELDS = SECTIONS.flatMap((section) => section.fields);
 
 // The form's answers, cleaned up. A code that is not among the options is
 // discarded: only what the form could have sent ends up in the front matter.
-//   → { answers: { name: string | string[] | null }, missing: [names of empty required fields] }
-// An open answer longer than `maxTextLength` characters is truncated.
+//   → { answers: { name: string | string[] | null },
+//       missing:  [names of empty required fields],
+//       tooLong:  [names of answers longer than `maxTextLength`] }
+//
+// **An over-long answer is reported, never shortened.** It used to be cut here,
+// silently: the client lost everything past the limit with no message, no log line
+// and nothing on the project, and what was filed was not what they had written.
+// That text is the pre-specification, the document the analysis and the price are
+// built on. "Too long" is a real outcome of a real submission, so it is answered
+// where submissions are answered — at the boundary, in `src/server.js` — and this
+// function only says which fields it happened to.
 export function readAnswers(form, maxTextLength) {
   const answers = {};
   for (const field of FIELDS) {
@@ -74,13 +83,22 @@ export function readAnswers(form, maxTextLength) {
       answers[field.name] = codes.includes(value) ? value : null;
     } else {
       const value = (form.get(field.name) ?? "").replace(/\r\n?/g, "\n").trim();
-      answers[field.name] = value ? value.slice(0, maxTextLength) : null;
+      answers[field.name] = value || null;
     }
   }
   const missing = FIELDS.filter((field) => field.required && isEmpty(answers[field.name])).map(
     (field) => field.name
   );
-  return { answers, missing };
+  // Only an **open** answer can be too long, and a field is open when it has no
+  // options: that is the same thing that decided how to read it a few lines above,
+  // not a second rule. A closed answer is a code from one of our own lists, and how
+  // long that code is was never the client's doing — reporting it would send them
+  // back to a question they cannot shorten.
+  const tooLong = FIELDS.filter(
+    (field) => !field.options && typeof answers[field.name] === "string"
+      && answers[field.name].length > maxTextLength
+  ).map((field) => field.name);
+  return { answers, missing, tooLong };
 }
 
 function isEmpty(value) {

@@ -1,0 +1,296 @@
+{#
+  The pieces every page is made of. Each one draws **one** measure: counts in one
+  table, tokens in another, durations in a picture of their own.
+
+  Three rules these macros keep, so no page has to state them in prose:
+
+  - a cell with no value is a dash, never a zero;
+  - a column per kind of token and no total column;
+  - every picture has its numbers beside it or under it.
+
+  The why is in README.md. It is not printed on the page: a sentence a reader has
+  already understood is noise on top of the number it explains.
+#}
+
+{# A count, or a dash. #}
+{% macro number(text) %}{% if text %}{{ text }}{% else %}<span class="absent">&mdash;</span>{% endif %}{% endmacro %}
+
+{#
+  A figure against the same figure over the period before.
+
+  Nothing at all where there is nothing to compare — a period before that was not read,
+  or a rise out of nothing, which has no rate. A figure that did not move is one
+  character: "+0 0 %" on every heading of every page is the noise this macro exists to
+  avoid, and a mark that says "unchanged" is not the same as no mark, which says "not
+  compared".
+#}
+{% macro change(given) %}
+{%- if given %}
+{%- if given.direction == "flat" %}<span class="change flat" title="unchanged against the period before">=</span>
+{%- else %}<span class="change {{ given.direction }}">{{ given.changeText }}{% if given.percentText %} <span class="rate">{{ given.percentText }}</span>{% endif %}</span>
+{%- endif %}
+{%- endif %}
+{% endmacro %}
+
+{# How many of what reached one row reached the next. The order is the caller's: which
+   row follows which is not something a template can know. #}
+{% macro chain(rows, label, unit) %}
+{%- if rows.length %}
+<table class="grid ranked chain">
+  <thead>
+    <tr><th>{{ label }}</th><th class="number-cell">{{ unit }}</th><th class="bar-cell">of the first</th><th class="number-cell">of the one above</th><th class="number-cell">lost there</th></tr>
+  </thead>
+  <tbody>
+    {%- for row in rows %}
+    <tr>
+      <th>{{ row.label }}</th>
+      <td class="number-cell">{{ row.countText }}</td>
+      <td class="bar-cell">{{ bar(row.ofFirst) }}<span class="of-first">{% if row.ofFirst !== null %}{{ row.ofFirst }} %{% endif %}</span></td>
+      <td class="number-cell strong">{% if row.ofAbove !== null %}{{ row.ofAbove }} %{% else %}<span class="absent">&mdash;</span>{% endif %}</td>
+      <td class="number-cell">{% if row.dropped !== null %}{{ row.droppedText }}{% else %}<span class="absent">&mdash;</span>{% endif %}</td>
+    </tr>
+    {%- endfor %}
+  </tbody>
+</table>
+{%- else %}
+<p class="absent">Nothing reached any of them in the period.</p>
+{%- endif %}
+{% endmacro %}
+
+{# A bar: one measure, one colour, the value at the tip. The bar is a share of the
+   whole where the rows are parts of one thing, and of the largest row otherwise. #}
+{% macro bar(percent) %}
+<span class="bar" role="presentation"><span class="fill" style="width: {{ percent }}%"></span></span>
+{%- endmacro %}
+
+{#
+  The counts of a breakdown. `whole` decides what the bar is a share of, and whether
+  a total is printed at the foot: a total of occurrences of different things would be
+  a number nobody can use.
+#}
+{% macro counts(table, label) %}
+{%- if table.empty %}
+<p class="absent">Nothing was folded under this in the period.</p>
+{%- else %}
+<table class="grid ranked">
+  <thead>
+    <tr>
+      <th>{{ label }}</th>
+      <th class="number-cell">count</th>
+      <th class="bar-cell">{% if table.whole %}share of {{ table.totalText }}{% else %}against the largest{% endif %}</th>
+      {%- if table.whole %}<th class="number-cell">%</th>{% endif %}
+    </tr>
+  </thead>
+  <tbody>
+    {%- for row in table.rows %}
+    <tr>
+      <th>{% if row.notCarried %}<span class="absent" title="the buckets carry no value for this dimension: they are counted, and they cannot be split">{{ row.label }}</span>{% else %}{{ row.label }}{% endif %}</th>
+      <td class="number-cell">{{ row.countText }}</td>
+      <td class="bar-cell">{{ bar(row.percent) }}</td>
+      {%- if table.whole %}<td class="number-cell muted">{{ row.percent }}</td>{% endif %}
+    </tr>
+    {%- endfor %}
+  </tbody>
+  {%- if table.whole or table.hidden %}
+  <tfoot>
+    {%- if table.hidden %}
+    <tr><th>{{ table.hidden.rows }} more row{% if table.hidden.rows != 1 %}s{% endif %}, not shown</th><td class="number-cell">{{ table.hidden.count }}</td><td colspan="2" class="note">the table stops at the configured number of rows</td></tr>
+    {%- endif %}
+    {%- if table.whole %}
+    <tr><th>all of them</th><td class="number-cell">{{ table.totalText }}</td><td class="bar-cell"></td><td class="number-cell muted">100</td></tr>
+    {%- endif %}
+  </tfoot>
+  {%- endif %}
+</table>
+{%- if table.hasNotCarried %}
+<p class="note">A row whose name says the dimension is not there is a row of buckets that carry no such
+  dimension. They are counted all the same: a measurement that is there is part of the total even when
+  it cannot be split.</p>
+{%- endif %}
+{%- endif %}
+{% endmacro %}
+
+{#
+  The tokens of the same rows. One column per kind, no total column, and a cell that
+  is empty where that row spent nothing of that kind — which is not the same as a
+  zero it was measured at.
+#}
+{% macro tokens(rows, kinds, label) %}
+{%- if kinds.length %}
+<table class="grid tokens">
+  <thead>
+    <tr>
+      <th rowspan="2">{{ label }}</th>
+      <th class="number-cell group" colspan="{{ kinds.length }}">tokens, by kind</th>
+      <th class="number-cell group each" colspan="{{ kinds.length }}">each</th>
+    </tr>
+    <tr>
+      {%- for kind in kinds %}<th class="number-cell">{{ kind }}</th>{% endfor %}
+      {%- for kind in kinds %}<th class="number-cell each">{{ kind }}</th>{% endfor %}
+    </tr>
+  </thead>
+  <tbody>
+    {%- for row in rows %}
+    {%- if row.tokens %}
+    <tr>
+      <th>{{ row.label }}</th>
+      {%- for kind in kinds %}
+      <td class="number-cell">{% if row.tokens[kind] is defined %}{{ row.tokens[kind] | number_text }}{% else %}<span class="absent">&mdash;</span>{% endif %}</td>
+      {%- endfor %}
+      {%- for kind in kinds %}
+      <td class="number-cell each">{% if row.each and row.each[kind] is defined %}{{ row.each[kind] | number_text }}{% else %}<span class="absent">&mdash;</span>{% endif %}</td>
+      {%- endfor %}
+    </tr>
+    {%- endif %}
+    {%- endfor %}
+  </tbody>
+</table>
+<p class="note">No kind is added to another. <strong>each</strong> is the kind over the count in the same row.</p>
+{%- endif %}
+{% endmacro %}
+
+{#
+  Durations, several rows on one **logarithmic** scale: a gate that decides in a second
+  and a gate that waits two days are both ordinary here, and a linear scale would put
+  every row but the slowest on the baseline. The rule lives inside the column it
+  measures, and the word "logarithmic" is on the page beside it.
+
+  `min`, `mean` and `max` are exact; the percentiles are the upper edge of the bucket
+  they fall in, so they are drawn as boundaries and headed "≤".
+#}
+{% macro spans(chart, label) %}
+{%- if chart.empty %}
+<p class="absent">No duration was measured under this.</p>
+{%- else %}
+<div class="spans">
+  <table class="grid durations">
+    <thead>
+      <tr>
+        <th>{{ label }}</th>
+        <th class="span-cell">
+          min &rarr; max, with p50 and p95 at most
+          <span class="scale" role="presentation">
+            {%- for tick in chart.ticks %}
+            <span class="tick" style="left: {{ tick.at }}%"><span>{{ tick.value | ms_text }}</span></span>
+            {%- endfor %}
+          </span>
+        </th>
+        <th class="number-cell">mean</th>
+        <th class="number-cell">p50 &le;</th>
+        <th class="number-cell">p95 &le;</th>
+        <th class="number-cell">max</th>
+        <th class="number-cell">of</th>
+      </tr>
+    </thead>
+    <tbody>
+      {%- for row in chart.rows %}
+      <tr>
+        <th>{{ row.label }}</th>
+        <td class="span-cell">
+          <span class="track">
+            <span class="range" style="left: {{ row.from }}%; width: {{ row.width }}%"></span>
+            {%- for mark in row.marks %}
+            <span class="mark {{ mark.name }}{% if not mark.exact %} estimated{% endif %}{% if mark.below %} below{% endif %}" style="left: {{ mark.at }}%"
+                  title="{{ mark.name }}{% if not mark.exact %} at most{% endif %}: {{ mark.value.text }} ({{ mark.value.exact }}){% if mark.below %} — below the bottom of the scale, drawn at its start{% endif %}"></span>
+            {%- endfor %}
+          </span>
+        </td>
+        <td class="number-cell">{{ number(row.duration.mean.text) }}</td>
+        <td class="number-cell">{% if row.duration.p50Unbounded %}<span class="absent" title="it fell in the bucket with no upper bound">&mdash;</span>{% else %}{{ number(row.duration.p50.text) }}{% endif %}</td>
+        <td class="number-cell">{% if row.duration.p95Unbounded %}<span class="absent" title="it fell in the bucket with no upper bound: max is the only exact thing that can be said about the tail">&mdash;</span>{% else %}{{ number(row.duration.p95.text) }}{% endif %}</td>
+        <td class="number-cell">{{ number(row.duration.max.text) }}</td>
+        <td class="number-cell muted">{{ number(row.duration.count) }}</td>
+      </tr>
+      {%- endfor %}
+    </tbody>
+  </table>
+  <p class="legend">
+    <span class="key min"></span> min
+    <span class="key mean"></span> mean
+    <span class="key max"></span> max
+    <span class="key estimated"></span> p50 and p95, read off the histogram as the upper edge of the bucket they fall in
+    <span class="scale-note">logarithmic scale, in decades of what was measured</span>
+  </p>
+  {%- if chart.without.length %}
+  <p class="note">No duration under: {{ chart.without | join(", ") }}. They were measured; they do not carry one.</p>
+  {%- endif %}
+</div>
+{%- endif %}
+{% endmacro %}
+
+{# A histogram as it is stored: the configured edges, and the last bucket which has
+   no upper bound to report. #}
+{% macro histogram(chart, label) %}
+{%- if chart %}
+<table class="grid ranked histogram">
+  <thead><tr><th>{{ label }}</th><th class="number-cell">durations</th><th class="bar-cell"></th><th class="number-cell">share</th></tr></thead>
+  <tbody>
+    {%- for row in chart.rows %}
+    <tr{% if not row.upper %} class="unbounded"{% endif %}>
+      <th>{{ row.label }}</th>
+      <td class="number-cell">{{ row.hitsText }}</td>
+      <td class="bar-cell">{{ bar(row.percent) }}</td>
+      <td class="number-cell muted">{{ number(row.shareText) }}</td>
+    </tr>
+    {%- endfor %}
+  </tbody>
+  <tfoot><tr><th>all of them</th><td class="number-cell">{{ chart.totalText }}</td><td class="bar-cell"></td><td class="number-cell muted">100.0 %</td></tr></tfoot>
+</table>
+{%- else %}
+<p class="absent">No duration was folded, so there is no histogram.</p>
+{%- endif %}
+{% endmacro %}
+
+{# A rate that says what it is made of. A failure rate of half out of two calls and
+   out of two thousand are different facts, so the denominator is never dropped. #}
+{% macro rate(figure, label) %}
+<div class="stat">
+  <span class="label">{{ label }}</span>
+  {%- if figure.known %}
+  <span class="value">{{ figure.percentText }}</span>
+  <span class="of">{{ figure.count }} out of {{ figure.ofText }}</span>
+  {%- else %}
+  <span class="value absent">&mdash;</span>
+  <span class="of">nothing to divide: {{ figure.ofText }} of them</span>
+  {%- endif %}
+</div>
+{% endmacro %}
+
+{# One summary on its own: what was counted, what it consumed, how long it took. #}
+{% macro summary(figure, label) %}
+<div class="summary">
+  <div class="stat">
+    <span class="label">{{ label }}</span>
+    <span class="value">{{ figure.countText }}</span>
+  </div>
+  {%- if figure.tokens %}
+  <dl class="kinds">
+    {%- for kind, value in figure.tokens %}
+    <div><dt>{{ kind }}</dt><dd>{{ value | number_text }}</dd></div>
+    {%- endfor %}
+  </dl>
+  {%- endif %}
+  {%- if figure.bytes %}
+  <dl class="kinds"><div><dt>bytes</dt><dd>{{ figure.bytes.text }}</dd></div></dl>
+  {%- endif %}
+</div>
+{% endmacro %}
+
+{# Mean and quantiles read off the real values, not off a histogram: exact, and said
+   to be. #}
+{% macro spread(figure, label) %}
+{%- if figure %}
+<table class="grid spread">
+  <thead><tr><th>{{ label }} <span class="exact">exact</span></th>{% for mark in figure.marks %}<th class="number-cell">{{ mark.name }}</th>{% endfor %}<th class="number-cell">of</th></tr></thead>
+  <tbody>
+    <tr>
+      <th>{{ figure.unit }}</th>
+      {%- for mark in figure.marks %}<td class="number-cell">{{ number(mark.text) }}</td>{% endfor %}
+      <td class="number-cell muted">{{ figure.ofText }}</td>
+    </tr>
+  </tbody>
+</table>
+{%- else %}
+<p class="absent">Nothing to spread: no value was measured.</p>
+{%- endif %}
+{% endmacro %}

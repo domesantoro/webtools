@@ -101,3 +101,28 @@ webtools_sso listening on http://127.0.0.1:9300 (anagraphics: http://127.0.0.1:9
 webtools_sso listening on http://127.0.0.1:9300 (anagraphics: http://127.0.0.1:9100, sessions: 28800s)
 === start 2026-09-25 17:00:10 ===
 webtools_sso listening on http://127.0.0.1:9300 (anagraphics: http://127.0.0.1:9100, sessions: 28800s)
+=== start 2026-09-26 15:35:08 ===
+webtools_sso listening on http://127.0.0.1:9300 (anagraphics: http://127.0.0.1:9100, sessions: 28800s)
+=== start 2026-09-26 15:37:14 ===
+webtools_sso listening on http://127.0.0.1:9300 (anagraphics: http://127.0.0.1:9100, sessions: 28800s)
+=== start 2026-09-26 17:22:29 ===
+webtools_sso listening on http://127.0.0.1:9300 (anagraphics: http://127.0.0.1:9100, sessions: 28800s)
+=== start 2026-09-26 19:05:27 ===
+webtools_sso listening on http://127.0.0.1:9300 (anagraphics: http://127.0.0.1:9100, sessions: 28800s)
+=== start 2026-09-28 15:07:34 ===
+webtools_sso listening on http://127.0.0.1:9300 (anagraphics: http://127.0.0.1:9100, sessions: 28800s)
+=== start 2026-09-28 15:48:42 ===
+webtools_sso listening on http://127.0.0.1:9300 (anagraphics: http://127.0.0.1:9100, sessions: 28800s)
+=== start 2026-09-28 15:49:17 ===
+webtools_sso listening on http://127.0.0.1:9300 (anagraphics: http://127.0.0.1:9100, sessions: 28800s)
+=== start 2026-09-28 15:50:01 ===
+webtools_sso listening on http://127.0.0.1:9300 (anagraphics: http://127.0.0.1:9100, sessions: 28800s)
+=== start 2026-09-28 16:49:25 ===
+webtools_sso listening on http://127.0.0.1:9300 (anagraphics: http://127.0.0.1:9100, sessions: 28800s)
+=== start 2026-09-29 12:53:15 ===
+webtools_sso listening on http://127.0.0.1:9300 (anagraphics: http://127.0.0.1:9100, sessions: 28800s)
+=== start 2026-09-29 15:58:15 ===
+webtools_sso listening on http://127.0.0.1:9300 (anagraphics: http://127.0.0.1:9100, sessions: 28800s)
+[sso] login of policy.test@example.com (uid adf36d8c-7ee7-4cd8-9c87-73cb4c81ec07)
+=== start 2026-09-29 16:46:29 ===
+webtools_sso listening on http://127.0.0.1:9300 (anagraphics: http://127.0.0.1:9100, sessions: 28800s)

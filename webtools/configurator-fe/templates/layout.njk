@@ -1,0 +1,42 @@
+{#
+  The shell the pages of this subsystem share: the head, the bar at the top and
+  the frame. There are two pages — the configuration as it is, and the prices to
+  be written — and the shell is here so that the second one is not a copy of the
+  first that drifts from it.
+
+  It is its own shell, not `commons/base.njk`: the shared one asks for the
+  language and the translation of a page of the product, and this is internal
+  instrumentation, whose labels are system terms and stay in English like the rest
+  of what is internal. See README.md, "Why not the shared shell".
+
+  Blocks: `title`, `nav`, `content`, `footer`.
+  Expected: view.readAt.
+#}<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}configuration — webtools{% endblock %}</title>
+  <meta name="robots" content="noindex">
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap">
+    <span class="brand">webtools <span>configurator</span></span>
+    <span class="read-at">read at {{ view.readAt }}</span>
+  </div>
+</header>
+
+{% block nav %}{% endblock %}
+
+<main class="wrap">
+{% block content %}{% endblock %}
+
+  <footer>
+{% block footer %}{% endblock %}
+  </footer>
+</main>
+</body>
+</html>

@@ -32,6 +32,10 @@ const CONTENT_TYPES = {
 };
 
 function sendError(response, status, code) {
+  // The code is kept on the response so the one measurement per request — sent when
+  // the response is done — can say **which** error it was. No branch of the routing
+  // has to remember to count itself.
+  response.webtoolsErrorCode = code;
   const body = JSON.stringify({ error: code });
   response.writeHead(status, {
     "content-type": "application/json; charset=utf-8",
@@ -87,9 +91,33 @@ async function changeLocale(request, settings, response) {
   return redirect(response, change.location, { "set-cookie": change.cookie });
 }
 
+// One measurement per request, sent when the response is done: the status and the
+// duration are only known then. The showcase site has no ids in its addresses, so a
+// known page is counted under its own path and everything else under a label — never
+// a raw path, which would make one bucket per file ever asked for.
+function countRequest(settings, request, response, pathname) {
+  const elapsed = settings.metrics.timer();
+  response.on("finish", () => {
+    settings.metrics.measure("http.request", {
+      dims: {
+        route: PAGES[pathname] ? pathname : pathname === "/locale" ? "/locale" : "(static)",
+        method: request.method,
+        status: String(response.statusCode),
+      },
+      duration_ms: elapsed(),
+    });
+    // The error's own code, where there was one. A status says how it went; the code
+    // says what it was, and only one of the two can be acted on.
+    if (response.webtoolsErrorCode) {
+      settings.metrics.measure("http.error", { dims: { code: response.webtoolsErrorCode } });
+    }
+  });
+}
+
 export function createServer(settings) {
   return http.createServer(async (request, response) => {
     const url = new URL(request.url, `http://${request.headers.host ?? "localhost"}`);
+    countRequest(settings, request, response, url.pathname);
     try {
       if (request.method === "POST" && url.pathname === "/locale") {
         return await changeLocale(request, settings, response);

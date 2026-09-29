@@ -5,7 +5,9 @@
 // 1. Every key written out in full in the subsystems' templates and code
 //    (`t("…")`, `t_html("…")`, `has("…")`, `ui.t("…")`) must exist in the
 //    fallback catalogue, English: if it is missing there, the key itself shows up
-//    on the page. Exits with 1.
+//    on the page — or, for a subsystem that writes documents, inside the document.
+//    Exits with 1. Python counts: `words.t("…")` is written the same way, which is
+//    why the Python client's method carries the same name as the templates' one.
 // 2. English keys missing from another language: the English text shows up on the
 //    page. It is a worklist for whoever translates, not an error.
 // 3. Keys of another language that English does not have: nobody uses them.
@@ -24,8 +26,24 @@ const HERE = path.dirname(fileURLToPath(import.meta.url));
 const WEBTOOLS = path.resolve(HERE, "../..");
 const LOCALES = path.join(HERE, "locales");
 const FALLBACK = "en";
-// The subsystems with pages: the original is looked at, not the copies in src/commons.
-const SUBSYSTEMS = ["front-gate", "preanalyst", "sso", "commons/templates"];
+// The subsystems that write something a person reads, with pages or with documents.
+// The original is looked at, never a generated copy under a `commons/`.
+const SUBSYSTEMS = ["front-gate", "preanalyst", "sso", "analyst", "commons/templates"];
+
+// Directories with nothing of ours in them: dependencies, caches, and the generated
+// copies of the shared modules, which would report every key twice.
+//
+// `tests` too, and for a reason of its own: a test that checks what happens to a key
+// nobody wrote has to name a key nobody wrote. That is the behaviour being tested, not
+// a key the system uses, and reporting it would make the check cry wolf.
+const SKIP = new Set([
+  "node_modules",
+  "commons",
+  ".venv",
+  "__pycache__",
+  ".pytest_cache",
+  "tests",
+]);
 
 const KEY_CALL = /\b(?:t|t_html|has)\(\s*["']([a-z_]+(?:\.[A-Za-z0-9_]+)+)["']/g;
 
@@ -40,10 +58,10 @@ function flatten(tree, prefix = "", out = new Set()) {
 
 function* files(dir) {
   for (const name of readdirSync(dir)) {
-    if (name === "node_modules" || name === "commons" && dir.endsWith("src")) continue;
+    if (SKIP.has(name)) continue;
     const full = path.join(dir, name);
     if (statSync(full).isDirectory()) yield* files(full);
-    else if (/\.(njk|js)$/.test(name)) yield full;
+    else if (/\.(njk|js|py|j2)$/.test(name)) yield full;
   }
 }
 

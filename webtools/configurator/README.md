@@ -77,7 +77,10 @@ no effect.
 
 `webtools/configurator-fe/` is the front end of this subsystem: a page that shows the configuration
 **as it is in Mongo**, subsystem by subsystem, with the values that come from `secrets/` masked. It
-is read-only — it changes nothing — and it is started on its own, not by `start.sh`:
+changes one thing — the price of what a provider's model consumes, written into the `pricing` key
+of a provider object — and that is on a page of its own, `/providers/pricing`: the page that shows
+the configuration has no form on it. `start.sh` starts it last, `stop.sh` stops it first: nothing
+depends on it, and it needs only anagraphics. On its own:
 
 ```sh
 webtools/configurator-fe/webtools_configurator_fe.sh --start   # then http://127.0.0.1:9500
@@ -85,7 +88,14 @@ webtools/configurator-fe/webtools_configurator_fe.sh --start   # then http://127
 
 It reads `GET /configuration` on anagraphics, which returns every document in the collection: the
 list of the subsystems that exist is there, so a subsystem whose file has been removed is shown as
-well. Its own documentation is `webtools/configurator-fe/README.md`.
+well. It writes with `PUT /configuration/{subsystem}/pricing`, which writes that one key and
+refuses any path that does not name a provider object. Its own documentation is
+`webtools/configurator-fe/README.md`.
+
+**Prices are not in the seed.** A new environment is born without them: what a token is worth is
+not something a file can be born knowing, and a figure nobody has entered would be a claim about a
+price nobody configured. `load_configuration.sh` adds only the missing fields, so it never carries
+a price away; `--reset` does, like any other value changed in operation.
 
 ## Starting and stopping everything
 
@@ -140,8 +150,8 @@ A name that does not exist exits with code 2 and prints the list of the ones ava
 | `style` | `style_deployer/deploy.sh` | `commons/style/commons.css` and `commons/style/fonts/` | front-gate, preanalyst, sso |
 | `template` | `template_deployer/deploy.sh` | `commons/templates/*.njk`: the pages' shared shell, the language switcher, the loader | preanalyst, sso; front-gate only `locale_switch.njk` |
 | `script` | `script_deployer/deploy.sh` | `commons/script/*.js`, the shared **browser** JavaScript (today the loader) | preanalyst, sso, front-gate (in `public/`) |
-| `documents` | `documents_deployer/deploy.sh` | `configurator/documents/*.njk` and `configurator/policies/*.md`: the shape of the documents the system produces and the criteria of the decisions | preanalyst (in `templates/commons/` and `policies/`) |
-| `i18n` | `i18n_deployer/deploy.sh` | `commons/i18n/webtools_i18n.js` and **all** the `commons/i18n/locales/*.json` catalogues | preanalyst, sso, front-gate (in `src/commons/i18n/`) |
+| `documents` | `documents_deployer/deploy.sh` | `configurator/documents/*.md.njk` and `*.md.j2`, and `configurator/policies/*.md`: the shape of the documents the system produces and the criteria of the decisions | preanalyst (in `templates/commons/` and `policies/`), analyst (in `documents/` and `policies/`) |
+| `i18n` | `i18n_deployer/deploy.sh` | `commons/i18n/webtools_i18n.js` or `webtools_i18n.py`, and **all** the `commons/i18n/locales/*.json` catalogues | preanalyst, sso, front-gate (in `src/commons/i18n/`), analyst (in `webtools_analyst/commons/i18n/`) |
 | `sso` | `sso_deployer/deploy.sh` | `commons/sso/sso_client.js` (the server) and `commons/sso/sso_popup.js` (the browser) | preanalyst |
 | `specs` | `specs_deployer/deploy.sh` | `commons/specs/spec_front_matter.js`, the specifications' front matter | preanalyst, webtools-workspaces (in `src/commons/`) |
 | `configuration` | `configuration_deployer/deploy.sh` | `commons/configuration/configuration_client.js`, the configuration's client | sso, webtools-workspaces, preanalyst, front-gate, configurator-fe (in `src/commons/`) |
@@ -153,13 +163,22 @@ templates it does receive, because its pages use the same shell too.
 The templates arrive in `templates/commons/` and are extended with
 `{% extends "commons/base.njk" %}`.
 
-All the pages' texts, of every subsystem, live in the catalogues of `commons/i18n/locales/` (one
-file per language, English keys split by area): it is the only place where one translates or adds
-a language. A key missing from one language is taken from the fallback language
-(`i18n.fallback_locale`, English). The language chosen lives in the `i18n.cookie_name` cookie,
-shared by every subsystem.
+Every text a person reads, of every subsystem, lives in the catalogues of `commons/i18n/locales/`
+(one file per language, English keys split by area): it is the only place where one translates or
+adds a language. A key missing from one language is taken from the fallback language
+(`i18n.fallback_locale`, English).
+
+There are **two modules over one set of catalogues**, and neither is generated from the other:
+`webtools_i18n.js` for the subsystems that render pages, and `webtools_i18n.py` for those that
+write documents. They share the catalogues and nothing else — a page asks which language a request
+is in, read from a cookie or from `Accept-Language`, and how to escape a value into HTML; a
+document has no request and no HTML, and the language it is written in is a fact carried on the
+material: the one the client wrote in. So the Python module reads two configuration fields,
+`i18n.locales` and `i18n.fallback_locale`, and knows nothing about `i18n.cookie_name`.
+
 To check that every key used exists, and to see what is left to translate:
-`node webtools/commons/i18n/webtools_i18n_check.mjs`.
+`node webtools/commons/i18n/webtools_i18n_check.mjs`. It reads the templates, the JavaScript and
+the Python, because `words.t("…")` is written the same way in all three.
 
 ## The secrets
 
@@ -184,10 +203,14 @@ Only the folder's `README.md` and the `*.example` files stay in git.
 
 Two things that look like code and are not:
 
-- **`documents/`** — the **shape** of the documents the system produces: today `prespec.md.njk`,
-  the pre-specification's template;
+- **`documents/`** — the **shape** of the documents the system produces: `prespec.md.njk`, the
+  pre-specification's; `analysis.md.j2` and `proposal.md.j2`, the analyst's two. The extension
+  names the engine, because **whoever produces a document renders it**: the preanalyst is Node and
+  renders with nunjucks, the analyst is Python and renders with Jinja2. A model is copied to the
+  one subsystem that renders it, named one by one and never with a glob;
 - **`policies/`** — the criteria of the decisions, that is, what a model is asked and by what rules
-  it answers: today `scope-v1.md`, the prevalidation's policy.
+  it answers: `scope-v1.md` for the prevalidation, `preanalysis-v1.md` and
+  `preanalysis-validation-v1.md` for the rounds of questions, and the analyst's three.
 
 They say what the system considers acceptable and what its documents look like: they are
 configuration, so they live here, and generated copies go into the subsystems (the `documents`

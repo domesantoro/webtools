@@ -20,6 +20,8 @@ from urllib.parse import urlsplit
 from pymongo import MongoClient
 from pymongo.errors import PyMongoError
 
+from webtools_anagraphics.commons.webtools_metrics_client import Metrics
+
 SUBSYSTEM = "anagraphics"
 
 
@@ -35,6 +37,7 @@ class Settings:
     mongo_db: str
     mongo_server_selection_timeout_ms: int
     allowed_ips: frozenset[str]
+    metrics: Metrics
 
 
 def _env(name: str) -> str:
@@ -58,6 +61,50 @@ def _field(document: dict, path: str) -> object:
     if value is None:
         raise ConfigurationError(f"configuration of {SUBSYSTEM}: {path} is missing")
     return value
+
+
+def _http_url(document: dict, path: str) -> str:
+    """A configured field that ends up being called: http(s) only, and no path of
+    its own. The shared configuration client does this for everybody else; here it
+    is written out, because that client is the one thing this subsystem does not
+    receive — it is the one serving the configuration."""
+    value = _field(document, path)
+    parts = urlsplit(value) if isinstance(value, str) else None
+    if parts is None or parts.scheme not in ("http", "https") or not parts.netloc:
+        raise ConfigurationError(
+            f"configuration of {SUBSYSTEM}: {path} is not an http(s) address: {value!r}"
+        )
+    return value.rstrip("/")
+
+
+def _boolean(name: str, value: object) -> bool:
+    if isinstance(value, bool):
+        return value
+    raise ConfigurationError(f"{name} must be true or false, found {value!r}")
+
+
+def _metrics_client(document: dict) -> Metrics:
+    """The metrics client, built here rather than by `load_metrics`.
+
+    `load_metrics` reads a configuration that came from anagraphics over HTTP, using
+    the configuration client — which this subsystem deliberately does not have, being
+    the one that serves it. The four values are the same four, read with this file's
+    own helpers, and the class is the shared one: what is not shared is the way the
+    configuration was obtained, which is the one thing that is genuinely different
+    here.
+
+    No defaults, as everywhere else: a field missing and the server does not start.
+    """
+    return Metrics(
+        url=_http_url(document, "subsystems_infos.metrics.url"),
+        timeout_ms=_positive_int(
+            "subsystems_infos.metrics.timeout_ms",
+            _field(document, "subsystems_infos.metrics.timeout_ms"),
+        ),
+        log_failures=_boolean("metrics.log_failures", _field(document, "metrics.log_failures")),
+        pending_max=_positive_int("metrics.pending_max", _field(document, "metrics.pending_max")),
+        subsystem=SUBSYSTEM,
+    )
 
 
 def _listen_address(url: str) -> tuple[str, int]:
@@ -123,4 +170,5 @@ def load_settings() -> Settings:
             _field(document, "mongo.server_selection_timeout_ms"),
         ),
         allowed_ips=frozenset(allowed_ips),
+        metrics=_metrics_client(document),
     )

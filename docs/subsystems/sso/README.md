@@ -32,14 +32,14 @@ open "http://127.0.0.1:9300/ui/login?next=http://127.0.0.1:9200/"
 
 # from the command line
 curl -s -X POST http://127.0.0.1:9300/login -H 'content-type: application/json' \
-  -d '{"username":"driver.prova@example.com","password":"<password>"}'
+  -d '{"username":"driver.test@example.com","password":"<password>"}'
 ```
 
 ---
 
 ## 1. Purpose and role in the system
 
-In the project's flow (`contesto/02. contesto_aggiornato.md`) several subsystems need to know **who is asking**: today `preanalyst`, tomorrow the driver interface and the dashboard. The sso is the single place where that question is answered, and the only place in the system where a password is typed.
+In the project's flow (`contesto/02. current_context.md`) several subsystems need to know **who is asking**: today `preanalyst`, tomorrow the driver interface and the dashboard. The sso is the single place where that question is answered, and the only place in the system where a password is typed.
 
 ### 1.1 Why a cookie is needed, and why a ticket is needed
 

@@ -12,6 +12,7 @@
 // The page has no arithmetic and no logic of its own: it walks these structures.
 
 import { isBranch, leafEntries } from "./leaves.js";
+import { buildProviders } from "./providers.js";
 
 // --- values ---------------------------------------------------------------
 
@@ -167,9 +168,38 @@ function anchorOf(name) {
   return `subsystem-${name.replace(/[^A-Za-z0-9]+/g, "-")}`;
 }
 
+// The provider objects, with the anchor of the section their subsystem has on the
+// page that shows the configuration. The rule for that anchor is written once,
+// just above: both pages link to those sections, and written twice it would
+// drift.
+function providersOf({ configurations, secrets, currencies, outcome }) {
+  return buildProviders({
+    configurations,
+    secretsBySubsystem: secrets.bySubsystem,
+    currencies,
+    outcome,
+  }).map((entry) => ({
+    ...entry,
+    doors: entry.doors.map((door) => ({ ...door, subsystemAnchor: anchorOf(door.subsystem) })),
+  }));
+}
+
+// A write that did not land on a provider object the page shows: the document has
+// changed since the form was drawn, or the write was refused on the path itself.
+// Said apart, because no form on the page would say it.
+function orphan(providers, outcome) {
+  const placed = providers.some((entry) => entry.doors.some((door) => door.outcome));
+  return outcome && !placed ? outcome : null;
+}
+
 // `secrets` is what readSecretPaths gave, `environment` is process.env, `readAt` a
 // Date. With `failure` set, everything else is empty: the page says what did not
 // work instead of showing half a reading.
+//
+// **This page is read.** The providers are here with the price of their tokens as
+// it is stored, and nothing is written from it: writing is buildPricingView, on
+// its own page. So no currency to choose from and no outcome of a write is
+// wanted here.
 export function buildView({ configurations = [], secrets, environment = {}, readAt, failure = null }) {
   const bootstrap = Object.keys(environment)
     .filter((name) => name.startsWith("WEBTOOLS_"))
@@ -194,6 +224,7 @@ export function buildView({ configurations = [], secrets, environment = {}, read
     };
   });
 
+  const providers = providersOf({ configurations, secrets, currencies: [], outcome: null });
   const known = new Set(subsystems.map((subsystem) => subsystem.name));
   return {
     readAt: readingTime(readAt),
@@ -201,6 +232,7 @@ export function buildView({ configurations = [], secrets, environment = {}, read
     bootstrap,
     subsystems,
     shared: sharedValues(configurations, secrets.bySubsystem),
+    providers,
     secrets: {
       available: secrets.available,
       reason: secrets.reason,
@@ -208,5 +240,32 @@ export function buildView({ configurations = [], secrets, environment = {}, read
       // A secrets file whose subsystem has no configuration at all.
       orphans: [...secrets.bySubsystem.keys()].filter((name) => !known.has(name)).sort(),
     },
+  };
+}
+
+// --- the page where the prices are written ----------------------------------
+
+// The other page: the same provider objects, with what is needed to write a price
+// into them — the currencies that may be chosen and the outcome of the last
+// write. It shares nothing with the page above but the documents both read: one
+// says what is running, the other changes one key of it.
+//
+// With `failure` set the list is empty and the page says what did not work: the
+// prices go into documents that were not read, and a form drawn from nothing
+// would be a form that writes nothing.
+export function buildPricingView({
+  configurations = [],
+  secrets,
+  readAt,
+  failure = null,
+  currencies = [],
+  outcome = null,
+}) {
+  const providers = providersOf({ configurations, secrets, currencies, outcome });
+  return {
+    readAt: readingTime(readAt),
+    failure,
+    providers,
+    orphanOutcome: orphan(providers, outcome),
   };
 }

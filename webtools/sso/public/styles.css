@@ -20,14 +20,14 @@
   text-transform: uppercase;
 }
 
-/* ------------------------------------------------------------------ campi */
+/* ----------------------------------------------------------------- fields */
 
 .access .field { margin-bottom: 16px; }
 
 .form-actions { margin-top: 20px; }
 .form-actions .btn { width: 100%; }
 
-/* --------------------------------------------------------- schermi stretti */
+/* ----------------------------------------------------------- narrow screens */
 
 @media (max-width: 520px) {
   .access { padding: 32px 0 56px; }

@@ -4,11 +4,19 @@
     "allowed_ips": ["127.0.0.1", "::1"]
   },
   "subsystems_infos": {
+    "metrics": { "url": "http://127.0.0.1:9600", "timeout_ms": 2000 },
     "anagraphics": {
       "timeout_ms": 5000
     }
   },
   "secrets": {
     "directory": "../configurator/secrets"
+  },
+  "pricing": {
+    "currencies": ["USD", "EUR", "JPY", "GBP", "CNY", "AUD", "CAD", "CHF", "HKD", "SGD"],
+    "body_max_bytes": 8192
+  },
+  "metrics": {
+    "log_failures": false
   }
 }

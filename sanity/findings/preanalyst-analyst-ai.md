@@ -60,8 +60,8 @@ below are measured against:
 - Class: **the shapes a `usage` object may come back in** — present or absent, and each of its four
   fields present or absent. The code assumes that a missing count means a count of zero:
   `response.usage?.input_tokens ?? 0`, and the same for the other three.
-- Zero is not "unknown". These numbers are the PoC's whole purpose — `CLAUDE.md` says the PoC
-  exists "to measure the real AI cost of a webtool" — and they are written into the project's chat
+- Zero is not "unknown". These numbers are what the ledger is for — the real AI cost of a webtool
+  — and they are written into the project's chat
   record at `webtools/preanalyst/src/server.js:749`. A turn whose usage was not reported enters the
   ledger as a turn that cost nothing, indistinguishable from a turn that genuinely did. The
   measurement is then wrong in the one direction nobody checks, because nothing looks anomalous.

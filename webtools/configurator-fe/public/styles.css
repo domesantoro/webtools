@@ -65,6 +65,10 @@ code { font-family: var(--mono); font-size: .92em; background: var(--surface); b
   border-bottom: 1px solid transparent;
 }
 .index a:hover { color: var(--accent); border-bottom-color: var(--accent); }
+/* The other page, not another section of this one: it is pushed to the end of the
+   bar and set apart, so a link that leaves the page does not read as an anchor
+   inside it. */
+.index a.elsewhere { margin-left: auto; color: var(--ink); font-weight: 600; }
 
 /* ---------- sections ---------- */
 main { padding: 28px 0 64px; }
@@ -168,3 +172,57 @@ table.grid td a { color: var(--accent); font-family: var(--mono); }
 .hint::before { content: "= "; }
 
 footer { border-top: 1px solid var(--line); padding-top: 14px; color: var(--muted); font-size: 13px; }
+
+/* ---------- providers and prices ---------- */
+/* The one part of the page that writes: a form per provider object. Kept in the
+   same dense grid as the rest, with the field wide enough for the amounts it
+   takes (hundredths per million tokens: six digits and more). */
+.door {
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--line-strong);
+  border-radius: 6px;
+  background: var(--surface);
+  padding: 12px 14px;
+  margin-bottom: 12px;
+}
+.door:target { border-left-color: var(--accent); }
+.door-head { margin: 0 0 8px; display: flex; flex-wrap: wrap; gap: 10px; align-items: baseline; }
+.door-head a { color: inherit; }
+.door-head .path { color: var(--muted); }
+.door-foot { margin: 10px 0 0; display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+.door-foot label { font-size: 13px; color: var(--muted); display: inline-flex; gap: 6px; align-items: center; }
+.door .note { margin: 8px 0 0; }
+.door .grid { margin: 0; }
+
+form.pricing input[type="number"] {
+  font-family: var(--mono);
+  font-size: 13px;
+  width: 12ch;
+  padding: 2px 6px;
+  background: var(--paper);
+  color: var(--ink);
+  border: 1px solid var(--line-strong);
+  border-radius: 4px;
+}
+form.pricing select {
+  font-family: var(--mono);
+  font-size: 13px;
+  padding: 2px 6px;
+  background: var(--paper);
+  color: var(--ink);
+  border: 1px solid var(--line-strong);
+  border-radius: 4px;
+}
+form.pricing button {
+  font-family: var(--sans);
+  font-size: 13px;
+  padding: 4px 12px;
+  background: var(--sage-soft);
+  color: var(--ink);
+  border: 1px solid var(--line-strong);
+  border-radius: 4px;
+  cursor: pointer;
+}
+form.pricing button:hover { border-color: var(--sage); }
+.updated { font-family: var(--mono); font-size: 12px; color: var(--muted-2); }
+p.written { margin: 0 0 8px; color: var(--sage); font-size: 13px; }

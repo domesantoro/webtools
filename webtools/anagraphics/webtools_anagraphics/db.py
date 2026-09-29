@@ -1,4 +1,16 @@
-"""Access to MongoDB: collections and indexes."""
+"""Access to MongoDB: collections and indexes.
+
+**Every operation here is measured**, and not one function in this file says so.
+`connect()` hands back the database wrapped in a thin thing that counts what goes
+through it, so a query written tomorrow is counted the day it is written and nobody
+has to remember — the same arrangement as the middleware that counts the requests,
+for the same reason. It is the one collection every figure in the system is stored
+in, and until now it was the one part of the system nothing said anything about: a
+`dependency.call` towards anagraphics that came back slow could not be told from
+Mongo being slow, because only one of the two was measured.
+"""
+
+from datetime import datetime
 
 from pymongo import MongoClient, ReturnDocument
 from pymongo.database import Database
@@ -28,14 +40,100 @@ USER_PUBLIC = {"_id": 0, "credential": 0}
 USER_CREDENTIAL = {"_id": 0, "username": 1, "credential": 1}
 
 
-def connect(settings: Settings) -> Database:
+# The operations whose **duration is the operation**. `find` is deliberately not
+# among them: it hands back a cursor and the work happens while the caller walks it,
+# so a duration taken around the call would be the time it took to decide to ask.
+# What is not in this list goes through untouched and uncounted, which is better than
+# a number that means something else.
+MEASURED = frozenset(
+    {
+        "count_documents",
+        "delete_many",
+        "delete_one",
+        "find_one",
+        "find_one_and_delete",
+        "find_one_and_update",
+        "insert_one",
+        "update_one",
+    }
+)
+
+
+class _MeasuredCollection:
+    """One collection, with the operations of `MEASURED` counted as they pass.
+
+    Everything else — attributes, and the operations not in the list — is handed
+    back as it is. Nothing is caught: an exception goes on to the caller exactly as
+    it would have, and it is measured on its way past. A failure that changed into
+    something else because we were counting it would be a worse fault than not
+    counting it.
+    """
+
+    def __init__(self, collection, name: str, metrics) -> None:
+        self._collection = collection
+        self._name = name
+        self._metrics = metrics
+
+    def __getattr__(self, operation: str):
+        attribute = getattr(self._collection, operation)
+        if operation not in MEASURED:
+            return attribute
+
+        def measured(*args, **keywords):
+            elapsed = self._metrics.timer()
+            try:
+                answer = attribute(*args, **keywords)
+            except Exception:
+                self._report(operation, "failed", elapsed())
+                raise
+            self._report(operation, "ok", elapsed())
+            return answer
+
+        return measured
+
+    def _report(self, operation: str, outcome: str, duration_ms: int) -> None:
+        self._metrics.measure(
+            "mongo.operation",
+            dims={"collection": self._name, "operation": operation, "outcome": outcome},
+            duration_ms=duration_ms,
+        )
+
+
+class _MeasuredDatabase:
+    """The database, handing out measured collections.
+
+    It stands in for `Database` at the one place a collection is ever taken —
+    `db[NAME]` — and passes everything else through. The functions below are written
+    against `Database` and do not know the difference, which is the point: measuring
+    is not their subject.
+    """
+
+    def __init__(self, database: Database, metrics) -> None:
+        self._database = database
+        self._metrics = metrics
+
+    def __getitem__(self, name: str) -> _MeasuredCollection:
+        return _MeasuredCollection(self._database[name], name, self._metrics)
+
+    def __getattr__(self, attribute: str):
+        return getattr(self._database, attribute)
+
+
+def connect(settings: Settings) -> _MeasuredDatabase:
+    """The database the server works through: the real one, counted.
+
+    The functions below are annotated `Database`, which is what they are written
+    against and what the scripts hand them — `seed.py` and `load_configuration.py`
+    build their own client and have no metrics to count with, which is right: a
+    script that runs once is not a surface anybody watches.
+    """
     # tz_aware: session dates come back with their zone (UTC), not naked.
     client = MongoClient(
         settings.mongo_uri,
         tz_aware=True,
         serverSelectionTimeoutMS=settings.mongo_server_selection_timeout_ms,
     )
-    return client[settings.mongo_db]
+    return _MeasuredDatabase(client[settings.mongo_db], settings.metrics)
 
 
 def ensure_indexes(db: Database) -> None:
@@ -77,12 +175,38 @@ def list_configurations(db: Database) -> list[dict]:
     return list(db[CONFIGURATION].find({}, PUBLIC).sort("subsystem"))
 
 
+def set_configuration_field(db: Database, subsystem: str, path: str, value) -> bool:
+    """Write one field of a subsystem's configuration, by dotted path.
+
+    Only the field named is touched: the rest of the document is left exactly as
+    it is, which is what lets a value be corrected in operation without carrying
+    away the fields around it — the same rule `load_configuration.sh` follows.
+
+    → whether a document was there to write into. Who may call this, and with
+    which paths, is the route's business: this is the storage.
+    """
+    written = db[CONFIGURATION].update_one({"subsystem": subsystem}, {"$set": {path: value}})
+    return written.matched_count == 1
+
+
 def find_project(db: Database, project_id: str) -> dict | None:
     return db[PROJECTS].find_one({"project_id": project_id}, PUBLIC)
 
 
 def find_project_by_submission(db: Database, submission_id: str) -> dict | None:
     return db[PROJECTS].find_one({"submission_id": submission_id}, PUBLIC)
+
+
+def count_projects_created_between(db: Database, first: datetime, after_last: datetime) -> int:
+    """How many projects were created in a period, `first` included and
+    `after_last` excluded.
+
+    It is read by metrics to reconcile its own funnel: metrics is told about a
+    project by a message nobody waits for, and a message can be lost, while a
+    project in here cannot. The count is the truth the measurement is checked
+    against.
+    """
+    return db[PROJECTS].count_documents({"created_at": {"$gte": first, "$lt": after_last}})
 
 
 def insert_project(db: Database, project: dict) -> None:
@@ -110,31 +234,31 @@ def update_open_step(db: Database, project_id: str, step_name: str, changes: dic
 
     Closed steps are not touched: the list is the register of the decisions taken,
     and a decision taken is not rewritten. An `open` step, on the other hand, is
-    work in progress — the analysis chat, the turns still left — and grows until
+    work in progress — the rounds of questions, the turns still left — and grows until
     another step closes it.
 
     `changes` are fields of `data`, written one by one: what is not named stays as
     it was. `None` if the project is not there, or has no open step with that name.
     """
-    progetto = db[PROJECTS].find_one({"project_id": project_id}, {"pipeline.steps": 1})
-    if progetto is None:
+    project = db[PROJECTS].find_one({"project_id": project_id}, {"pipeline.steps": 1})
+    if project is None:
         return None
 
-    passi = progetto.get("pipeline", {}).get("steps", [])
-    indice = next(
+    steps = project.get("pipeline", {}).get("steps", [])
+    index = next(
         (
             i
-            for i in range(len(passi) - 1, -1, -1)
-            if passi[i].get("step") == step_name and passi[i].get("result") == "open"
+            for i in range(len(steps) - 1, -1, -1)
+            if steps[i].get("step") == step_name and steps[i].get("result") == "open"
         ),
         None,
     )
-    if indice is None:
+    if index is None:
         return None
 
     return db[PROJECTS].find_one_and_update(
         {"project_id": project_id},
-        {"$set": {f"pipeline.steps.{indice}.data.{campo}": valore for campo, valore in changes.items()}},
+        {"$set": {f"pipeline.steps.{index}.data.{field}": value for field, value in changes.items()}},
         projection=PUBLIC,
         return_document=ReturnDocument.AFTER,
     )
@@ -147,25 +271,25 @@ def push_to_open_step(db: Database, project_id: str, step_name: str, field: str,
     every turn would mean sending the entire conversation back just to make it two
     lines longer.
     """
-    progetto = db[PROJECTS].find_one({"project_id": project_id}, {"pipeline.steps": 1})
-    if progetto is None:
+    project = db[PROJECTS].find_one({"project_id": project_id}, {"pipeline.steps": 1})
+    if project is None:
         return None
 
-    passi = progetto.get("pipeline", {}).get("steps", [])
-    indice = next(
+    steps = project.get("pipeline", {}).get("steps", [])
+    index = next(
         (
             i
-            for i in range(len(passi) - 1, -1, -1)
-            if passi[i].get("step") == step_name and passi[i].get("result") == "open"
+            for i in range(len(steps) - 1, -1, -1)
+            if steps[i].get("step") == step_name and steps[i].get("result") == "open"
         ),
         None,
     )
-    if indice is None:
+    if index is None:
         return None
 
     return db[PROJECTS].find_one_and_update(
         {"project_id": project_id},
-        {"$push": {f"pipeline.steps.{indice}.data.{field}": {"$each": values}}},
+        {"$push": {f"pipeline.steps.{index}.data.{field}": {"$each": values}}},
         projection=PUBLIC,
         return_document=ReturnDocument.AFTER,
     )
@@ -175,13 +299,39 @@ def delete_project(db: Database, project_id: str) -> bool:
     return db[PROJECTS].delete_one({"project_id": project_id}).deleted_count == 1
 
 
+def set_project_driver(db: Database, project_id: str, driver: dict | None) -> dict | None:
+    """Writes the driver's copy onto the project. None if there is no such project.
+
+    An update **pipeline** rather than a plain `$set`, for one reason: a project
+    stored before `review` existed has no `preset`, and setting only `review.driver`
+    on it would leave a `review` that is missing a field the model says every review
+    has. A pipeline reads the document server side, so the missing field is filled in
+    the same atomic write instead of needing a read first — and `$literal` keeps the
+    copy a value, so a driver whose data ever contained a `$` would be stored and not
+    evaluated.
+    """
+    return db[PROJECTS].find_one_and_update(
+        {"project_id": project_id},
+        [
+            {
+                "$set": {
+                    "review.driver": {"$literal": driver},
+                    "review.preset": {"$ifNull": ["$review.preset", False]},
+                }
+            }
+        ],
+        projection=PUBLIC,
+        return_document=ReturnDocument.AFTER,
+    )
+
+
 def find_driver(db: Database, uid: str) -> dict | None:
     return db[DRIVERS].find_one({"uid": uid}, PUBLIC)
 
 
 def list_drivers(db: Database) -> list[dict]:
     # No pagination: there are few drivers. A stable order by uid.
-    # Proiezione ridotta: niente `username` (vedi DRIVER_SUMMARY).
+    # A reduced projection: no `username` (see DRIVER_SUMMARY).
     return list(db[DRIVERS].find({}, DRIVER_SUMMARY).sort("uid"))
 
 

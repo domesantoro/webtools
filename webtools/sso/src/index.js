@@ -26,6 +26,8 @@ server.listen(settings.port, settings.host, () => {
     `webtools_sso listening on http://${settings.host}:${settings.port} ` +
       `(anagraphics: ${settings.anagraphicsUrl}, sessions: ${settings.sessionTtlSeconds}s)`
   );
+  // A count that grows by itself is a process that keeps dying and coming back.
+  settings.metrics.measure("process.started", { dims: { outcome: "ok" } });
 });
 
 for (const signal of ["SIGTERM", "SIGINT"]) {

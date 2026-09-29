@@ -30,7 +30,7 @@ const anthropic = {
 
 test("loadPrevalidatorAiSettings: the selected provider's configuration is read", () => {
   const settings = loadPrevalidatorAiSettings(
-    configurationOf({ provider: "anthropic", timeout_ms: 20000, providers: { anthropic } }),
+    configurationOf({ provider: "anthropic", timeout_ms: 20000, max_attempts: 3, providers: { anthropic } }),
     BASE,
   );
 
@@ -53,7 +53,7 @@ test("loadPrevalidatorAiSettings: the selected provider's configuration is read"
 test("loadPrevalidatorAiSettings: an unknown provider does not start the server", () => {
   const configuration = configurationOf({
     provider: "jev",
-    timeout_ms: 20000,
+    timeout_ms: 20000, max_attempts: 3,
     providers: { anthropic },
   });
 
@@ -73,7 +73,7 @@ test("loadPrevalidatorAiSettings: a missing field of the selected provider does 
     delete incomplete[missing];
     const configuration = configurationOf({
       provider: "anthropic",
-      timeout_ms: 20000,
+      timeout_ms: 20000, max_attempts: 3,
       providers: { anthropic: incomplete },
     });
     assert.throws(
@@ -88,7 +88,7 @@ test("loadPrevalidatorAiSettings: an effort left out is left out, one written wr
   const withEffort = (effort) =>
     configurationOf({
       provider: "anthropic",
-      timeout_ms: 20000,
+      timeout_ms: 20000, max_attempts: 3,
       providers: { anthropic: { ...anthropic, effort } },
     });
 
@@ -115,7 +115,7 @@ test("loadPrevalidatorAiSettings: the configuration of a provider that is not se
   const settings = loadPrevalidatorAiSettings(
     configurationOf({
       provider: "anthropic",
-      timeout_ms: 20000,
+      timeout_ms: 20000, max_attempts: 3,
       providers: {
         anthropic,
         // No key, no model: nobody is going to call it, so nobody is going to

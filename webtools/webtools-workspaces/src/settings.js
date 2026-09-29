@@ -7,6 +7,7 @@ import os from "node:os";
 import path from "node:path";
 
 import { ConfigurationError, loadConfiguration } from "./commons/configuration_client.js";
+import { loadMetrics } from "./commons/metrics/webtools_metrics_client.js";
 
 export async function loadSettings() {
   const configuration = await loadConfiguration("workspaces");
@@ -21,6 +22,13 @@ export async function loadSettings() {
     root: absoluteRoot(configuration.string("storage.root")),
     // A specification is text: 10 MB is already an awful lot.
     specMaxBytes: configuration.integer("storage.spec_max_bytes", { min: 1 }),
+    // The same 10 MB, and a field of its own rather than the same limit read twice:
+    // the two families have different provenances — a file a client uploads, a
+    // document we produce — so one of the two can be moved without the other.
+    documentMaxBytes: configuration.integer("storage.document_max_bytes", { min: 1 }),
+    // Where measurements go. It neither waits nor throws: see
+    // src/commons/metrics/webtools_metrics_client.js.
+    metrics: loadMetrics(configuration),
   };
 }
 

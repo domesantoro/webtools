@@ -31,19 +31,19 @@
 // (`webtools/configurator/policies/`), distributed into `policies/`. Here there is
 // only how the answer is read and how it is decided what to do with it.
 //
-// Contract towards the caller:
-//   { ok: true, data: { outcome, distribution, off_domain, reason, policy,
-//                       provider, model, usage } }
-//   { ok: false, reason: "unavailable" | "rejected" | "unknown_provider",
-//                usage?, model? }
+// Contract towards the caller: the door's own envelope (`prevalidator_ai/
+// contract.js`), with `output` read into `{ outcome, distribution, off_domain,
+// reason }` and the policy that was used beside it.
 //
 // Even when things go wrong, if the model answered the tokens have been spent:
-// `usage` is there, and the caller records it. A cost that cannot be seen is not
-// measured.
+// `spend` is there, and the caller records it. A consumption that cannot be seen
+// is not measured.
 
 import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
+import { PREVALIDATION, reportInteraction, reportUnusable } from "./measured_ai.js";
 
+import { unusable } from "./prevalidator_ai/contract.js";
 import { decide } from "./prevalidator_ai/webtools_prevalidator_ai.js";
 
 const POLICIES_DIR = fileURLToPath(new URL("../policies/", import.meta.url));
@@ -164,20 +164,29 @@ export function verdict(distribution, outcome, { threshold, attempts, maxAttempt
   return attempts >= maxAttempts ? "rejected" : "underspecified";
 }
 
-export async function prevalidate(settings, spec) {
-  const { policy, specMaxChars } = settings.prevalidation;
+export async function prevalidate(settings, spec, { projectId = null } = {}) {
+  const { policy } = settings.prevalidation;
   const instructions = await readPolicy(policy);
 
+  const elapsed = settings.metrics.timer();
   const answer = await decide(settings.prevalidation.ai, {
     instructions,
-    // The cut is a safety net, not a check: the open answers are already limited
-    // at submission time (`form.answer_max_chars`).
-    document: spec.slice(0, specMaxChars),
+    // **The pre-specification goes whole.** It used to be cut here at a ceiling of
+    // its own, on the argument that the open answers had already been limited at
+    // submission time — where they were being cut too. Neither ceiling was ever
+    // decided by anybody: the first was a constant invented in the code, which then
+    // became a configuration field and so took on the look of a decision. What the
+    // cut really did was have the gate judge a document the client had not written,
+    // and it did it in silence. Both are gone: the model judges what is there.
+    document: spec,
     schema: SCHEMA,
   });
+  // Reported before the answer is judged: the model ran, and what it consumed is real
+  // whatever we go on to make of what it said.
+  reportInteraction(settings, { phase: PREVALIDATION, projectId, answer, durationMs: elapsed() });
   if (!answer.ok) return answer;
 
-  const { output, model, usage } = answer.data;
+  const { output } = answer;
   const normalized = normalize(output?.distribution);
   if (normalized === null) {
     // This happens if the model sends numbers that are not numbers, or puts them
@@ -186,12 +195,29 @@ export async function prevalidate(settings, spec) {
     // guard stays, because the model is not obliged to obey. The tokens, however,
     // have been spent, and they are reported back.
     console.error("[prevalidator] unusable distribution");
-    return { ok: false, reason: "rejected", usage, model };
+    // It answered inside the schema and what came back is not a distribution.
+    // `ai.call` has already gone out saying the provider completed, which it did:
+    // this is the door's own verdict, and nothing else records it.
+    reportUnusable(settings, {
+      phase: PREVALIDATION,
+      projectId,
+      answer,
+      reason: "unusable_distribution",
+    });
+    return unusable({
+      provider: answer.provider,
+      model: answer.model,
+      ended: "unusable",
+      spend: answer.spend,
+      attempts: answer.attempts,
+      fellBack: answer.fell_back,
+    });
   }
 
   return {
-    ok: true,
-    data: {
+    ...answer,
+    policy,
+    output: {
       outcome: normalized.outcome,
       distribution: normalized.distribution,
       off_domain: {
@@ -199,10 +225,6 @@ export async function prevalidate(settings, spec) {
         reason: String(output.off_domain?.reason ?? ""),
       },
       reason: String(output.reason ?? ""),
-      policy,
-      provider: settings.prevalidation.ai.provider,
-      model,
-      usage,
     },
   };
 }

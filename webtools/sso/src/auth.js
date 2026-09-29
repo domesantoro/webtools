@@ -22,9 +22,15 @@ export const TICKET_MISMATCH = "TICKET_MISMATCH";
 const unavailable = { ok: false, status: 503, code: ANAGRAPHICS_UNAVAILABLE };
 // Unknown user, deactivated user, password never set, wrong password: the user is
 // always given the same answer. Knowing *which* of the four is true would tell
-// whoever is trying whether an address is registered. The real reason stays in the
-// log.
-const refused = { ok: false, status: 401, code: INVALID_CREDENTIALS };
+// whoever is trying whether an address is registered.
+//
+// `reason` says which it was, **for counting and for nothing else**. `code` is what
+// the caller is told and it is the same word in all four cases; this field never
+// reaches a body, and the server puts it on a daily counter that names nobody. Until
+// now the real reason stayed only in a log that gets rotated, and a password nobody
+// ever set — somebody who cannot get in and does not know why — was the same number
+// as a password typed wrong.
+const refused = (reason) => ({ ok: false, status: 401, code: INVALID_CREDENTIALS, reason });
 
 // `locale`: the language the login page was being looked at in, if there is one.
 // The one saved in the profile wins; if the profile has none, this one is saved.
@@ -33,7 +39,7 @@ export async function login(settings, { username, password, locale = null }, cli
   if (!userResult.ok) {
     if (userResult.reason === "not_found") {
       console.warn(`[sso] login refused: unknown user (${username})`);
-      return refused;
+      return refused("unknown_user");
     }
     return unavailable;
   }
@@ -41,7 +47,7 @@ export async function login(settings, { username, password, locale = null }, cli
   const user = userResult.data;
   if (user.active === false) {
     console.warn(`[sso] login refused: user deactivated (${username})`);
-    return refused;
+    return refused("deactivated");
   }
 
   const credentialResult = await client.findUserCredential(settings, username);
@@ -49,14 +55,14 @@ export async function login(settings, { username, password, locale = null }, cli
     if (credentialResult.reason === "not_found") {
       // CREDENTIAL_NOT_SET: the user exists but has no password.
       console.warn(`[sso] login refused: ${credentialResult.code} (${username})`);
-      return refused;
+      return refused("credential_not_set");
     }
     return unavailable;
   }
 
   if (!(await verifyPassword(password, credentialResult.data.credential))) {
     console.warn(`[sso] login refused: wrong password (${username})`);
-    return refused;
+    return refused("wrong_password");
   }
 
   const sessionLocale = user.locale ?? locale;
@@ -77,6 +83,10 @@ export async function login(settings, { username, password, locale = null }, cli
   }
 
   console.log(`[sso] login of ${username} (uid ${user.uid})`);
+  // A session that really exists. Counted apart from `login.attempt`: an attempt that
+  // succeeded and a session that was opened are the same event seen from two sides, and
+  // the second is what the third one — how it ended — can be put beside.
+  settings.metrics.measure("session.opened");
   return { ok: true, status: 201, body: { logged: true, session: created.data } };
 }
 
@@ -149,6 +159,12 @@ export async function logout(settings, token, client = anagraphics) {
   if (!result.ok && result.reason !== "not_found") return unavailable;
   // Unknown or already expired token: the result asked for — that session no
   // longer exists — is true anyway. Repeating the logout is not an error.
+  //
+  // Only a session that was really there is a session that was closed: a logout of a
+  // token nobody has is not a session ending. The other two reasons the vocabulary knows
+  // — `expired` and `revoked` — are not counted here, because nothing happens when a
+  // session expires: it is simply not renewed, and there is no moment to measure.
+  if (result.ok) settings.metrics.measure("session.closed", { dims: { reason: "logout" } });
   return { ok: true, status: 200, body: { logged: false } };
 }
 

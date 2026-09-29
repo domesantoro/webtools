@@ -1,6 +1,6 @@
 {% extends "commons/base.njk" %}
 {#- `with context`: the macros use `t` and the other language functions. #}
-{% import "macros/fields.njk" as campi with context %}
+{% import "macros/fields.njk" as fields with context %}
 {% import "partials/driver_box.njk" as box with context %}
 {% import "partials/ambassador_box.njk" as invitation with context %}
 {% import "partials/access.njk" as login with context %}
@@ -61,8 +61,8 @@
                 birth to another and the rounds would no longer be counted. #}
             <input type="hidden" name="project_id" value="{{ resumed.project_id }}">
 {%- endif %}
-            {%- for sezione in sections %}
-            {{ campi.section(sezione) }}
+            {%- for section in sections %}
+            {{ fields.section(section) }}
             {%- endfor %}
 
             <div class="form-actions">

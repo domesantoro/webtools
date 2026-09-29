@@ -1,0 +1,420 @@
+/* ==========================================================
+   metrics-fe — the dashboard
+
+   Self-contained, like configurator-fe: it does not receive commons.css from the
+   style deployer and it loads no font files. This is instrumentation, read on one
+   machine: it takes the project's palette so it does not look foreign, and the
+   system fonts so it has nothing to distribute.
+
+   Dense on purpose: the point is seeing a lot of measurement at once.
+
+   ---------------------------------------------------------------------------
+   The data ink is its own palette, and it is not the page's.
+
+   The page is the project's warm paper and ink. The marks — bars, lines, dots —
+   are a palette validated for the job: eight fixed hues in a fixed order, of
+   which this dashboard uses six, checked in both modes against the surface they
+   are actually drawn on (lightness band, chroma floor, separation under
+   protanopia and deuteranopia, separation under ordinary vision, contrast). The
+   order is what makes it safe, so it is never re-ordered and a seventh line is
+   never a generated hue: the metrics past the sixth are named instead of drawn.
+
+   Three of the light steps sit under 3:1 on this surface. That is allowed only
+   with relief, and the relief is shipped: every chart carries a legend, the end
+   of every line carries its own number, and the numbers themselves are under the
+   picture in a table. Nothing on these pages is readable by colour alone.
+
+   Status is a separate, fixed scale — good, warning, serious, critical — never
+   reused for a series, and never on its own: a status colour always sits beside
+   the word it means.
+   ========================================================== */
+
+:root {
+  color-scheme: light;
+
+  /* the page */
+  --paper: #f4efe6;
+  --surface: #fbf8f2;
+  --ink: #1c1b18;
+  --muted: #5e5a52;
+  --muted-2: #7a7468;
+  --line: #d8cfbf;
+  --line-strong: #b9ae9b;
+  --accent: #d1411f;
+  --note: #f5e2a0;
+  --note-line: #d9bf5e;
+
+  /* the marks */
+  --chart-surface: #fbf8f2;
+  --grid: #e5ded1;
+  --axis: #c3bba9;
+  --tick: #7a7468;
+
+  --series-1: #2a78d6;
+  --series-2: #eb6834;
+  --series-3: #1baf7a;
+  --series-4: #eda100;
+  --series-5: #e87ba4;
+  --series-6: #008300;
+
+  /* one measure, one colour: every bar, every histogram, every span */
+  --data: var(--series-1);
+
+  --status-good: #0ca30c;
+  --status-warning: #fab219;
+  --status-serious: #ec835a;
+  --status-critical: #d03b3b;
+
+  --sans: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+/* The dark mode is chosen, not flipped: its own steps from the same eight hues,
+   validated against the dark surface it is drawn on. */
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+
+    --paper: #121110;
+    --surface: #191815;
+    --ink: #f2ece1;
+    --muted: #a8a294;
+    --muted-2: #8b8578;
+    --line: #34322c;
+    --line-strong: #4a463d;
+    --accent: #e8664a;
+    --note: #3a3218;
+    --note-line: #6b5c28;
+
+    --chart-surface: #191815;
+    --grid: #2c2a25;
+    --axis: #45423a;
+    --tick: #a8a294;
+
+    --series-1: #3987e5;
+    --series-2: #d95926;
+    --series-3: #199e70;
+    --series-4: #c98500;
+    --series-5: #d55181;
+    --series-6: #008300;
+  }
+}
+
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--sans);
+  font-size: 14px;
+  line-height: 1.55;
+}
+.wrap { width: min(calc(100% - 32px), 1280px); margin-inline: auto; }
+code { font-family: var(--mono); font-size: .92em; background: var(--surface); border: 1px solid var(--line); border-radius: 4px; padding: 0 4px; }
+a { color: var(--ink); text-decoration-color: var(--line-strong); text-underline-offset: 2px; }
+a:hover { color: var(--accent); text-decoration-color: var(--accent); }
+
+/* ---------- header, navigation, period ---------- */
+.top { background: var(--ink); color: var(--surface); padding: 12px 0; }
+.top .wrap { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+.brand { font-weight: 650; letter-spacing: -.01em; }
+.brand span { font-family: var(--mono); font-size: 11px; text-transform: uppercase; letter-spacing: .08em; opacity: .7; margin-left: 8px; }
+.read-at { font-family: var(--mono); font-size: 12px; opacity: .75; }
+
+.index { background: var(--surface); border-bottom: 1.5px solid var(--ink); }
+.index .wrap { display: flex; flex-wrap: wrap; gap: 4px 18px; padding: 9px 0; }
+.index a {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--muted);
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+}
+.index a:hover { color: var(--accent); border-bottom-color: var(--accent); }
+.index a.current { color: var(--ink); font-weight: 650; border-bottom-color: var(--ink); }
+
+/* One row of controls above everything they scope. Never a second one inside a
+   section: two controls for the same slice are two ways for a page to disagree
+   with itself. */
+.period { background: var(--paper); border-bottom: 1px solid var(--line); position: sticky; top: 0; z-index: 3; }
+.period .wrap { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 20px; padding: 8px 0; font-size: 12px; }
+.period form.range { display: flex; align-items: center; gap: 6px; }
+.period label { color: var(--muted); font-family: var(--mono); display: flex; align-items: center; gap: 4px; }
+.period input[type="date"], .lookup input[type="text"] {
+  font-family: var(--mono); font-size: 12px; padding: 3px 6px;
+  background: var(--surface); color: var(--ink);
+  border: 1px solid var(--line-strong); border-radius: 4px;
+}
+.period button, .lookup button {
+  font-family: var(--mono); font-size: 12px; padding: 3px 10px; cursor: pointer;
+  background: var(--ink); color: var(--surface); border: 1px solid var(--ink); border-radius: 4px;
+}
+.period .presets, .period .steps { display: flex; gap: 8px; font-family: var(--mono); }
+.period .presets a, .period .steps a { color: var(--muted); text-decoration: none; }
+.period .presets a:hover, .period .steps a:hover { color: var(--accent); }
+.period .presets .current, .period .steps .current { color: var(--ink); font-weight: 650; }
+.period .spread { margin-left: auto; display: flex; gap: 10px; align-items: baseline; }
+.period .days { font-family: var(--mono); color: var(--ink); }
+.period .again { font-family: var(--mono); color: var(--muted); text-decoration: none; }
+.period .again:hover { color: var(--accent); }
+
+/* ---------- sections ---------- */
+main { padding: 24px 0 64px; }
+section { margin-bottom: 40px; scroll-margin-top: 56px; }
+h1 { font-size: 22px; margin: 0 0 6px; font-family: var(--mono); font-weight: 650; }
+h2 {
+  font-size: 18px; margin: 0 0 6px; padding-bottom: 6px;
+  border-bottom: 1.5px solid var(--ink);
+  font-family: var(--mono); font-weight: 650;
+}
+h3 { font-size: 12px; margin: 24px 0 8px; text-transform: uppercase; letter-spacing: .07em; color: var(--muted); }
+p { margin: 8px 0; }
+.note, .meta, .asks { color: var(--muted); font-size: 12.5px; }
+.meta { font-family: var(--mono); font-size: 12px; }
+.note { max-width: 78ch; }
+.absent { color: var(--muted-2); font-style: italic; }
+.muted { color: var(--muted-2); }
+.mono { font-family: var(--mono); font-size: 12px; }
+.intent p { max-width: 82ch; }
+
+.failure, .warning, .warning-inline {
+  border: 1px solid var(--line-strong);
+  border-radius: 6px;
+  padding: 12px 16px;
+  background: var(--surface);
+}
+.failure { border-left: 3px solid var(--status-critical); }
+.warning, .warning-inline { background: var(--note); border-color: var(--note-line); }
+.failure h2, .warning h3 { border: 0; margin-top: 0; padding: 0; text-transform: none; letter-spacing: 0; color: var(--ink); font-size: 15px; }
+.failure .detail, .warning-inline { font-family: var(--mono); font-size: 12px; }
+.warning-inline { display: block; }
+
+/* A word for what happened, never a colour on its own. */
+.outcome { font-family: var(--mono); font-size: 11.5px; padding: 1px 6px; border-radius: 3px; border: 1px solid currentColor; }
+.outcome.unreachable, .outcome.not_json, .outcome.malformed { color: var(--status-critical); }
+.outcome.refused { color: var(--status-serious); }
+.outcome.not_found { color: var(--muted); }
+
+/* ---------- tables ---------- */
+.grid { width: 100%; border-collapse: collapse; margin: 8px 0 4px; font-size: 13px; }
+.grid th, .grid td { text-align: left; vertical-align: top; padding: 4px 10px 4px 0; border-bottom: 1px solid var(--line); }
+.grid thead th {
+  font-family: var(--mono); font-size: 11px; text-transform: uppercase; letter-spacing: .05em;
+  color: var(--muted); font-weight: 600; border-bottom: 1px solid var(--line-strong); white-space: nowrap;
+}
+.grid tbody th { font-weight: 500; }
+.grid tfoot th, .grid tfoot td { border-bottom: 0; border-top: 1.5px solid var(--line-strong); font-weight: 650; }
+.grid .number-cell { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.grid .note { font-size: 12px; }
+.grid.ranked tbody th, .grid.rows tbody th { max-width: 34ch; overflow-wrap: anywhere; }
+.grid.vocabulary tbody th { white-space: nowrap; }
+
+/* A dimension, printed as the name and the value it had. */
+.dim { display: inline-flex; align-items: baseline; gap: 4px; margin: 0 6px 2px 0; font-family: var(--mono); font-size: 11.5px; }
+.dim .name { color: var(--muted-2); }
+.dim .name::after { content: "="; }
+.dim .open { color: var(--muted-2); font-style: italic; }
+
+/* ---------- the bar: one measure, one colour, square at the baseline ---------- */
+.bar-cell { width: 34%; min-width: 120px; }
+.bar { display: block; height: 10px; background: var(--grid); border-radius: 0 2px 2px 0; }
+.bar .fill { display: block; height: 100%; background: var(--data); border-radius: 0 4px 4px 0; min-width: 0; }
+.histogram tr.unbounded .fill { background: var(--series-2); }
+
+/* ---------- durations: min → max, with the two percentiles as boundaries ---------- */
+.spans { margin: 8px 0 4px; }
+/* The rule lives inside the column it measures, so a position on it is a position on
+   the bars under it. */
+.span-cell { width: 38%; min-width: 200px; }
+.grid.durations thead .span-cell { padding-bottom: 18px; }
+.spans .scale { position: absolute; left: 0; right: 10px; height: 12px; font-family: var(--mono); font-size: 9.5px; font-weight: 400; text-transform: none; letter-spacing: 0; color: var(--tick); }
+.grid.durations thead .span-cell { position: relative; }
+.spans .scale .tick { position: absolute; transform: translateX(-50%); white-space: nowrap; }
+/* The two ends stay inside the column instead of leaning into its neighbours. */
+.spans .scale .tick:first-child { transform: none; }
+.spans .scale .tick:last-child { transform: translateX(-100%); }
+.spans .scale-note { font-style: italic; }
+.spans .track { position: relative; display: block; height: 14px; }
+.spans .track::before {
+  content: ""; position: absolute; left: 0; right: 0; top: 6px; height: 1px; background: var(--grid);
+}
+.spans .range { position: absolute; top: 6px; height: 2px; min-width: 2px; background: var(--data); border-radius: 1px; }
+.spans .mark { position: absolute; }
+.spans .mark.min, .spans .mark.max, .spans .mark.mean {
+  width: 8px; height: 8px; top: 3px; margin-left: -4px; border-radius: 50%;
+  background: var(--data); box-shadow: 0 0 0 2px var(--chart-surface);
+}
+.spans .mark.mean { background: var(--chart-surface); border: 2px solid var(--data); box-shadow: none; }
+.spans .mark.below { opacity: .55; }
+.spans .mark.estimated {
+  width: 0; height: 12px; top: 1px; margin-left: -1px;
+  border-left: 2px dotted var(--data);
+}
+.spans .legend, .chart .legend { display: flex; flex-wrap: wrap; gap: 4px 16px; align-items: center; font-size: 12px; color: var(--muted); }
+.spans .legend .key { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--data); margin-right: 2px; }
+.spans .legend .key.mean { background: var(--chart-surface); border: 2px solid var(--data); }
+.spans .legend .key.estimated { width: 0; height: 12px; border-radius: 0; border-left: 2px dotted var(--data); background: none; }
+
+/* ---------- figures ---------- */
+.hero-row { display: grid; grid-template-columns: minmax(180px, 260px) 1fr; gap: 28px; align-items: start; }
+.hero { border-left: 3px solid var(--data); padding-left: 16px; }
+/* Proportional figures: tabular ones give every digit the width of a zero, and at
+   this size that makes a number look loose. */
+.hero .figure { display: block; font-size: 52px; line-height: 1.05; font-weight: 650; letter-spacing: -.02em; }
+.hero .label { display: block; font-size: 13px; margin-top: 4px; }
+.hero .of, .card .of { display: block; font-family: var(--mono); font-size: 11.5px; color: var(--muted); margin-top: 4px; }
+.hero-notes p { max-width: 74ch; }
+
+.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin-top: 12px; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 14px 16px; }
+.card h3 { margin: 0 0 4px; font-size: 12px; color: var(--ink); }
+.card .asks { margin: 0 0 10px; }
+.card .more { margin-bottom: 0; font-family: var(--mono); font-size: 12px; }
+.card .more a { text-decoration: none; }
+
+.stats { display: flex; flex-wrap: wrap; gap: 16px 32px; margin: 10px 0; }
+.stat { display: flex; flex-direction: column; }
+.stat .label { font-size: 12px; color: var(--muted); max-width: 34ch; }
+.stat .value, .card .stat .value { font-size: 30px; font-weight: 650; line-height: 1.1; letter-spacing: -.01em; }
+.stat .unit, .card .unit { font-family: var(--mono); font-size: 12px; color: var(--muted); }
+.stat .of { font-family: var(--mono); font-size: 11.5px; color: var(--muted); }
+.inline-figure { font-size: 22px; font-weight: 650; }
+
+.kinds { display: flex; flex-wrap: wrap; gap: 2px 22px; margin: 8px 0; }
+.kinds div { display: flex; flex-direction: column; }
+.kinds dt { font-family: var(--mono); font-size: 11px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); }
+.kinds dd { margin: 0; font-variant-numeric: tabular-nums; font-size: 15px; }
+.kinds.wide dd { font-size: 19px; font-weight: 600; }
+
+.summary { display: flex; flex-wrap: wrap; gap: 12px 32px; align-items: flex-end; }
+
+/* ---------- the chart over time ---------- */
+.chart { margin: 12px 0 4px; }
+.chart svg { width: 100%; height: auto; display: block; background: var(--chart-surface); border: 1px solid var(--line); border-radius: 6px; }
+.chart line.grid { stroke: var(--grid); stroke-width: 1; }
+.chart line.axis { stroke: var(--axis); stroke-width: 1; }
+.chart text.tick { fill: var(--tick); font-family: var(--mono); font-size: 9.5px; }
+.chart text.end { fill: var(--ink); font-family: var(--mono); font-size: 10px; }
+.chart polyline.line { fill: none; stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+.chart circle.point { stroke: var(--chart-surface); stroke-width: 2; }
+.chart figcaption { margin-top: 8px; }
+.chart .legend .entry { display: inline-flex; align-items: center; gap: 6px; font-family: var(--mono); font-size: 11.5px; color: var(--ink); }
+.chart .legend .key { display: inline-block; width: 14px; height: 3px; border-radius: 2px; }
+
+/* The slot is the metric's, and it is fixed: a metric keeps its colour for as long
+   as the picture is the same picture. Never cycled — a seventh line would be a hue
+   nobody can tell from one of these, so the seventh metric is named instead. */
+.slot-1 polyline.line { stroke: var(--series-1); } .slot-1 circle.point { fill: var(--series-1); } .slot-1 .key { background: var(--series-1); }
+.slot-2 polyline.line { stroke: var(--series-2); } .slot-2 circle.point { fill: var(--series-2); } .slot-2 .key { background: var(--series-2); }
+.slot-3 polyline.line { stroke: var(--series-3); } .slot-3 circle.point { fill: var(--series-3); } .slot-3 .key { background: var(--series-3); }
+.slot-4 polyline.line { stroke: var(--series-4); } .slot-4 circle.point { fill: var(--series-4); } .slot-4 .key { background: var(--series-4); }
+.slot-5 polyline.line { stroke: var(--series-5); } .slot-5 circle.point { fill: var(--series-5); } .slot-5 .key { background: var(--series-5); }
+.slot-6 polyline.line { stroke: var(--series-6); } .slot-6 circle.point { fill: var(--series-6); } .slot-6 .key { background: var(--series-6); }
+
+/* The same numbers without the picture. Opened by whoever wants them, never by
+   itself. */
+details.twin { margin-top: 10px; }
+details.twin summary { font-family: var(--mono); font-size: 12px; color: var(--muted); cursor: pointer; }
+details.twin summary:hover { color: var(--accent); }
+.twin-table { font-size: 12px; }
+
+/* ---------- choosers ---------- */
+.chooser { display: flex; flex-wrap: wrap; gap: 4px 10px; font-family: var(--mono); font-size: 11.5px; }
+.chooser a { color: var(--muted); text-decoration: none; }
+.chooser a:hover { color: var(--accent); }
+.chooser a.quiet { color: var(--muted-2); opacity: .65; }
+.chooser .current { color: var(--ink); font-weight: 650; border-bottom: 1px solid var(--ink); }
+.lookup { display: flex; align-items: center; gap: 8px; margin: 12px 0; font-family: var(--mono); font-size: 12px; }
+.lookup label { display: flex; align-items: center; gap: 6px; color: var(--muted); }
+
+footer { border-top: 1px solid var(--line); margin-top: 48px; padding-top: 12px; }
+footer p { color: var(--muted); font-size: 12px; max-width: 80ch; }
+
+/* ---------- narrow ---------- */
+@media (max-width: 860px) {
+  .hero-row { grid-template-columns: 1fr; gap: 12px; }
+  .period .spread { margin-left: 0; }
+}
+@media (max-width: 720px) {
+  /* A wide table scrolls on its own rather than pushing the page sideways. */
+  .grid { display: block; overflow-x: auto; white-space: nowrap; }
+  .grid.chain .bar-cell { display: table-cell; }
+  .grid.ranked tbody th, .grid.rows tbody th { max-width: none; }
+}
+
+/* ---------- a change against the period before ---------- */
+/* Direction wears a status colour, and never carries the meaning alone: the sign is in
+   the number itself. Which direction is *good* is not this page's to say — more turns
+   spent is not worse than fewer, and more demos accepted is not worse than fewer — so
+   the colour says up or down and nothing more. */
+.change {
+  font-family: var(--mono); font-size: 11.5px; font-variant-numeric: tabular-nums;
+  white-space: nowrap; color: var(--muted);
+}
+.change.up { color: var(--series-2); }
+.change.down { color: var(--series-1); }
+.change.flat { color: var(--muted-2); }
+.change .rate { opacity: .8; }
+h2 .change, h3 .change { font-weight: 400; margin-left: 6px; text-transform: none; letter-spacing: 0; }
+
+/* ---------- the chain: one stage against the one above it ---------- */
+.grid.chain .bar-cell { display: flex; align-items: center; gap: 8px; }
+.grid.chain .of-first, .bar-cell .of-first {
+  font-family: var(--mono); font-size: 11px; color: var(--muted); font-variant-numeric: tabular-nums;
+  min-width: 5ch; text-align: right;
+}
+.bar-cell { white-space: nowrap; }
+.grid .strong { font-weight: 650; }
+.grid .exact { font-weight: 400; text-transform: none; letter-spacing: 0; color: var(--muted-2); font-style: italic; }
+
+/* A ratio is a second reading of the same row, so it recedes behind the count it is
+   worked out from. */
+.grid.tokens .each { color: var(--muted); }
+.grid.tokens thead .group { border-bottom: 1px solid var(--line); text-align: right; }
+.grid.tokens thead .group.each { border-left: 1px solid var(--line); }
+.grid.tokens td.each:first-of-type, .grid.tokens th.each:first-of-type { border-left: 1px solid var(--line); }
+
+/* The line under a page's title: what the page is, in one line. */
+.subtitle { color: var(--muted); font-size: 13px; margin: 0 0 24px; max-width: 78ch; }
+
+/* The numbers inside a card on the overview. */
+.card-table { font-size: 12px; margin: 6px 0; }
+.card-table th, .card-table td { padding: 2px 8px 2px 0; border-bottom: 0; }
+
+/* ---------- the ring: parts of one whole ---------- */
+/* A table and its ring side by side: the same rows twice, once to read and once to
+   see. The table comes first in the markup, so it is the one that is read without the
+   picture. */
+.with-ring { display: flex; gap: 28px; align-items: flex-start; flex-wrap: wrap; }
+.with-ring .beside { flex: 1 1 380px; min-width: 0; }
+.ring { flex: 0 0 auto; margin: 8px 0 4px; max-width: 260px; }
+.ring svg { width: 200px; height: 200px; display: block; margin-inline: auto; }
+/* The 2px gap in the surface colour is what separates one slice from the next: no
+   border is drawn round a mark. */
+.ring path, .ring circle.whole-ring { stroke: var(--chart-surface); stroke-width: 2; }
+.ring circle.whole-ring { fill: none; }
+/* A label inside a fill takes the surface's own light tone, never the series colour. */
+.ring text.on-slice { fill: #fff; font-family: var(--mono); font-size: 11px; font-weight: 600; }
+.ring text.middle { fill: var(--ink); font-size: 24px; font-weight: 650; }
+.ring .of-what {
+  margin: 4px 0 0; text-align: center; color: var(--muted);
+  font-family: var(--mono); font-size: 10px; text-transform: uppercase; letter-spacing: .06em;
+  overflow-wrap: anywhere;
+}
+.ring .legend { display: flex; flex-direction: column; gap: 2px; margin-top: 6px; }
+.ring .legend .entry { font-size: 11.5px; }
+.ring .legend .key { width: 9px; height: 9px; border-radius: 2px; }
+
+/* The slot paints the slice, as it paints a line: same eight hues, same fixed order. */
+.slot-1 path, .slot-1 circle.whole-ring { fill: var(--series-1); stroke: var(--chart-surface); }
+.slot-2 path, .slot-2 circle.whole-ring { fill: var(--series-2); }
+.slot-3 path, .slot-3 circle.whole-ring { fill: var(--series-3); }
+.slot-4 path, .slot-4 circle.whole-ring { fill: var(--series-4); }
+.slot-5 path, .slot-5 circle.whole-ring { fill: var(--series-5); }
+.slot-6 path, .slot-6 circle.whole-ring { fill: var(--series-6); }
+.slot-1 circle.whole-ring { stroke: var(--series-1); }
+.slot-2 circle.whole-ring { stroke: var(--series-2); }
+.slot-3 circle.whole-ring { stroke: var(--series-3); }
+.slot-4 circle.whole-ring { stroke: var(--series-4); }
+.slot-5 circle.whole-ring { stroke: var(--series-5); }
+.slot-6 circle.whole-ring { stroke: var(--series-6); }

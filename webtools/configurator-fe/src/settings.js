@@ -7,6 +7,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { loadConfiguration } from "./commons/configuration_client.js";
+import { loadMetrics } from "./commons/metrics/webtools_metrics_client.js";
 
 // The subsystem's own directory: a relative path in the configuration is resolved
 // from here, so the same value works on every machine the repository is cloned on.
@@ -32,5 +33,22 @@ export async function loadSettings() {
     // configuration, and which the page therefore shows masked. A path that is not
     // absolute is resolved from this subsystem's directory.
     secretsDirectory: path.resolve(ROOT, configuration.string("secrets.directory")),
+    // The currencies the price of a provider's tokens may be written in. A list,
+    // not a guess: which currencies are worth offering is a decision, and a
+    // dropdown built from a list in the code would be that decision taken here.
+    // A currency already stored is offered as well, whether it is in this list or
+    // not: see currencyOptions in src/providers.js.
+    currencies: configuration.stringList("pricing.currencies"),
+    // The form that writes a price is the only body this server reads. The
+    // ceiling is configured because a body's size is a limit, and limits are
+    // configured.
+    pricingBodyMaxBytes: configuration.integer("pricing.body_max_bytes", { min: 1 }),
+    // The metrics client. The configuration has said where metrics is and what to do
+    // with a failed send since this subsystem was written, and the deployer has been
+    // putting a copy of the client in src/commons/metrics/ all along: what was
+    // missing was this line, so a declared subsystem sent nothing. It is the back
+    // office where prices are changed, which is the one place that produces the fact
+    // every other figure is read against.
+    metrics: loadMetrics(configuration),
   };
 }

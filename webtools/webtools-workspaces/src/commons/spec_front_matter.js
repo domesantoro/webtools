@@ -1,4 +1,4 @@
-// The front matter of project SPECIFICATIONS: the YAML block at the top of a .md file.
+// The front matter of a project's .md FILES: the YAML block at the top of one.
 //
 //   ---
 //   project_id: 1f251606-bdba-40c4-bbee-bfedc6e57f70
@@ -14,6 +14,10 @@
 // The `webtools:` key is reserved for the system: it is written by whoever stores
 // the file (`stamp`), and whatever an uploaded file declares in there counts for
 // nothing.
+//
+// It serves both the families workspaces keeps — the specifications, and the documents
+// the system writes for a project — and knows about neither: `stamp` writes the values
+// it is handed, and which values a family has belongs to whoever stores the file.
 
 import YAML from "yaml";
 

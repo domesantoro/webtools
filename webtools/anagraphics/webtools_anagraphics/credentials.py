@@ -11,7 +11,7 @@ The block stored in `users.credential`:
       "params": {"n": 16384, "r": 8, "p": 1, "dklen": 32},
       "salt": "<base64>",
       "hash": "<base64>",
-      "updated_at": <data>
+      "updated_at": <date>
     }
 
 The parameters live inside the document, not implicitly in the code: the day they

@@ -1,0 +1,26 @@
+{#
+  The period on the address could not be read, so no figure is drawn: showing another
+  period's numbers under the one that was asked for would be worse than showing none.
+
+  The bar at the top still offers the periods that can be read, so the page is a way
+  out and not a dead end.
+
+  Expected: view.refused, plus the shell's own.
+#}{% extends "layout.njk" %}
+
+{% block title %}period — webtools metrics{% endblock %}
+
+{% block content %}
+<section class="failure">
+  <h2>The period on the address could not be read</h2>
+  <table class="grid">
+    <tbody>
+      <tr><th>from</th><td>{% if view.refused.from !== null %}<code>{{ view.refused.from }}</code>{% else %}<span class="absent">not on the address</span>{% endif %}</td></tr>
+      <tr><th>to</th><td>{% if view.refused.to !== null %}<code>{{ view.refused.to }}</code>{% else %}<span class="absent">not on the address</span>{% endif %}</td></tr>
+    </tbody>
+  </table>
+  <p>A period is <strong>two</strong> days, both written <code>YYYY-MM-DD</code> and in UTC, the first no later
+    than the second. Today is {{ view.refused.today }}.</p>
+  <p>Nothing was read. The bar at the top will read a period that can be read.</p>
+</section>
+{% endblock %}

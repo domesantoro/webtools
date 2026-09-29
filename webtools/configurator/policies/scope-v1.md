@@ -68,7 +68,7 @@ Return a probability distribution over exactly these six, summing to 1:
   should do for anyone to judge its size: not a big request and not a small one, but a
   description that has not said enough yet.
 - `safe` — it fits. Ordinary work for this service, with the usual open questions that
-  the analysis will settle.
+  the rounds of questions will settle.
 - `ultrasafe` — it fits easily. Small, clear, bounded; little is left to decide.
 
 **The six numbers always sum to 1, whatever the request is.** There is no request you
@@ -165,7 +165,7 @@ What `underspecified` looks like:
 What it is **not**:
 
 - **Missing answers.** Unanswered questions are normal at this stage: the pre-specification
-  lists them under "Open points" and the analysis chat will ask. A request that says
+  lists them under "Open points" and the pre-analysis chat will ask. A request that says
   clearly what it wants and leaves the details open is `safe`. Use `underspecified` for
   what the client *said*, not for what the form did not collect.
 - **Plain writing.** No jargon, no structure, no paragraphs, mistakes in spelling: none of

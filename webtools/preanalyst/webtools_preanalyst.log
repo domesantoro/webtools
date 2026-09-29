@@ -355,3 +355,59 @@ webtools_preanalyst listening on http://127.0.0.1:9200 (anagraphics: http://127.
 [preanalyst] opening written on 76dbf921-3971-4fd3-a879-a5310d030376
 [preanalyst] chat turn on 76dbf921-3971-4fd3-a879-a5310d030376: 4 left
 [preanalyst] chat turn on 76dbf921-3971-4fd3-a879-a5310d030376: 3 left
+=== start 2026-09-26 15:35:08 ===
+webtools_preanalyst listening on http://127.0.0.1:9200 (anagraphics: http://127.0.0.1:9100)
+=== start 2026-09-26 15:37:14 ===
+webtools_preanalyst listening on http://127.0.0.1:9200 (anagraphics: http://127.0.0.1:9100)
+=== start 2026-09-26 17:22:29 ===
+webtools_preanalyst listening on http://127.0.0.1:9200 (anagraphics: http://127.0.0.1:9100)
+=== start 2026-09-26 19:05:27 ===
+webtools_preanalyst listening on http://127.0.0.1:9200 (anagraphics: http://127.0.0.1:9100)
+=== start 2026-09-28 15:07:35 ===
+webtools_preanalyst listening on http://127.0.0.1:9200 (anagraphics: http://127.0.0.1:9100)
+=== start 2026-09-28 15:48:42 ===
+node:internal/modules/esm/resolve:275
+    throw new ERR_MODULE_NOT_FOUND(
+          ^
+
+Error [ERR_MODULE_NOT_FOUND]: Cannot find module '/Users/domenico/workspaces/webtools/webtools/preanalyst/src/specifier_ai/webtools_specifier_ai.js' imported from /Users/domenico/workspaces/webtools/webtools/preanalyst/src/settings.js
+    at finalizeResolution (node:internal/modules/esm/resolve:275:11)
+    at moduleResolve (node:internal/modules/esm/resolve:860:10)
+    at defaultResolve (node:internal/modules/esm/resolve:984:11)
+    at ModuleLoader.defaultResolve (node:internal/modules/esm/loader:736:12)
+    at #cachedDefaultResolve (node:internal/modules/esm/loader:660:25)
+    at ModuleLoader.resolve (node:internal/modules/esm/loader:643:38)
+    at ModuleLoader.getModuleJobForImport (node:internal/modules/esm/loader:279:38)
+    at ModuleJob._link (node:internal/modules/esm/module_job:137:49) {
+  code: 'ERR_MODULE_NOT_FOUND',
+  url: 'file:///Users/domenico/workspaces/webtools/webtools/preanalyst/src/specifier_ai/webtools_specifier_ai.js'
+}
+
+Node.js v23.9.0
+=== start 2026-09-28 15:49:17 ===
+webtools_preanalyst listening on http://127.0.0.1:9200 (anagraphics: http://127.0.0.1:9100)
+=== start 2026-09-28 15:50:02 ===
+webtools_preanalyst listening on http://127.0.0.1:9200 (anagraphics: http://127.0.0.1:9100)
+=== start 2026-09-28 16:49:25 ===
+webtools_preanalyst listening on http://127.0.0.1:9200 (anagraphics: http://127.0.0.1:9100)
+=== start 2026-09-29 12:53:15 ===
+webtools_preanalyst listening on http://127.0.0.1:9200 (anagraphics: http://127.0.0.1:9100)
+=== start 2026-09-29 15:58:15 ===
+webtools_preanalyst listening on http://127.0.0.1:9200 (anagraphics: http://127.0.0.1:9100)
+[preanalyst] request from policy.test@example.com: project c0816dd0-e147-4cd1-8134-82f42b5ba678, pre-specification v1
+[prevalidator_ai/anthropic] attempt 1: Error: 503 credential validation failed → unreachable
+[preanalyst] prevalidation of c0816dd0-e147-4cd1-8134-82f42b5ba678: safe (0.72) → passed; spend input=4552 output=225 cache_write=0 cache_read=0
+[preanalyst] opening written on c0816dd0-e147-4cd1-8134-82f42b5ba678
+[preanalyst] chat turn on c0816dd0-e147-4cd1-8134-82f42b5ba678: 4 left
+[preanalyst] chat turn on c0816dd0-e147-4cd1-8134-82f42b5ba678: 3 left
+[preanalyst] chat turn on c0816dd0-e147-4cd1-8134-82f42b5ba678: 2 left
+[preanalyst] chat turn on c0816dd0-e147-4cd1-8134-82f42b5ba678: 1 left
+[preanalyst] chat turn on c0816dd0-e147-4cd1-8134-82f42b5ba678: 0 left
+[preanalyst] analysis of c0816dd0-e147-4cd1-8134-82f42b5ba678 begun
+[preanalyst] analysis of c0816dd0-e147-4cd1-8134-82f42b5ba678 begun
+=== start 2026-09-29 16:46:29 ===
+webtools_preanalyst listening on http://127.0.0.1:9200 (anagraphics: http://127.0.0.1:9100)
+[preanalyst] analysis of c0816dd0-e147-4cd1-8134-82f42b5ba678 begun
+[preanalyst] analysis of c0816dd0-e147-4cd1-8134-82f42b5ba678 begun
+[preanalyst] analysis of c0816dd0-e147-4cd1-8134-82f42b5ba678 begun
+[preanalyst] analysis of c0816dd0-e147-4cd1-8134-82f42b5ba678 begun

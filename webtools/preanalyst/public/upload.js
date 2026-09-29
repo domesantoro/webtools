@@ -1,4 +1,4 @@
-// Uploading a ready-made analysis.
+// Uploading a ready-made specification.
 //
 // The file can be chosen while logged out: the account is needed at the moment of
 // uploading. If at "Upload" you are not in, the login modal opens, and the login

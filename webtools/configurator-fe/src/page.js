@@ -1,4 +1,4 @@
-// The page, rendered from `templates/configuration.njk`.
+// The pages, rendered from `templates/`.
 //
 // There is no HTML here and none in the rest of the code: values coming from the
 // configuration — and from the environment — end up inside the page, and with
@@ -19,4 +19,10 @@ const environment = nunjucks.configure(TEMPLATES_DIR, {
 
 export function renderConfigurationPage(view) {
   return environment.render("configuration.njk", { view });
+}
+
+// The other page: the prices of what the providers' models consume, the one thing
+// written from here.
+export function renderPricingPage(view) {
+  return environment.render("pricing.njk", { view });
 }

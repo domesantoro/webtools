@@ -15,16 +15,29 @@ const USER = {
   active: true,
   driver_uid: "7633be3d-e701-42ca-9fea-6c6d1bb4b7d1",
 };
-const PASSWORD = "password-di-prova";
+const PASSWORD = "test-password";
 const CREDENTIAL = {
   algorithm: "scrypt",
   params: { n: 16384, r: 8, p: 1, dklen: 32 },
-  salt: "x9hENw++DZNaSJcQ7+Gqpw==",
-  hash: "sCBbG78hlwM7ZyWSi0vmMQwsURojukn7s99GhDhm51M=",
+  salt: "9ioMbzYiVE0aGMco5Qwdsg==",
+  hash: "aVAoxCIfKrIOZ/vwAUceQXZxzqC8aWfKm8fWTWdFDrw=",
 };
 
 const NEXT = "http://127.0.0.1:9200/";
+
+// The server measures what it serves. These tests are about the routes, not about
+// the measuring, so what is given here counts the calls and sends nothing: a real
+// client would try to reach a metrics that is not running, and the test would be
+// waiting for a timeout it does not care about.
+const measurements = [];
+const METRICS = {
+  measure: (metric, fields) => measurements.push({ metric, ...fields }),
+  timer: () => () => 0,
+  counters: () => ({ sent: measurements.length, failed: 0 }),
+};
+
 const SETTINGS = {
+  metrics: METRICS,
   allowedIps: ["127.0.0.1", "::1"],
   sessionTtlSeconds: 3600,
   ticketTtlSeconds: 60,
@@ -53,9 +66,9 @@ const down = { ok: false, reason: "unavailable" };
 
 // Fake store: users in one map, sessions in another. `broken` switches everything
 // off, as if anagraphics were not answering.
-function fakeAnagraphics({ users: iniziali = [{ user: USER, credential: CREDENTIAL }], broken = false } = {}) {
+function fakeAnagraphics({ users: initial = [{ user: USER, credential: CREDENTIAL }], broken = false } = {}) {
   // Copies: a language saved in a profile in one test must not leak into the next.
-  const users = iniziali.map((entry) => ({ ...entry, user: { ...entry.user } }));
+  const users = initial.map((entry) => ({ ...entry, user: { ...entry.user } }));
   const sessions = new Map();
   const tickets = new Map();
   const find = (username) => users.find((entry) => entry.user.username === username);
@@ -115,10 +128,10 @@ function fakeAnagraphics({ users: iniziali = [{ user: USER, credential: CREDENTI
     // finds nothing.
     async consumeTicket(settings, ticket) {
       if (broken) return down;
-      const conservato = tickets.get(ticket);
-      if (!conservato) return notFound("TICKET_NOT_FOUND");
+      const stored = tickets.get(ticket);
+      if (!stored) return notFound("TICKET_NOT_FOUND");
       tickets.delete(ticket);
-      return { ok: true, data: conservato };
+      return { ok: true, data: stored };
     },
   };
 }
@@ -155,7 +168,7 @@ async function start(client, settings = SETTINGS) {
         redirect: "manual",
         headers: cookie ? { cookie } : {},
       }),
-    loginForm: (campi, cookie) =>
+    loginForm: (fields, cookie) =>
       fetch(`${base}/ui/login`, {
         method: "POST",
         redirect: "manual",
@@ -163,7 +176,7 @@ async function start(client, settings = SETTINGS) {
           "content-type": "application/x-www-form-urlencoded",
           ...(cookie ? { cookie } : {}),
         },
-        body: new URLSearchParams(campi).toString(),
+        body: new URLSearchParams(fields).toString(),
       }),
     exchange: (body) =>
       fetch(`${base}/tickets/exchange`, {
@@ -230,19 +243,19 @@ test("every way of not getting in answers the same thing", async () => {
     users: [
       { user: USER, credential: CREDENTIAL },
       { user: { ...USER, username: "without@example.com" }, credential: null },
-      { user: { ...USER, username: "spento@example.com", active: false }, credential: CREDENTIAL },
+      { user: { ...USER, username: "disabled@example.com", active: false }, credential: CREDENTIAL },
     ],
   });
   const sso = await start(archive);
 
-  const tentativi = [
-    { username: USER.username, password: "sbagliata" },
+  const attempts = [
+    { username: USER.username, password: "wrong-password" },
     { username: "unknown@example.com", password: PASSWORD },
     { username: "without@example.com", password: PASSWORD },
-    { username: "spento@example.com", password: PASSWORD },
+    { username: "disabled@example.com", password: PASSWORD },
   ];
-  for (const tentativo of tentativi) {
-    const response = await sso.login(tentativo);
+  for (const attempt of attempts) {
+    const response = await sso.login(attempt);
     assert.equal(response.status, 401);
     assert.deepEqual(await response.json(), { error: "INVALID_CREDENTIALS" });
   }
@@ -251,7 +264,7 @@ test("every way of not getting in answers the same thing", async () => {
 
 test("login with an invalid body", async () => {
   const sso = await start(fakeAnagraphics());
-  const corpi = [
+  const bodies = [
     {},
     { username: USER.username },
     { username: USER.username, password: "" },
@@ -259,8 +272,8 @@ test("login with an invalid body", async () => {
     "not json",
     "[]",
   ];
-  for (const corpo of corpi) {
-    const response = await sso.login(corpo);
+  for (const body of bodies) {
+    const response = await sso.login(body);
     assert.equal(response.status, 400);
     assert.deepEqual(await response.json(), { error: "INVALID_BODY" });
   }
@@ -305,8 +318,8 @@ test("with anagraphics down nobody gets in, and nobody is told they are out", as
     await sso.login({ username: USER.username, password: PASSWORD }),
     // Here is the point: answering { logged: false } would log everybody out at
     // every Mongo failure. We do not know, and we say so.
-    await sso.session("un-token-qualsiasi"),
-    await sso.logout("un-token-qualsiasi"),
+    await sso.session("some-token"),
+    await sso.logout("some-token"),
   ]) {
     assert.equal(response.status, 503);
     assert.deepEqual(await response.json(), { error: "ANAGRAPHICS_UNAVAILABLE" });
@@ -320,12 +333,12 @@ test("routes and methods", async () => {
   assert.equal(unknown.status, 404);
   assert.deepEqual(await unknown.json(), { error: "ROUTE_NOT_FOUND" });
 
-  const metodoSbagliato = await sso.raw("/login");
-  assert.equal(metodoSbagliato.status, 405);
-  assert.deepEqual(await metodoSbagliato.json(), { error: "METHOD_NOT_ALLOWED" });
+  const wrongMethod = await sso.raw("/login");
+  assert.equal(wrongMethod.status, 405);
+  assert.deepEqual(await wrongMethod.json(), { error: "METHOD_NOT_ALLOWED" });
 });
 
-/* ----------------------------------------------- le pagine e i biglietti */
+/* ------------------------------------------- the pages and the tickets */
 
 test("the login page shows the form, and remembers where to go back to", async () => {
   const sso = await start(fakeAnagraphics());
@@ -341,12 +354,12 @@ test("the login page shows the form, and remembers where to go back to", async (
 
 test("a next outside the allowed addresses is not used", async () => {
   const sso = await start(fakeAnagraphics());
-  const response = await sso.page("/ui/login?next=http://sito-finto.example/ruba");
+  const response = await sso.page("/ui/login?next=http://fake-site.example/steal");
   const html = await response.text();
 
   // In its place there is the first allowed address: the login page cannot become
   // the springboard for sending people wherever.
-  assert.doesNotMatch(html, /sito-finto/);
+  assert.doesNotMatch(html, /fake-site/);
   assert.match(html, /name="next" value="http:\/\/127\.0\.0\.1:9200"/);
 });
 
@@ -354,25 +367,25 @@ test("the full login round trip from the pages", async () => {
   const archive = fakeAnagraphics();
   const sso = await start(archive);
 
-  const entrato = await sso.loginForm({
+  const logged = await sso.loginForm({
     username: USER.username,
     password: PASSWORD,
     next: NEXT,
   });
 
   // We go back to the subsystem, with the ticket in the address…
-  assert.equal(entrato.status, 303);
-  const location = new URL(entrato.headers.get("location"));
+  assert.equal(logged.status, 303);
+  const location = new URL(logged.headers.get("location"));
   assert.equal(location.origin, "http://127.0.0.1:9200");
   const ticket = location.searchParams.get("ticket");
   assert.ok(ticket);
 
   // …and the sso's cookie, which is what keeps the next subsystem from asking for
   // the password. The token never appears in the address.
-  const cookie = cookieFrom(entrato);
+  const cookie = cookieFrom(logged);
   assert.ok(cookie);
   assert.doesNotMatch(location.search, /token/);
-  const setCookie = entrato.headers.getSetCookie()[0];
+  const setCookie = logged.headers.getSetCookie()[0];
   assert.match(setCookie, /HttpOnly/);
   assert.match(setCookie, /SameSite=Lax/);
 
@@ -384,9 +397,9 @@ test("the full login round trip from the pages", async () => {
   assert.equal(body.session.username, USER.username);
 
   // The ticket is good once.
-  const ripetuto = await sso.exchange({ ticket, service: "http://127.0.0.1:9200" });
-  assert.equal(ripetuto.status, 404);
-  assert.deepEqual(await ripetuto.json(), { error: "TICKET_NOT_FOUND" });
+  const repeated = await sso.exchange({ ticket, service: "http://127.0.0.1:9200" });
+  assert.equal(repeated.status, 404);
+  assert.deepEqual(await repeated.json(), { error: "TICKET_NOT_FOUND" });
 });
 
 test("whoever is already in does not retype the password", async () => {
@@ -408,12 +421,12 @@ test("whoever is already in does not retype the password", async () => {
 
 test("a ticket issued for one subsystem is not good for another", async () => {
   const sso = await start(fakeAnagraphics());
-  const entrato = await sso.loginForm({
+  const logged = await sso.loginForm({
     username: USER.username,
     password: PASSWORD,
     next: NEXT,
   });
-  const ticket = new URL(entrato.headers.get("location")).searchParams.get("ticket");
+  const ticket = new URL(logged.headers.get("location")).searchParams.get("ticket");
 
   const response = await sso.exchange({ ticket, service: "http://127.0.0.1:9999" });
   assert.equal(response.status, 403);
@@ -424,7 +437,7 @@ test("wrong password: we stay on the page, with no cookie and no ticket", async 
   const sso = await start(fakeAnagraphics());
   const response = await sso.loginForm({
     username: USER.username,
-    password: "sbagliata",
+    password: "wrong-password",
     next: NEXT,
   }, "webtools_locale=it");
   const html = await response.text();
@@ -439,18 +452,18 @@ test("wrong password: we stay on the page, with no cookie and no ticket", async 
 test("logging out closes the shared session and removes the cookie", async () => {
   const archive = fakeAnagraphics();
   const sso = await start(archive);
-  const entrato = await sso.loginForm({
+  const logged = await sso.loginForm({
     username: USER.username,
     password: PASSWORD,
     next: NEXT,
   });
-  const cookie = cookieFrom(entrato);
+  const cookie = cookieFrom(logged);
   assert.equal(archive.sessions.size, 1);
 
-  const uscito = await sso.page(`/ui/logout?next=${encodeURIComponent(NEXT)}`, cookie);
-  assert.equal(uscito.status, 303);
-  assert.equal(uscito.headers.get("location"), NEXT);
-  assert.match(uscito.headers.getSetCookie()[0], /Max-Age=0/);
+  const loggedOut = await sso.page(`/ui/logout?next=${encodeURIComponent(NEXT)}`, cookie);
+  assert.equal(loggedOut.status, 303);
+  assert.equal(loggedOut.headers.get("location"), NEXT);
+  assert.match(loggedOut.headers.getSetCookie()[0], /Max-Age=0/);
   // The session is gone: no subsystem recognises that token any more.
   assert.equal(archive.sessions.size, 0);
 });
@@ -493,14 +506,14 @@ test("the page is in the cookie's language, and the switcher returns to the page
   const sso = await start(fakeAnagraphics());
   const path = `/ui/login?next=${encodeURIComponent(NEXT)}`;
 
-  const italiano = await (await sso.page(path, "webtools_locale=it")).text();
-  assert.match(italiano, /<html lang="it">/);
-  assert.match(italiano, /strumenti su misura/);
-  assert.match(italiano, /name="return_to" value="\/ui\/login\?next=http%3A%2F%2F127\.0\.0\.1%3A9200%2F"/);
+  const italian = await (await sso.page(path, "webtools_locale=it")).text();
+  assert.match(italian, /<html lang="it">/);
+  assert.match(italian, /strumenti su misura/);
+  assert.match(italian, /name="return_to" value="\/ui\/login\?next=http%3A%2F%2F127\.0\.0\.1%3A9200%2F"/);
 
-  const inglese = await (await sso.page(path, "webtools_locale=en")).text();
-  assert.match(inglese, /<html lang="en">/);
-  assert.match(inglese, /tailor-made tools/);
+  const english = await (await sso.page(path, "webtools_locale=en")).text();
+  assert.match(english, /<html lang="en">/);
+  assert.match(english, /tailor-made tools/);
 });
 
 test("POST /locale writes the shared cookie and returns to the page", async () => {
@@ -519,7 +532,7 @@ test("POST /locale writes the shared cookie and returns to the page", async () =
   assert.match(ok.headers.get("set-cookie"), /^webtools_locale=it; Path=\//);
 
   // The return is only a path of this server.
-  const outside = await change("locale=it&return_to=%2F%2Fsito-finto.example");
+  const outside = await change("locale=it&return_to=%2F%2Ffake-site.example");
   assert.equal(outside.headers.get("location"), "/");
 
   const unknown = await change("locale=xx&return_to=%2F");
@@ -530,28 +543,28 @@ test("POST /locale writes the shared cookie and returns to the page", async () =
 test("at the first login the page's language becomes the profile's", async () => {
   const archive = fakeAnagraphics();
   const sso = await start(archive);
-  const entrato = await sso.loginForm(
+  const logged = await sso.loginForm(
     { username: USER.username, password: PASSWORD, next: NEXT },
     "webtools_locale=it"
   );
 
-  assert.equal(entrato.status, 303);
+  assert.equal(logged.status, 303);
   assert.equal(archive.users[0].user.locale, "it");
   const [session] = archive.sessions.values();
   assert.equal(session.data.locale, "it");
-  assert.ok(entrato.headers.getSetCookie().some((c) => c.startsWith("webtools_locale=it;")));
+  assert.ok(logged.headers.getSetCookie().some((c) => c.startsWith("webtools_locale=it;")));
 });
 
 test("the profile's language wins over the page's, and rewrites the cookie", async () => {
   const archive = fakeAnagraphics({ users: [{ user: { ...USER, locale: "en" }, credential: CREDENTIAL }] });
   const sso = await start(archive);
-  const entrato = await sso.loginForm(
+  const logged = await sso.loginForm(
     { username: USER.username, password: PASSWORD, next: NEXT },
     "webtools_locale=it"
   );
 
   assert.equal(archive.users[0].user.locale, "en");
-  assert.ok(entrato.headers.getSetCookie().some((c) => c.startsWith("webtools_locale=en;")));
+  assert.ok(logged.headers.getSetCookie().some((c) => c.startsWith("webtools_locale=en;")));
 });
 
 test("POST /session/locale: the language goes into the session and into the profile", async () => {

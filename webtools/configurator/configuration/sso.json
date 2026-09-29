@@ -4,6 +4,7 @@
     "allowed_ips": ["127.0.0.1", "::1"]
   },
   "subsystems_infos": {
+    "metrics": { "url": "http://127.0.0.1:9600", "timeout_ms": 2000 },
     "anagraphics": {
       "timeout_ms": 5000
     }
@@ -27,5 +28,8 @@
     "cookie_name": "webtools_locale",
     "cookie_max_age_seconds": 31536000,
     "body_max_bytes": 1024
+  },
+  "metrics": {
+    "log_failures": false
   }
 }

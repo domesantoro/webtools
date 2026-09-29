@@ -23,6 +23,10 @@ const server = createServer(settings);
 server.listen(settings.port, settings.host, () => {
   // The start script waits for this line before saying the server is up.
   console.log(`webtools_front_gate listening on http://${settings.host}:${settings.port}`);
+  // A start that worked. The ones that did not are the lines above, where there is no
+  // configuration yet and so nowhere to send a measurement: a subsystem that cannot
+  // read its configuration cannot report that it could not.
+  settings.metrics.measure("process.started", { dims: { outcome: "ok" } });
 });
 
 for (const signal of ["SIGTERM", "SIGINT"]) {

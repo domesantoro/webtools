@@ -1,0 +1,28 @@
+{
+  "listen": {
+    "host": "127.0.0.1",
+    "port": 9002
+  },
+  "access": {
+    "allowed_ips": [
+      "127.0.0.1",
+      "::1"
+    ]
+  },
+  "limits": {
+    "body_max_bytes": 8192
+  },
+  "subsystems_infos": {
+    "anagraphics": {
+      "timeout_ms": 5000
+    },
+    "metrics": {
+      "url": "http://127.0.0.1:9600",
+      "timeout_ms": 2000
+    }
+  },
+  "metrics": {
+    "log_failures": false,
+    "pending_max": 1000
+  }
+}

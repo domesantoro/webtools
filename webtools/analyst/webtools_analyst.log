@@ -1,0 +1,136 @@
+=== start 2026-09-28 20:41:01 ===
+INFO:     Started server process [9295]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:9800 (Press CTRL+C to quit)
+INFO:     127.0.0.1:50782 - "GET /qualunque-cosa HTTP/1.1" 404 Not Found
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [9295]
+=== start 2026-09-28 22:51:55 ===
+INFO:     Started server process [17704]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:9800 (Press CTRL+C to quit)
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [17704]
+=== start 2026-09-29 11:20:12 ===
+INFO:     Started server process [13500]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:9800 (Press CTRL+C to quit)
+INFO:     127.0.0.1:52329 - "GET /nope HTTP/1.1" 404 Not Found
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [13500]
+=== start 2026-09-29 11:40:17 ===
+INFO:     Started server process [15213]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:9800 (Press CTRL+C to quit)
+INFO:     127.0.0.1:52811 - "POST /projects/00000000-0000-4000-8000-000000000000/analysis HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:52816 - "POST /projects/ab27d60e-ab55-45ce-969f-ff3aa5a0d3b7/analysis HTTP/1.1" 409 Conflict
+INFO:     127.0.0.1:52821 - "POST /projects/ad2f6493-9d49-4116-8012-b8b527259705/analysis HTTP/1.1" 409 Conflict
+INFO:     127.0.0.1:52826 - "POST /projects/ad2f6493-9d49-4116-8012-b8b527259705/nope HTTP/1.1" 404 Not Found
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [15213]
+=== start 2026-09-29 11:54:18 ===
+INFO:     Started server process [16756]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:9800 (Press CTRL+C to quit)
+[analyst] 8bf6975d-7eef-4900-ac14-fa668d18c219: run begun
+INFO:     127.0.0.1:53490 - "POST /projects/8bf6975d-7eef-4900-ac14-fa668d18c219/analysis HTTP/1.1" 202 Accepted
+[analyst] 8bf6975d-7eef-4900-ac14-fa668d18c219: take_on (weakest surface), 54 points
+[analyst] 8bf6975d-7eef-4900-ac14-fa668d18c219: handed to Prova after 1 attempt(s)
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [16756]
+=== start 2026-09-29 15:58:17 ===
+INFO:     Started server process [34808]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:9800 (Press CTRL+C to quit)
+[analyst] c0816dd0-e147-4cd1-8134-82f42b5ba678: run begun
+INFO:     127.0.0.1:65506 - "POST /projects/c0816dd0-e147-4cd1-8134-82f42b5ba678/analysis HTTP/1.1" 202 Accepted
+[analysis_technical_ai/anthropic] answer cut short by max_tokens
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [34808]
+=== start 2026-09-29 16:18:14 ===
+INFO:     Started server process [36918]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:9800 (Press CTRL+C to quit)
+[analyst] c0816dd0-e147-4cd1-8134-82f42b5ba678: run begun
+INFO:     127.0.0.1:49379 - "POST /projects/c0816dd0-e147-4cd1-8134-82f42b5ba678/analysis HTTP/1.1" 202 Accepted
+[analysis_technical_ai/anthropic] attempt 1: InternalServerError: Error code: 503 → unreachable
+[analysis_technical_ai/anthropic] attempt 2: InternalServerError: credential validation failed → unreachable
+[analysis_technical_ai/anthropic] attempt 3: InternalServerError: credential validation failed → unreachable
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [36918]
+=== start 2026-09-29 16:46:31 ===
+INFO:     Started server process [39933]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:9800 (Press CTRL+C to quit)
+[analyst] c0816dd0-e147-4cd1-8134-82f42b5ba678: run begun
+INFO:     127.0.0.1:49962 - "POST /projects/c0816dd0-e147-4cd1-8134-82f42b5ba678/analysis HTTP/1.1" 202 Accepted
+[analysis_sustainability_ai/anthropic] attempt 1: AuthenticationError: Error code: 401 - {'type': 'error', 'error': {'type': 'authentication_error', 'message': 'invalid x-api-key'}, 'request_id': 'req_011CfXvcQBA21fHYn6F2Zx9J'} → unauthorised
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [39933]
+=== start 2026-09-29 17:02:28 ===
+INFO:     Started server process [41916]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:9800 (Press CTRL+C to quit)
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [41916]
+=== start 2026-09-29 17:05:49 ===
+INFO:     Started server process [42247]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:9800 (Press CTRL+C to quit)
+[analyst] c0816dd0-e147-4cd1-8134-82f42b5ba678: run begun
+INFO:     127.0.0.1:50319 - "POST /projects/c0816dd0-e147-4cd1-8134-82f42b5ba678/analysis HTTP/1.1" 202 Accepted
+[analyst] c0816dd0-e147-4cd1-8134-82f42b5ba678: take_on (weakest surface), 60 points
+[analyst] c0816dd0-e147-4cd1-8134-82f42b5ba678: handed to Dome after 1 attempt(s)
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [42247]
+=== start 2026-09-29 17:31:33 ===
+INFO:     Started server process [44785]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:9800 (Press CTRL+C to quit)
+[analyst] c0816dd0-e147-4cd1-8134-82f42b5ba678: run begun
+INFO:     127.0.0.1:51440 - "POST /projects/c0816dd0-e147-4cd1-8134-82f42b5ba678/analysis HTTP/1.1" 202 Accepted
+[analysis_technical_ai/anthropic] attempt 1: BadRequestError: Error code: 400 - {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'This API key is not scoped to a workspace, so this request must include the anthropic-workspace-id header with the ID of the workspace to use. Add the header, or use an API key that is scoped to a workspace.'}, 'request_id': None} → rejected
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [44785]
+=== start 2026-09-29 17:37:35 ===
+INFO:     Started server process [45364]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:9800 (Press CTRL+C to quit)
+[analyst] c0816dd0-e147-4cd1-8134-82f42b5ba678: run begun
+INFO:     127.0.0.1:51687 - "POST /projects/c0816dd0-e147-4cd1-8134-82f42b5ba678/analysis HTTP/1.1" 202 Accepted
+[analyst] c0816dd0-e147-4cd1-8134-82f42b5ba678: take_on (weakest surface), 59 points
+[analyst] c0816dd0-e147-4cd1-8134-82f42b5ba678: handed to Dome after 1 attempt(s)

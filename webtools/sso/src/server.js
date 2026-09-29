@@ -46,7 +46,7 @@ const CONTENT_TYPES = {
   ".woff2": "font/woff2",
 };
 
-/* ------------------------------------------------------------- risposte */
+/* ------------------------------------------------------------ responses */
 
 function sendJson(response, status, payload, headers = {}) {
   const body = JSON.stringify(payload);
@@ -61,6 +61,13 @@ function sendJson(response, status, payload, headers = {}) {
 }
 
 function sendError(response, status, code) {
+  // The code is kept on the response so the one measurement per request — sent when
+  // the response is done — can say **which** error it was. No branch of the routing
+  // has to remember to count itself. Without it the sso was the one subsystem whose
+  // stable codes nothing counted, and it is the one every page goes through: a token
+  // arriving malformed a thousand times a day and a ticket presented by the wrong
+  // service read the same, which is to say they did not read at all.
+  response.webtoolsErrorCode = code;
   sendJson(response, status, { error: code });
 }
 
@@ -101,16 +108,16 @@ function readCookie(request, name) {
   const header = request.headers.cookie;
   if (!header) return null;
   for (const piece of header.split(";")) {
-    const separatore = piece.indexOf("=");
-    if (separatore === -1) continue;
-    if (piece.slice(0, separatore).trim() === name) {
-      return decodeURIComponent(piece.slice(separatore + 1).trim());
+    const separator = piece.indexOf("=");
+    if (separator === -1) continue;
+    if (piece.slice(0, separator).trim() === name) {
+      return decodeURIComponent(piece.slice(separator + 1).trim());
     }
   }
   return null;
 }
 
-/* ------------------------------------------------------------- richiesta */
+/* --------------------------------------------------------------- request */
 
 // Reads the request body. It returns { ok, raw } and does not throw. A sane login
 // body fits in a few hundred bytes: past `maxBytes` (limits.body_max_bytes of the
@@ -170,7 +177,9 @@ async function handleLogin(request, response, settings, client) {
     return sendError(response, 400, INVALID_BODY);
   }
 
-  return reply(response, await login(settings, { username, password }, client));
+  const answer = await login(settings, { username, password }, client);
+  settings.metrics.measure("login.attempt", { dims: loginAttempt(answer) });
+  return reply(response, answer);
 }
 
 async function handleSession(request, response, settings, client) {
@@ -248,10 +257,10 @@ async function showLoginPage(request, response, settings, client, url) {
 
 async function handleLoginForm(request, response, settings, client, url) {
   const body = await readFormBody(request, settings.bodyMaxBytes);
-  const campi = body.ok ? body.data : {};
-  const next = safeNext(settings, campi.next ?? url.searchParams.get("next"));
-  const username = typeof campi.username === "string" ? campi.username : "";
-  const password = typeof campi.password === "string" ? campi.password : "";
+  const fields = body.ok ? body.data : {};
+  const next = safeNext(settings, fields.next ?? url.searchParams.get("next"));
+  const username = typeof fields.username === "string" ? fields.username : "";
+  const password = typeof fields.password === "string" ? fields.password : "";
   // Changing language reopens the page with a GET: the `next` goes into the
   // address, because here it arrived in the form's body. Always the one already
   // checked.
@@ -265,16 +274,17 @@ async function handleLoginForm(request, response, settings, client, url) {
 
   // The login page's language: if the profile has none, it becomes theirs.
   const locale = settings.i18n.localeOf(request);
-  const entrato = await login(settings, { username, password, locale }, client);
-  if (!entrato.ok) {
-    const error = entrato.status === 401 ? "invalid_credentials" : "unavailable";
+  const logged = await login(settings, { username, password, locale }, client);
+  settings.metrics.measure("login.attempt", { dims: loginAttempt(logged) });
+  if (!logged.ok) {
+    const error = logged.status === 401 ? "invalid_credentials" : "unavailable";
     // The username stays written, the password does not: it is typed again.
-    return sendHtml(response, entrato.status, renderLoginPage(ui, { next, username, error }));
+    return sendHtml(response, logged.status, renderLoginPage(ui, { next, username, error }));
   }
 
   // Two cookies: the sso session and the session's language, which may be the
   // profile's and therefore different from the one we arrived with.
-  const session = entrato.body.session;
+  const session = logged.body.session;
   const cookies = [setCookie(settings.cookieName, session.token, settings.sessionTtlSeconds)];
   if (session.data?.locale) cookies.push(settings.i18n.cookie(session.data.locale));
   return returnWithTicket(response, settings, client, ui, session.token, next, cookies);
@@ -286,9 +296,9 @@ async function handleLogoutPage(request, response, settings, client, url) {
 
   if (token) {
     // It closes the shared session: from here on no subsystem recognises that
-    // token any more. "Esci" must really log you out.
-    const uscito = await logout(settings, token, client);
-    if (!uscito.ok) {
+    // token any more. Logging out must really log you out.
+    const loggedOut = await logout(settings, token, client);
+    if (!loggedOut.ok) {
       // Store down: we remove the cookie anyway, but the session stays alive until
       // it expires. It is to be looked at, not hidden.
       console.error("[sso] logout with no store: the session stays open until it expires");
@@ -320,7 +330,7 @@ async function handleLocale(request, response, settings, client) {
   return redirect(response, change.location, { "set-cookie": change.cookie });
 }
 
-/* --------------------------------------------------------------- statici */
+/* ---------------------------------------------------------- static files */
 
 async function serveStatic(pathname, response) {
   // Only files inside public/: path.normalize strips the "..".
@@ -360,9 +370,48 @@ const ROUTES = {
 };
 
 // `client` is passed only in the tests, so as not to depend on anagraphics running.
+// Why a login did not happen, in the words the metric knows: the password was
+// wrong, or the store did not answer. Different facts — one is the user's, the
+// other is ours — and a single "failed" would hide the second.
+// How a login attempt ended, and — when it was refused — which of the four refusals
+// it was. `reason` is never told to whoever is trying, on purpose: the four answer one
+// word so that nobody can find out from outside whether an address is registered. A
+// count of a day names nobody, and the four are four different problems.
+function loginAttempt(answer) {
+  if (answer.ok) return { outcome: "ok" };
+  if (answer.status !== 401) return { outcome: "unavailable" };
+  return { outcome: "invalid", ...(answer.reason ? { reason: answer.reason } : {}) };
+}
+
+// One measurement per request, sent when the response is done: the status and the
+// duration are only known then, and no branch of the routing has to remember to
+// count itself. The sso has no ids in its addresses, so a known route is counted
+// under its own path and everything else under a label — never a raw path.
+function countRequest(settings, request, response, pathname) {
+  const elapsed = settings.metrics.timer();
+  response.on("finish", () => {
+    settings.metrics.measure("http.request", {
+      dims: {
+        route: ROUTES[pathname] ? pathname : "(static)",
+        method: request.method,
+        status: String(response.statusCode),
+      },
+      duration_ms: elapsed(),
+    });
+    // The error's own code, where there was one. A status says how it went; the code
+    // says what it was, and only one of the two can be acted on — a `404` on the
+    // ticket exchange is a ticket already used, and a `400` there is one that sat too
+    // long in a redirect.
+    if (response.webtoolsErrorCode) {
+      settings.metrics.measure("http.error", { dims: { code: response.webtoolsErrorCode } });
+    }
+  });
+}
+
 export function createServer(settings, client) {
   return http.createServer(async (request, response) => {
     const url = new URL(request.url, `http://${request.headers.host ?? "localhost"}`);
+    countRequest(settings, request, response, url.pathname);
 
     // The IP pool comes before everything: somebody not in the pool does not even
     // learn which routes exist. Only the connection's IP counts.
@@ -371,6 +420,9 @@ export function createServer(settings, client) {
     const remote = (request.socket.remoteAddress ?? "").replace(/^::ffff:/, "");
     if (!settings.allowedIps.includes(remote)) {
       console.warn(`[sso] request from an IP outside the pool: ${remote}`);
+      // Somebody knocking, or a subsystem started with the wrong configuration.
+      // In a log it is a line nobody reads; here it is a number that grows.
+      settings.metrics.measure("http.refused_ip");
       return sendError(response, 403, IP_NOT_ALLOWED);
     }
 

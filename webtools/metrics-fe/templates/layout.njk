@@ -1,0 +1,128 @@
+{#
+  The shell every page of this subsystem shares: the head, the bar at the top, the
+  period, what the reading could not say, and the frame.
+
+  It is its own shell, not `commons/base.njk`: the shared one asks for the language
+  and the translation of a page of the product, and this is internal
+  instrumentation, whose labels are metric names and system terms and stay in
+  English like the rest of what is internal. Same reason as configurator-fe; see
+  README.md.
+
+  Blocks: `title`, `content`.
+  Expected: view.page, view.navigation, view.period, view.readAt, view.metricsUrl,
+            view.failures, view.truncations.
+#}<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}{{ view.page.label }} — webtools metrics{% endblock %}</title>
+  <meta name="robots" content="noindex">
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap">
+    <span class="brand">webtools <span>metrics</span></span>
+    <span class="read-at">read at {{ view.readAt }} UTC</span>
+  </div>
+</header>
+
+<nav class="index">
+  <div class="wrap">
+    {%- for entry in view.navigation %}
+    <a href="{{ entry.route }}{% if entry.usesPeriod and view.period %}?from={{ view.period.from }}&to={{ view.period.to }}{% endif %}"
+       {% if entry.current %}class="current" aria-current="page"{% endif %}>{{ entry.label }}</a>
+    {%- endfor %}
+  </div>
+</nav>
+
+{#
+  The period, in one row above everything it scopes. It is not repeated inside a
+  section: two controls for the same slice are two ways for a page to disagree with
+  itself.
+
+  Nothing on it refreshes by itself. "Read again" is a link, because a picture that
+  changed while it was being read would be a reading of a moment nobody asked about.
+#}
+{%- if view.page.usesPeriod and view.period %}
+<div class="period">
+  <div class="wrap">
+    <form class="range" method="get" action="{{ view.page.route }}">
+      <label>from <input type="date" name="from" value="{{ view.period.from }}" max="{{ view.period.today }}"></label>
+      <label>to <input type="date" name="to" value="{{ view.period.to }}" max="{{ view.period.today }}"></label>
+      {%- if view.chosen %}<input type="hidden" name="metric" value="{{ view.chosen }}">{% endif %}
+      <button type="submit">read</button>
+    </form>
+    <span class="presets">
+      {%- for preset in view.period.presets %}
+      {%- if preset.current %}
+      <span class="current">{{ preset.days }}d</span>
+      {%- else %}
+      <a href="{{ view.page.route }}?from={{ preset.from }}&to={{ preset.to }}{% if view.chosen %}&metric={{ view.chosen }}{% endif %}">{{ preset.days }}d</a>
+      {%- endif %}
+      {%- endfor %}
+    </span>
+    <span class="steps">
+      <a href="{{ view.page.route }}?from={{ view.period.previous.from }}&to={{ view.period.previous.to }}{% if view.chosen %}&metric={{ view.chosen }}{% endif %}"
+         title="the same length, one length earlier">&larr; earlier</a>
+      {%- if view.period.next %}
+      <a href="{{ view.page.route }}?from={{ view.period.next.from }}&to={{ view.period.next.to }}{% if view.chosen %}&metric={{ view.chosen }}{% endif %}">later &rarr;</a>
+      {%- else %}
+      <span class="absent">later &rarr;</span>
+      {%- endif %}
+    </span>
+    <span class="spread">
+      <span class="days">{{ view.period.from }} &rarr; {{ view.period.to }}</span>
+      <span class="note">{{ view.period.days }} day{% if view.period.days != 1 %}s{% endif %}{% if not view.period.endsToday %}, not ending today{% endif %}</span>
+    </span>
+    <a class="again" href="?{{ 'from=' + view.period.from + '&to=' + view.period.to }}{% if view.chosen %}&metric={{ view.chosen }}{% endif %}">read again</a>
+  </div>
+</div>
+{%- endif %}
+
+<main class="wrap">
+{#
+  What the reading could not say, before any figure. A reading that could not be used
+  and a reading that ran out are two different things, and each of them changes what
+  the numbers below mean.
+
+  A reading that answered "there is no such thing" is not here: it is an answer, and
+  the page that asked for it says so itself.
+#}
+{%- if view.failures.length %}
+  <section class="failure">
+    <h2>{{ view.failures.length }} reading{% if view.failures.length != 1 %}s{% endif %} could not be used</h2>
+    <p class="note">Nothing has been put in their place.</p>
+    <table class="grid">
+      <thead><tr><th>reading</th><th>what happened</th><th>detail</th></tr></thead>
+      <tbody>
+        {%- for failure in view.failures %}
+        <tr>
+          <th>{{ failure.name }}</th>
+          <td><span class="outcome {{ failure.reason }}">{{ failure.reason }}</span>{% if failure.code %} <code>{{ failure.code }}</code>{% endif %}</td>
+          <td class="detail">{{ failure.detail }}</td>
+        </tr>
+        {%- endfor %}
+      </tbody>
+    </table>
+  </section>
+{%- endif %}
+
+{%- if view.truncations.length %}
+  <section class="warning">
+    <h3>The buckets ran out before the period did</h3>
+    <p>In {{ view.truncations | join(", ") }}. Those figures are of part of the period, not of the period
+      (<code>limits.max_rows</code> in metrics): read a shorter one.</p>
+  </section>
+{%- endif %}
+
+{% block content %}{% endblock %}
+
+  <footer>
+    <p>Read from metrics at <code>{{ view.metricsUrl }}</code>. Tokens, never money.</p>
+  </footer>
+</main>
+</body>
+</html>

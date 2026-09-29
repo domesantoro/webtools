@@ -10,6 +10,29 @@
 # shutdown we go the other way, so nobody is left running and talking to a service
 # that is no longer there.
 #
+# metrics comes straight after anagraphics, whose configuration it reads and whose
+# projects it reconciles its funnel against. Nothing waits for it: a subsystem
+# sends a measurement and goes on, so metrics being down costs measurements, never
+# a request. It is here all the same, because a measurement nobody takes is a
+# question nobody can answer later.
+#
+# The analyst comes after the preanalyst, and not because the preanalyst has to be
+# up for it to work: it does not call it. It reads the pre-specification from
+# workspaces and the conversation from anagraphics, and the one that calls it is the
+# preanalyst, at the end of the rounds of questions. Starting it after means that
+# when the button exists there is something on the other side of it.
+#
+# The two front ends come last and nothing depends on either: they are pages the
+# system is looked at from. metrics-fe reads metrics and nothing else, and it writes
+# nothing at all, so it is the one service whose being down costs only the look at it.
+#
+# configurator-fe comes just before it, and nothing depends on it either: it is the page the
+# configuration is looked at from, and it needs only anagraphics. It was left out
+# of this list while it was a page that only read — a page nobody could reach cost
+# nothing but the look at it. It writes one thing now, the price of what a
+# provider's model consumes, and a service that is not running is a price that
+# cannot be entered.
+#
 # Every service is started and stopped **with its own control script**, which uses
 # the PID file and checks the command line before stopping anything. Nothing is
 # looked up here by name or by port: other projects run on this machine.
@@ -37,10 +60,16 @@ WEBTOOLS="$(cd "$DIR/.." && pwd)"
 # bootstrap.env).
 SERVICES=(
   "anagraphics:$WEBTOOLS/anagraphics/webtools_anagraphics.sh"
+  "metrics:$WEBTOOLS/metrics/webtools_metrics.sh"
   "sso:$WEBTOOLS/sso/webtools_sso.sh"
   "workspaces:$WEBTOOLS/webtools-workspaces/webtools_workspaces.sh"
   "preanalyst:$WEBTOOLS/preanalyst/webtools_preanalyst.sh"
+  "drivers-pool:$WEBTOOLS/drivers-pool/webtools_drivers_pool.sh"
+  "comm-center:$WEBTOOLS/comm-center/webtools_comm_center.sh"
+  "analyst:$WEBTOOLS/analyst/webtools_analyst.sh"
   "front-gate:$WEBTOOLS/front-gate/webtools_front_gate.sh"
+  "configurator-fe:$WEBTOOLS/configurator-fe/webtools_configurator_fe.sh"
+  "metrics-fe:$WEBTOOLS/metrics-fe/webtools_metrics_fe.sh"
 )
 
 usage() {

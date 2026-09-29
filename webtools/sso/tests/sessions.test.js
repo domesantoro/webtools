@@ -48,6 +48,6 @@ test("the expiry", () => {
   assert.equal(isExpired({ expires_at: "2026-09-21T10:00:00.000Z" }, now), true);
   // With no readable expiry the session is not good.
   assert.equal(isExpired({}, now), true);
-  assert.equal(isExpired({ expires_at: "domani" }, now), true);
+  assert.equal(isExpired({ expires_at: "tomorrow" }, now), true);
   assert.equal(isExpired(null, now), true);
 });

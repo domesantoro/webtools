@@ -127,6 +127,18 @@ export class Configuration {
     throw this.#fail(path, value, "a non-empty list of strings");
   }
 
+  // A list of integers: lengths, thresholds, edges. Empty is not a list of
+  // integers — a field that exists and offers nothing is a field nobody can use —
+  // and the bounds are checked on every item, so the one wrong value is named
+  // with its position.
+  integerList(path, { min = Number.MIN_SAFE_INTEGER, max = Number.MAX_SAFE_INTEGER } = {}) {
+    const value = this.get(path);
+    if (!Array.isArray(value) || value.length === 0) {
+      throw this.#fail(path, value, "a non-empty list of integers");
+    }
+    return value.map((_, index) => this.integer(`${path}.${index}`, { min, max }));
+  }
+
   // Only http or https: these addresses end up in an href or in a fetch, and a
   // `javascript:` in an href is code run on click. Without the trailing slash,
   // because whoever uses them appends a path that starts with `/`.

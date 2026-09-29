@@ -5,6 +5,7 @@
   },
   "public_url": "http://127.0.0.1:9200",
   "subsystems_infos": {
+    "metrics": { "url": "http://127.0.0.1:9600", "timeout_ms": 2000 },
     "anagraphics": {
       "timeout_ms": 5000
     },
@@ -14,6 +15,10 @@
     },
     "workspaces": {
       "url": "http://127.0.0.1:9400",
+      "timeout_ms": 5000
+    },
+    "analyst": {
+      "url": "http://127.0.0.1:9800",
       "timeout_ms": 5000
     },
     "front_gate": {
@@ -34,6 +39,7 @@
   "prevalidation": {
     "provider": "anthropic",
     "timeout_ms": 20000,
+    "max_attempts": 3,
     "providers": {
       "anthropic": {
         "model": "claude-haiku-4-5",
@@ -43,17 +49,17 @@
     "policy": "scope-v1",
     "reject_threshold": 0.6,
     "max_underspecified_attempts": 100,
-    "spec_max_chars": 20000,
     "rejection_reason_in_pdf": false
   },
-  "analysis": {
+  "preanalysis": {
     "max_turns": 30,
     "warn_from_turn": 20
   },
-  "analyst": {
+  "preanalyst": {
     "conversation": {
       "provider": "anthropic",
       "timeout_ms": 120000,
+      "max_attempts": 3,
       "providers": {
         "anthropic": {
           "model": "claude-opus-5",
@@ -62,12 +68,12 @@
           "operator_channel": "system_message"
         }
       },
-      "policy": "analysis-v1",
-      "message_max_chars": 4000
+      "policy": "preanalysis-v1"
     },
     "validation": {
       "provider": "anthropic",
       "timeout_ms": 120000,
+      "max_attempts": 3,
       "providers": {
         "anthropic": {
           "model": "claude-opus-5",
@@ -76,7 +82,7 @@
           "operator_channel": "system_message"
         }
       },
-      "policy": "analysis-validation-v1",
+      "policy": "preanalysis-validation-v1",
       "pass_threshold": 0.75
     }
   },
@@ -89,5 +95,8 @@
     "cookie_name": "webtools_locale",
     "cookie_max_age_seconds": 31536000,
     "body_max_bytes": 1024
+  },
+  "metrics": {
+    "log_failures": false
   }
 }

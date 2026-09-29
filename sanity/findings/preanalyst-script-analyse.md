@@ -30,7 +30,7 @@ system.
 - What breaks, on the change the two doors were built to make cheap: adding a second provider. Its
   usage object will carry whatever that API calls these things, and every reader above the door
   prints `undefined` or logs a cost of `undefined+undefined`. The failure is silent in exactly the
-  place the PoC is measuring.
+  place the ledger is measuring.
 - Severity: `latent`
 - Smallest generalising change: make the token counts part of the door's contract — a named shape
   every provider maps its own counters onto — so that above the door there is one vocabulary and

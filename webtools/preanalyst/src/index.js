@@ -15,6 +15,10 @@ try {
   settings = await loadSettings();
 } catch (error) {
   if (!(error instanceof ConfigurationError)) throw error;
+  // Not measured: where metrics is, is itself a configuration field, and this is
+  // the case where the configuration could not be read. A start that never
+  // happened is counted by whoever does have the configuration — the start
+  // script, which sees the exit code.
   console.error(`webtools_preanalyst is not starting: ${error.message}`);
   process.exit(1);
 }
@@ -26,6 +30,8 @@ server.listen(settings.port, settings.host, () => {
     `webtools_preanalyst listening on http://${settings.host}:${settings.port} ` +
       `(anagraphics: ${settings.anagraphicsUrl})`
   );
+  // A count that grows by itself is a process that keeps dying and coming back.
+  settings.metrics.measure("process.started", { dims: { outcome: "ok" } });
 });
 
 for (const signal of ["SIGTERM", "SIGINT"]) {

@@ -3,8 +3,9 @@
 #
 #   ./stop.sh
 #
-# The showcase site first, anagraphics last: nobody is left running and talking to
-# a service that is no longer there.
+# The two pages the system is looked at from first, then the showcase site,
+# anagraphics last: nobody is left running and talking to a service that is no
+# longer there.
 #
 # Every service is stopped **with its own control script**, which uses the PID file
 # and checks the command line before stopping anything. Nothing is looked up here
@@ -20,10 +21,13 @@ WEBTOOLS="$(cd "$DIR/.." && pwd)"
 
 # name : control script, in shutdown order (the reverse of start.sh).
 SERVICES=(
+  "metrics-fe:$WEBTOOLS/metrics-fe/webtools_metrics_fe.sh"
+  "configurator-fe:$WEBTOOLS/configurator-fe/webtools_configurator_fe.sh"
   "front-gate:$WEBTOOLS/front-gate/webtools_front_gate.sh"
   "preanalyst:$WEBTOOLS/preanalyst/webtools_preanalyst.sh"
   "workspaces:$WEBTOOLS/webtools-workspaces/webtools_workspaces.sh"
   "sso:$WEBTOOLS/sso/webtools_sso.sh"
+  "metrics:$WEBTOOLS/metrics/webtools_metrics.sh"
   "anagraphics:$WEBTOOLS/anagraphics/webtools_anagraphics.sh"
 )
 

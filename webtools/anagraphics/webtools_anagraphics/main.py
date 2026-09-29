@@ -7,15 +7,15 @@ about who is authenticated belong to the sso. Anagraphics does not verify
 passwords and does not judge whether a session is still valid.
 """
 
-from datetime import datetime, timezone
-from typing import Literal
+from datetime import datetime, timedelta, timezone
+from typing import Annotated, Literal
 from uuid import uuid4
 
-from fastapi import FastAPI, Request, Response
-from pydantic import BaseModel, Field
+from fastapi import FastAPI, Query, Request, Response
+from pydantic import BaseModel, Field, field_validator
 from pymongo.errors import DuplicateKeyError
 
-from webtools_anagraphics import db, errors
+from webtools_anagraphics import db, errors, provider_pricing
 from webtools_anagraphics.settings import load_settings
 
 settings = load_settings()
@@ -26,14 +26,59 @@ errors.install_error_handlers(app)
 
 
 @app.middleware("http")
-async def allow_only_known_ips(request: Request, call_next):
+async def guarded_and_measured(request: Request, call_next):
+    """The IP pool, and one measurement per request.
+
+    Counting here and nowhere else means no route has to remember to count itself,
+    and a route written tomorrow is counted the day it is written. This subsystem was
+    the last one with no measurements at all, which made `/metrics/http` a picture of
+    every surface except the one every other subsystem goes through: when a
+    `dependency.call` towards anagraphics came back slow, nothing on this side could
+    say whether it was anagraphics or Mongo.
+    """
+    elapsed = settings.metrics.timer()
+    response = await _answer(request, call_next)
+    settings.metrics.measure(
+        "http.request",
+        dims={
+            "route": _route_of(request),
+            "method": request.method,
+            "status": str(response.status_code),
+        },
+        duration_ms=elapsed(),
+    )
+    code = getattr(request.state, "error_code", None)
+    if code:
+        # A status says how it went; the code says what it was, and only one of the
+        # two can be acted on.
+        settings.metrics.measure("http.error", dims={"code": code})
+    return response
+
+
+async def _answer(request: Request, call_next):
     # Only the connection's IP is used. It must be started with
     # `python -m webtools_anagraphics` (proxy_headers=False), otherwise uvicorn
     # rewrites client.host from X-Forwarded-For for requests from localhost.
     host = request.client.host if request.client else None
     if host not in settings.allowed_ips:
-        return errors.error_response(403, errors.IP_NOT_ALLOWED)
+        # Somebody knocking, or a subsystem started with the wrong configuration.
+        # In a log it is a line nobody reads; here it is a number that grows.
+        settings.metrics.measure("http.refused_ip")
+        return errors.error_response(403, errors.IP_NOT_ALLOWED, request)
     return await call_next(request)
+
+
+def _route_of(request: Request) -> str:
+    """The route as it is written, not as it was called.
+
+    `/projects/{project_id}` and never `/projects/1f251606-…`: a path here carries
+    project ids, usernames and session tokens, and a bucket per identifier would make
+    the number of documents grow with the traffic instead of with the number of kinds
+    of thing measured. It is read from the route that matched, so nothing here has to
+    keep a list of the paths in step with the routing. A request that matched none is
+    counted as `(other)`.
+    """
+    return getattr(request.scope.get("route"), "path", None) or "(other)"
 
 
 @app.get("/configuration")
@@ -55,12 +100,170 @@ def get_configuration(subsystem: str) -> dict:
     return document
 
 
+class PricingToStore(BaseModel):
+    """What a provider object's price is made of.
+
+    `cents_per_million_tokens` is one amount **per kind of token**, under the
+    names the kinds arrived with. The kinds are not listed here and are not
+    checked against a list: which kinds a provider counts is the provider's
+    business, declared in the configuration, and a name this file had never
+    heard of is a price like any other. What is checked is that an amount is a
+    whole number of hundredths and is not negative.
+
+    The amounts are hundredths of the unit of `currency` — hundredths of a
+    dollar for USD — per million tokens. The currency is checked by its shape
+    (ISO 4217: three capital letters) and not against a list of currencies: the
+    list of the ones that may be chosen belongs to whoever offers the choice,
+    and a second copy of it here would be a second thing to keep up to date.
+
+    `updated_at` is not taken from the body: it is written here, at the moment
+    the write happens. A date the caller chooses would be a claim about when
+    something was done, not a record of it.
+    """
+
+    provider_path: str = Field(min_length=1)
+    currency: str = Field(pattern=r"^[A-Z]{3}$")
+    cents_per_million_tokens: dict[str, Annotated[int, Field(ge=0)]]
+
+    @field_validator("provider_path")
+    @classmethod
+    def _keys_that_mongo_can_hold(cls, path: str) -> str:
+        keys = path.split(".")
+        if not all(key and not key.startswith("$") for key in keys):
+            raise ValueError("every key of the path must be non-empty and must not start with '$'")
+        return path
+
+    @field_validator("cents_per_million_tokens")
+    @classmethod
+    def _at_least_one_kind(cls, kinds: dict[str, int]) -> dict[str, int]:
+        # An empty price is not a price. Removing one is another operation, and
+        # this route does not do it: it writes what it is given.
+        if not kinds:
+            raise ValueError("at least one kind of token must be priced")
+        if not all(kind and "." not in kind and not kind.startswith("$") for kind in kinds):
+            raise ValueError("a kind of token must be non-empty, without '.' and not starting with '$'")
+        return kinds
+
+
+@app.put("/configuration/{subsystem}/pricing")
+def set_provider_pricing(subsystem: str, body: PricingToStore) -> dict:
+    """The price of what a provider object's model consumes.
+
+    It writes **one key** — `pricing` — inside the object `provider_path` names,
+    and only if that path names a provider object (`<anything>.providers.<name>`,
+    see `provider_pricing.py`). Everything else in the document is left as it is:
+    this is not a route that writes the configuration, it is the route that
+    writes a price.
+
+    The configuration that lives is in Mongo, so this is where a price is
+    changed. The seed files do not carry prices: a new environment is born
+    without them, which is what it is — nobody has said what a token costs yet.
+    """
+    document = db.find_configuration(database, subsystem)
+    if document is None:
+        raise errors.ApiError(404, errors.CONFIGURATION_NOT_FOUND, subsystem=subsystem)
+
+    outcome, _ = provider_pricing.locate(document, body.provider_path)
+    if outcome == provider_pricing.NOT_FOUND:
+        raise errors.ApiError(404, errors.PROVIDER_NOT_FOUND, path=body.provider_path)
+    if outcome == provider_pricing.NOT_A_PROVIDER_OBJECT:
+        raise errors.ApiError(400, errors.NOT_A_PROVIDER_OBJECT, path=body.provider_path)
+
+    pricing = {
+        "currency": body.currency,
+        "cents_per_million_tokens": body.cents_per_million_tokens,
+        # The moment the price and the currency were last written, in UTC. Whole
+        # seconds: it says when, and a configuration is not changed twice in the
+        # same second by a human.
+        "updated_at": datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z"),
+    }
+    # The document was read a moment ago and it is there. If it has been removed
+    # in between, nothing was written, and that is said rather than assumed.
+    if not db.set_configuration_field(database, subsystem, f"{body.provider_path}.pricing", pricing):
+        raise errors.ApiError(404, errors.CONFIGURATION_NOT_FOUND, subsystem=subsystem)
+
+    # A configured value changed while the system was running, which is the moment
+    # **after which every other figure means something else**. A cost per demo that
+    # steps up in the middle of a month, read without this, is a mystery; read with
+    # it, it is a price that was changed on the Tuesday. Counted only once it was
+    # really written: a change the configuration does not carry is not a change.
+    #
+    # `section` and not the path or the value: what the price became is in the
+    # configuration, which is the thing that is true, and a copy of it here would be
+    # a second answer to the same question that can disagree with the first.
+    settings.metrics.measure(
+        "configuration.changed", dims={"subsystem": subsystem, "section": "pricing"}
+    )
+    return {"pricing": pricing}
+
+
+@app.get("/projects/count")
+def count_projects(
+    first_day: str = Query(alias="from"), last_day: str = Query(alias="to")
+) -> dict:
+    """How many projects were created between two days, both included.
+
+    Declared **before** `/projects/{project_id}`: routes are matched in the order
+    they are declared, and `count` would otherwise be read as a project id.
+
+    It exists for metrics, which counts the projects it was told about and needs
+    to know how many there really were: the difference is what its funnel lost.
+    The days are UTC, like everything stored here.
+    """
+    first = _day(first_day)
+    last = _day(last_day)
+    if first > last:
+        raise errors.ApiError(400, errors.INVALID_RANGE, day=first_day)
+    return {
+        "from": first_day,
+        "to": last_day,
+        "projects": db.count_projects_created_between(database, first, last + timedelta(days=1)),
+    }
+
+
+def _day(value: str) -> datetime:
+    try:
+        return datetime.strptime(value, "%Y-%m-%d").replace(tzinfo=timezone.utc)
+    except ValueError:
+        raise errors.ApiError(400, errors.INVALID_RANGE, day=value) from None
+
+
 @app.get("/projects/{project_id}")
 def get_project(project_id: str) -> dict:
     document = db.find_project(database, project_id)
     if document is None:
         raise errors.ApiError(404, errors.PROJECT_NOT_FOUND, project_id=project_id)
     return document
+
+
+class DriverOnProject(BaseModel):
+    """The driver's own data, copied onto the project.
+
+    A copy, and not a reference, because this is not a relational database: whoever
+    reads a project to write to its driver — the communications centre, a page
+    listing what a driver supervises — would otherwise have to fetch the driver
+    separately, and a second call is a second thing that can fail while the first
+    one succeeded.
+
+    **`enabled` is deliberately not copied.** It is a state of the driver and not of
+    this assignment: a driver disabled tomorrow would go on looking enabled on every
+    project that copied them, which is the one field where a stale copy misleads
+    rather than merely ages.
+
+    The copy is made **here** and never by a caller. Drivers live in this subsystem,
+    so a caller building its own copy would be a second place deciding what a
+    driver's data is, with nothing checking that the two agree.
+
+    What does not exist, and is known not to: nothing propagates a change. A driver
+    who changes their `screen_name` or their address leaves this copy as it was, on
+    every project they supervise. The same is already true of the copy inside the
+    discounts (`docs/subsystems/anagraphics/README.md` §13); this makes two.
+    """
+
+    uid: str
+    screen_name: str
+    # Where they are reached. It is the driver's `username`, which is their address.
+    username: str
 
 
 class Review(BaseModel):
@@ -71,8 +274,25 @@ class Review(BaseModel):
     At creation there is a driver only if it is preset.
     """
 
+    driver: DriverOnProject | None = None
+    preset: bool = False
+
+
+class ReviewToCreate(BaseModel):
+    """What a caller may say about the driver: a name, never a copy.
+
+    The copy is this subsystem's to make, so what arrives is a uid and the answer to
+    whether that driver was preset.
+    """
+
     driver_uid: str | None = None
     preset: bool = False
+
+
+class DriverToAssign(BaseModel):
+    """The driver the drivers' pool chose."""
+
+    driver_uid: str = Field(min_length=1)
 
 
 class Billing(BaseModel):
@@ -93,20 +313,30 @@ class ProjectToCreate(BaseModel):
     owner_uid: str = Field(min_length=1)
     # The form submission id: if it arrives twice, there is still one project.
     submission_id: str = Field(min_length=16)
-    review: Review = Field(default_factory=Review)
+    review: ReviewToCreate = Field(default_factory=ReviewToCreate)
     billing: Billing = Field(default_factory=Billing)
 
 
 # The pipeline states and its steps. They are a contract: whoever writes them and
 # whoever reads them must call them the same way, and an invented name must not be
 # able to get into the database. The path is that of the main flow (see
-# `contesto/02. contesto_aggiornato.md`); REJECTED is the terminus of every gate.
+# `contesto/02. current_context.md`); REJECTED is the terminus of every gate.
 PipelineState = Literal[
+    # Where a project is born, and where it stays for the whole pre-analysis: the
+    # form, the prevalidation that passes, and the rounds of questions that follow.
+    # There is no earlier state to have, and the rounds are the pre-analysis, so one
+    # name covers both instead of two names covering the same stretch. Which of the
+    # two moments a project is at is read off the steps, where the prevalidation
+    # either has decided or has not.
     "PREANALYSIS",
     "PREVALIDATION",
     # The request has gone back to the user: it cannot be judged, more detail is
     # needed. It is not a refusal, and from here one starts again by rewriting.
     "UNDERSPECIFIED",
+    # The analysis is being written. It begins when the client says the rounds of
+    # questions are over and ends when the proposal is on the step: a stretch in
+    # which several model calls are running and nothing has been decided yet, which
+    # no other name here covers.
     "ANALYSIS",
     "DRIVER_VALIDATION",
     "CLIENT_VALIDATION",
@@ -115,10 +345,22 @@ PipelineState = Literal[
     "DEMO",
     "PAID",
     "REJECTED",
+    # A run that did not get to the end. It is not a refusal — nobody decided
+    # anything about the request — and it is not a place a project passes through
+    # either: it is where one is left when the work that was supposed to move it
+    # stopped. It is kept apart from `REJECTED` because what has to be done about it
+    # is the opposite: a refusal is over, a failure is looked at.
+    "FAILED",
+    # The analysis is written and there is nobody to hand it to: the pool has nobody
+    # enabled, or it kept naming drivers who are no longer there. Its own name and
+    # not `FAILED`, because the work was done and paid for and what is missing is a
+    # person — the project is finished as far as the machine goes.
+    "FAILED_NO_DRIVERS",
 ]
 
 PipelineStepName = Literal[
     "prevalidation",
+    "preanalysis",
     "analysis",
     "driver_validation",
     "client_validation",
@@ -142,16 +384,32 @@ class PipelineStep(BaseModel):
     decides how many times one may go back looks at how many there already are.
 
     `open` is the only one that has **not** decided anything: the step has begun
-    and lasts. It is the case of the analysis chat, which opens when the project
-    reaches `ANALYSIS` and grows with every turn. While it is open its `data` can
-    be updated (`PATCH .../steps/{step}`); when it closes it takes one of the other
-    results and from then on is never touched again, like every other step.
+    and lasts. It is the case of the rounds of questions, which open when the
+    prevalidation passes and grow with every turn. While it is open its
+    `data` can be updated (`PATCH .../steps/{step}`); when it closes it takes one of
+    the other results and from then on is never touched again, like every other step.
     """
 
     step: PipelineStepName
     result: Literal["open", "passed", "rejected", "underspecified", "failed"]
     state: PipelineState
     data: dict = Field(default_factory=dict)
+
+
+def _driver_copy(driver_uid: str | None) -> dict | None:
+    """The driver's data as a project keeps it. 404 if there is no such driver.
+
+    One function, used by the creation and by the assignment, so that a project
+    cannot end up holding a copy of a shape nobody else writes.
+    """
+    if driver_uid is None:
+        return None
+    driver = db.find_driver(database, driver_uid)
+    if driver is None:
+        raise errors.ApiError(404, errors.DRIVER_NOT_FOUND, uid=driver_uid)
+    return DriverOnProject(
+        uid=driver["uid"], screen_name=driver["screen_name"], username=driver["username"]
+    ).model_dump()
 
 
 @app.post("/projects", status_code=201)
@@ -167,7 +425,10 @@ def create_project(project: ProjectToCreate, response: Response) -> dict:
         # `steps` is an ordered list, not a map: a step can repeat, and the list is
         # the register of the decisions taken on the project.
         "pipeline": {"state": "PREANALYSIS", "steps": []},
-        "review": project.review.model_dump(),
+        "review": {
+            "driver": _driver_copy(project.review.driver_uid),
+            "preset": project.review.preset,
+        },
         "billing": project.billing.model_dump(),
     }
     try:
@@ -290,6 +551,25 @@ def remove_project(project_id: str) -> Response:
     return Response(status_code=204)
 
 
+@app.put("/projects/{project_id}/review/driver")
+def assign_driver(project_id: str, assignment: DriverToAssign) -> dict:
+    """The driver who will supervise this project, copied onto it.
+
+    `PUT` and not `POST`: assigning the same driver twice leaves the project as it
+    already was. It is also how a copy is refreshed — the same call again rereads
+    the driver and writes what they are now.
+
+    `preset` is not touched. It says how the driver got there, and a driver arriving
+    through this route never got there by being preset: a project created with one
+    already has it, and this route is called on the projects that have none.
+    """
+    driver = _driver_copy(assignment.driver_uid)
+    updated = db.set_project_driver(database, project_id, driver)
+    if updated is None:
+        raise errors.ApiError(404, errors.PROJECT_NOT_FOUND, project_id=project_id)
+    return updated
+
+
 @app.get("/drivers")
 def get_drivers() -> dict:
     return {"drivers": db.list_drivers(database)}
@@ -401,7 +681,7 @@ def get_session(token: str) -> dict:
 
 @app.put("/sessions/{token}/locale")
 def set_session_locale(token: str, body: LocaleToStore) -> dict:
-    # Va in `data.locale`, accanto agli altri dati di sessione.
+    # It goes in `data.locale`, next to the rest of the session data.
     document = db.set_session_locale(database, token, body.locale)
     if document is None:
         raise errors.ApiError(404, errors.SESSION_NOT_FOUND)

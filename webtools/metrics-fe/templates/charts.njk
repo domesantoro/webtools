@@ -1,0 +1,130 @@
+{#
+  The one picture that needs two dimensions: what was folded, day by day.
+
+  A day with no bucket is a **gap** in the line, not a zero. Nothing was folded on it,
+  and that is not the same as a measured zero — metrics may simply not have been
+  running. A day that stands alone between two gaps is a dot, which is why every known
+  point is drawn as well as joined.
+
+  Identity never rests on colour alone: a legend is always there, the end of each line
+  carries its own number, and the numbers themselves are under the picture in a table.
+#}
+
+{% macro series(chart, series, unit) %}
+{%- if chart.empty %}
+<p class="absent">No bucket was folded in this period, so there is nothing to draw.</p>
+{%- else %}
+<figure class="chart">
+  <svg viewBox="0 0 {{ chart.width }} {{ chart.height }}" role="img"
+       aria-label="{{ unit }} per day, {{ series.lines.length }} metric{% if series.lines.length != 1 %}s{% endif %}">
+    {#- The grid: hairlines, solid, one step off the surface. Never dashed: a dashed
+        rule reads as a threshold, and this one is only a grid. -#}
+    {%- for line in chart.grid %}
+    <line class="grid" x1="{{ chart.plot.x }}" y1="{{ line.y }}" x2="{{ chart.plot.x + chart.plot.width }}" y2="{{ line.y }}"></line>
+    <text class="tick" x="{{ chart.plot.x - 8 }}" y="{{ line.y + 3 }}" text-anchor="end">{{ line.text }}</text>
+    {%- endfor %}
+    <line class="axis" x1="{{ chart.plot.x }}" y1="{{ chart.baseline }}" x2="{{ chart.plot.x + chart.plot.width }}" y2="{{ chart.baseline }}"></line>
+
+    {%- for tick in chart.xTicks %}
+    <text class="tick" x="{{ tick.x }}" y="{{ chart.height - 8 }}" text-anchor="middle">{{ tick.day }}</text>
+    {%- endfor %}
+
+    {%- for line in chart.lines %}
+    <g class="series slot-{{ line.slot }}">
+      {%- for points in line.segments %}
+      <polyline class="line" points="{{ points }}"></polyline>
+      {%- endfor %}
+      {%- for point in line.points %}
+      <circle class="point" cx="{{ point.x }}" cy="{{ point.y }}" r="4"><title>{{ line.metric }} &middot; {{ point.day }} &middot; {{ point.text }}</title></circle>
+      {%- endfor %}
+      {%- if line.endLabel %}
+      <text class="end" x="{{ line.endLabel.x }}" y="{{ line.endLabel.y + 3 }}">{{ line.endLabel.text }}</text>
+      {%- endif %}
+    </g>
+    {%- endfor %}
+  </svg>
+
+  <figcaption>
+    <span class="legend">
+      {%- for line in chart.lines %}
+      <span class="entry slot-{{ line.slot }}"><span class="key"></span>{{ line.metric }} <span class="muted">{{ line.totalText }}</span></span>
+      {%- endfor %}
+    </span>
+    {%- if series.notDrawn.length %}
+    <p class="note">Also folded, not drawn: {% for other in series.notDrawn %}<code>{{ other.metric }}</code> {{ other.totalText }}{% if not loop.last %}, {% endif %}{% endfor %}.</p>
+    {%- endif %}
+    {%- if series.daysWithoutBuckets %}
+    <p class="note">{{ series.daysWithoutBuckets }} day{% if series.daysWithoutBuckets != 1 %}s{% endif %} carry no bucket: the line breaks there rather than touching zero.</p>
+    {%- endif %}
+  </figcaption>
+
+  {#- The same numbers, reachable without the picture. Opened by whoever wants it,
+      never by itself. -#}
+  <details class="twin">
+    <summary>the numbers this is drawn from</summary>
+    <table class="grid twin-table">
+      <thead>
+        <tr><th>day</th>{% for line in chart.lines %}<th class="number-cell">{{ line.metric }}</th>{% endfor %}</tr>
+      </thead>
+      <tbody>
+        {%- for day in series.days %}
+        {%- set dayIndex = loop.index0 %}
+        <tr>
+          <th>{{ day }}</th>
+          {%- for line in chart.lines %}
+          <td class="number-cell">{% if line.values[dayIndex] === null %}<span class="absent" title="no bucket was folded on this day">&mdash;</span>{% else %}{{ line.values[dayIndex] | number_text }}{% endif %}</td>
+          {%- endfor %}
+        </tr>
+        {%- endfor %}
+      </tbody>
+    </table>
+  </details>
+</figure>
+{%- endif %}
+{% endmacro %}
+
+{#
+  The parts of one whole, at a glance.
+
+  Drawn only where the rows really are parts of one whole, and only from three slices
+  up: two parts of a whole are a number and its complement, which the table beside it
+  already says.
+
+  Identity never rests on colour: the legend is always there, a slice with room carries
+  its own percentage, and the counts are in the table under it.
+#}
+{% macro whole(chart, label) %}
+{%- if chart %}
+<figure class="ring">
+  <svg viewBox="0 0 {{ chart.size }} {{ chart.size }}" role="img"
+       aria-label="{{ label }}, {{ chart.slices.length }} parts of {{ chart.total }}">
+    {%- for slice in chart.slices %}
+    <g class="slice slot-{{ slice.slot }}">
+      {%- if slice.full %}
+      {#- One slice that is the whole circle: an arc from a point to itself draws
+          nothing, so the ring is drawn as a ring. -#}
+      <circle class="whole-ring" cx="{{ chart.centre }}" cy="{{ chart.centre }}"
+              r="{{ (chart.radius + chart.inner) / 2 }}" stroke-width="{{ chart.radius - chart.inner }}"><title>{{ slice.label }} &middot; {{ slice.count | number_text }} &middot; {{ slice.percent }} %</title></circle>
+      {%- else %}
+      <path d="{{ slice.path }}"><title>{{ slice.label }} &middot; {{ slice.count | number_text }} &middot; {{ slice.percent }} %</title></path>
+      {%- endif %}
+      {%- if slice.shows %}
+      <text class="on-slice" x="{{ slice.label_at.x }}" y="{{ slice.label_at.y }}" text-anchor="middle" dominant-baseline="central">{{ slice.percent }}%</text>
+      {%- endif %}
+    </g>
+    {%- endfor %}
+    {#- Only the total in the middle: a name long enough to matter would not fit the
+        hole, and SVG text neither wraps nor is cut off. The name is under it. -#}
+    <text class="middle" x="{{ chart.centre }}" y="{{ chart.centre + 8 }}" text-anchor="middle">{{ chart.total | number_text }}</text>
+  </svg>
+  <figcaption>
+    <p class="of-what">{{ label }}</p>
+    <span class="legend">
+      {%- for slice in chart.slices %}
+      <span class="entry slot-{{ slice.slot }}"><span class="key"></span>{% if slice.rest %}<span class="muted">{{ slice.label }}</span>{% elif slice.notCarried %}<span class="absent">{{ slice.label }}</span>{% else %}{{ slice.label }}{% endif %} <span class="muted">{{ slice.count | number_text }}</span></span>
+      {%- endfor %}
+    </span>
+  </figcaption>
+</figure>
+{%- endif %}
+{% endmacro %}

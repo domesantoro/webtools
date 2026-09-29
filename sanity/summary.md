@@ -1,30 +1,38 @@
 # Summary
 
-Run started 2026-09-25. Rewritten after every unit.
+Run started 2026-09-25, completed 2026-09-26. Rewritten after every unit.
+
+Two caveats on the record. `webtools/anagraphics/webtools_anagraphics/{main,db,errors}.py` were
+edited on disk after units 44–46 had been examined and closed (a new `INVALID_RANGE` code appeared
+in `errors.py`): those three findings files describe the files as they were read. And two units
+name artefacts that no row of `inventory.md` covers — `webtools/configurator-fe/` (a sixth node
+subsystem, with its own `configuration/configurator-fe.json`) and that seed file itself; the
+inventory is never recomputed, so both are recorded at `findings/configurator-deployers.md` and
+`findings/configurator-start-stop.md` rather than added as rows.
 
 ## Progress
 
-42 done / 0 skipped / 30 pending, out of 72.
+73 done / 0 skipped / 0 pending, out of 73. **The inventory is complete.**
 
 ## Counts by severity
 
 | severity | count |
 |---|---|
-| **`breaks-now`** | **14** |
-| `latent` | 75 |
-| `stylistic` | 21 (1 of them resolved during the run) |
+| **`breaks-now`** | **19** |
+| `latent` | 134 |
+| `stylistic` | 35 (1 of them resolved during the run) |
 | of which flagged `uncertain` in part | 10 (4 of them recorded as `uncertain` only) |
 
 ## Counts by shape
 
 | shape | count |
 |---|---|
-| 1 — partial-class requirement | 8 (+1 as a secondary aspect) |
-| 2 — invented value | 13 (+1 as a secondary aspect) |
-| 3 — member logic outside its boundary | 5 (+1 as a secondary aspect) |
-| 4 — capability inferred from resemblance | 16 (+1 as a secondary aspect) |
-| 5 — only the success path | 25 |
-| 6 — world narrowed to fit the code | 47 (+2 as a secondary aspect) |
+| 1 — partial-class requirement | 12 (+2 as a secondary aspect) |
+| 2 — invented value | 18 (+3 as a secondary aspect) |
+| 3 — member logic outside its boundary | 11 (+1 as a secondary aspect) |
+| 4 — capability inferred from resemblance | 22 (+1 as a secondary aspect) |
+| 5 — only the success path | 38 (+2 as a secondary aspect) |
+| 6 — world narrowed to fit the code | 91 (+9 as a secondary aspect) |
 
 ## `breaks-now` findings
 
@@ -115,11 +123,43 @@ its consequence, which ranges from a bypassed gate to a worse log line.
     handler, after the preanalyst's and the sso's. On the one subsystem that faces the open
     internet, a port already taken ends the process with a stack trace.
 
+15. **`webtools/anagraphics/scripts/load_configuration.py:179-199`** — a run in which only a secret
+    changed prints "nothing to add: what is running stays as it is", after having written the new
+    key. The report counts subsystems created and seed fields added, and not the third kind of
+    change, which is the one the secrets mechanism exists for. The operator is told the rotation
+    did not land, and there is no second place to check: the key is not printed and is not in git.
+
+16. **`webtools/anagraphics/scripts/migrate_pipeline.py:29`** and
+    **`webtools/anagraphics/scripts/migrate_user_billing.py:33`** — `"--dry-run" in sys.argv[1:]`
+    makes every other command line, `--dryrun` and `--help` included, mean "write". A mistyped
+    rehearsal migrates every project or every user in `WEBTOOLS_MONGO_DB` for real, with
+    `$unset: {"state": ""}` in the first case. `load_configuration.py:120-136`, in the same
+    directory, parses its arguments and refuses what it does not understand.
+
+17. **`webtools/configurator/deploy.sh:50-65`** — a requested deployer name that matches nothing is
+    reported only when *no* name matches. `./deploy.sh style templates` deploys the style, prints
+    "Deploy done (1 sub-deployers)." and leaves every subsystem's `templates/commons/` untouched.
+    The scripts exist so that a shared file does not drift from its copies; this is that drift,
+    reported as prevented.
+
+18. **`webtools/webtools-workspaces/src/index.js:21-29`** — the fourth copy of the missing `listen`
+    error handler, after the preanalyst's, the sso's and the front-gate's. A port already taken
+    ends the process with a stack trace. On this member the runner catches it and
+    `webtools/configurator/start.sh:104-106` then stops the whole startup, naming workspaces rather
+    than the port.
+
+19. **`webtools/commons/script/webtools_loader.js:17-18,28-48`** — the veil is raised on submit and
+    never lowered, "after a submission the page changes anyway". A user who presses Escape or Stop
+    during the pre-analysis submission — the one request slow enough to give up on — cancels the
+    navigation and keeps the page, covered by a full-viewport overlay
+    (`commons/style/commons.css:349-350`, no `pointer-events`) that says "working…" for ever and
+    swallows every click. The only exit is a reload of the form they have just filled in.
+
 ## Closest to breaking, among the `latent` findings
 
 `webtools/preanalyst/src/prevalidator_ai/providers/anthropic.js:115-118` — the prevalidation's cost
 ledger records only `input_tokens` and `output_tokens`, on the argument that this model's cache
-never switches on. `contesto/ottimizzazioni.md` §8 measures the gap at **555 tokens**, on a policy
+never switches on. `contesto/optimisations.md` §8 measures the gap at **555 tokens**, on a policy
 file that grew ~1300 → 3051 → 3541 in two days. One ordinary policy edit turns caching on and the
 ledger silently starts under-reporting every prevalidation.
 
@@ -191,6 +231,33 @@ ledger silently starts under-reporting every prevalidation.
   `workspaces.js:65` does the same with `SPEC_NOT_FOUND` and `ROUTE_NOT_FOUND`, and does not even
   read the code.
 
+- **An enumeration written into prose falls behind the thing it enumerates.** Test counts
+  (`docs/subsystems/preanalyst/README.md` §0 and §11, two different numbers, both wrong;
+  `docs/subsystems/anagraphics/README.md:30` and `webtools/anagraphics/README.md`, 70 for 75),
+  collections (four of seven in one file, six of seven in another), error tables
+  (`docs/subsystems/sso/README.md` §5.1 missing two codes;
+  `docs/subsystems/anagraphics/README.md` §6.1 naming three producers of `INVALID_BODY` where eight
+  produce it), file maps (three of five test files), and two lists of services in two shell scripts.
+  **Nine sites.** Where the same documents state a *rule* instead of a count they hold: the four
+  documentation units found no wrong rule, only wrong inventories.
+
+- **A shared artefact names something the sharing mechanism does not distribute.**
+  `commons/templates/base.njk:46` asks for `/assets/mark.svg`, which exists as three identical
+  copies with no original and no deployer; `base.njk:52,70` uses `.site-shell` and `.page-main`,
+  which are defined in three local stylesheets and in no shared one;
+  `commons/specs/spec_front_matter.js:18` imports `yaml`, declared in each recipient's
+  `package.json` and nowhere in `webtools/commons/`, which has no manifest at all. **Three sites**,
+  and the repository's own answer — an original in `commons/` and a deployer — is applied to the
+  stylesheet, the fonts, the templates, the scripts and the policies.
+
+- **An argument the program does not recognise is not one of the outcomes.**
+  `webtools/anagraphics/scripts/migrate_pipeline.py:29` and `migrate_user_billing.py:33` take every
+  command line but one exact string to mean "write to the database"; `webtools/configurator/deploy.sh:50-65`
+  reports an unknown deployer name only when every name is unknown. Two `breaks-now`, three scripts.
+  `webtools/anagraphics/scripts/load_configuration.py:120-136`,
+  `webtools/anagraphics/webtools_anagraphics.sh:101-107` and
+  `webtools/configurator/deploy.sh:30-39` are the three places in the same repository that do it right.
+
 - **The same file in five copies, with no original.** `webtools/sso/webtools_sso.sh` is
   `webtools/preanalyst/webtools_preanalyst.sh` with the name changed, and the same holds for
   front-gate, anagraphics and workspaces; `src/index.js` is close behind (findings 1 and 2 of
@@ -204,7 +271,15 @@ ledger silently starts under-reporting every prevalidation.
   `src/ai/` became `src/prevalidator_ai/`. That was finding 1 of `findings/preanalyst-settings.md`,
   now annotated as fixed.
 
-## Units examined so far
+## The run, in one line
+
+Seventy-three units, 188 findings: 19 `breaks-now`, 134 `latent`, 35 `stylistic`, 8 `uncertain`
+items. Four units had nothing to report (`configurator-secrets-preanalyst`, `sso-templates`, and
+the sso's and the front-gate's own `README.md` within unit 71). The rule holds best where the
+repository explains itself: `docs/subsystems/preanalyst/README.md` §16.1 states the four clauses
+of the audited rule better than `CLAUDE.md` does, and the code it describes obeys them.
+
+## Units examined
 
 | unit | findings |
 |---|---|
@@ -250,3 +325,34 @@ ledger silently starts under-reporting every prevalidation.
 | front-gate-settings-index-page | **1 `breaks-now`**, 1 `latent`, 1 `stylistic` |
 | front-gate-templates | 2 `latent`, 1 `stylistic` |
 | front-gate-public | 1 `latent` |
+| front-gate-runner | 1 `latent`, 1 `stylistic` |
+| anagraphics-main | 5 `latent` |
+| anagraphics-db | 2 `latent`, 1 `stylistic` |
+| anagraphics-settings-credentials-errors | 3 `latent` |
+| anagraphics-scripts | **2 `breaks-now`**, 3 `latent` |
+| anagraphics-tests | 3 `latent` |
+| anagraphics-runner | 1 `latent`, 1 `stylistic` |
+| configurator-deployers | **1 `breaks-now`**, 2 `latent` |
+| configurator-start-stop | 3 `latent` |
+| configurator-load-configuration | 2 `latent`, 1 `stylistic` |
+| configurator-configuration-rest | 2 `latent` |
+| configurator-documents | 2 `latent` |
+| configurator-readme | 2 `latent` |
+| workspaces-server | 1 `latent`, 1 `stylistic` |
+| workspaces-store | 1 `latent`, 1 `stylistic` |
+| workspaces-settings-index | **1 `breaks-now`**, 1 `latent` |
+| workspaces-tests | 1 `latent`, 1 `stylistic` |
+| workspaces-runner | 1 `latent`, 1 `stylistic` |
+| commons-configuration-client | 1 `latent`, 1 `stylistic` |
+| commons-i18n-lib | 3 `latent` |
+| commons-sso-client | 2 `latent`, 1 `stylistic` |
+| commons-loader | **1 `breaks-now`**, 1 `latent` |
+| commons-specs | 2 `stylistic` |
+| commons-templates | 1 `latent`, 1 `stylistic` |
+| commons-style | 1 `latent`, 1 `stylistic` |
+| docs-preanalyst | 2 `latent` |
+| docs-anagraphics | 3 `latent` |
+| docs-sso-workspaces | 2 `latent` |
+| subsystem-readmes | 3 `latent` |
+| claude-md | 3 `latent` |
+| preanalyst-tests-analysis-page | 2 `latent`, 1 `stylistic` |

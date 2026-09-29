@@ -2,7 +2,7 @@
 // Node.
 //
 // The block below is not made up: it really was produced by
-// `webtools_anagraphics/credentials.py` with the password "password-di-prova". If
+// `webtools_anagraphics/credentials.py` with the password "test-password". If
 // one day the two scrypts stopped computing the same thing, this test fails before
 // a login does.
 
@@ -11,12 +11,12 @@ import { test } from "node:test";
 
 import { verifyPassword } from "../src/credentials.js";
 
-const PASSWORD = "password-di-prova";
+const PASSWORD = "test-password";
 const CREDENTIAL = {
   algorithm: "scrypt",
   params: { n: 16384, r: 8, p: 1, dklen: 32 },
-  salt: "x9hENw++DZNaSJcQ7+Gqpw==",
-  hash: "sCBbG78hlwM7ZyWSi0vmMQwsURojukn7s99GhDhm51M=",
+  salt: "9ioMbzYiVE0aGMco5Qwdsg==",
+  hash: "aVAoxCIfKrIOZ/vwAUceQXZxzqC8aWfKm8fWTWdFDrw=",
 };
 
 test("accepts the right password, computed by Python", async () => {
@@ -24,14 +24,14 @@ test("accepts the right password, computed by Python", async () => {
 });
 
 test("refuses the wrong password", async () => {
-  assert.equal(await verifyPassword("password-sbagliata", CREDENTIAL), false);
+  assert.equal(await verifyPassword("wrong-password", CREDENTIAL), false);
   assert.equal(await verifyPassword("", CREDENTIAL), false);
   // One extra character is not enough.
   assert.equal(await verifyPassword(`${PASSWORD} `, CREDENTIAL), false);
 });
 
 test("a badly made credential block lets nobody in and does not break the login", async () => {
-  const malfatti = [
+  const malformed = [
     null,
     undefined,
     {},
@@ -42,7 +42,7 @@ test("a badly made credential block lets nobody in and does not break the login"
     // A hash of a length other than dklen: timingSafeEqual would throw.
     { ...CREDENTIAL, hash: "c2hvcnQ=" },
   ];
-  for (const credential of malfatti) {
+  for (const credential of malformed) {
     assert.equal(await verifyPassword(PASSWORD, credential), false);
   }
 });

@@ -28,8 +28,8 @@ DRIVERS = [
     # the "driver with no discount codes" case.
     {
         "uid": "639718a3-ea41-4533-bdb8-73ac58b3b1b2",
-        "username": "driver.prova@example.com",
-        "screen_name": "Prova",
+        "username": "driver.test@example.com",
+        "screen_name": "Test",
         "enabled": True,
     },
     # A test driver who is not enabled, with a discount code: it is there for the
@@ -37,8 +37,8 @@ DRIVERS = [
     # enabled" cases.
     {
         "uid": "f234b930-e5d0-4e10-8a4f-1a8a13814370",
-        "username": "driver.nonabilitato@example.com",
-        "screen_name": "Non abilitato",
+        "username": "driver.notenabled@example.com",
+        "screen_name": "Not enabled",
         "enabled": False,
     },
 ]
@@ -57,8 +57,8 @@ USERS = [
     },
     {
         "uid": "214912a9-2cc4-4205-87b7-93ea71f6be72",
-        "username": "driver.prova@example.com",
-        "screen_name": "Prova",
+        "username": "driver.test@example.com",
+        "screen_name": "Test",
         "active": True,
         "driver_uid": "639718a3-ea41-4533-bdb8-73ac58b3b1b2",
     },
@@ -78,7 +78,7 @@ DISCOUNTS = [
         "discount_code": "91165eb1-65d6-43a9-ade8-681ec3ebef8d",
         "driver": {
             "uid": "f234b930-e5d0-4e10-8a4f-1a8a13814370",
-            "screen_name": "Non abilitato",
+            "screen_name": "Not enabled",
         },
         "percentage": 10,
     },

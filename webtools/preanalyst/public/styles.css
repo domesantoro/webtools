@@ -252,7 +252,7 @@
   filter: none;
 }
 
-/* ------------------------------ uploading an analysis already prepared */
+/* --------------------------- uploading a specification already prepared */
 
 .upload-box { background: var(--surface); }
 .upload-box-body { padding: 16px 20px 18px; }
@@ -288,7 +288,7 @@
 .upload-status-ok { color: var(--sage); font-weight: 600; }
 .upload-status-error { color: var(--accent-ink); font-weight: 600; }
 
-/* ------------------------------- the chat of the specification rounds */
+/* -------------------------------- the chat of the rounds of questions */
 
 /* The conversation sits in a card with the register scrolling by itself: that
    way the field for writing always stays where it is, and the page does not
@@ -410,7 +410,7 @@
    no effect. */
 .chat-composer[hidden] { display: none; }
 
-/* The height is decided by analysis.js while one writes; the maximum is decided
+/* The height is decided by preanalysis.js while one writes; the maximum is decided
    here, or a long message would eat the conversation. */
 .chat-input {
   min-height: 0;
@@ -457,12 +457,15 @@
   background: var(--paper-2);
 }
 
-/* ---------- the analysis is complete ---------- */
+/* ---------- the pre-analysis is complete ---------- */
 
-/* It appears between the conversation and the field when the analysis has been
+/* It appears between the conversation and the field when the pre-analysis has been
    judged complete. A notice, not an alarm: sage and not vermilion, and it takes
    nothing away — whoever still has turns goes on writing underneath it. */
-.chat-ready {
+/* The notice between the conversation and the field: the pre-analysis has been
+   judged complete, or the rounds are over and this is a reading of them. */
+.chat-ready,
+.chat-closed {
   margin: 0 24px 12px;
   padding: 10px 14px;
   border: 1.5px solid var(--sage);
@@ -475,7 +478,7 @@
 
 /* ---------- the turns ---------- */
 
-/* It appears from `analysis.warn_from_turn` on. Small and below the field: it is
+/* It appears from `preanalysis.warn_from_turn` on. Small and below the field: it is
    information, not an alarm, and whoever is writing is not to be interrupted. */
 .chat-turns-warning {
   margin: 0;
@@ -515,7 +518,7 @@
 .chat-credit-input { width: 88px; padding: 8px 10px; }
 /* A number that cannot be used: the border says it, and the line below the row
    says why. `:invalid` is the browser's own verdict on `min`, `step` and the `max`
-   that analysis.js keeps up to date, so there is no second rule to keep in step —
+   that preanalysis.js keeps up to date, so there is no second rule to keep in step —
    and an empty field is not invalid, because starting to write is not a mistake. */
 .chat-credit-input:invalid { border-color: var(--accent); background: var(--accent-soft); }
 /* With no credit there is nothing to add: the whole row goes quiet, the label

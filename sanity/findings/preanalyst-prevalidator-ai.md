@@ -45,7 +45,7 @@ the first client's request. The findings are all in the provider.
   values: `ai.providers.anthropic.model` and `prevalidation.policy`. The code records exactly two
   counters, `input_tokens` and `output_tokens`, because on the pair in front of the author the
   other two are always zero.
-- The repository proves the premise is fragile, and by how much. `contesto/ottimizzazioni.md` §8
+- The repository proves the premise is fragile, and by how much. `contesto/optimisations.md` §8
   measures it: the cache minimum is 4096 tokens on `claude-haiku-4-5`, and `scope-v1` is **3541**
   tokens — 555 short. The same table records the policy going ~1300 → 3051 → 3541 in two days.
   Editing the policy is the documented way to change what the system considers acceptable, and it
@@ -55,7 +55,7 @@ the first client's request. The findings are all in the provider.
   anything newer — switches caching on. Cached input is then reported in
   `cache_creation_input_tokens` and `cache_read_input_tokens`, which are *not* part of
   `input_tokens`, so the ledger silently starts under-reporting the input volume of every
-  prevalidation. Nothing errors, nothing looks odd, and the number the PoC exists to measure — the
+  prevalidation. Nothing errors, nothing looks odd, and the number the ledger exists to carry — the
   real AI cost of a webtool — becomes quietly wrong. The sibling engine records all four
   (`analyst_ai/providers/anthropic.js:159-164`), so the two halves of the same measurement would no
   longer be comparable either.

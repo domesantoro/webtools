@@ -34,8 +34,8 @@ Two things checked because they are where catalogues usually go wrong, and both 
   both languages read wrong: "The 1 question-and-answer turns", "I 1 turni".
 - One is reachable: `analysis.max_turns` is validated only as `{ min: 1 }`
   (`webtools/preanalyst/src/settings.js:107`), so configuring it to 1 is legal, and that is a
-  plausible thing to do while measuring what a pre-analysis really costs — which is the PoC's
-  stated purpose.
+  plausible thing to do while measuring what a pre-analysis really costs — which is one of the
+  figures the system is being measured for.
 - What makes this a finding rather than a nitpick is that **the same project already solved this
   problem and wrote down how**. `webtools/preanalyst/templates/analysis.njk:93-96`: "The number
   comes before the noun ('available: 1 of 5') and not after: that way the sentence does not change

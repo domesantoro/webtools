@@ -1,5 +1,5 @@
 {#
-  The block for uploading an analysis that is already done: a .md file carrying in
+  The block for uploading a specification that is already done: a .md file carrying in
   its front matter the `project_id` of a project belonging to whoever uploads it.
   Always visible, even when logged out: the account is needed at the moment of
   uploading, not to choose the file — logged out, "Carica" opens the login modal,
@@ -17,8 +17,8 @@
         <div class="upload-box-body">
           <p class="upload-lead">{{ t("preanalyst.upload.lead") }}</p>
 
-          <label class="dropzone" for="analysis-file" data-upload-zone>
-            <input class="dropzone-input" type="file" id="analysis-file" name="analysis"
+          <label class="dropzone" for="specification-file" data-upload-zone>
+            <input class="dropzone-input" type="file" id="specification-file" name="specification"
                    accept="{{ upload.accept }}">
             <span class="dropzone-text" data-upload-name>{{ t("preanalyst.upload.choose") }}</span>
             <span class="dropzone-hint">{{ t("preanalyst.upload.limit", { mb: upload.max_mb }) }}</span>

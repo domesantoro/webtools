@@ -146,7 +146,7 @@ export async function resolveDriverLink(settings, { discountCode, driverUid }, d
 // found, or who has been disabled in the meantime, is not the user's problem — the
 // project is already assigned, and telling them now would do them no good.
 export async function driverLinkOfProject(settings, project) {
-  const driverUid = project.review?.preset ? project.review?.driver_uid : null;
+  const driverUid = project.review?.preset ? project.review?.driver?.uid : null;
   if (!driverUid) return { state: NONE };
 
   const found = await findDriver(settings, driverUid);

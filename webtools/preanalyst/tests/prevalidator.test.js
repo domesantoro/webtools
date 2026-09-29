@@ -73,33 +73,33 @@ test("normalize: rejects what is not a distribution", () => {
 });
 
 test("rejects: needs the most probable outcome AND the threshold passed", () => {
-  const sopra = normalize(dist({ run_out_certain: 0.8, run_out_likely: 0.1, safe: 0.1 }));
-  assert.equal(rejects(sopra.distribution, sopra.outcome, 0.6), true);
+  const above = normalize(dist({ run_out_certain: 0.8, run_out_likely: 0.1, safe: 0.1 }));
+  assert.equal(rejects(above.distribution, above.outcome, 0.6), true);
 
   // The highest of the five, but below the threshold: it is a certainty of nothing.
-  const sotto = normalize(dist({ run_out_certain: 0.35, run_out_likely: 0.3, safe: 0.2, ultrasafe: 0.15 }));
-  assert.equal(sotto.outcome, "run_out_certain");
-  assert.equal(rejects(sotto.distribution, sotto.outcome, 0.6), false);
+  const below = normalize(dist({ run_out_certain: 0.35, run_out_likely: 0.3, safe: 0.2, ultrasafe: 0.15 }));
+  assert.equal(below.outcome, "run_out_certain");
+  assert.equal(rejects(below.distribution, below.outcome, 0.6), false);
 });
 
 test("rejects: only the two refusing outcomes refuse", () => {
-  const probabile = normalize(dist({ run_out_certain: 0.1, run_out_likely: 0.8, safe: 0.1 }));
-  assert.equal(probabile.outcome, "run_out_likely");
-  assert.equal(rejects(probabile.distribution, probabile.outcome, 0.6), false);
+  const likely = normalize(dist({ run_out_certain: 0.1, run_out_likely: 0.8, safe: 0.1 }));
+  assert.equal(likely.outcome, "run_out_likely");
+  assert.equal(rejects(likely.distribution, likely.outcome, 0.6), false);
 
   // `non_sequitur` refuses like `run_out_certain`, and on the same terms.
-  const fuori = normalize(dist({ non_sequitur: 0.9, run_out_certain: 0.1 }));
-  assert.equal(rejects(fuori.distribution, fuori.outcome, 0.6), true);
+  const outside = normalize(dist({ non_sequitur: 0.9, run_out_certain: 0.1 }));
+  assert.equal(rejects(outside.distribution, outside.outcome, 0.6), true);
 
-  const incerto = normalize(dist({ non_sequitur: 0.4, safe: 0.35, run_out_likely: 0.25 }));
-  assert.equal(incerto.outcome, "non_sequitur");
-  assert.equal(rejects(incerto.distribution, incerto.outcome, 0.6), false);
+  const uncertain = normalize(dist({ non_sequitur: 0.4, safe: 0.35, run_out_likely: 0.25 }));
+  assert.equal(uncertain.outcome, "non_sequitur");
+  assert.equal(rejects(uncertain.distribution, uncertain.outcome, 0.6), false);
 });
 
 // ---------------------------------------------------------------- the verdict
 
-const decide = (valori, { attempts = 0, maxAttempts = 2 } = {}) => {
-  const { distribution, outcome } = normalize(dist(valori));
+const decide = (values, { attempts = 0, maxAttempts = 2 } = {}) => {
+  const { distribution, outcome } = normalize(dist(values));
   return verdict(distribution, outcome, { threshold: 0.6, attempts, maxAttempts });
 };
 

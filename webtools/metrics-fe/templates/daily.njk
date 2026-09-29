@@ -1,0 +1,94 @@
+{#
+  The buckets themselves.
+
+  Every figure on every other page is a claim, and a claim has to be checkable against
+  what it was computed from. This is the page it is checked against: the rows as metrics
+  stores them, printed unchanged.
+
+  Expected: view (src/views/daily.js buildDaily), plus the shell's own.
+#}{% extends "layout.njk" %}
+{% import "figures.njk" as figure %}
+{% import "charts.njk" as chart %}
+
+{% block title %}buckets — webtools metrics{% endblock %}
+
+{% block content %}
+<h1>Daily buckets</h1>
+<p class="subtitle">One document per day, subsystem, metric and set of dimensions. Nothing is kept per occurrence.</p>
+
+<section>
+  <h2>Which metric</h2>
+  <p class="chooser">
+    {%- if view.chosen %}
+    <a href="/daily?from={{ view.period.from }}&to={{ view.period.to }}">all of them</a>
+    {%- else %}
+    <span class="current">all of them</span>
+    {%- endif %}
+    {%- for metric in view.metrics %}
+    {%- if metric.chosen %}
+    <span class="current">{{ metric.name }}</span>
+    {%- else %}
+    <a class="{% if not metric.folded %}quiet{% endif %}" href="/daily?from={{ view.period.from }}&to={{ view.period.to }}&metric={{ metric.name }}"
+       {% if not metric.folded %}title="nothing was folded under this name in the period"{% endif %}>{{ metric.name }}</a>
+    {%- endif %}
+    {%- endfor %}
+  </p>
+  <p class="note">Pale: in the vocabulary, not folded in this period.</p>
+</section>
+
+{%- if view.chart %}
+<section>
+  <h2>Day by day</h2>
+  {{ chart.series(view.chart, view.series, "buckets folded") }}
+</section>
+{%- endif %}
+
+{%- if view.chosen %}
+<section>
+  <h2>How long they took</h2>
+  {{ figure.histogram(view.histogram, "duration") }}
+  <p class="note">Every bucket of <code>{{ view.chosen }}</code> in the period, added under the edge it arrived with. The edges are metrics' configuration.</p>
+</section>
+{%- endif %}
+
+<section>
+  <h2>The rows</h2>
+  {%- if not view.rows.length %}
+  <p class="absent">No bucket was folded in this period{% if view.chosen %} under <code>{{ view.chosen }}</code>{% endif %}.</p>
+  {%- else %}
+  <p class="meta">{{ view.shown }} of {{ view.of }} row{% if view.of != 1 %}s{% endif %}{% if view.hidden %}, {{ view.hidden }} not shown{% endif %}.</p>
+  <table class="grid rows">
+    <thead>
+      <tr>
+        <th>day</th><th>subsystem</th><th>metric</th><th>dimensions</th>
+        <th class="number-cell">count</th>
+        {%- for kind in view.kinds %}<th class="number-cell">{{ kind }}</th>{% endfor %}
+        <th class="number-cell">mean</th><th class="number-cell">min</th><th class="number-cell">max</th>
+      </tr>
+    </thead>
+    <tbody>
+      {%- for row in view.rows %}
+      <tr>
+        <td class="mono">{{ row.day }}</td>
+        <td>{{ row.subsystem }}</td>
+        <td class="mono">{{ row.metric }}</td>
+        <td class="dims">
+          {%- if row.dims.length %}
+          {%- for dim in row.dims %}<span class="dim"><span class="name">{{ dim.name }}</span>{{ dim.value }}</span>{% endfor %}
+          {%- else %}<span class="absent">none</span>{% endif %}
+        </td>
+        <td class="number-cell">{{ row.count }}</td>
+        {%- for kind in view.kinds %}
+        <td class="number-cell">{% if row.tokens and row.tokens[kind] is defined %}{{ row.tokens[kind] | number_text }}{% else %}<span class="absent">&mdash;</span>{% endif %}</td>
+        {%- endfor %}
+        <td class="number-cell">{% if row.duration %}{{ figure.number(row.duration.mean.text) }}{% else %}<span class="absent">&mdash;</span>{% endif %}</td>
+        <td class="number-cell">{% if row.duration %}{{ figure.number(row.duration.min.text) }}{% else %}<span class="absent">&mdash;</span>{% endif %}</td>
+        <td class="number-cell">{% if row.duration %}{{ figure.number(row.duration.max.text) }}{% else %}<span class="absent">&mdash;</span>{% endif %}</td>
+      </tr>
+      {%- endfor %}
+    </tbody>
+  </table>
+  <p class="note">The mean is the stored sum over the durations that went into it. No percentile is estimated from a row.</p>
+  {%- endif %}
+</section>
+{% endblock %}

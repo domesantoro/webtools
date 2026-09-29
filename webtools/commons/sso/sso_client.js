@@ -33,11 +33,35 @@
 //                 with the same name overwrite each other)
 //   publicUrl     its own public address, e.g. "http://127.0.0.1:9200": it is what
 //                 is declared to the sso when the ticket is exchanged
-
+//   metrics       the metrics client (webtools/commons/metrics). Every call made
+//                 here is measured, so a subsystem that uses this one measures
+//
 /* -------------------------------------------------------------- requests */
 
-async function request(settings, path, { method = "GET", body, token } = {}) {
+// **Every call through here is measured**, once, as a `dependency.call` towards the
+// sso — the same convention as the clients towards anagraphics, the analyst and
+// workspaces, and the reason it matters more here than anywhere else: this call sits
+// on the path of **every page of every subsystem**, because that is what asking who
+// is looking at it means. `dependency.call` is the metric that says whose fault a
+// slow page is, and until now the one leg it could not see was the one every page
+// has.
+//
+// `operation` is a stable word each helper gives, never the path: a path here carries
+// a ticket, and a bucket per ticket would make the number of documents grow with the
+// traffic instead of with the number of kinds of thing measured.
+//
+// Four outcomes, because they are four different things to do about it: `ok`,
+// `failed`, `timed_out` (we gave up waiting; the sso may well still be working) and
+// `not_found`, which is an answer — a ticket already used is most of what a `404`
+// here means, and counting it as a failure would drown the ones that are.
+async function request(settings, path, { method = "GET", body, token, operation } = {}) {
   const url = `${settings.ssoUrl}${path}`;
+  const elapsed = settings.metrics.timer();
+  const report = (outcome) =>
+    settings.metrics.measure("dependency.call", {
+      dims: { target: "sso", operation, outcome },
+      duration_ms: elapsed(),
+    });
   let response;
   try {
     response = await fetch(url, {
@@ -52,6 +76,9 @@ async function request(settings, path, { method = "GET", body, token } = {}) {
     });
   } catch (error) {
     console.error(`[sso-client] ${method} ${path}: ${error.name} ${error.message}`);
+    // We gave up waiting, or there was nothing at the other end: two facts, and in a
+    // log they look alike.
+    report(error.name === "TimeoutError" ? "timed_out" : "failed");
     return { ok: false, reason: "unavailable" };
   }
 
@@ -60,10 +87,15 @@ async function request(settings, path, { method = "GET", body, token } = {}) {
     payload = await response.json();
   } catch {
     console.error(`[sso-client] ${method} ${path}: response is not JSON (HTTP ${response.status})`);
+    report("failed");
     return { ok: false, reason: "unavailable" };
   }
 
-  if (response.ok) return { ok: true, data: payload };
+  if (response.ok) {
+    report("ok");
+    return { ok: true, data: payload };
+  }
+  report(response.status === 404 ? "not_found" : "failed");
   console.error(`[sso-client] ${method} ${path}: HTTP ${response.status} ${payload?.error ?? "?"}`);
   return { ok: false, reason: "unavailable", code: payload?.error };
 }
@@ -130,7 +162,7 @@ export async function currentSession(settings, httpRequest) {
   const token = readCookie(httpRequest, settings.cookieName);
   if (!token) return { ok: true, logged: false };
 
-  const result = await request(settings, "/session", { token });
+  const result = await request(settings, "/session", { token, operation: "read_session" });
   if (!result.ok) return result;
   return { ok: true, logged: Boolean(result.data.logged), session: result.data.session ?? null };
 }
@@ -141,6 +173,7 @@ export async function claimTicket(settings, ticket) {
   const result = await request(settings, "/tickets/exchange", {
     method: "POST",
     body: { ticket, service: settings.publicUrl },
+    operation: "exchange_ticket",
   });
   if (!result.ok) return result;
   return { ok: true, logged: Boolean(result.data.logged), session: result.data.session ?? null };
@@ -157,7 +190,12 @@ export async function saveSessionLocale(settings, httpRequest, locale) {
   const token = readCookie(httpRequest, settings.cookieName);
   if (!token) return { ok: true, logged: false };
 
-  const result = await request(settings, "/session/locale", { method: "POST", body: { locale }, token });
+  const result = await request(settings, "/session/locale", {
+    method: "POST",
+    body: { locale },
+    token,
+    operation: "set_session_locale",
+  });
   if (!result.ok) return result;
   return { ok: true, logged: Boolean(result.data.logged) };
 }
