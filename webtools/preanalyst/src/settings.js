@@ -35,6 +35,11 @@ export async function loadSettings() {
     // trigger being taken, not about the analysis being written.
     analystUrl: configuration.httpUrl("subsystems_infos.analyst.url"),
     analystTimeoutMs: configuration.integer("subsystems_infos.analyst.timeout_ms", { min: 1 }),
+    // Where what has to be said to a person is handed over. The rounds of questions say
+    // everything else on the page itself, because the client is in front of it: what
+    // goes through here is what the page cannot promise.
+    commCenterUrl: configuration.httpUrl("subsystems_infos.comm_center.url"),
+    commCenterTimeoutMs: configuration.integer("subsystems_infos.comm_center.timeout_ms", { min: 1 }),
     // The sso: login, session state, logout. See src/commons/sso_client.js.
     ssoUrl: configuration.httpUrl("subsystems_infos.sso.url"),
     ssoTimeoutMs: configuration.integer("subsystems_infos.sso.timeout_ms", { min: 1 }),

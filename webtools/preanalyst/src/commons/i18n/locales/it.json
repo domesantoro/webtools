@@ -171,9 +171,9 @@
       "hint": "Invio manda il messaggio, Maiusc+Invio va a capo.",
       "send": "Manda",
       "waiting": "Sto scrivendo",
-    "ready": "L'analisi è completa. Puoi procedere con «Va bene così, procediamo!», oppure continuare a scrivere se c'è altro da aggiungere.",
-    "closed": "Le domande sono finite. Questa pagina mostra la conversazione com'è stata lasciata.",
-    "too_long": "Il messaggio supera i {limit} caratteri e non è stato mandato. Accorcialo e mandalo di nuovo: non hai consumato nessun turno.",
+      "ready": "L'analisi è completa. Puoi procedere con «Va bene così, procediamo!», oppure continuare a scrivere se c'è altro da aggiungere.",
+      "closed": "Le domande sono finite. Questa pagina mostra la conversazione com'è stata lasciata.",
+      "too_long": "Il messaggio supera i {limit} caratteri e non è stato mandato. Accorcialo e mandalo di nuovo: non hai consumato nessun turno.",
       "summary": {
         "title": "Il progetto",
         "empty": "Nessuna condizione particolare: il driver lo assegniamo noi.",
@@ -340,6 +340,10 @@
       }
     },
     "rejection": {
+      "after_review": {
+        "title": "La richiesta non è stata accolta",
+        "lead": "L'analisi è stata scritta, e chi l'ha letta ha deciso di non proseguire."
+      },
       "out_of_scope": {
         "title": "Non possiamo proseguire con questa richiesta",
         "lead": "Da quello che hai descritto, webtools probabilmente non è lo strumento adatto a questo bisogno."
@@ -366,6 +370,158 @@
     "proposal": {
       "title": "Cosa potrai fare",
       "intro": "Ogni riga è una cosa che potrai fare con il tuo webtool. La demo viene controllata punto per punto contro questa lista."
+    }
+  },
+  "projects_hub": {
+    "nav": {
+      "owned": "I miei progetti",
+      "driver": "Progetti in gestione",
+      "broken": "Di nessuno"
+    },
+    "owned": {
+      "title": "I miei progetti",
+      "empty": "Non hai ancora progetti.",
+      "active": {
+        "title": "Attivi",
+        "empty": "Nessun progetto attivo."
+      },
+      "returned": {
+        "title": "Serve più dettaglio",
+        "empty": "Niente da completare."
+      },
+      "stopped": {
+        "title": "Progetti fermi",
+        "empty": "Nessun progetto fermo."
+      }
+    },
+    "driver": {
+      "title": "Progetti in gestione",
+      "links": {
+        "title": "I tuoi link",
+        "ambassador": "Link ambassador",
+        "ambassador_hint": "Per invitare un cliente. Metà della fee di sistema è tua.",
+        "driver": "Link driver",
+        "driver_hint": "Il progetto di chi arriva da questo link lo gestisci tu.",
+        "discount": "Sconto",
+        "discount_none": "Nessuno sconto",
+        "make": "Genera link",
+        "made": "Il link:",
+        "percentage": "{percentage}% di sconto"
+      },
+      "waiting": {
+        "title": "I progetti che gestisci",
+        "empty": "Non gestisci nessun progetto."
+      },
+      "failed": {
+        "title": "Fermi",
+        "empty": "Nessuno dei tuoi progetti si è fermato."
+      },
+      "validation": {
+        "approve": {
+          "button": "Approva l'analisi",
+          "title": "Approvare l'analisi",
+          "lead": "L'analisi passa al cliente, che decide se accettarla. Da qui non si torna indietro."
+        },
+        "reject": {
+          "button": "Rifiuta l'analisi",
+          "title": "Rifiutare l'analisi",
+          "lead": "Il progetto viene rifiutato e la lavorazione si chiude. Da qui non si torna indietro."
+        },
+        "reason_label": "Perché lo rifiuti",
+        "reason_hint": "Resta scritta sul progetto. Al massimo {max} caratteri.",
+        "reason_missing": "Il rifiuto ha bisogno di una motivazione.",
+        "reason_too_long": "La motivazione supera i {max} caratteri.",
+        "confirm": "Conferma",
+        "back": "Torna ai progetti",
+        "decided": {
+          "approve": "Analisi approvata: ora tocca al cliente.",
+          "reject": "Analisi rifiutata: il progetto è chiuso."
+        }
+      }
+    },
+    "broken": {
+      "title": "Progetti che nessuno segue",
+      "lead": "Progetti a cui un driver è dovuto e che non ce l'hanno.",
+      "orphan": {
+        "title": "Senza driver",
+        "empty": "Ogni progetto a cui un driver è dovuto ce l'ha."
+      },
+      "orphan_failed": {
+        "title": "Senza driver, e fermi",
+        "empty": "Nessuno di loro si è fermato."
+      }
+    },
+    "project": {
+      "unnamed": "Progetto senza nome",
+      "autonomous_work": "Lavoro autonomo",
+      "read_features": "Leggi le funzionalità del tuo sistema",
+      "points": "Scarica i punti",
+      "analysis": "Scarica l'analisi",
+      "why": "Perché si è fermato"
+    },
+    "failure": {
+      "broken": "Un guasto nostro ha interrotto la lavorazione.",
+      "no_specification": "La richiesta non si è potuta rileggere.",
+      "technical": "L'analisi tecnica non è tornata.",
+      "judgement": "Il giudizio sulla richiesta non è tornato.",
+      "points": "La lista dei punti non è tornata.",
+      "documents": "I documenti non si sono potuti salvare.",
+      "handover": "L'analisi è scritta e non c'è un driver a cui darla."
+    },
+    "state": {
+      "client": {
+        "PREANALYSIS": "Errore generico",
+        "PREVALIDATION": "Stiamo guardando la richiesta",
+        "UNDERSPECIFIED": "Serve più dettaglio: la richiesta è tornata a te",
+        "ANALYSIS": "Stiamo scrivendo l'analisi",
+        "DRIVER_VALIDATION": "L'analisi è in revisione",
+        "CLIENT_VALIDATION": "L'analisi aspetta la tua risposta",
+        "DEVELOPMENT": "In sviluppo",
+        "ALPHA_TEST": "In collaudo",
+        "DEMO": "La demo aspetta la tua risposta",
+        "PAID": "Pagato",
+        "REJECTED": "Richiesta rifiutata",
+        "FAILED": "La lavorazione si è fermata prima della fine",
+        "FAILED_NO_DRIVERS": "La lavorazione si è fermata prima della fine"
+      },
+      "driver": {
+        "PREANALYSIS": "Il cliente sta rispondendo alle domande",
+        "PREVALIDATION": "La richiesta è in prevalidazione",
+        "UNDERSPECIFIED": "Tornata al cliente per mancanza di dettaglio",
+        "ANALYSIS": "L'analisi è in scrittura",
+        "DRIVER_VALIDATION": "Aspetta che tu validi l'analisi",
+        "CLIENT_VALIDATION": "Il cliente sta validando l'analisi",
+        "DEVELOPMENT": "In sviluppo",
+        "ALPHA_TEST": "L'α-test è in corso",
+        "DEMO": "La demo è pubblicata e aspetta il cliente",
+        "PAID": "Pagato",
+        "REJECTED": "Rifiutato",
+        "FAILED": "La lavorazione si è fermata prima della fine",
+        "FAILED_NO_DRIVERS": "L'analisi è scritta e nessun driver ce l'ha"
+      }
+    },
+    "messages": {
+      "back": "Vai ai miei progetti",
+      "unavailable": {
+        "title": "Non disponibile",
+        "text": "In questo momento il servizio non può dire chi sei. Riprova tra un momento."
+      },
+      "not_found": {
+        "title": "Non c'è",
+        "text": "A questo indirizzo non c'è niente."
+      },
+      "document_unavailable": {
+        "title": "Documento non disponibile",
+        "text": "In questo momento il documento non si può leggere. Riprova tra un momento."
+      },
+      "link_unavailable": {
+        "title": "Link non fatto",
+        "text": "Il codice sconto non è stato creato. Riprova tra un momento."
+      },
+      "decision_unavailable": {
+        "title": "Decisione non registrata",
+        "text": "In questo momento la decisione non si può scrivere sul progetto. Il progetto è rimasto com'era: riprova tra un momento."
+      }
     }
   },
   "front_gate": {

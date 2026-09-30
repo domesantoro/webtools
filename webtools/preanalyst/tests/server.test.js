@@ -10,7 +10,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { opensPreanalysis, underspecifiedAttempts } from "../src/server.js";
+import { opensPreanalysis, rejectionCase, underspecifiedAttempts } from "../src/server.js";
 
 const project = (results) => ({
   pipeline: { steps: results.map((result) => ({ step: "prevalidation", result })) },
@@ -83,4 +83,53 @@ test("opensPreanalysis: a state we cannot read opens nothing", () => {
   assert.equal(opensPreanalysis(undefined), false);
   assert.equal(opensPreanalysis("ANALYSIS"), false);
   assert.equal(opensPreanalysis(""), false);
+});
+
+/* ----------------------------------------------------------------------------
+   Which refusal a refused project got.
+
+   `REJECTED` is the terminus of every gate, so the state cannot say which one
+   refused: the steps can, and the sentence the client reads depends on it.
+   ---------------------------------------------------------------------------- */
+
+const refused = (...steps) => ({ pipeline: { state: "REJECTED", steps } });
+const prevalidation = (result, outcome) => ({
+  step: "prevalidation",
+  result,
+  data: outcome ? { outcome } : {},
+});
+
+test("rejectionCase: the prevalidator's two refusals each have their own sentence", () => {
+  assert.equal(rejectionCase(refused(prevalidation("rejected", "run_out_certain"))), "out_of_scope");
+  assert.equal(rejectionCase(refused(prevalidation("rejected", "non_sequitur"))), "not_software");
+});
+
+test("rejectionCase: with nothing to go on, the request was not recognised", () => {
+  assert.equal(rejectionCase({}), "not_recognised");
+  assert.equal(rejectionCase(refused()), "not_recognised");
+  assert.equal(rejectionCase(refused(prevalidation("rejected", null))), "not_recognised");
+});
+
+test("rejectionCase: a refusal at the driver's gate is not any of the three", () => {
+  // Everything before it worked: the request was understood, judged worth analysing,
+  // analysed and paid for. The prevalidation it passed is still on the project, and
+  // reading that step alone would call this request unrecognised — which is the one
+  // thing it is not.
+  const project = refused(
+    prevalidation("passed", "safe"),
+    { step: "preanalysis", result: "passed", data: {} },
+    { step: "analysis", result: "passed", data: {} },
+    { step: "driver_validation", result: "rejected", data: { reason: "Fuori perimetro." } }
+  );
+  assert.equal(rejectionCase(project), "after_review");
+});
+
+test("rejectionCase: an analysis that failed is not a refusal at that gate", () => {
+  // `failed` is not `rejected`: nobody decided anything about the request, and such a
+  // project is not `REJECTED` in the first place.
+  const project = refused(
+    prevalidation("rejected", "run_out_certain"),
+    { step: "analysis", result: "failed", data: { failed_at: "technical" } }
+  );
+  assert.equal(rejectionCase(project), "out_of_scope");
 });

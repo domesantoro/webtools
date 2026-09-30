@@ -29,7 +29,7 @@ from dataclasses import dataclass, field
 # copy of the same fact.
 SUBSYSTEMS = frozenset(
     {"front-gate", "preanalyst", "sso", "workspaces", "anagraphics", "configurator-fe", "metrics",
-     "analyst", "drivers-pool", "comm-center"}
+     "analyst", "drivers-pool", "comm-center", "projects-hub"}
 )
 
 # The phases that consume: the same words the pipeline uses, plus the two calls of
@@ -189,8 +189,15 @@ METRICS: dict[str, Metric] = {
     # The list the client is asked to agree to, and the demo is later checked against.
     # `amounts.points` is how many things they are agreeing to; `language` is the one
     # they are written in, which is a fact carried on the material and never guessed.
+    # `described` says whether the same call also managed to label the project — the
+    # one sentence the lists of projects show beside the name. It is a dimension of
+    # this measurement and not a metric of its own because it is a property of the
+    # points being written, not a second event: the label comes out of the same call,
+    # in the same answer. Without it, a description that came back empty is dropped and
+    # nothing anywhere says how often that happens — the row simply renders without
+    # one, and a silence is not a number.
     "points.written": Metric(
-        required={"language": None},
+        required={"language": None, "described": BOOLEANS},
         values=frozenset({"amounts"}),
         project=True,
     ),
@@ -202,9 +209,14 @@ METRICS: dict[str, Metric] = {
     # every figure read from this metric.
     "driver.chosen": Metric(
         required={"rule": frozenset({"random"})},
-        # How many there were to choose from. Choosing among one is not choosing, and
-        # a pool that has quietly come down to one person looks the same from outside
-        # as one that has twenty.
+        # How many there were to choose from (`supervising`) and how many there were at
+        # all (`registered`). Choosing among one is not choosing, and a pool that has
+        # quietly come down to one person looks the same from outside as one that has
+        # twenty.
+        #
+        # `supervising` was `enabled` until 0.12.0. Documents written before that day
+        # carry the old name, so a reading that spans it adds up two names for one
+        # thing: the counter splits on 2026-09-29.
         values=frozenset({"amounts"}),
         project=True,
     ),
@@ -221,6 +233,33 @@ METRICS: dict[str, Metric] = {
     #
     # There is no project: the link is read while the page is being built, before
     # anything has been created, and most of these never become a project at all.
+    # The other side of `driver_link.resolved`: a link **made**. That metric counts the
+    # links somebody arrived on, and nothing counted the ones that were handed out, so a
+    # driver who never made a link and a driver whose links nobody ever clicked looked
+    # the same from here — and one of those two is a person to talk to.
+    #
+    # `discount_created` and `discount_reused` are kept apart because one of them writes
+    # a document and the other does not: a driver ends up with at most a handful of
+    # codes, and which of their requests made one is the difference between a write and
+    # a read.
+    #
+    # The four are values of one dimension and not a `kind` plus an `outcome`, which is
+    # the argument `driver_link.resolved` already makes for its own thirteen: the lists
+    # share no value, so a second dimension would say twice what the first one says.
+    #
+    # `percentage` is open and optional: only the two kinds that carry a discount have
+    # one, and absent is absent. It is not a closed list, because what percentages may
+    # be chosen is read from a configuration, and a copy of that range here would be a
+    # second limit nobody would keep in step.
+    #
+    # There is no project: a link is made before anything exists, and most of them never
+    # become a project at all.
+    "driver_link.issued": Metric(
+        required={
+            "kind": frozenset({"ambassador", "driver", "discount_created", "discount_reused"})
+        },
+        optional={"percentage": None},
+    ),
     "driver_link.resolved": Metric(
         required={
             "state": frozenset(
@@ -351,12 +390,17 @@ METRICS: dict[str, Metric] = {
         project=True,
     ),
     # Handing a project to the person who will supervise it. `gave_up` and
-    # `nobody_enabled` are the two ways a project is left with an analysis and nobody
-    # looking at it — the worst shape a stuck project can have, because everything
-    # about it looks finished. `attempts` is how many times the pool had to be asked.
+    # `nobody_supervising` are the two ways a project is left with an analysis and
+    # nobody looking at it — the worst shape a stuck project can have, because
+    # everything about it looks finished. `attempts` is how many times the pool had to
+    # be asked.
+    #
+    # `nobody_supervising` was `nobody_enabled` until 0.12.0, when the driver's boolean
+    # became a level: no stored document carried the old value, so there is no split to
+    # read around here.
     "driver.handover": Metric(
         required={
-            "outcome": frozenset({"assigned", "nobody_enabled", "gave_up", "unavailable"})
+            "outcome": frozenset({"assigned", "nobody_supervising", "gave_up", "unavailable"})
         },
         values=frozenset({"amounts"}),
         project=True,
@@ -434,6 +478,57 @@ METRICS: dict[str, Metric] = {
         required={"kind": None},
         values=frozenset({"bytes"}),
         project=True,
+    ),
+    # A document handed to a person, and in what capacity they were allowed to have it.
+    # The twin of `document.written`, with `kind` left open for the same reason: which
+    # kinds exist belongs to workspaces, which stores them.
+    #
+    # `as` is the half that is worth having. A client opening their own points is a step
+    # of the funnel, a driver opening the analysis is work beginning, and somebody at
+    # level 2 opening either is a person going through the wreckage: three readings of
+    # one number, and nothing else tells them apart.
+    #
+    # Only a download that succeeded is counted. Workspaces not answering is already a
+    # `dependency.call`, and a refusal is already an `http.error` with its own code:
+    # counting either here would be one fact under two names.
+    "document.served": Metric(
+        required={"kind": None, "as": frozenset({"owner", "driver", "prj_admin"})},
+        values=frozenset({"bytes"}),
+        project=True,
+    ),
+    # ------------------------------------------------------- the lists of projects
+    # How long a list of projects was when somebody opened it. `http.request` already
+    # says which page was asked for and how long it took; what it cannot say is how much
+    # was on it, and that is the number somebody will ask for — a review queue of two is
+    # a different system from the same queue at forty, and a list of orphans that stops
+    # being empty is the fault the register has never been read for.
+    #
+    # `amounts` and not `count`, for the reason the note above gives: a list of zero is a
+    # true answer and often the interesting one, while `count` is at least one. The
+    # average length is `amounts.projects / count`.
+    #
+    # There is no project: this measures a list, and a list is not about one project.
+    # The client's own page splits their projects three ways — what is moving, what has
+    # come back to them for want of detail, and what has stopped — so the three are three
+    # values and not one. `owned` was the single value until 2026-09-30, when that page
+    # became three lists: documents written before that day carry it, so a reading that
+    # spans the change adds up a name that no longer exists and three that did not yet.
+    # The counter splits on that date, as `driver.chosen`'s did on its own.
+    "projects.listed": Metric(
+        required={
+            "list": frozenset(
+                {
+                    "owned_active",
+                    "owned_returned",
+                    "owned_stopped",
+                    "driver_review",
+                    "driver_failed",
+                    "orphan",
+                    "orphan_failed",
+                }
+            )
+        },
+        values=frozenset({"amounts"}),
     ),
 }
 

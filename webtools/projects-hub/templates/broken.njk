@@ -1,0 +1,29 @@
+{% extends "commons/base.njk" %}
+
+{#
+  The projects nobody supervises: the fault `contesto/todos.md` was written about, asked of
+  the data for the first time.
+
+  Only the projects a driver is **owed**: one still in pre-analysis has none because it has
+  not got there yet, which is the ordinary case and not a fault.
+#}
+
+{% block header_extra %}{% include "partials/nav.njk" %}{% endblock %}
+
+{% block main %}
+    <div class="container projects">
+      <h1>{{ heading }}</h1>
+      <p class="page-lead">{{ t("projects_hub.broken.lead") }}</p>
+
+      {% set group_title = t("projects_hub.broken.orphan.title") %}
+      {% set group_empty = t("projects_hub.broken.orphan.empty") %}
+      {% set group_projects = orphan %}
+      {% include "partials/project_group.njk" %}
+
+      {% set group_title = t("projects_hub.broken.orphan_failed.title") %}
+      {% set group_empty = t("projects_hub.broken.orphan_failed.empty") %}
+      {% set group_projects = orphan_failed %}
+      {% set group_muted = true %}
+      {% include "partials/project_group.njk" %}
+    </div>
+{% endblock %}

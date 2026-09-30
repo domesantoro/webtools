@@ -41,6 +41,9 @@ OPEN_STEP_NOT_FOUND = "OPEN_STEP_NOT_FOUND"
 NOT_ENOUGH_TURNS = "NOT_ENOUGH_TURNS"
 # A period asked for with a day that is not a day, or backwards.
 INVALID_RANGE = "INVALID_RANGE"
+# A list asked for with no filter, with more than one, or with a value that names no
+# filter. Which filters may travel together is part of this API's contract.
+INVALID_QUERY = "INVALID_QUERY"
 INVALID_BODY = "INVALID_BODY"
 ROUTE_NOT_FOUND = "ROUTE_NOT_FOUND"
 METHOD_NOT_ALLOWED = "METHOD_NOT_ALLOWED"

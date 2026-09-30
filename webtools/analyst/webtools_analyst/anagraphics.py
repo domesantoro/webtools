@@ -190,6 +190,22 @@ def _moment(step) -> datetime | None:
         return None
 
 
+def set_description(settings, project_id: str, description: str) -> Answer:
+    """`PUT /projects/{id}/description` → the project with the description on it.
+
+    The one sentence that says what the tool is for, written by the door that wrote the
+    points. A route of its own, called apart from the step, the way the driver is
+    assigned: one field, written by whoever found it out.
+    """
+    return _call(
+        settings,
+        "PUT",
+        f"/projects/{project_id}/description",
+        operation="set_description",
+        body={"description": description},
+    )
+
+
 def assign_driver(settings, project_id: str, driver_uid: str) -> Answer:
     """`PUT /projects/{id}/review/driver` → the project with the driver copied onto it.
 
@@ -204,3 +220,14 @@ def assign_driver(settings, project_id: str, driver_uid: str) -> Answer:
         operation="assign_driver",
         body={"driver_uid": driver_uid},
     )
+
+
+def find_user(settings, uid: str) -> Answer:
+    """`GET /users?uid=` → the person, without the credential block.
+
+    The project keeps `owner_uid` and no copy of the client, so this is how the run
+    learns where to reach whoever asked for the tool. It is read only when there is
+    something to say to them, and never as part of the analysis: nothing in the work
+    depends on it.
+    """
+    return _call(settings, "GET", f"/users?uid={uid}", operation="find_user")

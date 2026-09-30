@@ -41,9 +41,15 @@ LOCALHOST = ("127.0.0.1", 50000)
 OUTSIDER = ("10.0.0.1", 50000)
 PROJECT = "1f251606-bdba-40c4-bbee-bfedc6e57f70"
 
-ENABLED = {"uid": "aaaa", "screen_name": "Dome", "enabled": True}
-ALSO_ENABLED = {"uid": "bbbb", "screen_name": "Prova", "enabled": True}
-NOT_ENABLED = {"uid": "cccc", "screen_name": "Nuovo", "enabled": False}
+# Level 1 upwards may supervise; level 0 may not. `active` is the person's, and a
+# person who cannot log in cannot supervise whatever their level says.
+SUPERVISING = {"uid": "aaaa", "screen_name": "Dome", "level": 1, "active": True}
+ALSO_SUPERVISING = {"uid": "bbbb", "screen_name": "Test", "level": 1, "active": True}
+TOO_LOW = {"uid": "cccc", "screen_name": "New", "level": 0, "active": True}
+DEACTIVATED = {"uid": "dddd", "screen_name": "Gone", "level": 1, "active": False}
+# A prj-admin. Nothing in this subsystem knows what that means beyond the number: it is
+# above the threshold, so the pool may hand them a project.
+PRJ_ADMIN = {"uid": "eeee", "screen_name": "Admin", "level": 2, "active": True}
 
 
 @pytest.fixture
@@ -59,26 +65,53 @@ def choose(client) -> dict:
     return client.post("/drivers/choice", json={"project_id": PROJECT})
 
 
-def test_a_driver_is_chosen_among_the_enabled_ones(monkeypatch, client):
-    drivers_are(monkeypatch, Answer(ok=True, data=[ENABLED, ALSO_ENABLED]))
+def test_a_driver_is_chosen_among_those_who_may_supervise(monkeypatch, client):
+    drivers_are(monkeypatch, Answer(ok=True, data=[SUPERVISING, ALSO_SUPERVISING]))
     response = choose(client)
     assert response.status_code == 200
     assert response.json()["driver_uid"] in {"aaaa", "bbbb"}
 
 
-def test_somebody_not_enabled_is_never_chosen(monkeypatch, client):
-    """Only enabled drivers supervise clients' projects. It is a rule of the service,
-    not of this file, so handing back somebody who has not been interviewed would be
-    wrong now and not later."""
-    drivers_are(monkeypatch, Answer(ok=True, data=[NOT_ENABLED, ENABLED]))
+def test_a_level_below_the_threshold_is_never_chosen(monkeypatch, client):
+    """Only a driver from level 1 upwards supervises a client's project. It is a rule of
+    the service, not of this file, so handing back somebody who has not been interviewed
+    would be wrong now and not later."""
+    drivers_are(monkeypatch, Answer(ok=True, data=[TOO_LOW, SUPERVISING]))
     for _ in range(20):
         assert choose(client).json()["driver_uid"] == "aaaa"
 
 
-def test_nobody_enabled_is_a_state_of_the_system_and_not_a_failure(monkeypatch, client):
+def test_a_deactivated_driver_is_never_chosen(monkeypatch, client):
+    """Their level says they may, and they cannot log in: a project handed to them would
+    sit still with nobody noticing."""
+    drivers_are(monkeypatch, Answer(ok=True, data=[DEACTIVATED, SUPERVISING]))
+    for _ in range(20):
+        assert choose(client).json()["driver_uid"] == "aaaa"
+
+
+def test_a_level_above_the_threshold_may_be_chosen(monkeypatch, client):
+    """This subsystem reads the number and not what a level is called: a level it has
+    never heard of, above the threshold, supervises."""
+    drivers_are(monkeypatch, Answer(ok=True, data=[PRJ_ADMIN]))
+    assert choose(client).json()["driver_uid"] == "eeee"
+
+
+def test_a_level_that_is_not_a_number_is_not_a_level(monkeypatch, client):
+    """In Python a bool is an int. `level: true` is a broken document, not level 1, and
+    it must not get a project."""
+    broken = [
+        {"uid": "ffff", "screen_name": "Bool", "level": True, "active": True},
+        {"uid": "gggg", "screen_name": "String", "level": "1", "active": True},
+        {"uid": "hhhh", "screen_name": "Missing", "active": True},
+    ]
+    drivers_are(monkeypatch, Answer(ok=True, data=broken))
+    assert choose(client).status_code == 409
+
+
+def test_nobody_who_may_supervise_is_a_state_of_the_system_and_not_a_failure(monkeypatch, client):
     """The caller has to be able to tell it from anagraphics being down: in one case
     asking again in a minute may work, in the other it never will."""
-    drivers_are(monkeypatch, Answer(ok=True, data=[NOT_ENABLED]))
+    drivers_are(monkeypatch, Answer(ok=True, data=[TOO_LOW]))
     response = choose(client)
     assert response.status_code == 409
     assert response.json() == {"error": "NO_DRIVER_AVAILABLE"}
@@ -98,11 +131,11 @@ def test_anagraphics_down_is_said_and_not_worked_around(monkeypatch, client):
     assert response.json() == {"error": "ANAGRAPHICS_UNAVAILABLE"}
 
 
-def test_the_choice_is_spread_over_the_enabled_ones(monkeypatch, client):
-    """Not a test of randomness, which cannot be tested: a test that the second
-    enabled driver is reachable at all. A pool that always returned the first one
-    would pass every other test here."""
-    drivers_are(monkeypatch, Answer(ok=True, data=[ENABLED, ALSO_ENABLED]))
+def test_the_choice_is_spread_over_those_who_may_supervise(monkeypatch, client):
+    """Not a test of randomness, which cannot be tested: a test that the second driver
+    is reachable at all. A pool that always returned the first one would pass every
+    other test here."""
+    drivers_are(monkeypatch, Answer(ok=True, data=[SUPERVISING, ALSO_SUPERVISING]))
     seen = {choose(client).json()["driver_uid"] for _ in range(60)}
     assert seen == {"aaaa", "bbbb"}
 

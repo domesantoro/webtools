@@ -64,7 +64,7 @@ Three things to know before using it:
   deactivated, has no password or got it wrong. Which of the four it is, is in the log.
 
 The session is the same document stored in anagraphics: `token`, `uid`, `username`, `issued_at`,
-`expires_at`, `data` (today `screen_name` and `driver_uid`, photographed at login time). It lasts
+`expires_at`, `data` (today `screen_name` and `driver`, photographed at login time: `null`, or the role `{driver_uid, level}`). It lasts
 8 hours from the login and does not extend with use.
 
 ## The pages' style

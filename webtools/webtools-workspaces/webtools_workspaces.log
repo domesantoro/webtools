@@ -116,3 +116,13 @@ webtools_workspaces listening on http://127.0.0.1:9400 (root: /Users/domenico/we
 [workspaces] c0816dd0-e147-4cd1-8134-82f42b5ba678: proposal v1 (8863 bytes)
 [workspaces] c0816dd0-e147-4cd1-8134-82f42b5ba678: analysis v2 (72688 bytes)
 [workspaces] c0816dd0-e147-4cd1-8134-82f42b5ba678: proposal v2 (9109 bytes)
+=== start 2026-09-30 11:20:54 ===
+webtools_workspaces listening on http://127.0.0.1:9400 (root: /Users/domenico/webtools_data/workspaces)
+=== start 2026-09-30 11:49:23 ===
+webtools_workspaces listening on http://127.0.0.1:9400 (root: /Users/domenico/webtools_data/workspaces)
+[workspaces] 8bf6975d-7eef-4900-ac14-fa668d18c219: analysis v2 (41703 bytes)
+[workspaces] 8bf6975d-7eef-4900-ac14-fa668d18c219: proposal v2 (3849 bytes)
+=== start 2026-09-30 12:01:08 ===
+webtools_workspaces listening on http://127.0.0.1:9400 (root: /Users/domenico/webtools_data/workspaces)
+=== start 2026-09-30 13:50:23 ===
+webtools_workspaces listening on http://127.0.0.1:9400 (root: /Users/domenico/webtools_data/workspaces)

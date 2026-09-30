@@ -1,0 +1,20 @@
+{#-
+  The language switcher: it lives in the footer, outside the header and the menus,
+  because it is not a navigation item.
+
+  DO NOT EDIT THE COPY INSIDE A SUBSYSTEM: the original is
+  `webtools/commons/templates/locale_switch.njk`, distributed by the
+  template_deployer.
+
+  It shows the codes (IT / EN); the name of the language, written in that language,
+  is in `title` and `aria-label`. Each button sends `POST /locale`, which writes the
+  shared cookie and returns to the page. It needs `t` and `locale_switch` from
+  `i18n.pageContext` (webtools/commons/i18n/webtools_i18n.js).
+-#}
+<form class="locale-switch" method="post" action="{{ locale_switch.action }}" aria-label="{{ t('common.locale.label') }}">
+  <input type="hidden" name="return_to" value="{{ locale_switch.return_to }}">
+  {%- for choice in locale_switch.choices %}
+  {%- if not loop.first %}<span class="locale-sep" aria-hidden="true">/</span>{% endif %}
+  <button type="submit" name="locale" value="{{ choice.code }}" lang="{{ choice.code }}" title="{{ choice.name }}" aria-label="{{ choice.name }}"{% if choice.current %} aria-current="true"{% endif %}>{{ choice.code | upper }}</button>
+  {%- endfor %}
+</form>

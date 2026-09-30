@@ -1,0 +1,21 @@
+{% extends "commons/base.njk" %}
+
+{#
+  A page with a single message: a tab or a document that is not there for whoever asked,
+  a service that did not answer. The texts live in the catalogues, under
+  `projects_hub.messages.<kind>`.
+#}
+
+{% block main %}
+    <div class="container message">
+      <div class="message-card card">
+        <div class="card-head">{{ message.title }}</div>
+        <div class="message-body">
+          <p class="message-lead">{{ message.text }}</p>
+          <p class="message-alt">
+            <a class="text-link" href="/">{{ t("projects_hub.messages.back") }}</a>
+          </p>
+        </div>
+      </div>
+    </div>
+{% endblock %}

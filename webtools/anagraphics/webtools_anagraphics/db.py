@@ -19,7 +19,6 @@ from webtools_anagraphics.settings import Settings
 
 CONFIGURATION = "configuration"
 PROJECTS = "projects"
-DRIVERS = "drivers"
 DISCOUNTS = "discounts"
 USERS = "users"
 SESSIONS = "sessions"
@@ -28,9 +27,25 @@ TICKETS = "tickets"
 # Responses never expose Mongo's internal _id.
 PUBLIC = {"_id": 0}
 
-# The driver list exposes only what is needed to identify and show them:
-# `username` comes out only when reading a single driver.
-DRIVER_SUMMARY = {"_id": 0, "uid": 1, "screen_name": 1, "enabled": 1}
+# A project as a **list** carries it: everything, minus every step but the last.
+#
+# The last step is what says why a project failed — a failure is written into the
+# `data` of the step that failed, and there is no `reason` field on a project — so a
+# list that dropped the steps altogether could not show it. What the slice leaves out
+# is the part that matters: the `preanalysis` step stays `open` and grows by two
+# messages every turn, so a list of twenty projects read whole would carry twenty
+# entire conversations to render twenty rows.
+PROJECT_IN_LIST = {"_id": 0, "pipeline.steps": {"$slice": -1}}
+
+# A driver is a user who carries a `driver` object: there is no collection of their
+# own. Both projections are **positive** — they name what comes out — because the
+# document they read from is the person's, and it also holds the credential block,
+# the billing and the person's own uid. A projection by exclusion would let a field
+# added to a user tomorrow out through a driver route, without anybody choosing it.
+#
+# `username` comes out only when reading a single driver, as before.
+DRIVER_SUMMARY = {"_id": 0, "screen_name": 1, "active": 1, "driver": 1}
+DRIVER_PUBLIC = {"_id": 0, "username": 1, "screen_name": 1, "active": 1, "driver": 1}
 
 # The user without the credential block: this is the ordinary read.
 USER_PUBLIC = {"_id": 0, "credential": 0}
@@ -143,7 +158,16 @@ def ensure_indexes(db: Database) -> None:
     # reloaded) must not create a second project. Sparse because a project can be
     # born by other routes too, with no form behind it.
     db[PROJECTS].create_index("submission_id", unique=True, sparse=True)
-    db[DRIVERS].create_index("uid", unique=True)
+    # The three paths the lists of projects are asked along: the owner's projects, a
+    # driver's projects, and the order every one of those lists is read in. None is
+    # unique — a person owns many projects, a driver supervises many, and two projects
+    # can be created in the same millisecond.
+    #
+    # There is no index for `review.driver` being null: that filter matches whatever
+    # the other two do not, and Mongo would have to walk the collection either way.
+    db[PROJECTS].create_index("owner_uid")
+    db[PROJECTS].create_index("review.driver.uid")
+    db[PROJECTS].create_index("created_at")
     db[DISCOUNTS].create_index("discount_code", unique=True)
     # The driver is duplicated inside the discount: the index is for finding them by driver.
     db[DISCOUNTS].create_index("driver.uid")
@@ -151,6 +175,12 @@ def ensure_indexes(db: Database) -> None:
     # stays the stable identifier: unique as well.
     db[USERS].create_index("username", unique=True)
     db[USERS].create_index("uid", unique=True)
+    # The driver's uid, which lives inside the user who is that driver. Unique because
+    # a driver's uid names one driver; sparse because a user who is not a driver
+    # carries `driver: null`, which leaves this path absent — so the non-drivers are
+    # simply not in the index, instead of colliding on a missing value. The same
+    # arrangement as `submission_id` above.
+    db[USERS].create_index("driver.driver_uid", unique=True, sparse=True)
     db[SESSIONS].create_index("token", unique=True)
     # All of a user's sessions: needed to close them all at once.
     db[SESSIONS].create_index("uid")
@@ -195,6 +225,43 @@ def find_project(db: Database, project_id: str) -> dict | None:
 
 def find_project_by_submission(db: Database, submission_id: str) -> dict | None:
     return db[PROJECTS].find_one({"submission_id": submission_id}, PUBLIC)
+
+
+def list_projects(
+    db: Database,
+    *,
+    owner_uid: str | None = None,
+    driver_uid: str | None = None,
+    without_driver: bool = False,
+    states: list[str] | None = None,
+) -> list[dict]:
+    """The projects matching the filter asked for, newest first.
+
+    One of the three ways of naming a set of projects is expected, and which of them
+    may be combined is the route's business, not this function's: here whatever is
+    given is turned into a query. `states` narrows any of the three, and an empty list
+    is not the same as none — none means every state, and this function is never given
+    an empty one, because a route that received no state gives none.
+
+    No pagination, as for `list_drivers`: the whole answer comes back. It is a known
+    limit and it is written down — the set that can grow without a bound anybody chose
+    is the one with no driver.
+
+    `review.driver` is `null` for a project nobody supervises, so the filter is on the
+    object being null and not on the path being absent: every project has the field.
+    """
+    query: dict = {}
+    if owner_uid is not None:
+        query["owner_uid"] = owner_uid
+    if driver_uid is not None:
+        query["review.driver.uid"] = driver_uid
+    if without_driver:
+        query["review.driver"] = None
+    if states is not None:
+        # One state is `$in` of one: the same query shape either way, so a list of one
+        # and a list of five cannot behave differently.
+        query["pipeline.state"] = {"$in": states}
+    return list(db[PROJECTS].find(query, PROJECT_IN_LIST).sort("created_at", -1))
 
 
 def count_projects_created_between(db: Database, first: datetime, after_last: datetime) -> int:
@@ -325,14 +392,43 @@ def set_project_driver(db: Database, project_id: str, driver: dict | None) -> di
     )
 
 
+def set_project_description(db: Database, project_id: str, description: str) -> dict | None:
+    """Writes the project's description. None if there is no such project.
+
+    One field, and only that one: the description is written after the project was
+    born, by whoever found out what the tool is for, and it has nothing to do with the
+    fields around it. The same arrangement as `set_project_driver`, which is the other
+    thing written onto a project once it exists.
+    """
+    return db[PROJECTS].find_one_and_update(
+        {"project_id": project_id},
+        {"$set": {"description": description}},
+        projection=PUBLIC,
+        return_document=ReturnDocument.AFTER,
+    )
+
+
 def find_driver(db: Database, uid: str) -> dict | None:
-    return db[DRIVERS].find_one({"uid": uid}, PUBLIC)
+    """The user who is this driver, or None. `uid` is the **driver's** uid.
+
+    A driver's uid and a person's uid are two different things (see the `users`
+    section of the documentation), so this never looks at `users.uid`.
+    """
+    return db[USERS].find_one({"driver.driver_uid": uid}, DRIVER_PUBLIC)
 
 
 def list_drivers(db: Database) -> list[dict]:
-    # No pagination: there are few drivers. A stable order by uid.
+    # No pagination: there are few drivers. A stable order by the driver's uid.
     # A reduced projection: no `username` (see DRIVER_SUMMARY).
-    return list(db[DRIVERS].find({}, DRIVER_SUMMARY).sort("uid"))
+    #
+    # `driver: null` is what a user who is not a driver carries, so the filter is on
+    # the uid inside the object and not on the object being there: every user has the
+    # field, and only a driver has something in it.
+    return list(
+        db[USERS].find({"driver.driver_uid": {"$exists": True}}, DRIVER_SUMMARY).sort(
+            "driver.driver_uid"
+        )
+    )
 
 
 def find_discount(db: Database, discount_code: str) -> dict | None:
@@ -341,6 +437,12 @@ def find_discount(db: Database, discount_code: str) -> dict | None:
 
 def find_discounts_of_driver(db: Database, uid: str) -> list[dict]:
     return list(db[DISCOUNTS].find({"driver.uid": uid}, PUBLIC).sort("discount_code"))
+
+
+def insert_discount(db: Database, discount: dict) -> None:
+    # A copy: insert_one adds `_id` to the dictionary it receives. A repeated code
+    # violates the unique index and surfaces as a DuplicateKeyError.
+    db[DISCOUNTS].insert_one(dict(discount))
 
 
 def find_user(db: Database, username: str) -> dict | None:

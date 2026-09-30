@@ -37,7 +37,13 @@ const settings = {
   answerMaxChars: 20000,
   preanalysis: { maxTurns: 5, warnFromTurn: 3 },
 };
-const access = { logged: true, ssoAvailable: true, session: { username: "a@b.c", data: {} } };
+// A client: logged in and not a driver. `driver: null` is what the session carries
+// for them — the field is there and it is empty, which is not the same as absent.
+const access = {
+  logged: true,
+  ssoAvailable: true,
+  session: { username: "a@b.c", data: { driver: null } },
+};
 const terms = { driverLink: { state: "none" }, ambassador: null, autonomous: false };
 
 function page({ ready, turnsLeft }) {

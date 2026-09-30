@@ -24,6 +24,19 @@ at rather than waited on.
 fact and has its own name: the analysis is written and paid for, and what is missing is
 a person. As far as the machine goes that project is finished.
 
+**Both endings are said to the client.** Nobody is in front of a screen when a run
+fails — the client pressed a button minutes ago and left — so a project that stops with
+nothing said is one they find out about by going to look, which is the same as not
+finding out. The two endings are one communication and not two: which of them it was is
+ours to repair and makes no difference to the person waiting. It is sent only once the
+step is written, because the step is what makes it true, and it cannot fail the run: see
+`_tell_client_stopped`.
+
+**The gate after this one is opened here.** Once a driver is on the project, the run
+appends a second step, `driver_validation`, as `open`: nothing is decided by it, and the
+driver's yes or no is what closes it. It is opened so that the wait on a person's desk
+has somewhere to be counted — see `_open_driver_gate`.
+
 **What was consumed is written down even when nothing was produced.** In three of the
 four ways an answer can end badly the model ran, and those tokens are real. They go on
 the step with everything else, because the money at the demo is not taken from metrics.
@@ -50,6 +63,11 @@ FAILED_STATE = "FAILED"
 NO_DRIVER_STATE = "FAILED_NO_DRIVERS"
 
 DECIDED_STATE = "DRIVER_VALIDATION"
+
+# The gate that comes after this one: a person reading what was written. The analyst
+# does not decide anything there — it only opens the step, so that the wait has
+# somewhere to be counted. See `_open_driver_gate`.
+DRIVER_GATE = "driver_validation"
 
 
 def _log(message: str) -> None:
@@ -147,15 +165,19 @@ def perform(settings, project: dict) -> None:
         # A run that dies without writing anything leaves a project in `ANALYSIS` that
         # nothing can move. Whatever the fault was, the step is closed.
         _log(f"{project_id}: run broken: {type(error).__name__} {error}")
-        _failed(settings, project_id, "broken", {"error": type(error).__name__})
+        _failed(settings, project_id, project.get("owner_uid"), "broken", {"error": type(error).__name__})
         raise
 
 
 def _perform(settings, project_id: str, project: dict) -> None:
+    # Who asked for the tool, read off the project once. It is carried rather than
+    # fetched again at each ending: the run has the project in hand, and a second read
+    # of the same field is a second thing that can disagree with the first.
+    owner_uid = project.get("owner_uid")
     specification = workspaces.latest_spec(settings, project_id)
     if not specification.ok:
         _log(f"{project_id}: no pre-specification to read ({specification.reason})")
-        _failed(settings, project_id, "no_specification", {"reason": specification.reason})
+        _failed(settings, project_id, owner_uid, "no_specification", {"reason": specification.reason})
         return
 
     chat = chat_of(project)
@@ -163,25 +185,27 @@ def _perform(settings, project_id: str, project: dict) -> None:
 
     written = analyse(settings, project_id=project_id, **material)
     if not written["ok"]:
-        _failed(settings, project_id, "technical", interaction_of(written))
+        _failed(settings, project_id, owner_uid, "technical", interaction_of(written))
         return
 
     judged = judge(settings, analysis=written["output"]["analysis"], project_id=project_id, **material)
     if not judged["ok"]:
-        _failed(settings, project_id, "judgement", interaction_of(judged), spent=[written])
+        _failed(settings, project_id, owner_uid, "judgement", interaction_of(judged), spent=[written])
         return
 
     listed = write_points(
         settings, analysis=written["output"]["analysis"], project_id=project_id, **material
     )
     if not listed["ok"]:
-        _failed(settings, project_id, "points", interaction_of(listed), spent=[written, judged])
+        _failed(settings, project_id, owner_uid, "points", interaction_of(listed), spent=[written, judged])
         return
 
     stored = _store_documents(settings, project_id, written["output"], listed["output"])
     if stored is None:
-        _failed(settings, project_id, "documents", {}, spent=[written, judged, listed])
+        _failed(settings, project_id, owner_uid, "documents", {}, spent=[written, judged, listed])
         return
+
+    _describe(settings, project_id, listed["output"].get("description"))
 
     verdict = judged["output"]
     decided = anagraphics.append_step(
@@ -220,7 +244,26 @@ def _perform(settings, project_id: str, project: dict) -> None:
         return
 
     _log(f"{project_id}: {verdict['verdict']} (weakest {verdict['weakest']}), {len(listed['output']['points'])} points")
-    _hand_over(settings, project_id)
+    _hand_over(settings, project_id, owner_uid)
+
+
+def _describe(settings, project_id: str, description: str | None) -> None:
+    """The project's description, written onto it. It cannot stop the run.
+
+    **Before the step, so that the ordering says something true**: a project whose step
+    says the analysis passed has the description that step produced, and not one that
+    arrives a moment later.
+
+    Nothing here is a failure of the run. The door may have come back without a
+    description, and then there is nothing to write — absent is absent. Anagraphics may
+    refuse the write, and then the log says so as loudly as a log can: an analysis that
+    is written, stored and paid for is not thrown away over a subtitle.
+    """
+    if description is None:
+        return
+    written = anagraphics.set_description(settings, project_id, description)
+    if not written.ok:
+        _log(f"{project_id}: DESCRIPTION NOT RECORDED ({written.reason} {written.code or ''}): the project stays without one")
 
 
 def _store_documents(settings, project_id: str, analysis: dict, points: dict) -> dict | None:
@@ -253,7 +296,9 @@ def _store_documents(settings, project_id: str, analysis: dict, points: dict) ->
     return written
 
 
-def _failed(settings, project_id: str, door: str, what: dict, spent: list[dict] | None = None) -> None:
+def _failed(
+    settings, project_id: str, owner_uid: str | None, door: str, what: dict, spent: list[dict] | None = None
+) -> None:
     """The run did not get to the end. The step says where it stopped and what it cost.
 
     `spent` carries the doors that had already answered before this one: they ran, and
@@ -276,14 +321,16 @@ def _failed(settings, project_id: str, door: str, what: dict, spent: list[dict] 
     )
     if not stored.ok:
         _log(f"{project_id}: FAILED RUN NOT RECORDED ({stored.reason}): the project is left in ANALYSIS")
+        return
+    _tell_client_stopped(settings, project_id, owner_uid)
 
 
-def _hand_over(settings, project_id: str) -> None:
+def _hand_over(settings, project_id: str, owner_uid: str | None) -> None:
     """Who supervises this project, asked of the pool and written on the project.
 
     The pool can name somebody who no longer exists — it reads a list, and a driver can
     be deleted between that read and this write — and that is worth asking again for.
-    Nobody being enabled at all is not: asking again buys the same answer.
+    Nobody being able to supervise at all is not: asking again buys the same answer.
 
     When it does not succeed the project goes to `FAILED_NO_DRIVERS` and stays there. It
     is not left in `DRIVER_VALIDATION`, which would say a person is looking at it while
@@ -295,15 +342,16 @@ def _hand_over(settings, project_id: str) -> None:
         attempts += 1
         chosen = drivers_pool.choose_driver(settings, project_id)
         if not chosen.ok:
-            outcome = "nobody_enabled" if chosen.reason == "rejected" else "unavailable"
+            outcome = "nobody_supervising" if chosen.reason == "rejected" else "unavailable"
             _log(f"{project_id}: NO DRIVER ({chosen.code or chosen.reason}): the analysis is waiting for nobody")
-            return _no_driver(settings, project_id, outcome, attempts)
+            return _no_driver(settings, project_id, owner_uid, outcome, attempts)
 
         assigned = anagraphics.assign_driver(settings, project_id, chosen.data)
         if assigned.ok:
             driver = (assigned.data.get("review") or {}).get("driver") or {}
             _log(f"{project_id}: handed to {driver.get('screen_name')} after {attempts} attempt(s)")
             _handover_measured(settings, project_id, "assigned", attempts)
+            _open_driver_gate(settings, project_id)
             told = comm_center.analysis_ready(settings, project_id, driver)
             if not told.ok:
                 # The project is whole: the analysis is written, the step says what was
@@ -316,13 +364,39 @@ def _hand_over(settings, project_id: str) -> None:
             _log(f"{project_id}: the pool named a driver who is no longer there, asking again")
             continue
         _log(f"{project_id}: the driver could not be written on the project ({assigned.reason})")
-        return _no_driver(settings, project_id, "unavailable", attempts)
+        return _no_driver(settings, project_id, owner_uid, "unavailable", attempts)
 
     _log(f"{project_id}: GAVE UP handing over after {attempts} attempt(s): the analysis is waiting for nobody")
-    _no_driver(settings, project_id, "gave_up", attempts)
+    _no_driver(settings, project_id, owner_uid, "gave_up", attempts)
 
 
-def _no_driver(settings, project_id: str, outcome: str, attempts: int) -> None:
+def _open_driver_gate(settings, project_id: str) -> None:
+    """The driver's gate, opened the moment there is a driver to open it for.
+
+    An `open` step has decided nothing and lasts, and the step that comes after it is
+    what closes it — here, the driver saying yes or no. It is written for one reason:
+    without it, the time an analysis spends on a driver's desk belongs to nobody.
+    `gate.duration` is reported by whoever closes an open step, and with no step open
+    there is nothing to close and nothing to report. That wait is the longest one in
+    the pipeline after the rounds of questions, and it is a person's.
+
+    It is opened **after** the assignment and never before it: an open step on a project
+    the pool could not hand to anybody would say somebody is reading it while nobody is,
+    which is the one shape `FAILED_NO_DRIVERS` exists to avoid.
+
+    It cannot fail the run. The analysis is written, the driver is on the project and
+    the state says so; what is lost when this write does not arrive is one duration, and
+    the gate still closes — a decision with nothing open before it reports no duration,
+    which is the truth about that project.
+    """
+    opened = anagraphics.append_step(
+        settings, project_id, step=DRIVER_GATE, result="open", state=DECIDED_STATE, data={}
+    )
+    if not opened.ok:
+        _log(f"{project_id}: driver gate not opened ({opened.reason}): the wait will not be measured")
+
+
+def _no_driver(settings, project_id: str, owner_uid: str | None, outcome: str, attempts: int) -> None:
     """The analysis is done and there is nobody to give it to.
 
     A second step, because it is a second fact: the first says the analysis passed, this
@@ -344,6 +418,35 @@ def _no_driver(settings, project_id: str, outcome: str, attempts: int) -> None:
     )
     if not stored.ok:
         _log(f"{project_id}: NO DRIVER AND NOT RECORDED ({stored.reason}): the project is left in DRIVER_VALIDATION")
+        return
+    _tell_client_stopped(settings, project_id, owner_uid)
+
+
+def _tell_client_stopped(settings, project_id: str, owner_uid: str | None) -> None:
+    """The client, told that the work on their project stopped.
+
+    **Only once the step is written.** The state is what makes it true that the project
+    stopped; before it, the run has stopped and the system still says `ANALYSIS`, and a
+    message saying otherwise would be a claim nothing here can stand behind. When the
+    write failed anagraphics is not answering anyway, so there would also be no way to
+    learn where the person is reached.
+
+    **It cannot fail anything.** Every way it can go wrong — a project with no owner on
+    it, a person who is no longer there, anagraphics or the comm-center not answering —
+    ends the same way: the log says the project stopped and nobody was told, and the
+    project keeps the state it already has. There is nothing to undo, and nothing here
+    is worth leaving a project in a worse shape for.
+    """
+    if not owner_uid:
+        _log(f"{project_id}: stopped and no owner on the project: nobody to tell")
+        return
+    found = anagraphics.find_user(settings, owner_uid)
+    if not found.ok:
+        _log(f"{project_id}: stopped and the client could not be read ({found.reason} {found.code or ''}): nobody told")
+        return
+    told = comm_center.project_stopped(settings, project_id, found.data)
+    if not told.ok:
+        _log(f"{project_id}: stopped and the client not told ({told.reason}): the project's state says so, the client does not")
 
 
 def _handover_measured(settings, project_id: str, outcome: str, attempts: int) -> None:

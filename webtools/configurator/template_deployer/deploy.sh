@@ -40,8 +40,20 @@ deploy_front_gate() {
   cp "$SOURCE/locale_switch.njk" "$WEBTOOLS/front-gate/templates/commons/locale_switch.njk"
 }
 
+# projects-hub — the lists of projects. The shell and the language switcher, and not
+# `loader.njk`: nothing on these pages is slow enough to need a spinner, and a file
+# copied in and never included is one more thing that looks used.
+deploy_projects_hub() {
+  echo "→ projects-hub"
+  local target="$WEBTOOLS/projects-hub/templates/commons"
+  mkdir -p "$target"
+  cp "$SOURCE/base.njk" "$target/base.njk"
+  cp "$SOURCE/locale_switch.njk" "$target/locale_switch.njk"
+}
+
 deploy_preanalyst
 deploy_sso
 deploy_front_gate
+deploy_projects_hub
 
 echo "Shared templates distributed."

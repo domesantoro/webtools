@@ -9,7 +9,7 @@ subsystem that holds the rounds of questions. Today it contains:
 - the **prevalidation** of the scope, the first gate of the flow (§16);
 - the pre-analysis page, with the rounds of questions (§14.3).
 
-> Last updated: 2026-09-28 · subsystem version: `0.27.0`.
+> Last updated: 2026-09-29 · subsystem version: `0.28.0`.
 
 Code: `webtools/preanalyst/`. Short guide: `webtools/preanalyst/README.md`.
 
@@ -216,11 +216,22 @@ The possible states are defined in `src/driver_link.js`:
 | `discount_applied` | The discount was read **and** its driver exists and is enabled | The driver's **name**, and the green notice with the percentage |
 | `discount_expired` | Reading the discount **fails** | "It cannot be applied: in all likelihood it has expired. Go on anyway: we will assign the driver" |
 | `discount_driver_missing` | The discount was read, but its `driver.uid` cannot be found | "The driver can no longer be found. Contact them for a new code" |
-| `discount_driver_disabled` | The discount was read, but its driver has `enabled` other than `true` | "The driver it is linked to, X, is not enabled to supervise projects, and we cannot go on with them. Contact them". The discount code does **not** travel with the form |
+| `discount_driver_disabled` | The discount was read, but its driver may not supervise (`level` below 1, or `active: false`) | "The driver it is linked to, X, is not enabled to supervise projects, and we cannot go on with them. Contact them". The discount code does **not** travel with the form |
 | `driver_applied` | `?driver=` with a uid that exists, driver enabled | The driver's **name**, and nothing else: there is no notice |
 | `own_link` | The discount or the link belong to **whoever logged in** | No box: the autonomous work block explains it (§6.3) |
 | `driver_unknown` | `?driver=` with a uid that does not exist | "This link's driver can no longer be found. Contact them" |
-| `driver_disabled` | `?driver=` with a driver who is not enabled | "This link's driver, X, is not enabled to supervise projects, and we cannot go on with them. Contact them" |
+| `driver_disabled` | `?driver=` with a driver who may not supervise | "This link's driver, X, is not enabled to supervise projects, and we cannot go on with them. Contact them" |
+
+**What «may not supervise» reads.** Since 0.28.0 a driver carries a `level` instead of a boolean
+`enabled`: from level **1** upwards they supervise a client's project, at 0 they do not, and the
+person must also be `active` — somebody who cannot log in cannot supervise. The rule is one
+function, `maySupervise()` in `src/driver_link.js`, which `src/project_driver.js` imports rather
+than repeating: two copies of a threshold are two places to change it and one to forget.
+
+The two state names keep the word `disabled`. A state names the fate of the **link** — this driver
+cannot take the project — and that fate has not changed; what changed is what it is read from. The
+names are also a closed set in the metrics vocabulary and four keys in the catalogues, and renaming
+them would move all of that for no difference in what the user reads.
 
 In the `discount_applied` and `driver_applied` states the driver is **recognised**: there is a name
 to show and a `uid` travelling with the form as a hidden field. The set is the `RESOLVED` constant
@@ -283,7 +294,7 @@ informative, the datum travels hidden.
 On submission the value **is checked again on the server** (`linkTermsOf()` in
 `src/project_driver.js`): a hidden field does not stop anybody from sending whatever they like. The
 discount is read again (`GET /discounts/{code}`) and the project's driver becomes the discount's;
-the driver is read again (`GET /drivers/{uid}`) and counts only if they exist, are `enabled: true`
+the driver is read again (`GET /drivers/{uid}`) and counts only if they exist, may supervise
 and are not the person filling the form in. If it does not count, the driver and the discount fall
 together and the system assigns the driver. If anagraphics does not answer, the submission is not
 recorded (`503`).
@@ -405,7 +416,7 @@ who logged in, they are ignored: it would be a discount they give themselves. Th
 not appear at all, and what says so is the block below — «il link che hai usato è tuo». The hidden
 fields do not go: that code does not travel with the request.
 
-The comparison is made on the driver's **uid** (`session.data.driver_uid` against the uid of the
+The comparison is made on the driver's **uid** (`session.data.driver.driver_uid` against the uid of the
 discount's or the link's driver), not on the username: the uid never changes, the username does.
 
 **Other drivers' links stay valid.** That is work they brought in, and the box shows them as
@@ -483,6 +494,8 @@ Only `WEBTOOLS_ANAGRAPHICS_URL` and `WEBTOOLS_CONFIGURATION_TIMEOUT_MS` come fro
 | `subsystems_infos.workspaces.url` | `http://127.0.0.1:9400` | Where webtools-workspaces is |
 | `subsystems_infos.workspaces.timeout_ms` | `5000` | The cut-off of the calls towards workspaces |
 | `subsystems_infos.front_gate.url` | `http://127.0.0.1:9000` | The showcase site: the autonomous work block points to its `work-with-us.html` page. `http`/`https` only: it ends up in an `href` |
+| `subsystems_infos.comm_center.url` | `http://127.0.0.1:9002` | Where what has to be said to a person is handed over. The rounds of questions say everything else on the page itself, because the client is in front of it |
+| `subsystems_infos.comm_center.timeout_ms` | `5000` | The cut-off of the calls towards the comm-center |
 | `session.cookie_name` | `webtools_preanalyst` | **Our** session cookie. It must stay different from the sso's |
 | `form.body_max_bytes` | `524288` | The largest form submission accepted |
 | `form.answer_max_chars` | `20000` | The longest open answer accepted. Beyond it the submission **fails** with a message naming the questions: an answer is not shortened to make it fit (§14.1) |
@@ -898,7 +911,14 @@ project's turns run out, a few can be moved onto the project from the box: first
 taken down, then the turns are credited. The order is not accidental — the credit is the part that
 must not be able to be spent twice, and anagraphics checks it inside the write. If the second step
 does not succeed, **the credit is given back**, or the user would have paid for nothing; if the
-giving back fails too, a line of log is left saying so in plain words.
+giving back fails too, a line of log is left saying so in plain words and the person is told —
+`turns-lost` at the comm-center, with how many turns and which project.
+
+It is the one thing this subsystem hands to the comm-center, and the reason is that it is the one
+thing the page cannot promise. Everything else here happens while the client is in front of the
+screen and the answer they get is the whole of it; a credit that is short by what was drawn is a
+fact about their money that outlives the page. The person travels as anagraphics answered with them
+when the turns were taken — nothing is read again for it.
 
 In the box, the credit and the purchase are **never there together**: with credit the field for
 moving it is shown and the purchase is hidden, with no credit the field is off and the purchase is
@@ -987,7 +1007,7 @@ checked again (§5.5, §5.6):
 |---|---|---|
 | No link | `{driver_uid: null, preset: false}` (the system will assign one) | no discount; `ambassador_uid` if there was a valid ambassador (§5.6) |
 | An enabled driver's link (`?driver=` or `?discount=`) | the link's driver, `preset: true` | the link's `discount_code`, if there was one |
-| The link of a driver who is not enabled, does not exist, or is oneself | `{driver_uid: null, preset: false}` | no discount |
+| The link of a driver who may not supervise, does not exist, or is oneself | `{driver_uid: null, preset: false}` | no discount |
 | Autonomous work (only if whoever submits is a driver) | the driver themselves, `preset: true` | `autonomous_work: true`, `discount_code: null`, `ambassador_uid: null` |
 
 The link's discount code and the autonomous work **exclude each other**. One's own link never
@@ -1242,16 +1262,25 @@ The modal has **a single button**, «ok», which leads to the front-gate's home 
 used any more, so there is nothing else to do from here. The PDF is a **link** inside the text, not
 an action on a par with leaving.
 
-The text is not one: there are **three**, and they say three different things. `rejectionCase()` in
-`src/server.js` reads the outcome from the project's last `prevalidation` step and chooses.
+The text is not one: there are **four**, and they say four different things. `rejectionCase()` in
+`src/server.js` asks **which gate refused** — the last step whose result is `rejected` — and only
+then, if that gate was the prevalidator's, reads its outcome.
 
 | Case | When | What it says |
 |---|---|---|
+| `after_review` | the `driver_validation` step refused it | the analysis was written, and whoever read it decided not to go on |
 | `out_of_scope` | `run_out_certain` | webtools is in all likelihood not the right tool for that need |
 | `not_software` | `non_sequitur` | webtools builds only small software, to be used in a browser, and produces nothing else — with three examples: a graphic moodboard, texts or translations, a professional opinion |
 | `not_recognised` | the rest: the `underspecified` that ran out of rounds | the analysis tool cannot decipher the request |
 
-Why there are three and not one. «We are not the right tool» is true for a request that has been
+**Which gate refused has to be asked first**, and before the driver's gate existed there was nothing
+to ask: `REJECTED` was always the prevalidator's doing. A project refused by a driver has a
+prevalidation that **passed**, so reading that verdict alone fell through to `not_recognised` — «we
+did not recognise the request» — which is the one thing that request is not: it was understood,
+judged worth analysing, analysed and paid for. `after_review` says what happened and no more; the
+motivation the driver had to write stays on the project, ours as the model's reason already was.
+
+Why there are three prevalidation cases and not one. «We are not the right tool» is true for a request that has been
 **understood** and is too big for us; on a `non_sequitur` it would make one believe that it had
 been read and set aside on the merits, when on the merits there was no software to read; and on a
 request that after many rounds was never understood it would say something nobody was able to
@@ -1262,7 +1291,7 @@ what webtools builds and names a few examples of what it does not build. It is f
 for a logo or for a piece of consultancy and would otherwise not know what they had run into — it
 is not the model's judgement, which stays ours and the driver's.
 
-None of the three names the estimated size or the domain, and none changes according to the
+None of the four names the estimated size or the domain, and none changes according to the
 configuration or to who is looking. The texts live in the catalogues under
 `preanalyst.rejection.<case>.title` and `.lead`.
 
@@ -1282,7 +1311,7 @@ would be lost.
 
 The refusal's **extended reason** (`reason` plus `off_domain.reason`, if there is one) ends up in
 the PDF in two cases only: if `prevalidation.rejection_reason_in_pdf` is `true`, or if whoever
-downloads it is a driver (`session.data.driver_uid`). Outside these two cases the document does not
+downloads it is a driver (`session.data.driver`, whatever their level). Outside these two cases the document does not
 even name it.
 
 The questions in the PDF stay **in English**, because that is how the pre-specification is written.
@@ -1396,6 +1425,8 @@ when the questions change.
 
 | Date | Version | Change |
 |---|---|---|
+| 2026-09-30 | 0.28.1 | **A fourth refusal case, `after_review`** (§16.4), because the driver's gate in projects-hub made a shape reachable that had never existed: a project in `REJECTED` whose prevalidation **passed**. `rejectionCase()` used to read the prevalidator's verdict and nothing else, so such a project fell through to `not_recognised` and the client was told their request had not been recognised — after it had been understood, analysed and paid for. It now asks which gate refused, off the last step whose result is `rejected`, and asks the prevalidator's verdict only when that gate was the prevalidator's. The driver's own motivation is **not** shown: it stays on the project, ours as the model's reason already was. Four tests in `tests/server.test.js`, which had none on this function; tests from 90 to 94. |
+| 2026-09-29 | 0.28.0 | **The driver's level in place of the boolean.** The session carries `data.driver` — `null` or `{driver_uid, level}` — instead of a flat `driver_uid`, so the four reads of who is logged in go through it; `isDriver` still asks only whether the role is there, because the autonomous work and the extended refusal reason in the PDF belong to any driver, at any level. The two `enabled !== true` checks in `src/driver_link.js` and the one in `src/project_driver.js` become one function, `maySupervise()`: `level >= 1` on a real integer, and `active: true`. The nine link states are unchanged. A new suite `tests/driver_link.test.js` (22 tests) covers the nine states and the threshold, which until now had no test at all. Tests from 68 to 90. |
 | 2026-09-28 | 0.27.0 | **Two cuts and a rule, all three of them defects the audit had found.** (1) **The pre-specification is no longer shortened.** `prespec.js` used to cut an open answer at `form.answer_max_chars` while reading the form, and `prevalidator.js` cut the rendered document again at `prevalidation.spec_max_chars` before the model call, each on the strength of the other; neither ceiling was ever decided — the first was a constant invented in the code, which became a configuration field and so took on the look of a decision. Both are gone. `readAnswers()` now returns `tooLong` beside `answers` and `missing`, and the submission of an over-long answer **fails** with `413` and the `too_long` message naming the questions and the limit; only open answers can be too long, because a closed one is a code of ours. The configuration loses `prevalidation.spec_max_chars`, and metrics loses `prespec.truncated`, which had no sender left. (2) **A pre-analysis step is opened on the project's state, not on the absence of an open one** (§14.3.1): `opensPreanalysis()` names `PREANALYSIS` and `PREVALIDATION`, `UNDERSPECIFIED` answers `409 sent_back`, `REJECTED` is sent to its own page, and everywhere else the conversation is shown as a **reading** — no field, no purchase box, the go button off, `preanalyst.preanalysis.closed` above (§14.3). Before this, a refused client reached the page by retyping the address and was handed a full allowance of turns, and every reload of a finished conversation would have handed out another. `preanalysisStepOf()` reads the last step whatever became of it; `openPreanalysisOf()` still finds only an open one. (3) **A chat message over the limit is refused too**, with `413 MESSAGE_TOO_LONG` and no turn spent, instead of being trimmed on the server while the field's `maxlength` trimmed the paste in the browser; the composer loses `maxlength` and gains a line of its own saying why (`preanalyst.preanalysis.too_long`). **The model's reply is not cut either**: `preanalyst.conversation.message_max_chars` disappears with the `slice` that applied it. The ceiling that is real is the call's own — a model stopped by `max_tokens` comes back `cut`, one of the contract's five endings, handled as such — while a second one applied afterwards by rewriting showed the client a question ending mid-sentence and protected nothing. Tests from 50 to 58, with the new `tests/prespec.test.js`. |
 | 2026-09-28 | 0.26.0 | **The rounds of questions are the pre-analysis** (§14.3). The word *analysis* named two things: these rounds, and the document the analyst subsystem will produce out of them. What held the name here is renamed to what it is. In anagraphics the state `ANALYSIS` **disappears** — a project is born in `PREANALYSIS` and stays there through the form, the prevalidation that passes and the rounds that follow — and the step becomes `preanalysis`. The routes `/analysis/{id}` and its five sub-routes become `/preanalysis/{id}`; `ANALYSIS_NOT_OPEN` and `ANALYSIS_ALREADY_OPENED` become `PREANALYSIS_*`, and `ANALYST_UNAVAILABLE` becomes `PREANALYST_UNAVAILABLE`. The configuration keeps **two** branches: `preanalysis` for the turns (`max_turns`, `warn_from_turn`) and `preanalyst` for the two doors towards a model (`conversation`, `validation`), with the policies `preanalysis-v1` and `preanalysis-validation-v1`. `src/analyst.js`, `src/analyst_ai/` and `src/analysis_validator.js` become `src/preanalyst.js`, `src/preanalyst_ai/` and `src/preanalysis_validator.js`, with the contract's role `analyst` becoming `preanalyst`; `templates/analysis.njk`, `public/analysis.js` and `scripts/analyse.js` become `preanalysis.njk`, `preanalysis.js` and `preanalyse.js`; the 37 catalogue keys move to `preanalyst.preanalysis.*`. In metrics the three phases, the gate and the three metric names follow, and `GET /metrics/analysis` becomes `GET /metrics/preanalysis`. Migration of the data: `anagraphics/scripts/migrate_preanalysis_rename.py`. |
 | 2026-09-25 | 0.25.0 | **The analyst speaks first** (§14.3). The fixed greeting goes out of `templates/analysis.njk` and out of the catalogues (`preanalyst.analysis.opening`): with an empty conversation the browser calls the new `POST /analysis/{id}/opening`, which has the analyst read the pre-specification and ask the first real question, writes it onto the step and spends **no turn**; `409 ANALYSIS_ALREADY_OPENED` covers two pages opened together, checked again after the model has answered and before writing. `conversationOf` and `ask` accept a turn with no client message. The turns used are counted as the client's messages and no longer as half of them, which the opening would have made false. **The analyst's policy is rewritten**: who is on the other side (a person not of the trade, with little confidence with computers), the register (professional and not formal, the tu, never a word that genders the client), clarity (no jargon, nothing implied, always an example) and the aim — one subject per turn, carrying concrete points, to reach the end in as few turns as possible. **Both policies** gain what is an instruction to the model and what is not, and that `missing` and `reason` are its own words. **The validator receives a conversation**, not a flattened document: `dossierOf` becomes `materialOf` and returns messages with their roles, so `**Analyst:**` typed by the client is just text. Italian catalogue: out the forms that gender the reader. |

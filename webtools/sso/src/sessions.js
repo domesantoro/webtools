@@ -11,14 +11,19 @@
 //     issued_at:  when they came in
 //     expires_at: when it stops counting
 //     data:       session data, free. Today it holds the photograph of the user at
-//                 login time (screen_name, driver_uid), so reading a session does
+//                 login time (screen_name, driver), so reading a session does
 //                 not cost a second read, and the language (locale), which changes
 //                 with the pages' switcher.
 //   }
 //
-// The photograph ages: if the `screen_name` changes, sessions already open go on
-// showing the old one until the next login. It is the same trade-off already made
-// for the driver inside the discount codes.
+// `driver` is `null` for whoever is not a driver, and otherwise the role as the user
+// document carries it — `{driver_uid, level}`, the same shape, not a translation of
+// it. The sso reads the field and judges nothing about it: what a level allows is
+// decided by whoever asks, not by whoever says who you are.
+//
+// The photograph ages: if the `screen_name` or the level changes, sessions already
+// open go on showing the old one until the next login. It is the same trade-off
+// already made for the driver inside the discount codes.
 
 import { randomBytes } from "node:crypto";
 
@@ -43,7 +48,7 @@ export function buildSession(user, ttlSeconds, now = new Date(), locale = null) 
     expires_at: expiresAt.toISOString(),
     data: {
       screen_name: user.screen_name ?? null,
-      driver_uid: user.driver_uid ?? null,
+      driver: user.driver ?? null,
       locale,
     },
   };

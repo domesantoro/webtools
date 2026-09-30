@@ -17,7 +17,12 @@
     "ttl_seconds": 60
   },
   "login": {
-    "allowed_next": ["http://127.0.0.1:9200", "http://localhost:9200"]
+    "allowed_next": [
+      "http://127.0.0.1:9200",
+      "http://localhost:9200",
+      "http://127.0.0.1:9900",
+      "http://localhost:9900"
+    ]
   },
   "limits": {
     "body_max_bytes": 4096

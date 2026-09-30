@@ -95,8 +95,9 @@ def _read_json(settings, path: str, *, operation: str) -> Answer:
 def list_drivers(settings) -> Answer:
     """`GET /drivers` → the drivers, without their addresses.
 
-    The list carries `uid`, `screen_name` and `enabled`. That last one is what this
-    subsystem is here to read.
+    The list carries `uid` (the driver's, not the person's), `screen_name`, `level` and
+    `active`. The last two are what this subsystem is here to read: together they say
+    whether a driver may be handed a client's project.
     """
     answer = _read_json(settings, "/drivers", operation="list_drivers")
     if not answer.ok:

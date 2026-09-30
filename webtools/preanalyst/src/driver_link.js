@@ -17,20 +17,23 @@
 // The outcomes, and the page knows no others:
 //
 //   none                      no parameter: the box is not shown at all
-//   discount_applied          valid discount, driver recognised and enabled
+//   discount_applied          valid discount, driver recognised and may supervise
 //   discount_expired          reading the discount failed: the discount cannot apply
 //   discount_driver_missing   discount read, but its driver can no longer be found
-//   discount_driver_disabled  discount read, but its driver is not enabled: neither
-//                             the discount nor the driver applies
-//   driver_applied            the link's driver recognised and enabled, no discount
+//   discount_driver_disabled  discount read, but its driver may not supervise:
+//                             neither the discount nor the driver applies
+//   driver_applied            the link's driver recognised and may supervise
 //   driver_unknown            the link's driver not found
-//   driver_disabled           the link's driver found but not enabled
+//   driver_disabled           the link's driver found but may not supervise
 //   own_link                  the link belongs to whoever is using it: a driver does
 //                             not send a client to themselves, so it does not apply
 //
-// A driver who is **not enabled** (`enabled` other than true) exists, but cannot
-// supervise client projects: with them the system does not go on, and we assign
-// the project ourselves.
+// The two `_disabled` states keep their names: a state names the fate of the **link**
+// — this driver cannot take the project — and that fate has not changed. What changed
+// is what the fate is read from.
+//
+// A driver who may not supervise a client's project exists all the same: with them the
+// system does not go on, and we assign the project ourselves.
 //
 // The driver is not chosen: either the link brings one, or we assign one.
 
@@ -49,6 +52,25 @@ export const OWN_LINK = "own_link";
 // The states in which the driver has been recognised: there is a name to show and
 // a uid to carry forward with the form. In the others we assign the driver.
 const RESOLVED = new Set([DISCOUNT_APPLIED, DRIVER_APPLIED]);
+
+// From this level upwards a driver supervises a client's project. The rule lives here
+// because this file is where the link's outcomes are decided, and `project_driver.js`
+// imports it rather than repeating it: it re-checks the same thing at submission time,
+// and two copies of a threshold are two places to change it and one to forget.
+const MIN_SUPERVISING_LEVEL = 1;
+
+// Whether this driver may be handed a client's project.
+//
+// Two facts, not one. `level` is what the service has decided this driver may do;
+// `active` is whether the person can log in at all, and somebody who cannot log in
+// cannot supervise whatever their level says.
+//
+// `Number.isInteger` and not `>= 1` on its own: `true >= 1` is true in JavaScript, and
+// a `level: true` is a broken document, not a driver at level 1.
+export function maySupervise(driver) {
+  if (!Number.isInteger(driver?.level) || driver.level < MIN_SUPERVISING_LEVEL) return false;
+  return driver.active === true;
+}
 
 export function isResolved(driverLink) {
   return RESOLVED.has(driverLink.state);
@@ -77,7 +99,7 @@ async function fromDiscount(settings, discountCode, drivers) {
     };
   }
 
-  if (known.enabled !== true) {
+  if (!maySupervise(known)) {
     return { state: DISCOUNT_DRIVER_DISABLED, code: discountCode, driver: known };
   }
 
@@ -96,7 +118,7 @@ function fromDriver(driverUid, drivers) {
   if (!known) {
     return { state: DRIVER_UNKNOWN, driverUid };
   }
-  if (known.enabled !== true) {
+  if (!maySupervise(known)) {
     return { state: DRIVER_DISABLED, driver: known };
   }
   return { state: DRIVER_APPLIED, driver: known };

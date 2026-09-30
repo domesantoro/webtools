@@ -1,7 +1,7 @@
 # Subsystem `anagraphics`
 
 > Reference documentation for development, maintenance, troubleshooting, bugfixing and metrics.
-> Last updated: 2026-09-28 · subsystem version: `0.11.0`.
+> Last updated: 2026-09-30 · subsystem version: `0.13.0`.
 > Code: `webtools/anagraphics/` (paths relative to the root of the `ftab - webtools/` workspace).
 
 ---
@@ -10,7 +10,7 @@
 
 | Item | Value |
 |---|---|
-| What it does | An internal HTTP API holding the **configuration of every subsystem** (it is the configuration subsystem), the record of the projects, the drivers and their discount codes, the **users** and the **sessions** |
+| What it does | An internal HTTP API holding the **configuration of every subsystem** (it is the configuration subsystem), the record of the projects, the **users** — the drivers among them — their discount codes and the **sessions** |
 | Stack | Python 3.13 · FastAPI · uvicorn · pymongo · MongoDB 8 |
 | Code | `webtools/anagraphics/` |
 | Start (background, detached from the terminal) | `webtools/anagraphics/webtools_anagraphics.sh --start` |
@@ -19,13 +19,13 @@
 | PID / Log | `webtools/anagraphics/webtools_anagraphics.pid` / `webtools/anagraphics/webtools_anagraphics.log` |
 | Address | `WEBTOOLS_ANAGRAPHICS_URL` in `webtools/configurator/bootstrap.env` (today `http://127.0.0.1:9100`) |
 | Database | `WEBTOOLS_MONGO_URI` / `WEBTOOLS_MONGO_DB` in `bootstrap.env` (today `mongodb://localhost:27017`, DB `webtools`) |
-| Collections | `configuration` (key `subsystem`), `projects` (key `project_id`), `drivers` (key `uid`), `discounts` (key `discount_code`), `users` (key `username`), `sessions` (key `token`) |
+| Collections | `configuration` (key `subsystem`), `projects` (key `project_id`), `discounts` (key `discount_code`), `users` (key `username`, and `driver.driver_uid` for whoever is a driver), `sessions` (key `token`), `tickets` (key `ticket`) |
 | Writes | Sessions, tickets and language: `POST /sessions`, `DELETE /sessions/{token}`, `DELETE /sessions?uid=…`, `PUT /sessions/{token}/locale`, `PUT /users/{username}/locale`, `POST /tickets`, `DELETE /tickets/{ticket}`. Everything else is read-only |
 | Access | Only from the IPs in `access.allowed_ips` of its configuration; the others get a `403` |
 | Configuration | Read at startup from Mongo (the `anagraphics` document of `configuration`). No defaults: if it is missing, the server does not start (§7) |
 | Authentication | None: the only check is the IP pool. The one who authenticates is `webtools_sso`, which uses this data |
-| Tests | `uv run pytest` (70 tests, using the `webtools_test` DB, dropped at the end) |
-| State | Reads on six collections, writes on sessions and tickets. A full CRUD is planned later |
+| Tests | `uv run pytest` (116 tests, using the `webtools_test` DB, dropped at the end) |
+| State | Reads on five collections, writes on sessions and tickets. A full CRUD is planned later |
 
 Quick check, with the server running:
 ```sh
@@ -54,11 +54,12 @@ data source**:
 - **Projects** (collection `projects`): every client project has a document, identified by
   `project_id`. It is born with `POST /projects` when the client sends the pre-analysis (§6.3.1);
   the project's files (specifications) do not live here but in `webtools-workspaces`.
-- **Drivers** (collection `drivers`): the people who supervise the projects, identified by `uid`.
+- **Users** (collection `users`): who may enter the system, identified by `username`, with the
+  credentials block. A user who is also a **driver** — one of the people who supervise the
+  projects — carries the role inside their own document, in `driver`. Up to 0.11.0 the drivers were
+  a collection of their own (migration in §8.12).
 - **Discount codes** (collection `discounts`): each code belongs to a driver, identified by
   `discount_code`.
-- **Users** (collection `users`): who may enter the system, identified by `username`, with the
-  credentials block.
 - **Sessions** (collection `sessions`): who has logged in and until when, identified by the
   `token`.
 
@@ -231,10 +232,9 @@ created by `scripts/seed.py` (`db.ensure_indexes`), not by the server's startup.
 | Collection | Key | Other indexes | Content | Who writes |
 |---|---|---|---|---|
 | `configuration` | `subsystem` (unique) | — | Every subsystem's configuration | `configurator/load_configuration.sh` |
-| `projects` | `project_id` (unique) | `submission_id` (unique, sparse) | One document per client project | `webtools_preanalyst`, through the API |
-| `drivers` | `uid` (unique) | — | The people who supervise the projects | seed / `mongosh` |
-| `discounts` | `discount_code` (unique) | `driver.uid` | The discount codes, with the driver duplicated inside | seed / `mongosh` |
-| `users` | `username` (unique) | `uid` (unique) | Who may enter the system, with the credentials | seed + a command by hand (§8.5) |
+| `projects` | `project_id` (unique) | `submission_id` (unique, sparse), `owner_uid`, `review.driver.uid`, `created_at` | One document per client project | `webtools_preanalyst`, through the API |
+| `discounts` | `discount_code` (unique) | `driver.uid` | The discount codes, with the driver duplicated inside | seed / `POST /drivers/{uid}/discounts` |
+| `users` | `username` (unique) | `uid` (unique), `driver.driver_uid` (unique, sparse) | Who may enter the system, with the credentials; the drivers are the ones carrying a `driver` | seed + a command by hand (§8.5) |
 | `sessions` | `token` (unique) | `uid`, **TTL** on `expires_at` | Who has logged in and until when | `webtools_sso`, through the API |
 | `tickets` | `ticket` (unique) | **TTL** on `expires_at` | Single-use tickets for handing a session from one address to another | `webtools_sso`, through the API |
 
@@ -294,26 +294,24 @@ Up to 0.4.0 the collection was called `anagraphics` (migration in §8.7).
 | `owner_uid` | string | — | The `uid` of the user (`users.uid`) who created the project. Whoever reads a project on a user's behalf compares this field |
 | `submission_id` | string | **unique, sparse** (index `submission_id_1`) | The id of the pre-analysis form submission. The same submission repeated finds the project already born instead of creating another. Sparse: a project can be born by other routes too |
 | `created_at` | datetime (UTC) | — | The moment of creation |
+| `description` | string | — | One sentence saying what the tool is for, in the client's language: the sentence that tells this project from the others in a list. Written by the analyst's points door once the analysis has succeeded (`PUT /projects/{id}/description`, §6.23), never at creation. **Absent on a project that has not been analysed, and on one whose door came back without a sentence**: absent is absent, and nothing is stored in its place. Added in 0.13.0 |
 | `pipeline` | object | — | Where the project is along the flow and what has happened to it: `{state, steps}`. `state` is one of `PREANALYSIS`, `PREVALIDATION`, `UNDERSPECIFIED`, `ANALYSIS`, `DRIVER_VALIDATION`, `CLIENT_VALIDATION`, `DEVELOPMENT`, `ALPHA_TEST`, `DEMO`, `PAID`, `REJECTED`, `FAILED`, `FAILED_NO_DRIVERS` — the last two are not refusals: `FAILED` is where a run that did not get to the end leaves a project, and `FAILED_NO_DRIVERS` is an analysis that was written and that nobody could be given — `UNDERSPECIFIED` is the request sent back to the user because it said too little: it is not a refusal, and from there one starts again by rewriting. `steps` is an **ordered list** of the steps taken, not a map: a step can repeat, and the list is the register of the decisions taken on the project. Each step: `{step, result, decided_at, data}`, with `result` among `open`, `passed`, `rejected`, `underspecified` and `failed` and `data` free — its shape is decided by whoever takes the step, here it is stored and not interpreted. **`open` is the only one that has decided nothing**: the step has begun and lasts — it is the case of the rounds of questions, which open when the prevalidation passes and grow with every turn. `PREANALYSIS` covers the whole pre-analysis — the form, the prevalidation that passes and the rounds that follow — because there is no earlier moment to have a state for and the rounds *are* the pre-analysis; which of the two moments a project is at is read off the steps. While it is open its `data` is updated with `PATCH` (§6.20); when it closes it takes one of the other results and from then on is never touched again, like every other step. Up to 0.8.0 there was a flat `state` in place of all this (migration §8.9) |
-| `review` | object | — | Who supervises the project: `{driver_uid, preset}`. `preset: true` = a **preset** driver (from a driver's link, or the driver themselves in autonomous work); `preset: false` = assigned by the system. At creation, with no link, `driver_uid` is `null` |
+| `review` | object | — | Who supervises the project: `{driver, preset}`. `driver` is the **copy** anagraphics makes — `{uid, screen_name, username}`, where `uid` is the driver's uid — or `null` when there is none. It deliberately carries neither the driver's `level` nor their `active`: those are states of the driver and not of this assignment (§5.5). `preset: true` = a **preset** driver (from a driver's link, or the driver themselves in autonomous work); `preset: false` = assigned by the system. What a caller **sends** is a uid and not a copy, in the field `driver_uid` (§6.3.1). Up to 0.4.x the stored form was a flat `review.driver_uid` |
 | `billing` | object | — | The economic data: `{discount_code, autonomous_work, ambassador_uid}`. The link's discount code and autonomous work **exclude each other**: with autonomous work `discount_code` is `null`. `ambassador_uid` is the uid of the driver who invited the user to work with us, or `null`; projects created before 0.6.2 do not have the field. Up to 0.6.0 there was also `autonomous_fee_discount` (migration §8.8). They are only stored: the price is not worked out here |
 
-### 5.3 `drivers`
-| Field | Type | Constraints | Notes |
-|---|---|---|---|
-| `_id` | ObjectId | automatic | Never exposed |
-| `uid` | string | **unique** (index `uid_1`) | The driver's **UUID**, e.g. `7633be3d-e701-42ca-9fea-6c6d1bb4b7d1`. As for `project_id`, the format is not validated by the API |
-| `username` | string | — | The driver's login identifier. The login is not handled yet: today the field is only data |
-| `screen_name` | string | — | The name shown, e.g. `Dome` |
-| `enabled` | bool | — | Allowed to supervise client projects (after the interview). A driver who is not enabled can be an ambassador and do autonomous work, but no client can have them as their driver: the preanalyst applies the rules |
+### 5.3 `drivers` — removed in 0.12.0
 
-Drivers present:
+There is no collection of drivers. A driver is a **user** carrying a `driver` object, and the
+fields that were in this section are in §5.5: `uid` is `driver.driver_uid`, `screen_name` and
+`username` are the person's own, and the boolean `enabled` became `driver.level`.
 
-| `uid` | `username` | `screen_name` | `enabled` | Notes |
-|---|---|---|---|---|
-| `7633be3d-e701-42ca-9fea-6c6d1bb4b7d1` | `dome.santoro@gmail.com` | `Dome` | `true` | The real driver. Has a discount code |
-| `639718a3-ea41-4533-bdb8-73ac58b3b1b2` | `driver.test@example.com` | `Test` | `true` | **Test data**, with no discount codes: it is there to see more than one driver in the list, and for the "driver who exists with no discounts" case |
-| `f234b930-e5d0-4e10-8a4f-1a8a13814370` | `driver.notenabled@example.com` | `Not enabled` | `false` | **Test data** with a discount code: it is there for the "link" and "discount" cases of a driver who is not enabled |
+The section number is kept so that the references to §5.4 and §5.5 elsewhere in this document keep
+pointing where they pointed. The migration is §8.12.
+
+**Why they were merged.** The two documents described one person twice, and `drivers.username` was
+a second copy of `users.username` kept in step by hand — recorded as debt until 0.11.0. The
+boolean was also the wrong shape: the service already had three conditions (not a driver, a
+driver, a driver who may supervise) and a boolean cannot carry the third.
 
 ### 5.4 `discounts`
 | Field | Type | Constraints | Notes |
@@ -325,12 +323,14 @@ Drivers present:
 | `percentage` | number | — | The discount percentage in **percentage points**: `5` means 5%, not 0.05 |
 
 Codes present: `e8013cf2-34eb-4bc3-8a34-b08fb24a1bf3`, of the driver `Dome`, at 5%;
-`91165eb1-65d6-43a9-ade8-681ec3ebef8d`, of the test driver `Not enabled`, at 10%.
+`91165eb1-65d6-43a9-ade8-681ec3ebef8d`, of the test driver at level 0, at 10%. A third code of the
+second test driver exists in the running store and not in the seed.
 
 **On duplicating the driver.** `uid` and `screen_name` are copied inside the discount on purpose:
 whoever reads a discount code has the name to show straight away, with no second read. The price
-is that **a change of `screen_name` in `drivers` does not propagate**: until there is a CRUD it
-must be updated by hand in `discounts` too (§8.4). `uid`, on the other hand, never changes.
+is that **a change of the driver's `screen_name` does not propagate**: until there is a CRUD it
+must be updated by hand in `discounts` too (§8.4). `driver.uid` here is the driver's uid — the one
+in `users.driver.driver_uid` — and it never changes.
 
 ### 5.5 `users`
 | Field | Type | Constraints | Notes |
@@ -339,7 +339,9 @@ must be updated by hand in `discounts` too (§8.4). `uid`, on the other hand, ne
 | `username` | string | **unique** (index `username_1`) | What is typed at the login. Today it is the email address. Case-sensitive |
 | `screen_name` | string | — | The name shown, e.g. `Dome` |
 | `active` | bool | — | `false` prevents the login (the sso checks it). The document stays |
-| `driver_uid` | string / absent | — | The `uid` of the document in `drivers`, if this person is also a driver |
+| `driver` | object / `null` | `driver.driver_uid` **unique, sparse** (index `driver.driver_uid_1`) | The driver role: `null` for whoever is not a driver, otherwise `{driver_uid, level}`. **`null` and not absent**: every user has the field, and «not a driver» is a fact stated, not a field forgotten. The index is sparse precisely because `null` leaves the path `driver.driver_uid` absent, so the non-drivers are not in it and do not collide with one another. Up to 0.11.0 this was a flat `driver_uid` pointing at the `drivers` collection (migration §8.12) |
+| `driver.driver_uid` | string | see above | The **driver's** UUID, e.g. `7633be3d-e701-42ca-9fea-6c6d1bb4b7d1`. It is not the person's `uid` and never becomes it. As for `project_id`, the format is not validated by the API |
+| `driver.level` | int | — | What this driver may do. **0** not enabled, **1** enabled (after the interview), **2** `prj-admin`. From **1 upwards** a driver may supervise a client's project; at 0 they are still a driver and can be an ambassador and do autonomous work. The threshold lives in the two boundaries that decide it — the drivers' pool and the preanalyst's driver link — and not in the configuration: it is a rule of the service, and it moves under review. Level 2 is stored and **nothing reads it yet**: what it opens is specified together with the levels that come after it |
 | `credential` | object / `null` | — | The password block, below. `null` means "password never set": the user exists but cannot get in |
 | `locale` | string / absent | — | The preferred language (`it`, `en`, …). The sso writes it at the first login and at every language change; at the next login it puts it back into the session (§6.19) |
 | `billing` | object | — | The person's economic data: today only `{turns_credit}`, the chat turns they have in credit and can move onto a project when the included ones run out. An integer, never negative: the check lives inside the write (§6.21). Users born before 0.10.0 do not have the field (migration §8.10) |
@@ -365,20 +367,30 @@ The password is **not seeded**: it is set separately, building the block with
 `build_credential()` (§8.5). There is no dedicated tool yet: until there is a CRUD it is a command
 by hand.
 
-Users present:
+Users the seed creates:
 
-| `uid` | `username` | `screen_name` | `driver_uid` | Notes |
-|---|---|---|---|---|
-| `8ff93901-673e-44ba-b05b-56011395dcba` | `dome.santoro@gmail.com` | `Dome` | `7633be3d-…` | The real user. A development password set on 2026-09-21 |
-| `214912a9-2cc4-4205-87b7-93ea71f6be72` | `driver.test@example.com` | `Test` | `639718a3-…` | **Test data**, with a known development password. To be removed before the system takes real clients |
+| `username` | `screen_name` | `driver` | Notes |
+|---|---|---|---|
+| `dome.santoro@gmail.com` | `Dome` | `{7633be3d-…, level 1}` | The real user. A development password set on 2026-09-21 |
+| `driver.test@example.com` | `Test` | `{639718a3-…, level 1}` | **Test data**. No discount codes: it is there to see more than one driver in the list, and for the "driver who exists with no discounts" case |
+| `driver.notenabled@example.com` | `Not enabled` | `{f234b930-…, level 0}` | **Test data** with a discount code: the "link" and "discount" cases of a driver who may not supervise. Before 0.12.0 this driver had no user at all, so the case could not be reached from a login |
 
-The two passwords are **development passwords**, short and known: they must be redone before the
-system is reachable from outside this machine.
+The development passwords are short and known: they must be redone before the system is reachable
+from outside this machine.
 
-**Why `uid` and `driver_uid` are two different things.** `users.uid` is the person's identity,
-`drivers.uid` is the identity of the driver role: a client is a user and is not a driver. The link
-is explicit in `driver_uid` instead of implicit in the two uids being equal, so it can be seen by
-reading the document.
+**The running store is not the seed.** It carries a user the seed does not (`policy.test@example.com`,
+a client: `driver: null`), and its two test drivers were renamed by hand in Italian
+(`driver.prova@example.com`/`Prova`, `driver.nonabilitato@example.com`/`Non abilitato`). The seed
+cannot be re-run on it as it is: it would try to create `driver.test@example.com` with a
+`driver_uid` the renamed user already holds, and the unique index would refuse it. Test data is
+data and belongs in English — bringing the store back in line means renaming a login identity, so
+it is asked for, not done in passing.
+
+**Why `uid` and `driver.driver_uid` are two different things.** `users.uid` is the person's
+identity, `driver.driver_uid` is the identity of the driver role: a client is a user and is not a
+driver. Keeping them apart is also what made this merge cost nothing downstream — the discounts,
+the copies on the projects and `billing.ambassador_uid` all point at the driver's uid, and not one
+of them had to be rewritten.
 
 ### 5.6 `sessions`
 | Field | Type | Constraints | Notes |
@@ -388,7 +400,7 @@ reading the document.
 | `username` | string | — | Copied at login, so as not to have to read the user again |
 | `issued_at` | date | — | When they came in |
 | `expires_at` | date | a **TTL** index (`expires_at_1`, `expireAfterSeconds: 0`) | When it stops counting |
-| `data` | object | — | Session data, free. Today it holds `screen_name` and `driver_uid` photographed at login time, and `locale`, the session's language, which changes with `PUT /sessions/{token}/locale` |
+| `data` | object | — | Session data, free. Today it holds `screen_name` and `driver` photographed at login time — `driver` being the same object the user document carries, `null` or `{driver_uid, level}` — and `locale`, the session's language, which changes with `PUT /sessions/{token}/locale` |
 
 **The document is built by the sso.** The token, the dates and the content of `data` arrive
 ready-made in `POST /sessions`: here we check that the fields are there and store it.
@@ -620,33 +632,138 @@ pre-specification cannot be written.
 | Deleted | `204` | — |
 | Not found | `404` | `{"error":"PROJECT_NOT_FOUND","project_id":"<requested>"}` |
 
-### 6.4 `GET /drivers`
-Returns **every** driver, ordered by `uid`, with the `uid`, `screen_name` and `enabled` fields
-only.
+### 6.23 `GET /projects` — the lists
+
+Returns the projects matching **one** filter, newest first (`created_at` descending). Added in 0.13.0,
+for `projects-hub`, which is the first thing in the system that reads the register back.
+
+| Query | Returns |
+|---|---|
+| `?owner_uid=<uid>` | the projects of that owner (`users.uid`) |
+| `?driver_uid=<uid>` | the projects whose `review.driver.uid` is that driver's uid |
+| `?without_driver=true` | the projects whose `review.driver` is `null` |
+
+**Exactly one of the three**, and `400 INVALID_QUERY` for none and for more than one. They are not
+refinements of one another — one names a person's projects, one a driver's, one the projects nobody
+supervises — and two together would be a question about an intersection nobody asked for. Refusing is
+this route saying it does not guess which of two filters was meant.
+
+`without_driver` takes only `true`. `false` would have to mean "the projects that *do* have a driver",
+which is a fourth question and not one this route answers, so it is refused rather than quietly ignored.
+
+`state` is an extra filter, optional and **repeatable**, valid with all three and checked against the
+list of §5.2: an invented name is a `400`, as on the steps route, and not an empty list. Given more than
+once it means any one of those given.
+
+**Which states a caller cares about is the caller's rule**, which is why it travels as a query and is
+not written into this route: a filter that took one caller's list of states would be that caller's rule
+living in everybody's API.
+
+The projection is `{"_id": 0, "pipeline.steps": {"$slice": -1}}` — the whole document, minus every step
+but the last. The last step is the one that says why a project failed (a failure is written into the
+`data` of the step that failed; there is no `reason` field on a project), and what the slice leaves out
+is what matters: the `preanalysis` step stays `open` and grows by two messages every turn, so a list of
+twenty projects read whole would carry twenty entire conversations.
 
 | Outcome | Status | Body |
 |---|---|---|
-| Always | `200` | `{"drivers":[{"uid":…,"screen_name":…,"enabled":…}, …]}` |
+| Found, or none | `200` | `{"projects":[…]}` — an empty list when none match, which is an answer |
+| No filter, two filters, `without_driver=false`, an invented state | `400` | `{"error":"INVALID_QUERY"}` |
+| Other errors | `403` / `503` / `500` | see §6.1 |
+
+**No pagination**, as `GET /drivers` has none. It is a known limit (§11): the list of projects with no
+driver is the one that can grow without a bound anybody chose.
+
+Three indexes serve it, none unique: `owner_uid`, `review.driver.uid`, `created_at`. There is none for
+`review.driver` being null: that filter matches whatever the other two do not, and Mongo would walk the
+collection either way.
+
+#### 6.23.1 `PUT /projects/{project_id}/description`
+
+Writes the project's description. Body `{"description": "<non-empty>"}`; the spaces are taken off and a
+sentence made only of spaces is refused. No maximum length: how long the sentence is belongs to whoever
+writes it. Added in 0.13.0.
+
+A route of its own and not a field on the steps route, for the same reason
+`PUT /projects/{project_id}/review/driver` is one: it is a field of the project written after the
+project was born, by whoever found it out, while the steps route appends to the register of decisions —
+which writing a label is not.
+
+| Outcome | Status | Body |
+|---|---|---|
+| Written | `200` | the updated project |
+| Project does not exist | `404` | `{"error":"PROJECT_NOT_FOUND","project_id":"<requested>"}` |
+| Empty, or only spaces, or no `description` | `400` | `{"error":"INVALID_BODY"}` |
+
+#### 6.23.2 `POST /drivers/{uid}/discounts`
+
+Creates a discount code for a driver. Body `{"percentage": <1..100>}`; the answer is the document as
+§5.4 holds it. Added in 0.13.0 — until then codes were written by hand in `mongosh` (§8.4).
+
+`discount_code` is a UUID generated here, like `project_id`: the caller does not choose it.
+`driver.screen_name` is copied here out of the user who is that driver, and never taken from the body —
+exactly as `_driver_copy` works, and for the same reason: the drivers live in this subsystem.
+
+**The commercial range is not checked here.** `1..100` is what a percentage *is*; how much webtools is
+willing to give away today is a policy of whoever offers the link, read from that subsystem's own
+configuration (`links.discount` in `projects-hub`). Anagraphics stores and does not decide — the same
+division by which it stores `review.preset` without applying the rule that sets it. Nor is a second
+code at a percentage that already has one refused: whether to reuse one is the caller's rule.
+
+| Outcome | Status | Body |
+|---|---|---|
+| Created | `201` | `{"discount_code":…,"driver":{"uid":…,"screen_name":…},"percentage":…}` |
+| No such driver | `404` | `{"error":"DRIVER_NOT_FOUND","uid":"<requested>"}` |
+| A percentage that is not one | `400` | `{"error":"INVALID_BODY"}` |
+
+The `uid` is the **driver's**, not the person's: a code points at the driver, so a person's own uid
+answers `404` like any other unknown one.
+
+### 6.4 `GET /drivers`
+Returns **every** driver, ordered by the driver's uid, with `uid`, `screen_name`, `level` and
+`active`.
+
+| Outcome | Status | Body |
+|---|---|---|
+| Always | `200` | `{"drivers":[{"uid":…,"screen_name":…,"level":…,"active":…}, …]}` |
 | No drivers | `200` | `{"drivers":[]}` |
 | Other errors | `403` / `503` / `500` | see §6.1 |
 
+`uid` is the **driver's** uid (`users.driver.driver_uid`) and never the person's: what points at a
+driver points at that one.
+
+**A driver is not a document of its own**: the list is users carrying a `driver`, turned into this
+shape by `_driver_view` in `webtools_anagraphics/main.py` — the one place that mapping is made, so
+that the driver routes cannot answer with different shapes. The projection it reads is
+`DRIVER_SUMMARY` in `db.py`, and it is **positive**: it names what comes out. The document behind
+it is a person's, credential block included, so a projection by exclusion would let a field added
+to a user tomorrow out through a route about drivers, without anybody choosing it.
+
 **`username` does not appear in the list**, unlike in `GET /drivers/{uid}`: a list is read to show
-or choose a driver, and there is no reason to hand out everybody's login identifiers at once. The
-projection is the `DRIVER_SUMMARY` constant in `webtools_anagraphics/db.py`. Note that it is not a
-security measure while there is no login: whoever can call the list can also call the individual
-drivers.
+or choose a driver, and there is no reason to hand out everybody's login identifiers at once. Note
+that it is not a security measure while there is no login: whoever can call the list can also call
+the individual drivers.
+
+**`level` and `active` both come out**, because together they answer «may this driver be handed a
+client's project» and that question is the caller's to answer: the pool and the preanalyst's driver
+link each apply it (`level >= 1` and `active: true`), and neither could without both fields. This
+route decides nothing.
 
 No pagination and no filters: there are few drivers. If one day there were many, `limit`/`skip`
 would be needed here.
 
 ### 6.5 `GET /drivers/{uid}`
-Returns the driver.
+Returns the driver. `uid` is the driver's uid, not the person's: asking for a person's `uid`
+answers `404`, and so does asking for a user who is not a driver.
 
 | Outcome | Status | Body |
 |---|---|---|
-| Found | `200` | the document without `_id`, e.g. `{"uid":"7633be3d-…","username":"dome.santorogmail.com","screen_name":"Dome"}` |
+| Found | `200` | `{"uid":"7633be3d-…","username":"dome.santoro@gmail.com","screen_name":"Dome","level":1,"active":true}` |
 | Not found | `404` | `{"error":"DRIVER_NOT_FOUND","uid":"<requested>"}` |
 | Other errors | `403` / `503` / `500` | see §6.1 |
+
+The same view as the list plus `username`, which is the address the driver is reached at. It is the
+person's `username`: since 0.12.0 there is no second copy of it to fall out of step.
 
 ### 6.6 `GET /drivers/{uid}/discounts`
 Returns **every** discount code of the driver, ordered by `discount_code`.
@@ -677,11 +794,29 @@ the pool may do.
 
 | Outcome | Status | Body |
 |---|---|---|
-| Found | `200` | e.g. `{"uid":"8ff93901-…","username":"dome.santoro@gmail.com","screen_name":"Dome","active":true,"driver_uid":"7633be3d-…"}` |
+| Found | `200` | e.g. `{"uid":"8ff93901-…","username":"dome.santoro@gmail.com","screen_name":"Dome","active":true,"driver":{"driver_uid":"7633be3d-…","level":1},"billing":{"turns_credit":0}}`. A user who is not a driver carries `"driver":null` |
 | Not found | `404` | `{"error":"USER_NOT_FOUND","username":"<requested>"}` |
 | Other errors | `403` / `503` / `500` | see §6.1 |
 
 There is no list of users: they are read one by one, by username.
+
+#### 6.8.1 `GET /users?uid=…`
+The same user and the same body, asked for by uid.
+
+A project keeps `owner_uid` and no copy of the person who owns it (§5.2), so whoever has something
+to say to a client has a uid and not an address: this is where the two are joined. It is used by
+the analyst, when a run stops, and by projects-hub, when a driver closes a request.
+
+| Outcome | Status | Body |
+|---|---|---|
+| Found | `200` | the same document as §6.8 |
+| Not found | `404` | `{"error":"USER_NOT_FOUND","uid":"<requested>"}` |
+| No `uid` in the query | `400` | `{"error":"INVALID_BODY"}` |
+| Other errors | `403` / `503` / `500` | see §6.1 |
+
+It is a query and not `/users/{uid}`, because that position already names a user by their username:
+the same place meaning two things would be told apart by what the value looks like, which is a
+guess. `DELETE /sessions?uid=…` is written this way for the same reason.
 
 ### 6.9 `GET /users/{username}/credential`
 The algorithm, parameters, salt and hash of the password (§5.5). **Only the sso uses it**, to
@@ -997,7 +1132,8 @@ mongosh --quiet --eval 'db.runCommand({ping:1})'   # answers { ok: 1 }
 ```sh
 mongosh webtools --quiet --eval 'db.configuration.find({}, {_id:0}).toArray()'
 mongosh webtools --quiet --eval 'db.projects.find({}, {_id:0}).toArray()'
-mongosh webtools --quiet --eval 'db.drivers.find({}, {_id:0}).toArray()'
+# the drivers: the users who carry a `driver`
+mongosh webtools --quiet --eval 'db.users.find({"driver.driver_uid":{$exists:true}}, {_id:0, username:1, screen_name:1, active:1, driver:1}).toArray()'
 mongosh webtools --quiet --eval 'db.discounts.find({}, {_id:0}).toArray()'
 # the users without the credentials block
 mongosh webtools --quiet --eval 'db.users.find({}, {_id:0, credential:0}).toArray()'
@@ -1014,17 +1150,26 @@ mongosh webtools --quiet --eval 'db.projects.updateOne({project_id:"<uuid>"}, {$
 # deleting a project
 mongosh webtools --quiet --eval 'db.projects.deleteOne({project_id:"<uuid>"})'
 
-# adding a driver
-mongosh webtools --quiet --eval 'db.drivers.updateOne({uid:"<uuid>"}, {$set:{uid:"<uuid>", username:"<username>", screen_name:"<name>"}}, {upsert:true})'
+# making an existing user a driver (level 0; 1 after the interview)
+mongosh webtools --quiet --eval 'db.users.updateOne({username:"<username>"}, {$set:{driver:{driver_uid:"<new uuid>", level:0}}})'
 
-# adding a discount code to a driver
+# raising or lowering a driver's level
+mongosh webtools --quiet --eval 'db.users.updateOne({"driver.driver_uid":"<uuid>"}, {$set:{"driver.level":1}})'
+
+# taking the role away: null, never $unset — every user has the field (§5.5)
+mongosh webtools --quiet --eval 'db.users.updateOne({"driver.driver_uid":"<uuid>"}, {$set:{driver:null}})'
+
+# adding a discount code to a driver. From 0.13.0 there is a route for this
+# (§6.23.2), which projects-hub uses: by hand is for a code at a percentage
+# outside what that subsystem offers.
 mongosh webtools --quiet --eval 'db.discounts.updateOne({discount_code:"<uuid>"}, {$set:{discount_code:"<uuid>", driver:{uid:"<driver uuid>", screen_name:"<name>"}, percentage:5}}, {upsert:true})'
 
 # changing a driver's screen_name: the copy in the discounts must be updated too (§5.4)
-mongosh webtools --quiet --eval 'db.drivers.updateOne({uid:"<uuid>"}, {$set:{screen_name:"<new>"}}); db.discounts.updateMany({"driver.uid":"<uuid>"}, {$set:{"driver.screen_name":"<new>"}})'
+mongosh webtools --quiet --eval 'db.users.updateOne({"driver.driver_uid":"<uuid>"}, {$set:{screen_name:"<new>"}}); db.discounts.updateMany({"driver.uid":"<uuid>"}, {$set:{"driver.screen_name":"<new>"}})'
 ```
-To make initial data permanent, add it to the `CONFIGURATIONS` / `PROJECTS` / `DRIVERS` /
-`DISCOUNTS` / `USERS` lists in `scripts/seed.py` and re-run the seed. The seed **does not touch
+To make initial data permanent, add it to the `PROJECTS` / `DISCOUNTS` / `USERS` lists in
+`scripts/seed.py` and re-run the seed — after checking it agrees with what is in the store: a user
+whose `driver.driver_uid` is already held by another one is refused by the unique index (§5.5). The seed **does not touch
 passwords already set**: `credential` is written only when the user is created (`$setOnInsert`).
 
 Passwords are not written with `mongosh`: the `credential` block has to be built with scrypt, and
@@ -1064,7 +1209,7 @@ Two things not to lose along the way:
 
 ### 8.6 Tests
 ```sh
-uv run pytest        # 70 tests, about a second; Mongo must be running
+uv run pytest        # 116 tests, about two seconds; Mongo must be running
 uv run pytest -v     # with the names of the individual tests
 ```
 
@@ -1156,6 +1301,56 @@ set -a; source ../configurator/bootstrap.env; set +a
 Run on the `webtools` database on 2026-09-28 (12 projects in `PREANALYSIS` afterwards, 5 steps
 renamed, and the preanalyst's configuration).
 
+### 8.12 Migration to 0.12.0: the `drivers` collection into `users.driver`
+
+The collection `drivers` **disappears** and the role moves inside the person: `users.driver_uid`
+becomes `users.driver`, which is `null` or `{driver_uid, level}` (§5.5). The boolean `enabled`
+becomes the level: `true` → **1**, anything else → **0**. Nothing is promoted by the migration —
+level 2 (`prj-admin`) is given by hand, never guessed out of the old data.
+
+The driver's uid is **not** rewritten, so the discount codes, the copies on the projects and
+`billing.ambassador_uid` go on pointing at what they always pointed at. That is the whole reason
+this merge cost nothing downstream.
+
+Two things are reported and not repaired, because repairing them means inventing data: a user whose
+`driver_uid` names a driver that is not there (the level cannot be known, so the user is **skipped**
+and keeps the old field), and a driver with no user (they cannot be logged in as, and making up a
+person for them is not a migration's business).
+
+```sh
+cd webtools/anagraphics
+set -a; source ../configurator/bootstrap.env; set +a
+.venv/bin/python -m scripts.migrate_user_driver --dry-run
+.venv/bin/python -m scripts.migrate_user_driver
+```
+
+The script **does not drop** the collection: no migration here deletes anything. After reading the
+report, and only then:
+
+```sh
+mongosh webtools --quiet --eval 'db.drivers.drop()'
+```
+
+The new unique sparse index on `driver.driver_uid` arrives with `db.ensure_indexes`, which the seed
+calls; on a store where the seed is not re-run it has to be called by hand:
+
+```sh
+cd webtools/anagraphics
+set -a; source ../configurator/bootstrap.env; set +a
+.venv/bin/python -c 'from pymongo import MongoClient; from webtools_anagraphics import db; \
+from webtools_anagraphics.settings import mongo_target; uri, name = mongo_target(); \
+db.ensure_indexes(MongoClient(uri)[name])'
+```
+
+**`scripts/migrate_project_driver.py` was deleted** by this same work: it turned `review.driver_uid`
+into `review.driver` by reading the `drivers` collection, so it becomes unrunnable. It had nothing
+left to do on this store (no project carried the old shape). An environment that has not run it
+must do so **before** this migration, taking the script from the git history.
+
+Run on the `webtools` database on 2026-09-29 (3 users: two drivers at level 1 and one client at
+`null`; one orphan driver reported, then given a user by hand; the index created; the collection
+left in place awaiting the drop).
+
 ---
 
 ## 9. Security and the IP pool
@@ -1212,10 +1407,10 @@ The file `tests/test_api.py` runs end-to-end tests against the **real Mongo**.
   missing, document missing, field missing. In every missing case `load_settings()` raises
   `ConfigurationError`.
 - A module fixture creates the indexes, inserts the `front-gate` configuration, the project
-  `1f251606-…`, **two** drivers (one with the discount code, one without, to tell an empty list
-  from a driver who does not exist), the discount code and **two users** (one with credentials,
-  one with `credential: null`), and at the end **drops** `webtools_test`. They are the same two
-  drivers as the seed, so the list can be checked by hand too.
+  `1f251606-…`, the discount code and **three users**: two drivers (one at level 1 with the discount
+  code, one at level 0 without, to tell an empty list from a driver who does not exist) and one who
+  is not a driver at all, `driver: null`. At the end it **drops** `webtools_test`. The two drivers
+  are the seed's, so the list can be checked by hand too.
 - `TestClient` uses the host `"testclient"` by default, which is not in the pool. That is why the
   tests pass `client=("127.0.0.1", 50000)` and, for the `403` case, `client=("10.0.0.1", 50000)`.
 
@@ -1225,8 +1420,10 @@ The file `tests/test_api.py` runs end-to-end tests against the **real Mongo**.
 | `test_configuration_not_found` | 404 + `{"error":"CONFIGURATION_NOT_FOUND","subsystem":…}` |
 | `test_project_found` | 200 and the exact body, without `_id` |
 | `test_project_not_found` | 404 + `{"error":"PROJECT_NOT_FOUND","project_id":…}` |
-| `test_driver_found` | 200 and the exact body, without `_id` |
-| `test_drivers_list` | 200 + `{"drivers":[…]}` with both drivers, ordered by `uid` and **without** `username` |
+| `test_driver_found` | 200 and the exact body: the driver's uid, the name, `username`, `level`, `active` |
+| `test_drivers_list` | 200 + `{"drivers":[…]}` with both drivers, ordered by the driver's uid and **without** `username` |
+| `test_a_user_who_is_not_a_driver_is_not_in_the_list` | A `driver: null` is in no list, and their person's `uid` is not a driver's: 404 |
+| `test_a_driver_route_does_not_let_the_person_out` | No `credential`, `billing` or `locale` in the answer, and the `uid` published is the driver's |
 | `test_driver_not_found` | 404 + `{"error":"DRIVER_NOT_FOUND","uid":…}` |
 | `test_discount_found` | 200 and the exact body, with the driver duplicated |
 | `test_discount_not_found` | 404 + `{"error":"DISCOUNT_NOT_FOUND","discount_code":…}` |
@@ -1318,8 +1515,12 @@ with request durations, a Prometheus exporter.
 
 ## 13. Known limits and technical debt
 
-- Read-only except the sessions: for configurations, projects, drivers, discounts and users there
-  is still no write endpoint (a CRUD is planned).
+- Read-only except the sessions, the projects' own writes and the discount codes: for
+  configurations and users there is still no write endpoint (a CRUD is planned). Making somebody a
+  driver, or changing their level, is a `mongosh` command (§8.4).
+- **`GET /projects` has no pagination**, as `GET /drivers` has none: the whole answer comes back.
+  The set that can grow without a bound anybody chose is the one with no driver, which is exactly
+  the one somebody watches when something has gone wrong.
 - **Anybody in the IP pool can read `GET /users/{username}/credential`**, not only the sso: while
   the pool is only this Mac's localhost the difference does not exist, but the day the subsystems
   sit on different machines authentication between services is needed, not a list of IPs.
@@ -1329,15 +1530,19 @@ with request durations, a Prometheus exporter.
   the responses, except the body of `POST /sessions`).
 - The driver duplicated inside the discounts does not update itself: a change of `screen_name`
   must be propagated by hand (§5.4).
-- `drivers.username` remains a disconnected piece of data: the real user is in `users`, with its
-  `driver_uid`. The two `username`s coincide today by copying, not by constraint.
+- ~~`drivers.username` remains a disconnected piece of data~~ — **closed in 0.12.0**: there is one
+  `username`, the person's, and the driver has no second copy of it to fall out of step.
 - Both users have a **development password**, short and known: it must be redone before the system
   takes real clients.
 - Setting a password is a command by hand (§8.5): no dedicated tool, no check on the length, and
   whoever writes it must remember to close the open sessions.
+- Nothing validates `driver.level` on the way in: a level nobody has defined, or a value that is
+  not a whole number, can be written by hand. The two boundaries that read it refuse what they do
+  not recognise (`level >= 1` on a real integer), so a broken document costs a driver their work
+  rather than handing out something it should not — but the store accepts it.
 - `GET /drivers/{uid}/discounts` and `GET /drivers` return everything, with no pagination and no
   filters: fine while the numbers stay small.
-- In `drivers` and in `users` there is test data (`Test`): it must be removed before the system
+- In `users` there is test data (`Test`, `Not enabled`): it must be removed before the system
   takes real clients.
 - Whoever is in the pool can also create tickets for any session: the same note on authentication
   between services holds.
@@ -1374,7 +1579,7 @@ update §5 of this document and check that the value is convertible to JSON.
 **Adding a collection**
 A constant in `webtools_anagraphics/db.py`, an index in `ensure_indexes()`, initial data in
 `scripts/seed.py`, cleanup already covered by the tests' `drop_database`, documentation in §5. If
-the collection points at another one (as `discounts` → `drivers`), a **non**-unique index on the
+the collection points at another one (as `discounts` → the drivers, now inside `users`), a **non**-unique index on the
 linking field is needed too.
 
 **Adding a configurable value**
@@ -1401,6 +1606,8 @@ Points to decide:
 
 | Date | Version | Change |
 |---|---|---|
+| 2026-09-30 | 0.13.0 | **The register can be read back** (§6.23), for `projects-hub`. A new `GET /projects` with three exclusive filters — an owner, a driver, no driver — and an optional repeatable `state`: none or two of the three is a `400 INVALID_QUERY`, because they are not refinements of one another and two together would be a question about an intersection nobody asked for. Which states a caller cares about travels as a query and is not written into the route: anagraphics applies the filter it is given and decides nothing. The projection keeps only the **last** step, which is the one that says why a project failed, and leaves out the `preanalysis` step that grows by two messages every turn. Three new indexes on `projects`, none unique: `owner_uid`, `review.driver.uid`, `created_at`. A new `description` field (§5.2) with `PUT /projects/{id}/description` that writes it: absent on a project nobody analysed, and nothing stored in its place. A new `POST /drivers/{uid}/discounts` (§6.23.2), so a code is no longer written by hand in `mongosh`: the code and the driver's name are written here, and the commercial range is not checked here — it is the policy of whoever offers the link. A new error code, `INVALID_QUERY`. Tests from 96 to 116. |
+| 2026-09-29 | 0.12.0 | **The `drivers` collection into `users.driver`, with a level** (§5.3, §5.5). A driver is no longer a document of their own: a user carries `driver`, which is `null` or `{driver_uid, level}`. The boolean `enabled` becomes a graded `level` — 0 not enabled, 1 enabled, 2 `prj-admin` — because the service already had three conditions and a boolean cannot carry the third; level 2 is stored and nothing reads it yet. `GET /drivers` and `GET /drivers/{uid}` keep their paths and answer `level` and `active` in place of `enabled`, built by the one new `_driver_view`; the projections become positive, because the document behind them is a person's. The driver's uid is unchanged, so the discounts, the copies on the projects and `billing.ambassador_uid` needed no rewriting, and `drivers.username` — a second copy kept in step by hand — is gone. New unique sparse index on `driver.driver_uid`. Migration `scripts/migrate_user_driver.py` (§8.12), run on 3 users; `scripts/migrate_project_driver.py` deleted, since it read the collection that no longer exists. Tests from 84 to 96. |
 | 2026-09-28 | 0.11.0 | **The rounds of questions are the pre-analysis** (§5.2). The state `ANALYSIS` disappears and the step `analysis` becomes `preanalysis`: a project is born in `PREANALYSIS` and stays there through the form, the prevalidation that passes and the rounds that follow, because there is no earlier moment to have a state for and the rounds *are* the pre-analysis — which of the two moments it is at is read off the steps. The list is closed, so a project left in the old state could take no further step: migration `scripts/migrate_preanalysis_rename.py` (§8.11), run on 12 projects and on the preanalyst's configuration, whose branches become `preanalysis` (the turns) and `preanalyst` (the two doors towards a model), with the values they were carrying. |
 | 2026-09-24 | 0.10.0 | **The open step and the turn credit.** A new `open` result for a pipeline step that has begun and has decided nothing yet — it is the analysis chat, which opens when the project reaches `ANALYSIS` and grows with every turn. A new `PATCH /projects/{id}/pipeline/steps/{step}` (§6.20) that updates the `data` of the **last open step** with that name, with `set` and `push`: closed steps stay untouchable, because the list is the register of the decisions taken. The user gets the `billing` block with `turns_credit`, and two routes for moving it (§6.21): `spend` checks that the credit is enough **inside** the write, so two requests at once cannot spend it twice; `grant` increases it, and that is where the payment will arrive. Migration `scripts/migrate_user_billing.py` (§8.10), run: 2 users. Tests from 62 to 70. |
 | 2026-09-23 | 0.9.2 | **The configuration that lives is in Mongo.** `scripts/load_configuration.py` no longer replaces the documents whole at every start: it adds **only the missing fields**, and deletes neither a field removed from a file nor a subsystem that no longer has one. The files in `configurator/configuration/` become the seed and the expected shape. A new `--reset [subsystem …]`, the only way to take the documents back to the files. The secrets stay an exception and always replace: a rotated key must count. Before, a value changed in operation disappeared at the first `start.sh`, silently. Tests from 56 to 62 (`tests/test_load_configuration.py`). |

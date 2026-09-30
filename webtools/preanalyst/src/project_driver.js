@@ -7,8 +7,9 @@
 //
 // - a discount counts only if it exists; the project's driver is the discount's
 //   one, whatever the `driver` field says;
-// - a driver counts only if they exist and are enabled (`enabled: true`): with one
-//   who is not enabled we do not go on, and discount and driver fall together;
+// - a driver counts only if they exist and may supervise a client's project
+//   (`maySupervise`, the same rule and the same code as the box): with one who may
+//   not, we do not go on, and discount and driver fall together;
 // - a driver does not bring a client to themselves: their own uid does not count;
 // - with autonomous work nothing is looked at: the driver is whoever is filling
 //   the form in.
@@ -18,6 +19,7 @@
 // submission is not recorded, rather than losing driver and discount.
 
 import { findDiscount, findDriver } from "./anagraphics.js";
+import { maySupervise } from "./driver_link.js";
 
 const NONE = { ok: true, driverUid: null, discountCode: null };
 
@@ -36,7 +38,7 @@ export async function linkTermsOf(settings, form, ownDriverUid, autonomous) {
 
   const driver = await findDriver(settings, driverUid);
   if (!driver.ok) return driver.reason === "not_found" ? NONE : { ok: false };
-  if (driver.data.enabled !== true) return NONE;
+  if (!maySupervise(driver.data)) return NONE;
 
   return { ok: true, driverUid, discountCode };
 }

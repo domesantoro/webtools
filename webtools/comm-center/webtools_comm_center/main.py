@@ -10,7 +10,10 @@ producing something nobody can read.
 **Every communication arrives carrying who it is for and how to reach them.** Nothing
 here is looked up: the caller has the driver's data because the project keeps a copy of
 it, and a second call to fetch what the caller already had is a second thing that can
-fail.
+fail. The client is not on the project — it keeps `owner_uid` and no copy of the person
+— so whoever writes to a client reads them first and passes them on. Which side does the
+reading changes nothing here: what arrives is a person and an address, or the call is
+refused.
 
 **It only writes to the log today.** No mail, no queue, no webhook: there is no channel
 in this repository, and inventing one here would be inventing the wrong one. What is
@@ -126,6 +129,111 @@ def analysis_ready(communication: AnalysisReady) -> dict:
     settings.metrics.measure(
         "communication.sent",
         dims={"kind": "analysis_ready", "channel": "log"},
+        project_id=communication.project_id,
+    )
+    return {"taken": True}
+
+
+class Client(BaseModel):
+    """The person who owns the project, as whoever calls has just read them.
+
+    The project carries `owner_uid` and no copy of the person, so the caller reads them
+    from anagraphics before calling here — the same shape as the driver all the same:
+    what arrives is who it is for and where they are reached, and nothing is looked up
+    on this side.
+    """
+
+    uid: str = Field(min_length=1)
+    screen_name: str = Field(min_length=1)
+    # Where they are reached.
+    username: str = Field(min_length=1)
+
+
+class ProjectStopped(BaseModel):
+    """The work on a project stopped, and nobody decided anything about the request.
+
+    It says no more than that, and it carries no cause: the difference between a run
+    that broke and an analysis nobody could be given is ours, and to the person who
+    asked for the tool both are the same fact — it stopped. The pages already read it
+    that way (`projects-hub/src/page.js`), and saying it twice in two ways would let
+    the two disagree.
+    """
+
+    project_id: str = Field(min_length=1)
+    client: Client
+
+
+class AnalysisRefused(BaseModel):
+    """A driver read the analysis and refused the request. It is closed.
+
+    The motivation travels because it is the whole of what the client is owed here: a
+    refusal with nothing said is the one form of this communication that is worth
+    nothing, and the gate obliges the driver to write it (`projects-hub/src/validation.js`).
+    """
+
+    project_id: str = Field(min_length=1)
+    client: Client
+    reason: str = Field(min_length=1)
+
+
+class TurnsLost(BaseModel):
+    """Turns were drawn from somebody's credit and did not arrive on the project.
+
+    It is the one communication here about money already taken, which is why it is its
+    own and not a form of `project-stopped`: the project is untouched, and what has to
+    be put right is a credit.
+    """
+
+    project_id: str = Field(min_length=1)
+    client: Client
+    turns: int = Field(gt=0)
+
+
+@app.post("/communications/project-stopped", status_code=202)
+def project_stopped(communication: ProjectStopped) -> dict:
+    logger.info(
+        "project-stopped → %s <%s> about project %s",
+        communication.client.screen_name,
+        communication.client.username,
+        communication.project_id,
+    )
+    settings.metrics.measure(
+        "communication.sent",
+        dims={"kind": "project_stopped", "channel": "log"},
+        project_id=communication.project_id,
+    )
+    return {"taken": True}
+
+
+@app.post("/communications/analysis-refused", status_code=202)
+def analysis_refused(communication: AnalysisRefused) -> dict:
+    logger.info(
+        "analysis-refused → %s <%s> about project %s: %s",
+        communication.client.screen_name,
+        communication.client.username,
+        communication.project_id,
+        communication.reason,
+    )
+    settings.metrics.measure(
+        "communication.sent",
+        dims={"kind": "analysis_refused", "channel": "log"},
+        project_id=communication.project_id,
+    )
+    return {"taken": True}
+
+
+@app.post("/communications/turns-lost", status_code=202)
+def turns_lost(communication: TurnsLost) -> dict:
+    logger.info(
+        "turns-lost → %s <%s>: %d turn(s) drawn for project %s and not delivered",
+        communication.client.screen_name,
+        communication.client.username,
+        communication.turns,
+        communication.project_id,
+    )
+    settings.metrics.measure(
+        "communication.sent",
+        dims={"kind": "turns_lost", "channel": "log"},
         project_id=communication.project_id,
     )
     return {"taken": True}

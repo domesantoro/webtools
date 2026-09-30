@@ -1,0 +1,46 @@
+{#-
+  One project in a list. `project` is a row built by `rowView` in src/page.js.
+
+  What is not there is not written: a project still in pre-analysis has no description
+  and no documents, and the row simply has nothing where they would be.
+
+  `| length` and not the list on its own: in nunjucks an empty array is true, so `{% if
+  project.documents %}` renders the paragraph with nothing in it — which is a gap put
+  where the rule says to leave none.
+-#}
+<li class="project card-sm" data-tone="{{ project.tone }}">
+  <div class="project-head">
+    <span class="project-state" data-tone="{{ project.tone }}">{{ project.state_text }}</span>
+    {%- if project.autonomous_work %}
+    <span class="tag">{{ t("projects_hub.project.autonomous_work") }}</span>
+    {%- endif %}
+  </div>
+  <p class="project-name">{{ project.name }}</p>
+  {%- if project.description %}
+  <p class="project-description">{{ project.description }}</p>
+  {%- endif %}
+  {%- if project.stopped_text %}
+  <p class="project-stopped">
+    <span class="project-stopped-mark" aria-hidden="true">i</span>
+    <span><span class="visually-hidden">{{ t("projects_hub.project.why") }}: </span>{{ project.stopped_text }}</span>
+  </p>
+  {%- endif %}
+  {%- if project.documents | length %}
+  <p class="project-documents">
+    {%- for document in project.documents %}
+    <a class="text-link" href="{{ document.url }}">{{ document.label }} <span aria-hidden="true">&rarr;</span></a>
+    {%- endfor %}
+  </p>
+  {%- endif %}
+  {#-
+    The gate. Two buttons in one form, each carrying its own value: the driver presses one
+    of the two and the form says which. Neither decides anything — both go to the
+    confirmation screen, which says what would happen and holds the button that does it.
+  -#}
+  {%- if project.decide %}
+  <form class="project-decide" method="post" action="{{ project.decide.url }}">
+    <button class="btn" type="submit" name="decision" value="approve">{{ t("projects_hub.driver.validation.approve.button") }}</button>
+    <button class="btn btn-refuse" type="submit" name="decision" value="reject">{{ t("projects_hub.driver.validation.reject.button") }}</button>
+  </form>
+  {%- endif %}
+</li>

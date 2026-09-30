@@ -347,6 +347,212 @@ def test_a_project_on_a_metric_that_has_none_is_refused(client):
     assert response.json()["value"] == "project_id"
 
 
+# ------------------------------------------------- the entries of projects-hub
+#
+# One test per refusal the new entries bring in. Each of them is a name that could
+# otherwise get into the data and split a counter nobody would miss.
+
+
+def test_a_list_of_projects_is_measured_with_its_length(client):
+    response = client.post(
+        "/measurements",
+        json={
+            "subsystem": "projects-hub",
+            "metric": "projects.listed",
+            "dims": {"list": "orphan"},
+            "amounts": {"projects": 3},
+        },
+    )
+    assert response.status_code == 202
+    bucket = database[db.DAILY].find_one({"metric": "projects.listed"})
+    assert bucket["amounts"] == {"projects": 3}
+    assert bucket["count"] == 1
+
+
+def test_a_list_of_zero_projects_is_still_a_measurement(client):
+    # The one a `count` could not carry: an empty list of orphans is the answer that
+    # says the register is healthy, and it has to be a number like any other.
+    response = client.post(
+        "/measurements",
+        json={
+            "subsystem": "projects-hub",
+            "metric": "projects.listed",
+            "dims": {"list": "orphan"},
+            "amounts": {"projects": 0},
+        },
+    )
+    assert response.status_code == 202
+    bucket = database[db.DAILY].find_one({"metric": "projects.listed"})
+    assert bucket["amounts"] == {"projects": 0}
+    assert bucket["count"] == 1
+
+
+def test_a_list_nobody_shows_is_refused(client):
+    response = client.post(
+        "/measurements",
+        json={"subsystem": "projects-hub", "metric": "projects.listed", "dims": {"list": "everything"}},
+    )
+    assert response.status_code == 400
+    assert response.json()["error"] == "UNKNOWN_DIMENSION_VALUE"
+    assert response.json()["value"] == "everything"
+
+
+def test_the_name_a_list_had_before_it_was_split_is_refused(client):
+    # `owned` was one list until 2026-09-30, when the client's page became three. Sending it
+    # again would put three different lengths into one bucket, which is why the list is
+    # closed: the counter splits on that date and the old name stops being writable.
+    response = client.post(
+        "/measurements",
+        json={"subsystem": "projects-hub", "metric": "projects.listed", "dims": {"list": "owned"}},
+    )
+    assert response.status_code == 400
+    assert response.json()["value"] == "owned"
+
+
+def test_the_three_lists_of_the_client_s_page_are_three_values(client):
+    for name in ("owned_active", "owned_returned", "owned_stopped"):
+        response = client.post(
+            "/measurements",
+            json={
+                "subsystem": "projects-hub",
+                "metric": "projects.listed",
+                "dims": {"list": name},
+                "amounts": {"projects": 1},
+            },
+        )
+        assert response.status_code == 202, name
+
+
+def test_a_list_of_projects_names_no_project(client):
+    # It measures a list, and a list is not about one project.
+    response = client.post(
+        "/measurements",
+        json={
+            "subsystem": "projects-hub",
+            "metric": "projects.listed",
+            "dims": {"list": "owned_active"},
+            "project_id": PROJECT,
+        },
+    )
+    assert response.status_code == 400
+    assert response.json()["value"] == "project_id"
+
+
+def test_a_link_made_is_counted_with_its_percentage(client):
+    response = client.post(
+        "/measurements",
+        json={
+            "subsystem": "projects-hub",
+            "metric": "driver_link.issued",
+            "dims": {"kind": "discount_created", "percentage": "3"},
+        },
+    )
+    assert response.status_code == 202
+    bucket = database[db.DAILY].find_one({"metric": "driver_link.issued"})
+    assert bucket["dims"] == {"kind": "discount_created", "percentage": "3"}
+
+
+def test_a_link_without_a_percentage_has_none_put_in_its_place(client):
+    # Absent is absent: an ambassador's link has no percentage, and a bucket for it
+    # would be a value nobody chose.
+    response = client.post(
+        "/measurements",
+        json={"subsystem": "projects-hub", "metric": "driver_link.issued", "dims": {"kind": "ambassador"}},
+    )
+    assert response.status_code == 202
+    assert database[db.DAILY].find_one({"metric": "driver_link.issued"})["dims"] == {"kind": "ambassador"}
+
+
+def test_a_kind_of_link_that_does_not_exist_is_refused(client):
+    response = client.post(
+        "/measurements",
+        json={"subsystem": "projects-hub", "metric": "driver_link.issued", "dims": {"kind": "affiliate"}},
+    )
+    assert response.status_code == 400
+    assert response.json()["error"] == "UNKNOWN_DIMENSION_VALUE"
+    assert response.json()["value"] == "affiliate"
+
+
+def test_a_document_served_carries_the_capacity_it_was_served_under(client):
+    response = client.post(
+        "/measurements",
+        json={
+            "subsystem": "projects-hub",
+            "metric": "document.served",
+            "dims": {"kind": "proposal", "as": "owner"},
+            "bytes": 4096,
+            "project_id": PROJECT,
+        },
+    )
+    assert response.status_code == 202
+    bucket = database[db.DAILY].find_one({"metric": "document.served"})
+    assert bucket["bytes"] == 4096
+    assert bucket["dims"] == {"kind": "proposal", "as": "owner"}
+
+
+def test_a_capacity_nobody_can_be_served_under_is_refused(client):
+    response = client.post(
+        "/measurements",
+        json={
+            "subsystem": "projects-hub",
+            "metric": "document.served",
+            "dims": {"kind": "proposal", "as": "anybody"},
+            "project_id": PROJECT,
+        },
+    )
+    assert response.status_code == 400
+    assert response.json()["error"] == "UNKNOWN_DIMENSION_VALUE"
+    assert response.json()["value"] == "anybody"
+
+
+def test_a_document_served_without_saying_to_whom_is_refused(client):
+    response = client.post(
+        "/measurements",
+        json={
+            "subsystem": "projects-hub",
+            "metric": "document.served",
+            "dims": {"kind": "proposal"},
+            "project_id": PROJECT,
+        },
+    )
+    assert response.status_code == 400
+    assert response.json() == {
+        "error": "MISSING_DIMENSION",
+        "metric": "document.served",
+        "dimension": "as",
+    }
+
+
+def test_points_written_must_say_whether_the_project_was_described(client):
+    written = {
+        "subsystem": "analyst",
+        "metric": "points.written",
+        "dims": {"language": "it"},
+        "amounts": {"points": 59},
+        "project_id": PROJECT,
+    }
+    response = client.post("/measurements", json=written)
+    assert response.status_code == 400
+    assert response.json() == {
+        "error": "MISSING_DIMENSION",
+        "metric": "points.written",
+        "dimension": "described",
+    }
+    # With it, it goes in.
+    written["dims"]["described"] = "no"
+    assert client.post("/measurements", json=written).status_code == 202
+
+
+def test_projects_hub_may_send_measurements(client):
+    # The subsystem is a field of the measurement, and one that is not in the list is
+    # refused: without this line every page of the hub would measure into nothing.
+    response = client.post(
+        "/measurements",
+        json={"subsystem": "projects-hub", "metric": "process.started", "dims": {"outcome": "ok"}},
+    )
+    assert response.status_code == 202
+
+
 def test_the_vocabulary_can_be_read(client):
     answer = client.get("/vocabulary").json()
     assert "preanalysis.turn" in answer["metrics"]

@@ -20,6 +20,12 @@ third" — and a list inside a paragraph cannot carry either.
 **The identifiers are ours, not the model's.** We number the list as it arrives. A
 model asked for identifiers gives two points the same one sooner or later, and two
 points with one identifier is a demo nobody can accept by halves.
+
+**This door also writes the project's description**: the one sentence that says what
+the tool is for, which is what a person reads beside the project in a list. It is
+written here and not by a door of its own because it is a sentence for the same reader,
+in the same language, under the same rules, out of the same material — a second call
+would be a second cost for one more line.
 """
 
 import re
@@ -38,14 +44,21 @@ POLICIES = Path(__file__).resolve().parent.parent / "policies"
 # would have picked.
 SCHEMA = {
     "type": "object",
-    "properties": {"points": {"type": "array", "items": {"type": "string"}}},
-    "required": ["points"],
+    "properties": {
+        # What the tool is for, in one sentence. In `required` so that the constrained
+        # output always sends one — an empty one is dealt with below, and it is a
+        # different thing from a key that is not there.
+        "description": {"type": "string"},
+        "points": {"type": "array", "items": {"type": "string"}},
+    },
+    "required": ["description", "points"],
     "additionalProperties": False,
 }
 
 REQUEST = (
     "Above you have the material the client produced and then, as the last thing before this "
-    "message, the technical analysis written from it. Write the list of functional points now."
+    "message, the technical analysis written from it. Write the description and the list of "
+    "functional points now."
 )
 
 _BANNER = re.compile(r"^\s*<!--[\s\S]*?-->\s*")
@@ -166,12 +179,46 @@ def write(settings, *, specification: str, chat, analysis: str, project_id=None)
             fell_back=answer["fell_back"],
         )
 
+    description = described((answer["output"] or {}).get("description"))
+    if description is None:
+        # **An empty description does not make this door unusable, and an empty list of
+        # points does.** The reason the list does is written above — a tool the client
+        # can do nothing with is not something to put in front of them for agreement —
+        # and a missing label is not that: throwing away fifty-nine valid points, paid
+        # for, because one sentence came back blank would be the worse fault of the two.
+        # It is dropped, the project stays without a description, and whoever lists it
+        # renders the row without one — which they have to do anyway, for every project
+        # that has not been analysed yet.
+        print("[functional_points] the description came back empty: the project stays without one")
+
     # How many things the client is being asked to agree to, and in which language.
     # The demo is later checked against this same list, point by point.
+    #
+    # `described` is on this measurement and not on one of its own: the label came out of
+    # this same call, so it is a property of the points being written and not a second
+    # event. Without it, the paragraph above would be a silence — the row would render
+    # without a label and nothing anywhere would say how often that happens.
     settings.metrics.measure(
         "points.written",
-        dims={"language": language},
+        dims={"language": language, "described": "yes" if description else "no"},
         amounts={"points": len(points)},
         **({"project_id": project_id} if project_id else {}),
     )
-    return {**answer, "policy": door.policy, "output": {"language": language, "points": points}}
+    output = {"language": language, "points": points}
+    # Absent is absent: a project with no description carries no field, not an empty one.
+    if description is not None:
+        output["description"] = description
+    return {**answer, "policy": door.policy, "output": output}
+
+
+def described(description) -> str | None:
+    """The description as it will be stored, or None when there is none to store.
+
+    A string of spaces is not a sentence, and neither is something that came back as a
+    number or a list: all of them are the same answer here — there is nothing to show
+    beside this project.
+    """
+    if not isinstance(description, str):
+        return None
+    stripped = description.strip()
+    return stripped or None

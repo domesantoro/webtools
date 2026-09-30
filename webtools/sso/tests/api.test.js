@@ -13,7 +13,7 @@ const USER = {
   username: "dome.santoro@gmail.com",
   screen_name: "Dome",
   active: true,
-  driver_uid: "7633be3d-e701-42ca-9fea-6c6d1bb4b7d1",
+  driver: { driver_uid: "7633be3d-e701-42ca-9fea-6c6d1bb4b7d1", level: 1 },
 };
 const PASSWORD = "test-password";
 const CREDENTIAL = {

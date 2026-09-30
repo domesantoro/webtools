@@ -134,3 +134,48 @@ INFO:     Uvicorn running on http://127.0.0.1:9800 (Press CTRL+C to quit)
 INFO:     127.0.0.1:51687 - "POST /projects/c0816dd0-e147-4cd1-8134-82f42b5ba678/analysis HTTP/1.1" 202 Accepted
 [analyst] c0816dd0-e147-4cd1-8134-82f42b5ba678: take_on (weakest surface), 59 points
 [analyst] c0816dd0-e147-4cd1-8134-82f42b5ba678: handed to Dome after 1 attempt(s)
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [45364]
+=== start 2026-09-30 11:20:56 ===
+INFO:     Started server process [19886]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:9800 (Press CTRL+C to quit)
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [19886]
+=== start 2026-09-30 11:49:25 ===
+INFO:     Started server process [24962]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:9800 (Press CTRL+C to quit)
+[analyst] 8bf6975d-7eef-4900-ac14-fa668d18c219: run begun
+INFO:     127.0.0.1:56833 - "POST /projects/8bf6975d-7eef-4900-ac14-fa668d18c219/analysis HTTP/1.1" 202 Accepted
+[analyst] 8bf6975d-7eef-4900-ac14-fa668d18c219: take_on (weakest surface), 26 points
+[analyst] 8bf6975d-7eef-4900-ac14-fa668d18c219: handed to Test after 1 attempt(s)
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [24962]
+=== start 2026-09-30 12:01:10 ===
+INFO:     Started server process [27327]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:9800 (Press CTRL+C to quit)
+INFO:     127.0.0.1:57887 - "GET / HTTP/1.1" 404 Not Found
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [27327]
+=== start 2026-09-30 13:50:25 ===
+INFO:     Started server process [50110]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:9800 (Press CTRL+C to quit)
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [50110]

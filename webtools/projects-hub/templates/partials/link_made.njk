@@ -1,0 +1,11 @@
+{#-
+  The link that was just generated, shown inside the box it came from. `made` carries the
+  address and, for a link with a discount, the percentage.
+-#}
+<div class="link-made">
+  <span class="link-made-label">{{ t("projects_hub.driver.links.made") }}</span>
+  <code class="link-made-url">{{ made.url }}</code>
+  {%- if made.percentage %}
+  <span class="tag">{{ t("projects_hub.driver.links.percentage", { percentage: made.percentage }) }}</span>
+  {%- endif %}
+</div>

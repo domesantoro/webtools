@@ -22,6 +22,11 @@
 # preanalyst, at the end of the rounds of questions. Starting it after means that
 # when the button exists there is something on the other side of it.
 #
+# projects-hub comes after the analyst because it is where its work is looked at: it
+# lists projects from anagraphics and hands over the two documents the analyst wrote into
+# workspaces. Nothing calls it, so nothing waits for it; starting it after the analyst
+# means that when there is an analysis there is a page it can be read from.
+#
 # The two front ends come last and nothing depends on either: they are pages the
 # system is looked at from. metrics-fe reads metrics and nothing else, and it writes
 # nothing at all, so it is the one service whose being down costs only the look at it.
@@ -67,6 +72,7 @@ SERVICES=(
   "drivers-pool:$WEBTOOLS/drivers-pool/webtools_drivers_pool.sh"
   "comm-center:$WEBTOOLS/comm-center/webtools_comm_center.sh"
   "analyst:$WEBTOOLS/analyst/webtools_analyst.sh"
+  "projects-hub:$WEBTOOLS/projects-hub/webtools_projects_hub.sh"
   "front-gate:$WEBTOOLS/front-gate/webtools_front_gate.sh"
   "configurator-fe:$WEBTOOLS/configurator-fe/webtools_configurator_fe.sh"
   "metrics-fe:$WEBTOOLS/metrics-fe/webtools_metrics_fe.sh"

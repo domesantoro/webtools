@@ -14,37 +14,15 @@ PROJECTS = [
     {"project_id": "1f251606-bdba-40c4-bbee-bfedc6e57f70"},
 ]
 
-# `enabled`: the driver is allowed to supervise projects (after the interview).
-# A driver who is not enabled is still a driver: they can be an ambassador and do
-# autonomous work, but no client can have them as their driver.
-DRIVERS = [
-    {
-        "uid": "7633be3d-e701-42ca-9fea-6c6d1bb4b7d1",
-        "username": "dome.santoro@gmail.com",
-        "screen_name": "Dome",
-        "enabled": True,
-    },
-    # A test driver: it is there to see more than one driver in the list, and for
-    # the "driver with no discount codes" case.
-    {
-        "uid": "639718a3-ea41-4533-bdb8-73ac58b3b1b2",
-        "username": "driver.test@example.com",
-        "screen_name": "Test",
-        "enabled": True,
-    },
-    # A test driver who is not enabled, with a discount code: it is there for the
-    # "link of a driver who is not enabled" and "discount of a driver who is not
-    # enabled" cases.
-    {
-        "uid": "f234b930-e5d0-4e10-8a4f-1a8a13814370",
-        "username": "driver.notenabled@example.com",
-        "screen_name": "Not enabled",
-        "enabled": False,
-    },
-]
-
-# The sso users. `uid` is the person's identity, `driver_uid` links them to their
-# document in `drivers` when they are also a driver.
+# The sso users. `uid` is the person's identity; `driver` is the driver role, `null`
+# for whoever is not a driver and `{driver_uid, level}` for whoever is. The two uids
+# are deliberately different: the person and the role are two things, and what points
+# at a driver — a link, a discount code, a project's copy — points at `driver_uid`.
+#
+# `level`: 0 not enabled, 1 enabled (after the interview), 2 prj-admin. Only from 1
+# upwards may a driver supervise a client's project; a driver at 0 is still a driver
+# and can be an ambassador and do autonomous work.
+#
 # The password is not seeded: it is set separately, building the `credential` block
 # with `webtools_anagraphics.credentials.build_credential`.
 USERS = [
@@ -53,14 +31,27 @@ USERS = [
         "username": "dome.santoro@gmail.com",
         "screen_name": "Dome",
         "active": True,
-        "driver_uid": "7633be3d-e701-42ca-9fea-6c6d1bb4b7d1",
+        "driver": {"driver_uid": "7633be3d-e701-42ca-9fea-6c6d1bb4b7d1", "level": 1},
     },
+    # A test driver: it is there to see more than one driver in the list, and for the
+    # "driver with no discount codes" case.
     {
         "uid": "214912a9-2cc4-4205-87b7-93ea71f6be72",
         "username": "driver.test@example.com",
         "screen_name": "Test",
         "active": True,
-        "driver_uid": "639718a3-ea41-4533-bdb8-73ac58b3b1b2",
+        "driver": {"driver_uid": "639718a3-ea41-4533-bdb8-73ac58b3b1b2", "level": 1},
+    },
+    # A test driver at level 0, with a discount code: they are there for the "link of
+    # a driver who may not supervise" and "discount of a driver who may not
+    # supervise" cases. Before 0.12.0 this driver had no user at all, so the case
+    # could not be reached from a login.
+    {
+        "uid": "c981e204-34af-479c-970a-576a75029d71",
+        "username": "driver.notenabled@example.com",
+        "screen_name": "Not enabled",
+        "active": True,
+        "driver": {"driver_uid": "f234b930-e5d0-4e10-8a4f-1a8a13814370", "level": 0},
     },
 ]
 
@@ -94,8 +85,6 @@ def main() -> None:
         database[db.PROJECTS].update_one(
             {"project_id": project["project_id"]}, {"$set": project}, upsert=True
         )
-    for driver in DRIVERS:
-        database[db.DRIVERS].update_one({"uid": driver["uid"]}, {"$set": driver}, upsert=True)
     for discount in DISCOUNTS:
         database[db.DISCOUNTS].update_one(
             {"discount_code": discount["discount_code"]}, {"$set": discount}, upsert=True
@@ -112,7 +101,7 @@ def main() -> None:
     print(
         f"Seed done on '{mongo_db}': "
         f"{len(PROJECTS)} projects, "
-        f"{len(DRIVERS)} drivers, {len(DISCOUNTS)} discounts, {len(USERS)} users."
+        f"{len(DISCOUNTS)} discounts, {len(USERS)} users."
     )
 
 

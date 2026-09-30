@@ -164,16 +164,16 @@
       "eyebrow": "Second step",
       "heading": "Let us bring the request into focus.",
       "lead": "One question at a time, to fill in what the request does not say yet. Answer in your own words; if you do not know, say so.",
-        "you": "You",
+      "you": "You",
       "system": "webtools",
       "label": "Your message",
       "placeholder": "Write your answer",
       "hint": "Enter sends the message, Shift+Enter starts a new line.",
       "send": "Send",
       "waiting": "Writing",
-    "ready": "The analysis is complete. You can go on with «This is fine, let's go!», or keep writing if there is anything to add.",
-    "closed": "The questions are over. This page shows the conversation as it was left.",
-    "too_long": "The message is longer than {limit} characters and was not sent. Shorten it and send it again: no turn was used.",
+      "ready": "The analysis is complete. You can go on with «This is fine, let's go!», or keep writing if there is anything to add.",
+      "closed": "The questions are over. This page shows the conversation as it was left.",
+      "too_long": "The message is longer than {limit} characters and was not sent. Shorten it and send it again: no turn was used.",
       "summary": {
         "title": "The project",
         "empty": "No particular terms: we assign the driver.",
@@ -340,6 +340,10 @@
       }
     },
     "rejection": {
+      "after_review": {
+        "title": "The request was not taken on",
+        "lead": "The analysis was written, and whoever read it decided not to go on."
+      },
       "out_of_scope": {
         "title": "We cannot go on with this request",
         "lead": "From what you described, webtools is probably not the right tool for this need."
@@ -366,6 +370,158 @@
     "proposal": {
       "title": "What you will be able to do",
       "intro": "Each row is something you will be able to do with your webtool. The demo is checked against this list, point by point."
+    }
+  },
+  "projects_hub": {
+    "nav": {
+      "owned": "My projects",
+      "driver": "Projects I manage",
+      "broken": "Nobody's"
+    },
+    "owned": {
+      "title": "My projects",
+      "empty": "You have no projects yet.",
+      "active": {
+        "title": "Active",
+        "empty": "No active project."
+      },
+      "returned": {
+        "title": "More detail needed",
+        "empty": "Nothing to complete."
+      },
+      "stopped": {
+        "title": "Stopped projects",
+        "empty": "No stopped project."
+      }
+    },
+    "driver": {
+      "title": "Projects I manage",
+      "links": {
+        "title": "Your links",
+        "ambassador": "Ambassador link",
+        "ambassador_hint": "For inviting a client. Half the system fee is yours.",
+        "driver": "Driver link",
+        "driver_hint": "The project of whoever arrives on this link is managed by you.",
+        "discount": "Discount",
+        "discount_none": "No discount",
+        "make": "Generate link",
+        "made": "The link:",
+        "percentage": "{percentage}% off"
+      },
+      "waiting": {
+        "title": "The projects you manage",
+        "empty": "You manage no project."
+      },
+      "failed": {
+        "title": "Stopped",
+        "empty": "None of your projects has stopped."
+      },
+      "validation": {
+        "approve": {
+          "button": "Approve the analysis",
+          "title": "Approve the analysis",
+          "lead": "The analysis goes to the client, who decides whether to accept it. There is no way back from here."
+        },
+        "reject": {
+          "button": "Refuse the analysis",
+          "title": "Refuse the analysis",
+          "lead": "The project is refused and the work stops here. There is no way back from here."
+        },
+        "reason_label": "Why you are refusing it",
+        "reason_hint": "It stays on the project. At most {max} characters.",
+        "reason_missing": "A refusal needs a motivation.",
+        "reason_too_long": "The motivation is longer than {max} characters.",
+        "confirm": "Confirm",
+        "back": "Back to the projects",
+        "decided": {
+          "approve": "The analysis is approved: it is the client's turn now.",
+          "reject": "The analysis is refused: the project is closed."
+        }
+      }
+    },
+    "broken": {
+      "title": "Projects nobody supervises",
+      "lead": "Projects that are owed a driver and have none.",
+      "orphan": {
+        "title": "With no driver",
+        "empty": "Every project that is owed a driver has one."
+      },
+      "orphan_failed": {
+        "title": "With no driver, and stopped",
+        "empty": "None of them has stopped."
+      }
+    },
+    "project": {
+      "unnamed": "Project without a name",
+      "autonomous_work": "Autonomous work",
+      "read_features": "Read what your system will do",
+      "points": "Download the points",
+      "analysis": "Download the analysis",
+      "why": "Why it stopped"
+    },
+    "failure": {
+      "broken": "A fault of ours interrupted the run.",
+      "no_specification": "The request could not be read again.",
+      "technical": "The technical analysis did not come back.",
+      "judgement": "The judgement on the request did not come back.",
+      "points": "The list of points did not come back.",
+      "documents": "The documents could not be stored.",
+      "handover": "The analysis is written and there is no driver to hand it to."
+    },
+    "state": {
+      "client": {
+        "PREANALYSIS": "Generic error",
+        "PREVALIDATION": "We are looking at the request",
+        "UNDERSPECIFIED": "More detail is needed: the request is back with you",
+        "ANALYSIS": "We are writing the analysis",
+        "DRIVER_VALIDATION": "The analysis is being reviewed",
+        "CLIENT_VALIDATION": "The analysis is waiting for your answer",
+        "DEVELOPMENT": "Being built",
+        "ALPHA_TEST": "Being tested",
+        "DEMO": "The demo is waiting for your answer",
+        "PAID": "Paid",
+        "REJECTED": "Request refused",
+        "FAILED": "The work stopped before the end",
+        "FAILED_NO_DRIVERS": "The work stopped before the end"
+      },
+      "driver": {
+        "PREANALYSIS": "The client is answering the questions",
+        "PREVALIDATION": "The request is being prevalidated",
+        "UNDERSPECIFIED": "Sent back to the client for want of detail",
+        "ANALYSIS": "The analysis is being written",
+        "DRIVER_VALIDATION": "Waiting for you to validate the analysis",
+        "CLIENT_VALIDATION": "The client is validating the analysis",
+        "DEVELOPMENT": "Being built",
+        "ALPHA_TEST": "The α-test is running",
+        "DEMO": "The demo is published and waiting for the client",
+        "PAID": "Paid",
+        "REJECTED": "Refused",
+        "FAILED": "The run stopped before the end",
+        "FAILED_NO_DRIVERS": "The analysis is written and no driver has it"
+      }
+    },
+    "messages": {
+      "back": "Go to my projects",
+      "unavailable": {
+        "title": "Not available",
+        "text": "The service cannot say who you are right now. Try again in a moment."
+      },
+      "not_found": {
+        "title": "Not there",
+        "text": "There is nothing at this address."
+      },
+      "document_unavailable": {
+        "title": "Document not available",
+        "text": "The document cannot be read right now. Try again in a moment."
+      },
+      "link_unavailable": {
+        "title": "Link not made",
+        "text": "The discount code could not be created. Try again in a moment."
+      },
+      "decision_unavailable": {
+        "title": "Decision not recorded",
+        "text": "The decision cannot be written on the project right now. The project is as it was: try again in a moment."
+      }
     }
   },
   "front_gate": {

@@ -1,0 +1,82 @@
+{#
+  The shared layout of the webtools sites: page shell, header and brand.
+
+  DO NOT EDIT THE COPY INSIDE A SUBSYSTEM.
+  The original is `webtools/commons/templates/base.njk`; the copies are distributed
+  by `webtools/configurator/template_deployer/deploy.sh`, as for commons.css.
+
+  Used like this, from a page of the subsystem:
+
+      {% extends "commons/base.njk" %}
+      {% block main %}…{% endblock %}
+
+  Expected variables:
+    title         required: it ends up in <title>, followed by " — webtools"
+    description   optional: <meta name="description">
+    noindex       optional: if true, asks search engines not to index the page
+    home_link     optional: if present, the brand becomes a link to that address
+    locale, t, locale_switch
+                  required: the language, the translation and the language
+                  switcher. `i18n.pageContext(request, url)` gives them (see
+                  webtools/commons/i18n/webtools_i18n.js): the subsystem adds them
+                  to the data of every page.
+
+  Blocks:
+    head             extra things inside <head>
+    body_attributes  attributes on the <body> (the sso markers, for instance)
+    header_extra     the right-hand part of the header (login state, menu…)
+    main             the content of the page
+    scripts          the scripts, at the bottom of the page
+
+  Stylesheets are requested with **absolute** paths: pages may live under any path
+  (/ui/login, for instance), and with a relative path the browser would look for
+  them next to the page, where they are not.
+#}<!doctype html>
+<html lang="{{ locale }}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ title }} — webtools</title>
+  {%- if description %}
+  <meta name="description" content="{{ description }}">
+  {%- endif %}
+  {%- if noindex %}
+  <meta name="robots" content="noindex">
+  {%- endif %}
+  <link rel="icon" href="/assets/mark.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/commons.css">
+  <link rel="stylesheet" href="/styles.css">
+  {%- block head %}{% endblock %}
+</head>
+<body{% block body_attributes %}{% endblock %}>
+<div class="site-shell">
+  <header class="site-header">
+    <div class="container header-inner">
+      {%- if home_link %}
+      <a class="brand" href="{{ home_link }}" aria-label="{{ t('common.brand.home') }}">
+        <span class="brand-mark">w</span>
+        <span class="brand-stack">webtools<small>{{ t("common.brand.tagline") }}</small></span>
+      </a>
+      {%- else %}
+      <span class="brand" aria-label="webtools">
+        <span class="brand-mark">w</span>
+        <span class="brand-stack">webtools<small>{{ t("common.brand.tagline") }}</small></span>
+      </span>
+      {%- endif %}
+      {%- block header_extra %}{% endblock %}
+    </div>
+  </header>
+
+  <main class="page-main">
+    {%- block main %}{% endblock %}
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-inner">
+      {% include "commons/locale_switch.njk" %}
+    </div>
+  </footer>
+</div>
+{%- block scripts %}{% endblock %}
+</body>
+</html>

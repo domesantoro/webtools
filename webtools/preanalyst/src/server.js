@@ -56,6 +56,7 @@ import { REJECTING, prevalidate, verdict } from "./prevalidator.js";
 import { linkTermsOf } from "./project_driver.js";
 import { writeRejectionPdf } from "./rejection_pdf.js";
 import { startAnalysis } from "./analyst.js";
+import { turnsLost } from "./comm_center.js";
 import { latestSpec, storeSpec } from "./workspaces.js";
 
 const PUBLIC_DIR = fileURLToPath(new URL("../public/", import.meta.url));
@@ -382,7 +383,7 @@ async function receiveForm(request, settings, response, ui) {
   }
 
   // Everything arriving from the hidden fields is checked again on anagraphics.
-  const ownDriverUid = access.session.data?.driver_uid ?? null;
+  const ownDriverUid = access.session.data?.driver?.driver_uid ?? null;
   const autonomous = Boolean(ownDriverUid) && form.get("autonomous_work") === "yes";
   const link = await linkTermsOf(settings, form, ownDriverUid, autonomous);
   if (!link.ok) return sendMessage(response, ui, 503, "unavailable");
@@ -544,7 +545,7 @@ async function serveFormAgain(settings, response, ui, { projectId, answers, sess
     showDriverBox: driverLink.state !== NONE,
     driversAvailable: true,
     ambassador: invitation.ok ? invitation.data : null,
-    isDriver: Boolean(session.data?.driver_uid),
+    isDriver: Boolean(session.data?.driver?.driver_uid),
     // The checkbox says how the project stands, and it can no longer be changed: on
     // the second round nobody reads `autonomous_work` again, and a checkbox that
     // does nothing is worse than a locked one.
@@ -1116,6 +1117,14 @@ async function receiveTurnsFromCredit(request, projectId, settings, response) {
     const refund = await grantUserTurns(settings, uid, howMany);
     if (!refund.ok) {
       console.error(`[preanalyst] REFUND FAILED: ${howMany} turns lost by user ${uid}`);
+      // The page says the purchase did not go through, which is true and is not all of
+      // it: their credit is short by what was drawn, and that is a fact about their
+      // money that outlives the page they are looking at. `spent.data` is the person as
+      // anagraphics answered with them a moment ago, when the turns were taken.
+      const told = await turnsLost(settings, projectId, spent.data, howMany);
+      if (!told.ok) {
+        console.error(`[preanalyst] ${howMany} turns lost by user ${uid} and not even said: ${told.reason}`);
+      }
     }
     return fail(503, "ANAGRAPHICS_UNAVAILABLE");
   }
@@ -1294,7 +1303,7 @@ async function serveRejectionPdf(request, projectId, settings, response, ui) {
   if (!spec.ok && spec.reason === "not_found") return sendMessage(response, ui, 404, "not_found");
   if (!spec.ok) return sendMessage(response, ui, 503, "unavailable");
 
-  const isDriver = Boolean(access.session.data?.driver_uid);
+  const isDriver = Boolean(access.session.data?.driver?.driver_uid);
   const showReason = settings.prevalidation.rejectionReasonInPdf || isDriver;
 
   return writeRejectionPdf(response, {
@@ -1421,9 +1430,11 @@ async function pageState(request, url, settings) {
     ssoAvailable: current.ok,
   };
 
-  // Is whoever logged in also a driver? The uid of their document in `drivers`
-  // comes from the session, photographed at login time.
-  const ownDriverUid = access.logged ? (access.session.data?.driver_uid ?? null) : null;
+  // Is whoever logged in also a driver? The driver role comes from the session,
+  // photographed at login time: `null` for whoever is not a driver, and otherwise
+  // `{driver_uid, level}`. Only the uid is read here — what the level allows is not
+  // this page's question, and nothing asks it yet.
+  const ownDriverUid = access.logged ? (access.session.data?.driver?.driver_uid ?? null) : null;
 
   const params = {
     discountCode: url.searchParams.get("discount"),
@@ -1500,8 +1511,13 @@ async function pageState(request, url, settings) {
   };
 }
 
-// What the refusal modal says. Three cases, and they are three different things:
+// What the refusal modal says. Four cases, and they are four different things:
 //
+//   after_review     the driver read the analysis and refused it. Everything before
+//                    that worked: the request was understood, judged worth analysing,
+//                    analysed and paid for. Any of the three below would say something
+//                    false about it — that it was not understood, or that it was
+//                    turned away at the door.
 //   out_of_scope     `run_out_certain`: software that could be made, but not here.
 //                    "we are probably not the right tool" is true.
 //   not_software     `non_sequitur`: what was asked for is not software. Here we say
@@ -1512,15 +1528,28 @@ async function pageState(request, url, settings) {
 //                    There is nothing to judge, and saying we are not the right tool
 //                    would make it seem the request had been understood and set aside.
 //
-// None of the three says **why that** request was refused: the model's reason stays
-// ours and the driver's.
+// None of the four says **why that** request was refused: the model's reason stays
+// ours and the driver's, and so does the sentence the driver wrote.
 const REJECTION_CASE = {
   run_out_certain: "out_of_scope",
   non_sequitur: "not_software",
 };
 
+// The gates that can refuse, each with the case it refuses under. `prevalidation` is
+// not here because its three cases are not one: which of them it is depends on the
+// verdict, and that is the map above.
+const REFUSED_AT = { driver_validation: "after_review" };
+
 export function rejectionCase(project) {
   const steps = project.pipeline?.steps ?? [];
+  // **Which gate refused**, asked first and of the steps rather than of the state:
+  // `REJECTED` is the terminus of every gate, so the state alone cannot say which one
+  // it was. The last refusal is the one that closed the request — there is never a
+  // second, since nothing takes a project out of `REJECTED`, but reading it from the
+  // end is what makes that a fact about the register and not an assumption.
+  const refusal = [...steps].reverse().find((entry) => entry.result === "rejected");
+  if (refusal && REFUSED_AT[refusal.step]) return REFUSED_AT[refusal.step];
+
   const step = [...steps].reverse().find((entry) => entry.step === "prevalidation" && entry.data?.outcome);
   return REJECTION_CASE[step?.data.outcome] ?? "not_recognised";
 }

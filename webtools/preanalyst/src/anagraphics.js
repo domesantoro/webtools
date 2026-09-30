@@ -86,14 +86,17 @@ async function readJson(settings, path, { method = "GET", body, operation } = {}
   return { ok: false, reason: "unavailable", code: payload?.error };
 }
 
-// GET /drivers → [{ uid, screen_name }, …]. The list does not contain usernames.
+// GET /drivers → [{ uid, screen_name, level, active }, …]. `uid` is the driver's, not
+// the person's. The list does not contain usernames. `level` and `active` are what
+// `maySupervise` reads: a link's driver is resolved out of this list, with no extra
+// read.
 export async function listDrivers(settings) {
   const result = await readJson(settings, "/drivers", { operation: "list_drivers" });
   if (!result.ok) return result;
   return { ok: true, data: result.data.drivers ?? [] };
 }
 
-// GET /drivers/{uid} → { uid, username, screen_name }
+// GET /drivers/{uid} → { uid, username, screen_name, level, active }
 export async function findDriver(settings, driverUid) {
   return readJson(settings, `/drivers/${encodeURIComponent(driverUid)}`, { operation: "find_driver" });
 }

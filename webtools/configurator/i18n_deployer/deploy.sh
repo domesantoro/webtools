@@ -67,9 +67,16 @@ deploy_analyst() {
   copy_into_python "$WEBTOOLS/analyst/webtools_analyst/commons/i18n"
 }
 
+# projects-hub — the lists of projects, and the states in the words of whoever reads them.
+deploy_projects_hub() {
+  echo "→ projects-hub"
+  copy_into "$WEBTOOLS/projects-hub/src/commons/i18n"
+}
+
 deploy_preanalyst
 deploy_sso
 deploy_front_gate
 deploy_analyst
+deploy_projects_hub
 
 echo "Languages distributed."

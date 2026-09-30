@@ -39,27 +39,30 @@ from webtools_anagraphics.main import app, database
 LOCALHOST = ("127.0.0.1", 50000)
 OUTSIDER = ("10.0.0.1", 50000)
 
+# A driver is a user carrying a `driver` object; these are the uids of the role, not
+# of the person. The published views below are what the driver routes answer with.
 DRIVER_UID = "7633be3d-e701-42ca-9fea-6c6d1bb4b7d1"
 DRIVER = {
     "uid": DRIVER_UID,
     "username": "dome.santoro@gmail.com",
     "screen_name": "Dome",
-    "enabled": True,
+    "level": 1,
+    "active": True,
 }
-# A driver who exists but has no discounts: the list must be empty, not a 404.
+# A driver who exists but has no discounts: the list must be empty, not a 404. They
+# are also at level 0, so they may not supervise a client's project.
 DRIVER_WITHOUT_DISCOUNTS_UID = "639718a3-ea41-4533-bdb8-73ac58b3b1b2"
 DRIVER_WITHOUT_DISCOUNTS = {
     "uid": DRIVER_WITHOUT_DISCOUNTS_UID,
     "username": "driver.test@example.com",
     "screen_name": "Test",
-    "enabled": False,
+    "level": 0,
+    "active": True,
 }
-# The driver list does not expose `username`, but says whether the driver is enabled.
-DRIVER_SUMMARY = {"uid": DRIVER_UID, "screen_name": "Dome", "enabled": True}
+# The driver list does not expose `username`; the rest is the same view.
+DRIVER_SUMMARY = {key: value for key, value in DRIVER.items() if key != "username"}
 DRIVER_WITHOUT_DISCOUNTS_SUMMARY = {
-    "uid": DRIVER_WITHOUT_DISCOUNTS_UID,
-    "screen_name": "Test",
-    "enabled": False,
+    key: value for key, value in DRIVER_WITHOUT_DISCOUNTS.items() if key != "username"
 }
 DISCOUNT_CODE = "e8013cf2-34eb-4bc3-8a34-b08fb24a1bf3"
 DISCOUNT = {
@@ -81,7 +84,7 @@ USER = {
     "username": USERNAME,
     "screen_name": "Dome",
     "active": True,
-    "driver_uid": DRIVER_UID,
+    "driver": {"driver_uid": DRIVER_UID, "level": 1},
 }
 # A user with no password set: they exist, but cannot authenticate.
 USER_WITHOUT_CREDENTIAL = {
@@ -89,7 +92,16 @@ USER_WITHOUT_CREDENTIAL = {
     "username": "driver.test@example.com",
     "screen_name": "Test",
     "active": True,
-    "driver_uid": DRIVER_WITHOUT_DISCOUNTS_UID,
+    "driver": {"driver_uid": DRIVER_WITHOUT_DISCOUNTS_UID, "level": 0},
+}
+# A user who is not a driver at all: `driver` is null, not absent. They must not show
+# up anywhere a driver is asked for.
+CLIENT = {
+    "uid": "adf36d8c-7ee7-4cd8-9c87-73cb4c81ec07",
+    "username": "client@example.com",
+    "screen_name": "Client",
+    "active": True,
+    "driver": None,
 }
 
 
@@ -108,12 +120,12 @@ def seeded_database():
     db.ensure_indexes(database)
     database[db.CONFIGURATION].insert_one({"subsystem": "front-gate"})
     database[db.PROJECTS].insert_one({"project_id": "1f251606-bdba-40c4-bbee-bfedc6e57f70"})
-    database[db.DRIVERS].insert_many([dict(DRIVER), dict(DRIVER_WITHOUT_DISCOUNTS)])
     database[db.DISCOUNTS].insert_one(dict(DISCOUNT))
     database[db.USERS].insert_many(
         [
             {**USER, "credential": dict(CREDENTIAL)},
             {**USER_WITHOUT_CREDENTIAL, "credential": None},
+            {**CLIENT, "credential": None},
         ]
     )
     yield
@@ -286,16 +298,17 @@ def test_a_review_that_predates_the_field_is_completed_and_not_half_written(clie
     assert assigned["review"]["driver"]["uid"] == DRIVER_UID
 
 
-def test_a_project_never_copies_whether_its_driver_is_enabled(client):
-    """It is a state of the driver, not of the assignment: a driver disabled tomorrow
-    would go on looking enabled on every project that copied them."""
+def test_a_project_never_copies_its_driver_s_level(client):
+    """It is a state of the driver, not of the assignment: a driver lowered tomorrow
+    would go on looking as they were on every project that copied them. The same for
+    `active`, and the person's own uid has no business being there at all."""
     project = client.post("/projects", json={
         "owner_uid": OWNER_UID, "submission_id": "submission-000000000000104",
     }).json()
     assigned = client.put(
         f"/projects/{project['project_id']}/review/driver", json={"driver_uid": DRIVER_UID}
     ).json()
-    assert "enabled" not in assigned["review"]["driver"]
+    assert set(assigned["review"]["driver"]) == {"uid", "screen_name", "username"}
 
 
 def test_create_project_without_review_and_billing(client):
@@ -471,6 +484,206 @@ def test_delete_project(client):
     assert response.json() == {"error": "PROJECT_NOT_FOUND", "project_id": project_id}
 
 
+# ------------------------------------------------------------ listing projects
+#
+# These projects are inserted straight into Mongo rather than through the API: the
+# list is asked about a driver, an owner and a state, and the tests above create
+# projects of their own along the way. Their own owner, their own driver and states no
+# other test uses make every assertion below about exactly these three documents.
+LISTED_OWNER = "5c0e7e08-0f4e-4f6f-8f1c-0b3f4a2d9e11"
+LISTED_DRIVER = "b0b0f3d2-9a2e-4c1f-9f0a-1d2c3b4a5e60"
+
+
+# Three moments of today, in order. Today because the count of the day counts every
+# project that has a `created_at`, and a project dated last week would make that count
+# disagree with its own premise. The day is taken from the clock and not written down,
+# or these tests would start failing on their own tomorrow.
+def today_at(hour: int) -> datetime:
+    return datetime.now(timezone.utc).replace(hour=hour, minute=0, second=0, microsecond=0)
+
+
+def a_step(name: str, result: str, data: dict | None = None) -> dict:
+    return {
+        "step": name,
+        "result": result,
+        "data": data or {},
+        "decided_at": datetime(2026, 9, 20, 12, 0, tzinfo=timezone.utc),
+    }
+
+
+LISTED_PROJECTS = [
+    # Two steps, so the slice has something to leave out, and the last one says why
+    # the run failed — which is what a list has to be able to show.
+    {
+        "project_id": "aa000000-0000-4000-8000-000000000001",
+        "owner_uid": LISTED_OWNER,
+        "created_at": today_at(10),
+        "description": "Tracks the team's attendance at training.",
+        "pipeline": {
+            "state": "DEMO",
+            "steps": [a_step("preanalysis", "open"), a_step("analysis", "failed", {"failed_at": "technical"})],
+        },
+        "review": {"driver": {"uid": LISTED_DRIVER, "screen_name": "Dome"}, "preset": True},
+        "billing": {},
+    },
+    {
+        "project_id": "aa000000-0000-4000-8000-000000000002",
+        "owner_uid": LISTED_OWNER,
+        "created_at": today_at(11),
+        "pipeline": {"state": "PAID", "steps": [a_step("payment", "passed")]},
+        "review": {"driver": None, "preset": False},
+        "billing": {},
+    },
+    {
+        "project_id": "aa000000-0000-4000-8000-000000000003",
+        "owner_uid": "another-owner-entirely",
+        "created_at": today_at(12),
+        "pipeline": {"state": "ALPHA_TEST", "steps": [a_step("alpha_test", "open")]},
+        "review": {"driver": {"uid": LISTED_DRIVER, "screen_name": "Dome"}, "preset": False},
+        "billing": {},
+    },
+]
+
+
+@pytest.fixture(scope="module", autouse=True)
+def listed_projects(seeded_database):
+    database[db.PROJECTS].insert_many([dict(project) for project in LISTED_PROJECTS])
+    yield
+    database[db.PROJECTS].delete_many(
+        {"project_id": {"$in": [project["project_id"] for project in LISTED_PROJECTS]}}
+    )
+
+
+def ids_of(response) -> list[str]:
+    return [project["project_id"] for project in response.json()["projects"]]
+
+
+def test_projects_of_an_owner_newest_first(client):
+    response = client.get("/projects", params={"owner_uid": LISTED_OWNER})
+    assert response.status_code == 200
+    assert ids_of(response) == [
+        "aa000000-0000-4000-8000-000000000002",
+        "aa000000-0000-4000-8000-000000000001",
+    ]
+
+
+def test_projects_of_a_driver(client):
+    response = client.get("/projects", params={"driver_uid": LISTED_DRIVER})
+    assert response.status_code == 200
+    assert ids_of(response) == [
+        "aa000000-0000-4000-8000-000000000003",
+        "aa000000-0000-4000-8000-000000000001",
+    ]
+
+
+def test_projects_nobody_supervises(client):
+    # The state narrows it to this test's own project: the tests above leave projects
+    # with no driver behind them, and they are all in states this one does not ask for.
+    response = client.get("/projects", params={"without_driver": "true", "state": "PAID"})
+    assert response.status_code == 200
+    assert ids_of(response) == ["aa000000-0000-4000-8000-000000000002"]
+
+
+def test_a_state_may_be_repeated_and_means_any_of_them(client):
+    response = client.get(
+        "/projects", params=[("driver_uid", LISTED_DRIVER), ("state", "DEMO"), ("state", "ALPHA_TEST")]
+    )
+    assert response.status_code == 200
+    assert ids_of(response) == [
+        "aa000000-0000-4000-8000-000000000003",
+        "aa000000-0000-4000-8000-000000000001",
+    ]
+
+
+def test_a_state_no_project_is_in_is_an_empty_list(client):
+    response = client.get("/projects", params={"driver_uid": LISTED_DRIVER, "state": "REJECTED"})
+    assert response.status_code == 200
+    assert response.json() == {"projects": []}
+
+
+def test_an_owner_with_no_projects_is_an_empty_list(client):
+    response = client.get("/projects", params={"owner_uid": "nobody-at-all"})
+    assert response.status_code == 200
+    assert response.json() == {"projects": []}
+
+
+def test_a_listed_project_carries_only_its_last_step(client):
+    response = client.get("/projects", params={"owner_uid": LISTED_OWNER})
+    listed = next(
+        project
+        for project in response.json()["projects"]
+        if project["project_id"] == "aa000000-0000-4000-8000-000000000001"
+    )
+    steps = listed["pipeline"]["steps"]
+    assert len(steps) == 1
+    # The last one, and it is the one that says why the run stopped.
+    assert steps[0]["step"] == "analysis"
+    assert steps[0]["data"] == {"failed_at": "technical"}
+    # The rest of the project is whole: the slice takes away steps, not fields.
+    assert listed["description"] == "Tracks the team's attendance at training."
+    assert listed["pipeline"]["state"] == "DEMO"
+
+
+def test_projects_with_two_filters_at_once(client):
+    response = client.get("/projects", params={"owner_uid": LISTED_OWNER, "driver_uid": LISTED_DRIVER})
+    assert response.status_code == 400
+    assert response.json() == {"error": "INVALID_QUERY"}
+
+
+def test_projects_with_no_filter(client):
+    response = client.get("/projects")
+    assert response.status_code == 400
+    assert response.json() == {"error": "INVALID_QUERY"}
+
+
+def test_without_driver_false_names_no_filter(client):
+    response = client.get("/projects", params={"without_driver": "false"})
+    assert response.status_code == 400
+    assert response.json() == {"error": "INVALID_QUERY"}
+
+
+def test_a_state_that_does_not_exist(client):
+    for state in ("NONSENSE", ""):
+        response = client.get("/projects", params={"owner_uid": LISTED_OWNER, "state": state})
+        assert response.status_code == 400, state
+        assert response.json() == {"error": "INVALID_QUERY"}, state
+
+
+# --------------------------------------------------------- the description
+
+
+def test_description_is_written_onto_the_project(client):
+    project_id = client.post("/projects", json=a_project("submission-000000000000010")).json()["project_id"]
+    response = client.put(f"/projects/{project_id}/description", json={"description": "  A scoreboard for the league.  "})
+    assert response.status_code == 200
+    # Written, and with the spaces taken off.
+    assert response.json()["description"] == "A scoreboard for the league."
+    assert client.get(f"/projects/{project_id}").json()["description"] == "A scoreboard for the league."
+
+
+def test_description_is_rewritten(client):
+    project_id = client.post("/projects", json=a_project("submission-000000000000011")).json()["project_id"]
+    client.put(f"/projects/{project_id}/description", json={"description": "The first one."})
+    response = client.put(f"/projects/{project_id}/description", json={"description": "The second one."})
+    assert response.status_code == 200
+    assert response.json()["description"] == "The second one."
+
+
+def test_description_of_a_project_that_is_not_there(client):
+    response = client.put("/projects/unknown/description", json={"description": "Anything."})
+    assert response.status_code == 404
+    assert response.json() == {"error": "PROJECT_NOT_FOUND", "project_id": "unknown"}
+
+
+def test_an_empty_description_is_not_a_description(client):
+    project_id = client.post("/projects", json=a_project("submission-000000000000012")).json()["project_id"]
+    for body in ({"description": ""}, {"description": "   "}, {}):
+        response = client.put(f"/projects/{project_id}/description", json=body)
+        assert response.status_code == 400, body
+        assert response.json() == {"error": "INVALID_BODY"}, body
+    assert "description" not in client.get(f"/projects/{project_id}").json()
+
+
 def test_driver_found(client):
     response = client.get(f"/drivers/{DRIVER_UID}")
     assert response.status_code == 200
@@ -480,9 +693,26 @@ def test_driver_found(client):
 def test_drivers_list(client):
     response = client.get("/drivers")
     assert response.status_code == 200
-    # Sorted by uid: 639718a3… comes before 7633be3d…
-    # Only uid, screen_name and enabled: `username` must not appear in the list.
+    # Sorted by the driver's uid: 639718a3… comes before 7633be3d…
+    # `username` must not appear in the list.
     assert response.json() == {"drivers": [DRIVER_WITHOUT_DISCOUNTS_SUMMARY, DRIVER_SUMMARY]}
+
+
+def test_a_user_who_is_not_a_driver_is_not_in_the_list(client):
+    uids = [driver["uid"] for driver in client.get("/drivers").json()["drivers"]]
+    assert CLIENT["uid"] not in uids
+    # And their own uid is not a driver's uid either: asking for it is a 404.
+    assert client.get(f"/drivers/{CLIENT['uid']}").status_code == 404
+
+
+def test_a_driver_route_does_not_let_the_person_out(client):
+    """The driver is read out of a user document, which also holds the password."""
+    body = client.get(f"/drivers/{DRIVER_UID}").json()
+    for field in ("credential", "billing", "locale"):
+        assert field not in body, field
+    # The uid published is the driver's, never the person's.
+    assert body["uid"] == DRIVER_UID
+    assert body["uid"] != USER_UID
 
 
 def test_driver_not_found(client):
@@ -521,6 +751,53 @@ def test_discounts_of_unknown_driver(client):
     assert response.json() == {"error": "DRIVER_NOT_FOUND", "uid": "unknown"}
 
 
+def test_a_discount_is_created_for_a_driver(client):
+    response = client.post(f"/drivers/{DRIVER_UID}/discounts", json={"percentage": 3})
+    assert response.status_code == 201
+    created = response.json()
+    # The code is generated here: the caller does not choose it.
+    assert len(created["discount_code"]) == 36
+    assert created["percentage"] == 3
+    # The driver's name is copied out of the user who is that driver.
+    assert created["driver"] == {"uid": DRIVER_UID, "screen_name": "Dome"}
+    # And it can be read back, both on its own and in the driver's list.
+    assert client.get(f"/discounts/{created['discount_code']}").json() == created
+    codes = [
+        discount["discount_code"]
+        for discount in client.get(f"/drivers/{DRIVER_UID}/discounts").json()["discounts"]
+    ]
+    assert created["discount_code"] in codes
+
+
+def test_two_discounts_at_the_same_percentage_are_two_codes(client):
+    # Nothing here refuses a second code at a percentage that already has one: whether
+    # to reuse one is the caller's rule, and this route stores what it is asked for.
+    first = client.post(f"/drivers/{DRIVER_UID}/discounts", json={"percentage": 4}).json()
+    second = client.post(f"/drivers/{DRIVER_UID}/discounts", json={"percentage": 4}).json()
+    assert first["discount_code"] != second["discount_code"]
+
+
+def test_a_discount_for_a_driver_who_does_not_exist(client):
+    response = client.post("/drivers/unknown/discounts", json={"percentage": 3})
+    assert response.status_code == 404
+    assert response.json() == {"error": "DRIVER_NOT_FOUND", "uid": "unknown"}
+
+
+def test_a_discount_for_the_person_and_not_the_driver(client):
+    # The person's uid is not the driver's: a code points at the driver, and this is
+    # the one mistake a caller can make that would otherwise write a code nobody owns.
+    response = client.post(f"/drivers/{USER_UID}/discounts", json={"percentage": 3})
+    assert response.status_code == 404
+    assert response.json() == {"error": "DRIVER_NOT_FOUND", "uid": USER_UID}
+
+
+def test_a_percentage_that_is_not_one(client):
+    for percentage in (0, -5, 101, 1.5, "three", None):
+        response = client.post(f"/drivers/{DRIVER_UID}/discounts", json={"percentage": percentage})
+        assert response.status_code == 400, percentage
+        assert response.json() == {"error": "INVALID_BODY"}, percentage
+
+
 def test_user_found(client):
     response = client.get(f"/users/{USERNAME}")
     assert response.status_code == 200
@@ -532,6 +809,26 @@ def test_user_not_found(client):
     response = client.get("/users/nobody@example.com")
     assert response.status_code == 404
     assert response.json() == {"error": "USER_NOT_FOUND", "username": "nobody@example.com"}
+
+
+def test_user_found_by_uid(client):
+    """The read whoever has to say something to a client does: the project keeps the
+    uid, and the address is here."""
+    response = client.get("/users", params={"uid": USER["uid"]})
+    assert response.status_code == 200
+    assert response.json() == USER
+
+
+def test_user_not_found_by_uid(client):
+    response = client.get("/users", params={"uid": "no-such-uid"})
+    assert response.status_code == 404
+    assert response.json() == {"error": "USER_NOT_FOUND", "uid": "no-such-uid"}
+
+
+def test_a_user_asked_for_without_a_uid(client):
+    response = client.get("/users")
+    assert response.status_code == 400
+    assert response.json() == {"error": "INVALID_BODY"}
 
 
 def test_user_credential(client):

@@ -1,0 +1,55 @@
+{#-
+  A driver's links: one box each, because they are two different offers. The ambassador
+  brings somebody in and takes a share; the driver link brings in a project they will
+  manage, and it can carry a discount. One box holding both read as a single form with two
+  buttons, which is not what it is.
+
+  Both send `POST /links`, which renders this tab again with the link shown. Not an address
+  with the percentage in it: the address ends up in the browser's history and in whatever
+  log sits in front of us, and this address is a thing that pays somebody — the same reason
+  the sso's session token travels as a ticket.
+
+  `links.made` is what was just generated, when this page is the answer to one of the two
+  buttons. It is shown inside the box it came from, so a driver who pressed one of them does
+  not have to work out which link they are looking at.
+-#}
+<section class="link-box card">
+  <div class="card-head">{{ t("projects_hub.driver.links.ambassador") }}</div>
+  <div class="link-box-body">
+    <p class="link-hint">{{ t("projects_hub.driver.links.ambassador_hint") }}</p>
+    <form class="link-form" method="post" action="/links">
+      <input type="hidden" name="kind" value="ambassador">
+      <button class="btn" type="submit">{{ t("projects_hub.driver.links.make") }}</button>
+    </form>
+    {%- if links.made and links.made.kind == "ambassador" %}
+    {% set made = links.made %}
+    {% include "partials/link_made.njk" %}
+    {%- endif %}
+  </div>
+</section>
+
+{%- if links.driver %}
+<section class="link-box card">
+  <div class="card-head">{{ t("projects_hub.driver.links.driver") }}</div>
+  <div class="link-box-body">
+    <p class="link-hint">{{ t("projects_hub.driver.links.driver_hint") }}</p>
+    <form class="link-form" method="post" action="/links">
+      <input type="hidden" name="kind" value="driver">
+      <label class="field">
+        <span class="field-label">{{ t("projects_hub.driver.links.discount") }}</span>
+        <select class="input" name="percentage">
+          <option value="">{{ t("projects_hub.driver.links.discount_none") }}</option>
+          {%- for percentage in links.percentages %}
+          <option value="{{ percentage }}">{{ t("projects_hub.driver.links.percentage", { percentage: percentage }) }}</option>
+          {%- endfor %}
+        </select>
+      </label>
+      <button class="btn" type="submit">{{ t("projects_hub.driver.links.make") }}</button>
+    </form>
+    {%- if links.made and links.made.kind == "driver" %}
+    {% set made = links.made %}
+    {% include "partials/link_made.njk" %}
+    {%- endif %}
+  </div>
+</section>
+{%- endif %}

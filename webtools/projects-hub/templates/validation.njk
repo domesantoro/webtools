@@ -1,0 +1,54 @@
+{% extends "commons/base.njk" %}
+
+{#
+  The confirmation of the driver's gate: one decision, what it does, and the button that
+  takes it.
+
+  One decision per page and never the two together. A page offering both again would be
+  the row the driver came from, and what they are being asked here is not which of the two
+  they want — they have said that — but whether they mean it.
+
+  The project is named, with the same row the lists are made of: a page asking somebody to
+  close a request has to say which one.
+
+  Only a refusal asks for anything. The box is `required` and carries `maxlength`, which
+  the browser applies; the server applies both again, because a form posted by hand goes
+  through neither. When the server refuses it, the sentence comes back in the box with
+  what is wrong with it above.
+#}
+
+{% block header_extra %}{% include "partials/nav.njk" %}{% endblock %}
+
+{% block main %}
+    <div class="container message">
+      <div class="message-card card validation-card">
+        <div class="card-head">{{ heading }}</div>
+        <div class="message-body">
+          <p class="validation-project">
+            <span class="project-state" data-tone="{{ project.tone }}">{{ project.state_text }}</span>
+            <span class="validation-project-name">{{ project.name }}</span>
+          </p>
+          <p class="message-lead">{{ lead }}</p>
+
+          <form class="validation-form" method="post" action="{{ confirm_url }}">
+            <input type="hidden" name="decision" value="{{ decision }}">
+            {%- if reason %}
+            {%- if reason.wrong %}
+            <p class="validation-wrong" role="alert">{{ reason.wrong }}</p>
+            {%- endif %}
+            <label class="field">
+              <span class="field-label">{{ t("projects_hub.driver.validation.reason_label") }}</span>
+              <textarea class="input" name="reason" rows="5" required
+                        maxlength="{{ reason.max_chars }}">{{ reason.typed }}</textarea>
+            </label>
+            <p class="field-hint">{{ reason.hint }}</p>
+            {%- endif %}
+            <div class="validation-actions">
+              <button class="btn btn-primary" type="submit">{{ t("projects_hub.driver.validation.confirm") }}</button>
+              <a class="text-link" href="/driver">{{ t("projects_hub.driver.validation.back") }}</a>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+{% endblock %}

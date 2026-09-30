@@ -83,7 +83,7 @@ data, because a counter nobody reads is never missed. Readable at `GET /vocabula
 copy that is always right — this page is written by hand and can fall behind it.
 
 `subsystem` ∈ `anagraphics`, `analyst`, `comm-center`, `configurator-fe`, `drivers-pool`,
-`front-gate`, `metrics`, `preanalyst`, `sso`, `workspaces`.
+`front-gate`, `metrics`, `preanalyst`, `projects-hub`, `sso`, `workspaces`.
 
 `phase` ∈ `prevalidation`, `preanalysis_opening`, `preanalysis_turn`, `preanalysis_validation`,
 `analysis_technical`, `analysis_sustainability`, `analysis_points`, `development`, `alpha_test`,
@@ -146,23 +146,38 @@ judgement, or not an analysis, or not a message. `reason` is the door's own word
 |---|---|---|---|
 | `analysis.judged` | `verdict` ∈ take_on/refuse, `asked_for` ∈ take_on/refuse, `weakest` | | `scores`, `confidence` |
 | `analysis.written` | | | `bytes`, `amounts` |
-| `points.written` | `language` | | `amounts` |
+| `points.written` | `language`, `described` ∈ yes/no | | `amounts` |
 | `document.written` | `kind` | | `bytes` |
 | `spec.written` | `origin` ∈ system/third_party | | `bytes` |
+
+`described` says whether the same call also managed to label the project — the one sentence a list of
+projects shows beside the name. It is a dimension of this measurement and not a metric of its own
+because it is a property of the points being written and not a second event: the sentence comes out of
+the same call, in the same answer. Without it, a description that came back empty is dropped and
+nothing anywhere says how often that happens — the row simply renders without one, and a silence is not
+a number.
 
 **The drivers and the communications**
 
 | metric | required | optional | values |
 |---|---|---|---|
-| `driver.chosen` | `rule` ∈ random | | `amounts` (`enabled`, `registered`) |
-| `driver.handover` | `outcome` ∈ assigned/nobody_enabled/gave_up/unavailable | | `amounts` (`attempts`) |
+| `driver.chosen` | `rule` ∈ random | | `amounts` (`supervising`, `registered`) |
+| `driver.handover` | `outcome` ∈ assigned/nobody_supervising/gave_up/unavailable | | `amounts` (`attempts`) |
 | `driver_link.resolved` | `state` | | |
+| `driver_link.issued` | `kind` ∈ ambassador/driver/discount_created/discount_reused | `percentage` | |
 | `communication.sent` | `kind`, `channel` ∈ log | | |
 
 `driver_link.resolved` is what somebody's link did when a client arrived on one: the nine states of
 the driver's link and the four of the ambassador's. It is the only record of them — a project is
 written with `driver_uid: null` whether the link was absent or expired, so `project.created` says
 `has_discount: no` for both and the difference cannot be recovered from anything afterwards.
+
+`driver_link.issued` is the other side of it: a link **made**. Until it existed, a driver who never made
+a link and a driver whose links nobody ever clicked looked the same from here, and one of those two is a
+person to talk to. `discount_created` and `discount_reused` are kept apart because one of them writes a
+document and the other does not. `percentage` is open and optional: only the two kinds that carry a
+discount have one, and the values a driver may choose are limited by a configuration — a copy of that
+range here would be a second limit nobody would keep in step.
 
 **The funnel and its timing**
 
@@ -196,6 +211,38 @@ has one.
 | `turns.granted` | `source` ∈ purchase/fake_purchase/included | | |
 | `turns.spent` | `phase` | | |
 | `tokens.charged` | `driver_uid`, `provider`, `model` | | `tokens` |
+
+**The lists of projects, and the documents handed over**
+
+| metric | required | optional | values |
+|---|---|---|---|
+| `projects.listed` | `list` ∈ owned_active/owned_returned/owned_stopped/driver_review/driver_failed/orphan/orphan_failed | | `amounts` (`projects`) |
+| `document.served` | `kind`, `as` ∈ owner/driver/prj_admin | | `bytes` |
+
+`projects.listed` is how long a list of projects was when somebody opened it. `http.request` already
+says which page was asked for and how long it took; what it cannot say is how much was on it, and that
+is the number somebody asks for — a review queue of two is a different system from the same queue at
+forty, and a list of orphans that stops being empty is the fault the register had never been read for.
+`amounts` and not `count`, for the reason the vocabulary gives: a list of zero is a true answer and
+often the interesting one, while `count` is at least one. The average length is
+`amounts.projects / count`. There is no project: this measures a list.
+
+The client's own page was one list, `owned`, until 2026-09-30, when it became three — what is
+moving, what came back to them, what stopped. Documents written before that day carry the old
+name, so a reading that spans it adds up a name that no longer exists and three that did not yet:
+the counter splits on that date, as `driver.chosen`'s did on its own.
+
+`document.served` is the twin of `document.written`, with `kind` open for the same reason — which kinds
+exist belongs to workspaces. `as` is the half worth having: a client opening their own points is a step
+of the funnel, a driver opening the analysis is work beginning, and level 2 opening either is somebody
+going through the wreckage. It is the **narrowest** true capacity, so a driver reading a project of
+their own is counted as its driver and not as an administrator. Only a download that succeeded is
+counted: workspaces not answering is already a `dependency.call`, and a refusal already an `http.error`
+with its own code.
+
+**What is deliberately not measured** is a counter of the projects found broken. Finding faults in the
+register has an owner — the `sanity-checker` of `contesto/todos.md` — and a second counter here would be
+a second answer to one question, kept in step by hand.
 
 **The rest of the system**
 

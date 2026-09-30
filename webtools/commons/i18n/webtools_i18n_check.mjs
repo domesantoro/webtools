@@ -28,7 +28,7 @@ const LOCALES = path.join(HERE, "locales");
 const FALLBACK = "en";
 // The subsystems that write something a person reads, with pages or with documents.
 // The original is looked at, never a generated copy under a `commons/`.
-const SUBSYSTEMS = ["front-gate", "preanalyst", "sso", "analyst", "commons/templates"];
+const SUBSYSTEMS = ["front-gate", "preanalyst", "sso", "analyst", "projects-hub", "commons/templates"];
 
 // Directories with nothing of ours in them: dependencies, caches, and the generated
 // copies of the shared modules, which would report every key twice.

@@ -1,6 +1,6 @@
 // The ambassador, read from the URL: `?ambassador=<driver uid>`.
 //
-// An ambassador is a driver, enabled or not, who invited somebody to use
+// An ambassador is a driver at any level, who invited somebody to use
 // webtools: if the project goes through, half the fee is theirs. It counts only
 // if nothing else says who brings the project:
 //

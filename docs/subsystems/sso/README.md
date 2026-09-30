@@ -1,7 +1,7 @@
 # Subsystem `sso`
 
 > Reference documentation for development, maintenance, troubleshooting, bugfixing and metrics.
-> Last updated: 2026-09-21 · subsystem version: `0.4.0`.
+> Last updated: 2026-09-30 · subsystem version: `0.6.1`.
 > Code: `webtools/sso/` (paths relative to the root of the `ftab - webtools/` workspace).
 
 ---
@@ -22,7 +22,7 @@
 | Database | None: users, sessions and tickets live in anagraphics |
 | Access | Only from the IPs in `access.allowed_ips` of the configuration; the others get a `403` |
 | Client for the subsystems | `webtools/commons/sso/`: `sso_client.js` for the server, `sso_popup.js` for the browser. Distributed by `webtools/configurator/sso_deployer/deploy.sh` |
-| Tests | `npm test` (47 tests, no server needs to be running) |
+| Tests | `npm test` (57 tests, no server needs to be running) |
 | State | Login with username and password, token sessions, login pages. No roles, no permissions, registration not active |
 
 Quick check, with anagraphics and the sso running:
@@ -98,7 +98,7 @@ Users, credentials, sessions and tickets live in `anagraphics`, which stores and
 | **Unknown token: `200 {"logged": false}`, not an error** | "Is this token good?" is a legitimate question, and "no" is an answer. Errors are left for real failures. |
 | **With anagraphics down we answer `503`, never `logged: false`** | If the store does not answer we do not know whether the session is good. Saying "not logged in" would throw everybody out at every Mongo failure. |
 | **"Esci" logs you out of everything** | It closes the shared session: from that moment no subsystem recognises that token any more. It is what a person expects, and the only way to really get out of a shared computer. |
-| **The photograph of the user lives inside the session** | `screen_name` and `driver_uid` are copied into the session at login, so `GET /session` costs a single read. The price: a change of `screen_name` shows up at the next login. The same trade-off as the driver inside the discount codes. |
+| **The photograph of the user lives inside the session** | `screen_name` and `driver` are copied into the session at login, so `GET /session` costs a single read. The price: a change of `screen_name`, or of the driver's level, shows up at the next login. The same trade-off as the driver inside the discount codes. |
 | **No dependencies** | `node:http` and `node:crypto` are enough. Every extra dependency, in a subsystem that handles passwords, is one more surface to keep an eye on. |
 
 ---
@@ -244,9 +244,15 @@ It is the same document stored in anagraphics (`docs/subsystems/anagraphics/READ
   "username": "dome.santoro@gmail.com",
   "issued_at": "2026-09-21T10:00:00.000Z",
   "expires_at": "2026-09-21T18:00:00.000Z",
-  "data": { "screen_name": "Dome", "driver_uid": "7633be3d-e701-42ca-9fea-6c6d1bb4b7d1", "locale": "it" }
+  "data": { "screen_name": "Dome", "driver": { "driver_uid": "7633be3d-…", "level": 1 }, "locale": "it" }
 }
 ```
+
+`data.driver` is the driver role, exactly as the user document carries it: `null` for whoever is not
+a driver, otherwise `{driver_uid, level}` (`docs/subsystems/anagraphics/README.md` §5.5). The sso
+copies it and judges nothing about it — **what a level allows is decided by whoever asks**, not by
+whoever says who you are. Up to 0.12.0 it was a flat `driver_uid`, and the level was not in the
+session at all: a consumer that wanted it had to read it from anagraphics, and none did.
 
 ### 5.5 For consumers: use the shared client
 
@@ -274,7 +280,7 @@ Only `WEBTOOLS_ANAGRAPHICS_URL` and `WEBTOOLS_CONFIGURATION_TIMEOUT_MS` come fro
 | `session.cookie_name` | `webtools_sso` | It must stay different from the subsystems' cookies |
 | `session.ttl_seconds` | `28800` (8 hours) | How long a session lasts from the login |
 | `ticket.ttl_seconds` | `60` | How long a ticket lasts: the time of a redirect |
-| `login.allowed_next` | `["http://127.0.0.1:9200", "http://localhost:9200"]` | Where the browser may be sent back to after the login. http(s) addresses only |
+| `login.allowed_next` | `["http://127.0.0.1:9200", "http://localhost:9200", "http://127.0.0.1:9900", "http://localhost:9900"]` | Where the browser may be sent back to after the login. http(s) addresses only. `:9200` is the preanalyst, `:9900` projects-hub |
 | `limits.body_max_bytes` | `4096` | The largest body accepted by login, ticket exchange and forms |
 | `i18n.locales` | `["en", "it"]` | The languages offered: each has its catalogue in `commons/i18n/locales/` |
 | `i18n.fallback_locale` | `en` | The fallback language, and the one the keys missing from another are taken from |
@@ -331,7 +337,7 @@ Passwords are set from anagraphics (`docs/subsystems/anagraphics/README.md` §8.
 
 ## 9. Tests
 
-`npm test` (that is, `node --test "tests/*.test.js"`): **47 tests** (4 on the configuration client, `tests/configuration.test.js`), with no server to start.
+`npm test` (that is, `node --test "tests/*.test.js"`): **57 tests** (4 on the configuration client, `tests/configuration.test.js`), with no server to start.
 
 | File | What it covers |
 |---|---|
@@ -387,8 +393,11 @@ Checked by hand on 2026-09-21, with real anagraphics, sso and preanalyst on temp
 1. Its address in `login.allowed_next` (§6).
 2. A cookie name all of its own (§2).
 3. A function in `webtools/configurator/sso_deployer/deploy.sh` that copies `sso_client.js` to it.
-4. In its server: `currentSession` on every page, a return route (`/login-done`) that does `claimTicket` and sets the cookie, a `GET /session-fragment` for refreshing without a reload, and a logout route that removes the cookie and sends the browser to `/ui/logout`.
-5. In its pages: `sso_popup.js`, the `data-sso-login` markers on the links and `data-sso-header` / `data-sso-gate` on the containers to refresh.
+4. In its server: `currentSession` on every page, a return route (`/login-done`) that does `claimTicket` and sets the cookie, and a logout route that removes the cookie and sends the browser to `/ui/logout`.
+5. **Then one decision: a popup, or a redirect.** Points 4 and 5 below are the popup, which is what the preanalyst does and the reason this checklist was written that way; `projects-hub` does the other, and the checklist is a guide and not something to copy.
+   - **A popup** — `GET /session-fragment` in the server, and in the pages `sso_popup.js`, the `data-sso-login` markers on the links and `data-sso-header` / `data-sso-gate` on the containers to refresh. Worth it when there is something on the page that must not be lost: a half-filled form. It also needs the fragments, because that is what "updating in place" means.
+   - **A redirect** — `303` to `loginUrl(settings, "<us>/login-done")` when `currentSession` says not logged in, and from `/login-done` a `303` to a page. No `sso_popup.js`, no fragments, and the `sso_deployer` copies only `sso_client.js`. Worth it when there is nothing on the page to lose: replacing the whole page would be the only "in place" there is, which is a reload written by hand.
+   Either way, **`{ok: false}` is neither of the two**: the sso did not answer, and we do not know. It is a page saying so, and never a redirect — treating it as a logout throws everybody at a login that is not reachable.
 
 **Adding a piece of data to the session**
 It goes inside `data`, in `buildSession` (`src/sessions.js`). No change to anagraphics is needed: `data` is free. Remember that it is a photograph taken at login time (§2).
@@ -405,6 +414,8 @@ The format is in the document, not in the code (`params`). The new algorithm is 
 
 | Date | Version | Change |
 |---|---|---|
+| 2026-09-30 | 0.6.1 | `projects-hub` (`:9900`, and its `localhost` twin) in `login.allowed_next`: without it `safeNext` would silently send its browsers to the preanalyst. Nothing else in the sso changes — it is the second subsystem with a login, and the first that enters by a **redirect** rather than a popup, so §12's checklist now says which of the two to choose and why, instead of describing the popup as the way. |
+| 2026-09-29 | 0.6.0 | The session carries the **driver role** whole: `data.driver_uid` becomes `data.driver`, `null` or `{driver_uid, level}`, the same shape the user document has. The level is in the session for the first time, so a consumer no longer has to read it from anagraphics to know it; it is a photograph of the login like `screen_name`, so a level changed afterwards takes effect at the next login. Nothing here judges the level. Tests from 55 to 57. |
 | 2026-09-22 | 0.5.0 | **Languages.** Pages keyed from the shared catalogues (`commons/i18n`), a language switcher and `POST /locale`. The language in the session (`data.locale`) and in the profile: at login the profile wins, and the language cookie is rewritten. New route `POST /session/locale` and code `INVALID_LOCALE`. Configuration: the `i18n` section. Tests from 35 to 47. |
 | 2026-09-21 | 0.4.0 | **Configuration from the configuration subsystem.** At startup `GET /configuration/sso` is read from anagraphics (shared client `commons/configuration/configuration_client.js`); gone are all the environment variables and all the defaults, except the `WEBTOOLS_*` bootstrap. Without configuration the server does not start. The request body limit (previously the `MAX_BODY_BYTES` constant) becomes `limits.body_max_bytes`. Tests from 31 to 35. |
 | 2026-09-21 | 0.3.0 | The HTML leaves the JavaScript: pages in `templates/*.njk` rendered with **nunjucks** (autoescape), the shared shell in `commons/templates/base.njk` distributed by the new `template_deployer`. Corrected the stylesheet paths, which were relative and under `/ui/` pointed at non-existent files. The subsystem's first npm dependency. |

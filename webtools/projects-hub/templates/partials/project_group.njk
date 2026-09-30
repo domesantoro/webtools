@@ -1,0 +1,25 @@
+{#-
+  One titled list of projects. The caller sets `group_title`, `group_empty`,
+  `group_projects`, and optionally `group_muted` for a list that is there to be looked
+  through rather than acted on.
+
+  A list with nothing in it says so in a sentence, in the place the rows would have been:
+  an empty heading with a gap under it looks like something that failed to load.
+
+  `| length` and not the list on its own: in nunjucks an empty array is true.
+-#}
+<section class="project-group{% if group_muted %} project-group-muted{% endif %}">
+  <h2 class="group-title">
+    {{ group_title }}
+    {%- if group_projects | length %}<span class="group-count">{{ group_projects | length }}</span>{% endif %}
+  </h2>
+  {%- if group_projects | length %}
+  <ul class="project-list">
+    {%- for project in group_projects %}
+    {% include "partials/project_row.njk" %}
+    {%- endfor %}
+  </ul>
+  {%- else %}
+  <p class="list-empty">{{ group_empty }}</p>
+  {%- endif %}
+</section>

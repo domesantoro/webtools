@@ -106,3 +106,67 @@ def test_the_logger_is_actually_switched_on():
     first real call answered 202 and wrote nothing, and every test here still passed.
     This one asks the question the tests above cannot."""
     assert logging.getLogger("webtools_comm_center").isEnabledFor(logging.INFO)
+
+
+CLIENT = {"uid": "bbbb", "screen_name": "Anna", "username": "anna@example.test"}
+
+STOPPED = "/communications/project-stopped"
+REFUSED = "/communications/analysis-refused"
+LOST = "/communications/turns-lost"
+
+REASON = "The request is a shop, and that is not a webtool."
+
+
+def test_a_stopped_project_is_taken(client):
+    response = client.post(STOPPED, json={"project_id": PROJECT, "client": CLIENT})
+    assert response.status_code == 202
+    assert response.json() == {"taken": True}
+
+
+def test_a_stopped_project_says_who_it_is_for_and_which_project(client, caplog):
+    with caplog.at_level(logging.INFO, logger="webtools_comm_center"):
+        client.post(STOPPED, json={"project_id": PROJECT, "client": CLIENT})
+    written = caplog.text
+    assert CLIENT["screen_name"] in written
+    assert CLIENT["username"] in written
+    assert PROJECT in written
+
+
+def test_a_refusal_carries_the_motivation(client, caplog):
+    """The motivation is the whole of what the client is owed at that gate: a refusal
+    that arrived without it would be this communication sent empty."""
+    with caplog.at_level(logging.INFO, logger="webtools_comm_center"):
+        response = client.post(
+            REFUSED, json={"project_id": PROJECT, "client": CLIENT, "reason": REASON}
+        )
+    assert response.status_code == 202
+    assert REASON in caplog.text
+
+
+def test_lost_turns_say_how_many(client, caplog):
+    with caplog.at_level(logging.INFO, logger="webtools_comm_center"):
+        response = client.post(
+            LOST, json={"project_id": PROJECT, "client": CLIENT, "turns": 3}
+        )
+    assert response.status_code == 202
+    assert "3 turn" in caplog.text
+    assert CLIENT["username"] in caplog.text
+
+
+@pytest.mark.parametrize(
+    ("route", "incomplete"),
+    [
+        (STOPPED, {"project_id": PROJECT}),
+        (STOPPED, {"client": CLIENT}),
+        (STOPPED, {"project_id": PROJECT, "client": {"uid": "bbbb", "screen_name": "Anna"}}),
+        (REFUSED, {"project_id": PROJECT, "client": CLIENT}),
+        (REFUSED, {"project_id": PROJECT, "client": CLIENT, "reason": ""}),
+        (LOST, {"project_id": PROJECT, "client": CLIENT}),
+        (LOST, {"project_id": PROJECT, "client": CLIENT, "turns": 0}),
+        (LOST, {"project_id": PROJECT, "client": CLIENT, "turns": -2}),
+    ],
+)
+def test_each_form_refuses_what_it_cannot_say(client, route, incomplete):
+    response = client.post(route, json=incomplete)
+    assert response.status_code == 400
+    assert response.json() == {"error": "INVALID_BODY"}

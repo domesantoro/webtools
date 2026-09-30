@@ -1,0 +1,10 @@
+{#-
+  The tabs, in the header. Which ones are here is decided by the server out of the
+  session (src/server.js): a tab shown to somebody the route would answer 404 to would
+  be worse than no tab at all.
+-#}
+<nav class="main-nav" aria-label="{{ heading }}">
+  {%- for tab in nav %}
+  <a href="{{ tab.href }}"{% if tab.current %} aria-current="page"{% endif %}>{{ tab.label }}</a>
+  {%- endfor %}
+</nav>

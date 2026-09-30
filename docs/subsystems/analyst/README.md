@@ -1,6 +1,6 @@
 # Subsystem `webtools_analyst`
 
-> Code: `webtools/analyst/`. Document current as of 2026-09-29, version 0.1.0.
+> Code: `webtools/analyst/`. Document current as of 2026-09-30, version 0.2.1.
 
 ## 0. Quick sheet
 
@@ -14,8 +14,8 @@
 | PID / Log | `webtools_analyst.pid` / `webtools_analyst.log`, in the subsystem's directory |
 | Data | None of its own: what it decides goes on the project in anagraphics, the documents go to workspaces |
 | Who calls it | **Nobody yet.** The trigger exists (§7); the preanalyst still has a placeholder where it should call it |
-| What it calls | anagraphics (the project and its steps), workspaces (the pre-specification in, the two documents out), drivers-pool (who supervises it), comm-center (telling them) |
-| Tests | `uv run pytest`: 159 tests, no service running and no model called |
+| What it calls | anagraphics (the project and its steps, and the client when there is something to say to them), workspaces (the pre-specification in, the two documents out), drivers-pool (who supervises it), comm-center (telling the driver there is an analysis, telling the client it stopped) |
+| Tests | `uv run pytest`: 191 tests, no service running and no model called |
 
 ## 1. Role
 
@@ -31,7 +31,10 @@ different places because losing one of them does not mean the same as losing ano
   person decides (§3.2);
 - the **functional points**, for the client: short sentences in their own language, each with a
   stable identifier. They go on the step as data **and** to workspaces as the document `proposal/1`,
-  rendered from that same list so the two cannot disagree.
+  rendered from that same list so the two cannot disagree;
+- the project's **description**: one sentence, in the client's language, saying what the tool is for.
+  It goes onto the project itself (`PUT /projects/{id}/description`), and it is what a list of
+  projects shows beside the name. It comes out of the points door, not one of its own (§3.4).
 
 **Nobody waits in front of it.** A run is several model calls over minutes: the trigger answers at
 once and the pipeline advances by what is written in anagraphics.
@@ -64,7 +67,7 @@ in front of the person deciding.
 |---|---|---|---|
 | Technical analysis | `analysis-technical-v1` | `analysis.technical` | `{analysis, assumptions}` |
 | Judgement of sustainability | `analysis-sustainability-v1` | `analysis.judgement` | `{verdict, asked_for, scores, weakest, confidence, reason}` |
-| Functional points | `functional-points-v1` | `analysis.points` | `{language, points: [{id, text}]}` |
+| Functional points | `functional-points-v1` | `analysis.points` | `{language, points: [{id, text}], description?}` |
 
 Code: `webtools_analyst/analysis_technical.py`, `analysis_sustainability.py`, `functional_points.py`.
 Each has its contract and its adapters beside it, in `<door>_ai/`.
@@ -116,6 +119,31 @@ the same one sooner or later, and two points with one identifier is a demo nobod
 halves. Blank entries are dropped before numbering, so the identifiers have no holes: `p2` missing
 from a list of five would read as a point somebody removed.
 
+### 3.4 The description comes out of the points door
+
+**The same door**, and not one of its own. `functional_points.py` was already the only thing this
+subsystem produces that somebody outside reads: already in the client's language, already under the
+rules about not using the words of our trade and not gendering the reader, already looking at the same
+material. A description is one more sentence for the same reader, so a second call would be a second
+cost for one more line. The schema asks for it and `required` lists it, so the constrained output always
+sends one.
+
+**An empty description does not make the door unusable, and an empty list of points does.** The reason
+the list does is written where it is decided — a tool the client can do nothing with is not something to
+put in front of them for agreement — and a missing label is not that. Throwing away fifty-nine valid,
+paid-for points because one sentence came back blank would be the worse fault of the two. It is dropped,
+the project stays without a description, and whoever lists it renders the row without one — which they
+have to do anyway, for every project that has not been analysed yet.
+
+`points.written` carries `described` ∈ `yes`/`no` for exactly this reason: without it the drop would be
+a silence, and how often it happens would be knowable from nothing.
+
+**A consequence worth saying out loud.** The description is written where the analysis succeeds, so a
+project that failed at the technical door never has one — and those are exactly the projects in the two
+lists of stopped ones. Those rows show the placeholder, the state and the reason, and no description.
+That is correct: there is nothing to describe about a tool that was never analysed, and a sentence
+invented from the pre-specification would be a claim about something the system does not know.
+
 ## 4. The documents
 
 The shape of a document is configuration: the models live in `webtools/configurator/documents/` and
@@ -161,7 +189,7 @@ read apart from the others.
 | `ai.retry` | an attempt that was not the first. It carries the count and **not** the tokens: those are on `ai.call`, once |
 | `analysis.written` | how long the analysis came out, and how many assumptions it declared |
 | `analysis.judged` | the verdict, the weakest axis, the scores and the confidence |
-| `points.written` | how many points, and in which language |
+| `points.written` | how many points, in which language, and whether the project was described |
 | `gate.decided`, `gate.duration` | every step this gate writes, counted where it is written, so nobody has to remember |
 | `driver.handover` | assigned, nobody enabled, given up on, or the pool unavailable — and how many times it was asked |
 | `dependency.call` | every call to another subsystem: target, operation, outcome, duration |
@@ -240,6 +268,18 @@ again, decided, and **that is what closes the open one**: it is the convention t
 runs on — the rounds of questions are opened by the prevalidation and closed by whatever step comes
 after them (`webtools/preanalyst/src/server.js`, where the `preanalysis` step is opened).
 
+**And the run opens the next gate too.** Once a driver is on the project, a second step is appended,
+`driver_validation`, as `open`: it decides nothing, and the driver's yes or no is what closes it
+(`webtools/projects-hub/`). It is opened for one reason — without it the time an analysis spends on a
+person's desk belongs to nobody, because `gate.duration` is reported by whoever closes an open step
+and there would be none to close. That wait is the longest one in the pipeline after the rounds of
+questions, and it is a person's.
+
+It is opened **after** the assignment and never before it: an open step on a project the pool could
+not hand to anybody would say somebody is reading it while nobody is, which is the one shape
+`FAILED_NO_DRIVERS` exists to avoid. And it cannot fail the run — what is lost when that write does
+not arrive is one duration, and the gate still closes, reporting none.
+
 ### 7.3 In order
 
 1. the pre-specification from workspaces, and the rounds of questions off the project's **last**
@@ -247,10 +287,15 @@ after them (`webtools/preanalyst/src/server.js`, where the `preanalysis` step is
 2. the technical analysis, then the judgement, then the points (§3);
 3. the two documents to workspaces, **before** the step is written: a step saying the analysis is
    ready, with no analysis anywhere, would be worse than a run that failed;
-4. the step, decided, with the verdict, the scores, the weakest axis, the confidence, the model's
+4. the description onto the project, when the door gave one — also **before** the step, so that a
+   project whose step says the analysis passed carries the description that step produced. Nothing here
+   can stop the run: no description means there is nothing to write, and anagraphics refusing the write
+   is said as loudly as a log can say it;
+5. the step, decided, with the verdict, the scores, the weakest axis, the confidence, the model's
    words, the assumptions, the points as data, which documents were written, and what each of the
    three calls consumed. The state goes to `DRIVER_VALIDATION`;
-5. the driver, asked of the pool and written on the project; then the comm-center is told.
+6. the driver, asked of the pool and written on the project; the `driver_validation` step opened on
+   it (§7.2); then the comm-center is told.
 
 ### 7.4 When it does not get to the end
 
@@ -273,15 +318,26 @@ One failure is written down and repairs nothing, because nothing here could: **t
 written** after the documents were stored. The project is left in `ANALYSIS` and the log says so in
 capitals.
 
+**Both endings are said to the client** — `project-stopped` at the comm-center, with the person read
+from anagraphics by the project's `owner_uid`. Nobody is in front of a screen when a run fails: the
+client pressed a button minutes ago and left, so a project that stops with nothing said is one they
+find out about by going to look, which is the same as not finding out. It is **one** communication
+and not two, because which of the two endings it was is ours to repair and makes no difference to
+the person waiting; which one it was stays on the step.
+
+It is sent **only once the step is written**, because the step is what makes it true that the
+project stopped — before it the system still says `ANALYSIS`, and a message saying otherwise would
+be a claim nothing here can stand behind. And it **cannot fail the run**: a project with no owner on
+it, an account no longer there, anagraphics or the comm-center not answering all end the same way —
+the log says the project stopped and nobody was told, and the project keeps the state it has.
+
 ### 7.5 What still does not exist
 
 - **The call from the preanalyst**, at the end of the rounds of questions, where there is an explicit
   placeholder today.
-- **The driver's gate**: a subsystem of its own, after this one. Until it exists, projects sit in
-  `DRIVER_VALIDATION` with nothing able to move them on. That is not a hole in the analyst; it is
-  what "the gate comes after" means.
 - **A notification channel**: there is none in this repository. The comm-center writes the notice in
-  its log.
+  its log. Two forms leave this subsystem — `analysis-ready` to the driver and `project-stopped` to
+  the client — and neither is delivered to anybody yet.
 
 ## 8. Known limits
 
@@ -332,5 +388,6 @@ webtools/analyst/
 
 | Date | Version | Change |
 |---|---|---|
+| 2026-09-30 | 0.2.1 | The hand-over opens the **`driver_validation` step** as `open` (§7.2), so the wait on a driver's desk has somewhere to be counted: the driver's decision closes it, and `gate.duration` reports it. It is opened only where there is a driver, and a write that does not get there costs one duration and nothing else. |
 | 2026-09-29 | 0.1.0 | The documents (`analysis/1`, `proposal/1`) rendered with Jinja2 from the configurator's models; the Python side of the language catalogues; the clients towards anagraphics, workspaces, drivers-pool and comm-center; **the run and its trigger** (§7), with `gate.decided`, `gate.duration` and the new `driver.handover`. First documentation of the subsystem. |
 | 2026-09-28 | — | The subsystem, its configuration, its error contract and the three doors, run by hand with `scripts/analyse.py` on real material. |

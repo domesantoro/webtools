@@ -42,8 +42,21 @@ deploy_sso() {
   cp -R "$SOURCE/fonts" "$public/fonts"
 }
 
+# projects-hub — the pages a person sees their projects on, rendered by a Node
+# server. Same structure as the preanalyst and the sso: the static files live in
+# public/, which the pages load from the root.
+deploy_projects_hub() {
+  local public="$WEBTOOLS/projects-hub/public"
+  echo "→ projects-hub"
+
+  cp "$SOURCE/commons.css" "$public/commons.css"
+  rm -rf "$public/fonts"
+  cp -R "$SOURCE/fonts" "$public/fonts"
+}
+
 deploy_front_gate
 deploy_preanalyst
 deploy_sso
+deploy_projects_hub
 
 echo "Style distributed."

@@ -1,0 +1,52 @@
+{% extends "commons/base.njk" %}
+
+{#
+  A driver's tab: on the left the projects that are theirs to act on, on the right the links
+  they hand out.
+
+  Two columns because the two answer different questions — «what is there for me to do» and
+  «how do I bring somebody in» — and stacking them made the second read as a step of the
+  first. On a narrow screen the column falls under the lists: the projects are the reason
+  the page is opened.
+
+  Two lists and not three. A project of theirs in `DEVELOPMENT`, `DEMO` or `PAID` is read
+  and not shown: the lists that will hold it belong to the gates that do not exist yet, and
+  a third list now would be a page built for work nothing can do.
+#}
+
+{% block header_extra %}{% include "partials/nav.njk" %}{% endblock %}
+
+{% block main %}
+    <div class="container projects">
+      <h1>{{ heading }}</h1>
+
+      {#-
+        What was just decided at the gate. The project it was about has left both lists —
+        an approved one is the client's to answer now, a refused one is closed — so
+        without this the driver would press confirm and watch a row disappear with nothing
+        said about it.
+      -#}
+      {%- if decided %}
+      <p class="decided-notice" role="status">{{ decided }}</p>
+      {%- endif %}
+
+      <div class="two-columns">
+        <div class="column-main">
+          {% set group_title = t("projects_hub.driver.waiting.title") %}
+          {% set group_empty = t("projects_hub.driver.waiting.empty") %}
+          {% set group_projects = waiting %}
+          {% include "partials/project_group.njk" %}
+
+          {% set group_title = t("projects_hub.driver.failed.title") %}
+          {% set group_empty = t("projects_hub.driver.failed.empty") %}
+          {% set group_projects = failed %}
+          {% set group_muted = true %}
+          {% include "partials/project_group.njk" %}
+        </div>
+
+        <aside class="column-side" aria-label="{{ t('projects_hub.driver.links.title') }}">
+          {% include "partials/links.njk" %}
+        </aside>
+      </div>
+    </div>
+{% endblock %}

@@ -1,0 +1,39 @@
+{% extends "commons/base.njk" %}
+
+{#
+  The projects a person owns, in three lists, in the order they care about them: what is
+  moving, what has come back to them for want of detail, and what has stopped.
+
+  `nothing_at_all` is somebody with no projects whatever, which is a different thing from
+  three lists that happen to be empty: one sentence instead of three headings.
+#}
+
+{% block header_extra %}{% include "partials/nav.njk" %}{% endblock %}
+
+{% block main %}
+    <div class="container projects">
+      <h1>{{ heading }}</h1>
+
+      {%- if nothing_at_all %}
+      <p class="list-empty lead-empty">{{ t("projects_hub.owned.empty") }}</p>
+      {%- else %}
+
+      {% set group_title = t("projects_hub.owned.active.title") %}
+      {% set group_empty = t("projects_hub.owned.active.empty") %}
+      {% set group_projects = active %}
+      {% include "partials/project_group.njk" %}
+
+      {% set group_title = t("projects_hub.owned.returned.title") %}
+      {% set group_empty = t("projects_hub.owned.returned.empty") %}
+      {% set group_projects = returned %}
+      {% include "partials/project_group.njk" %}
+
+      {% set group_title = t("projects_hub.owned.stopped.title") %}
+      {% set group_empty = t("projects_hub.owned.stopped.empty") %}
+      {% set group_projects = stopped %}
+      {% set group_muted = true %}
+      {% include "partials/project_group.njk" %}
+
+      {%- endif %}
+    </div>
+{% endblock %}

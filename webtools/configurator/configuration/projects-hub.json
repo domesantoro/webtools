@@ -1,0 +1,23 @@
+{
+  "listen": { "host": "127.0.0.1", "port": 9900 },
+  "public_url": "http://127.0.0.1:9900",
+  "subsystems_infos": {
+    "metrics": { "url": "http://127.0.0.1:9600", "timeout_ms": 2000 },
+    "anagraphics": { "timeout_ms": 5000 },
+    "sso": { "url": "http://127.0.0.1:9300", "timeout_ms": 5000 },
+    "workspaces": { "url": "http://127.0.0.1:9400", "timeout_ms": 5000 },
+    "preanalyst": { "url": "http://127.0.0.1:9200" },
+    "comm_center": { "url": "http://127.0.0.1:9002", "timeout_ms": 5000 }
+  },
+  "session": { "cookie_name": "webtools_projects_hub" },
+  "links": { "discount": { "min_percentage": 1, "max_percentage": 5 } },
+  "limits": { "body_max_bytes": 8192, "rejection_reason_max_chars": 2000 },
+  "i18n": {
+    "locales": ["en", "it"],
+    "fallback_locale": "en",
+    "cookie_name": "webtools_locale",
+    "cookie_max_age_seconds": 31536000,
+    "body_max_bytes": 1024
+  },
+  "metrics": { "log_failures": false }
+}

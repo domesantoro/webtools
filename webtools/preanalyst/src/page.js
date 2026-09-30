@@ -43,7 +43,8 @@ const env = nunjucks.configure(TEMPLATES_DIR, {
 // sent back — if the failure is ours, the user must not pay for it.
 function hiddenFields(driverLink, params, driversAvailable) {
   const fields = [];
-  // The discount of a driver who is not enabled does not apply: it does not travel with the form.
+  // The discount of a driver who may not supervise does not apply: it does not travel
+  // with the form.
   if (params.discountCode && driverLink.state !== DISCOUNT_DRIVER_DISABLED) {
     fields.push({ name: "discount", value: params.discountCode });
   }

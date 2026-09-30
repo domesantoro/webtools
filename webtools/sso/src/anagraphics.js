@@ -89,7 +89,8 @@ async function request(settings, path, { method = "GET", body, operation } = {})
 
 const encode = encodeURIComponent;
 
-// GET /users/{username} → { uid, username, screen_name, active, driver_uid }
+// GET /users/{username} → { uid, username, screen_name, active, driver }
+// `driver` is null, or the driver role: { driver_uid, level }.
 export function findUser(settings, username) {
   return request(settings, `/users/${encode(username)}`, { operation: "find_user" });
 }

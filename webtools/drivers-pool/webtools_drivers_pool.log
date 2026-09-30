@@ -44,3 +44,61 @@ INFO:     Application startup complete.
 INFO:     Uvicorn running on http://127.0.0.1:9001 (Press CTRL+C to quit)
 INFO:     127.0.0.1:50578 - "POST /drivers/choice HTTP/1.1" 200 OK
 INFO:     127.0.0.1:51977 - "POST /drivers/choice HTTP/1.1" 200 OK
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [39880]
+=== start 2026-09-29 21:47:23 ===
+INFO:     Started server process [9361]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:9001 (Press CTRL+C to quit)
+INFO:     127.0.0.1:51466 - "POST /drivers/choice HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51471 - "POST /drivers/choice HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51473 - "POST /drivers/choice HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51475 - "POST /drivers/choice HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51477 - "POST /drivers/choice HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51479 - "POST /drivers/choice HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51564 - "POST /drivers/choice HTTP/1.1" 409 Conflict
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [9361]
+=== start 2026-09-30 11:20:55 ===
+INFO:     Started server process [19823]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:9001 (Press CTRL+C to quit)
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [19823]
+=== start 2026-09-30 11:49:24 ===
+INFO:     Started server process [24907]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:9001 (Press CTRL+C to quit)
+INFO:     127.0.0.1:57046 - "POST /drivers/choice HTTP/1.1" 200 OK
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [24907]
+=== start 2026-09-30 12:01:09 ===
+INFO:     Started server process [27276]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:9001 (Press CTRL+C to quit)
+INFO:     127.0.0.1:57891 - "GET / HTTP/1.1" 404 Not Found
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [27276]
+=== start 2026-09-30 13:50:24 ===
+INFO:     Started server process [50056]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:9001 (Press CTRL+C to quit)
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [50056]

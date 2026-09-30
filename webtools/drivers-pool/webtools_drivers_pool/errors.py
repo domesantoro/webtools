@@ -23,7 +23,7 @@ METHOD_NOT_ALLOWED = "METHOD_NOT_ALLOWED"
 IP_NOT_ALLOWED = "IP_NOT_ALLOWED"
 # The drivers live in anagraphics: without it there is no choice to be made.
 ANAGRAPHICS_UNAVAILABLE = "ANAGRAPHICS_UNAVAILABLE"
-# Nobody is enabled. A state of the system, not a failure of this call: the caller has
+# Nobody may supervise. A state of the system, not a failure of this call: the caller has
 # to be able to tell the two apart, so they are two codes.
 NO_DRIVER_AVAILABLE = "NO_DRIVER_AVAILABLE"
 BODY_TOO_LARGE = "BODY_TOO_LARGE"

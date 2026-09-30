@@ -1,5 +1,5 @@
-"""The internal API: subsystem configurations, projects, drivers and their
-discount codes, users and sessions.
+"""The internal API: subsystem configurations, projects, users — drivers among them
+— their discount codes, and sessions.
 
 Sessions, tickets, projects and the language of users and sessions are written
 here. They are stored and returned here: the token, the expiry and the decision
@@ -8,7 +8,7 @@ passwords and does not judge whether a session is still valid.
 """
 
 from datetime import datetime, timedelta, timezone
-from typing import Annotated, Literal
+from typing import Annotated, Literal, get_args
 from uuid import uuid4
 
 from fastapi import FastAPI, Query, Request, Response
@@ -197,6 +197,61 @@ def set_provider_pricing(subsystem: str, body: PricingToStore) -> dict:
     return {"pricing": pricing}
 
 
+@app.get("/projects")
+def get_projects(
+    owner_uid: str | None = None,
+    driver_uid: str | None = None,
+    without_driver: bool | None = None,
+    state: Annotated[list[str] | None, Query()] = None,
+) -> dict:
+    """The projects matching one filter, newest first.
+
+    **Exactly one** of the three filters, and `400 INVALID_QUERY` for none and for more
+    than one. They are not refinements of one another: one names a person's projects,
+    one a driver's, one the projects nobody supervises, and two of them together would
+    be a question about an intersection nobody has asked for. Refusing is not a
+    limitation — it is this route saying it does not guess which of two filters was
+    meant.
+
+    `without_driver` takes only `true`. `false` names no filter: it would have to mean
+    "the projects that do have a driver", which is a fourth question and not one this
+    route answers, so it is refused rather than quietly ignored.
+
+    `state` narrows any of the three, may be repeated, and means any one of those given.
+    It is checked against `PipelineState`, like the state on a step: an invented name is
+    a `400` and not an empty list, because the two are told apart by nothing else.
+    **Which states a caller cares about is the caller's rule**, which is why it travels
+    as a query and is not written into this route: a list of states fixed here would be
+    one caller's business living in everybody's API.
+
+    An empty list is a `200`: no projects match, which is an answer.
+    """
+    if without_driver is False:
+        raise errors.ApiError(400, errors.INVALID_QUERY)
+    named = [
+        filter_name
+        for filter_name, given in (
+            ("owner_uid", owner_uid is not None),
+            ("driver_uid", driver_uid is not None),
+            ("without_driver", without_driver is True),
+        )
+        if given
+    ]
+    if len(named) != 1:
+        raise errors.ApiError(400, errors.INVALID_QUERY)
+    if state is not None and not set(state) <= set(get_args(PipelineState)):
+        raise errors.ApiError(400, errors.INVALID_QUERY)
+    return {
+        "projects": db.list_projects(
+            database,
+            owner_uid=owner_uid,
+            driver_uid=driver_uid,
+            without_driver=without_driver is True,
+            states=state,
+        )
+    }
+
+
 @app.get("/projects/count")
 def count_projects(
     first_day: str = Query(alias="from"), last_day: str = Query(alias="to")
@@ -245,10 +300,10 @@ class DriverOnProject(BaseModel):
     separately, and a second call is a second thing that can fail while the first
     one succeeded.
 
-    **`enabled` is deliberately not copied.** It is a state of the driver and not of
-    this assignment: a driver disabled tomorrow would go on looking enabled on every
-    project that copied them, which is the one field where a stale copy misleads
-    rather than merely ages.
+    **`level` is deliberately not copied.** It is a state of the driver and not of
+    this assignment: a driver lowered tomorrow would go on looking as they were on
+    every project that copied them, which is the one field where a stale copy misleads
+    rather than merely ages. The same holds for `active`, and for the same reason.
 
     The copy is made **here** and never by a caller. Drivers live in this subsystem,
     so a caller building its own copy would be a second place deciding what a
@@ -352,9 +407,9 @@ PipelineState = Literal[
     # is the opposite: a refusal is over, a failure is looked at.
     "FAILED",
     # The analysis is written and there is nobody to hand it to: the pool has nobody
-    # enabled, or it kept naming drivers who are no longer there. Its own name and
-    # not `FAILED`, because the work was done and paid for and what is missing is a
-    # person — the project is finished as far as the machine goes.
+    # who may supervise, or it kept naming drivers who are no longer there. Its own
+    # name and not `FAILED`, because the work was done and paid for and what is
+    # missing is a person — the project is finished as far as the machine goes.
     "FAILED_NO_DRIVERS",
 ]
 
@@ -396,6 +451,39 @@ class PipelineStep(BaseModel):
     data: dict = Field(default_factory=dict)
 
 
+def _driver_view(user: dict, *, with_username: bool) -> dict:
+    """A driver as the API publishes them, out of the user who is that driver.
+
+    A driver is not a document of their own: they are the `driver` object inside a
+    user. This is the one place that turns the second into the first, so that the
+    driver routes cannot answer with different shapes — and so that the rest of the
+    person, who also has a credential block and a balance, does not come out through
+    a route about drivers.
+
+    `uid` is the **driver's** uid and not the person's: what points at a driver — a
+    link, a discount, a project's copy, an ambassador — has always pointed at that
+    one, and it keeps pointing at it.
+
+    `active` comes out because it belongs to the answer «may this driver be given
+    work»: the caller decides that, and cannot decide it without this. `level`
+    likewise. What a level is allowed to do is not settled here.
+
+    `with_username` is asked of the caller and not read off the document: the list
+    leaves the addresses out on purpose, and a shape that depended on which fields a
+    projection happened to bring back would change without anybody choosing it.
+    """
+    driver = user["driver"]
+    view = {
+        "uid": driver["driver_uid"],
+        "screen_name": user["screen_name"],
+        "level": driver["level"],
+        "active": user["active"],
+    }
+    if with_username:
+        view["username"] = user["username"]
+    return view
+
+
 def _driver_copy(driver_uid: str | None) -> dict | None:
     """The driver's data as a project keeps it. 404 if there is no such driver.
 
@@ -404,11 +492,15 @@ def _driver_copy(driver_uid: str | None) -> dict | None:
     """
     if driver_uid is None:
         return None
-    driver = db.find_driver(database, driver_uid)
-    if driver is None:
+    user = db.find_driver(database, driver_uid)
+    if user is None:
         raise errors.ApiError(404, errors.DRIVER_NOT_FOUND, uid=driver_uid)
     return DriverOnProject(
-        uid=driver["uid"], screen_name=driver["screen_name"], username=driver["username"]
+        uid=user["driver"]["driver_uid"],
+        screen_name=user["screen_name"],
+        # The address is the person's `username`: the driver no longer keeps a second
+        # copy of it, so the two cannot disagree.
+        username=user["username"],
     ).model_dump()
 
 
@@ -570,17 +662,59 @@ def assign_driver(project_id: str, assignment: DriverToAssign) -> dict:
     return updated
 
 
+class DescriptionToStore(BaseModel):
+    """What the tool is for, in one sentence, in the client's language.
+
+    Non-empty after the spaces are taken off: a description made of spaces is not a
+    description, and storing one would put a row on a page with an empty line where the
+    sentence should be. Whoever has none does not call this route — absent is absent,
+    and a project with no description renders without one.
+
+    No maximum length: how long the sentence is belongs to whoever writes it, and a
+    limit invented here would cut somebody's sentence in half on a rule nobody chose.
+    """
+
+    description: str = Field(min_length=1)
+
+    @field_validator("description")
+    @classmethod
+    def _not_only_spaces(cls, description: str) -> str:
+        stripped = description.strip()
+        if not stripped:
+            raise ValueError("the description cannot be empty")
+        return stripped
+
+
+@app.put("/projects/{project_id}/description")
+def set_project_description(project_id: str, body: DescriptionToStore) -> dict:
+    """The project's description, written onto it. Returns the updated project.
+
+    A route of its own and not a field on the step route, for the same reason
+    `PUT /projects/{project_id}/review/driver` is one: it is a field of the project
+    written after the project was born, by whoever found it out, and the step route
+    appends to the register of decisions — which writing a label is not.
+    """
+    document = db.set_project_description(database, project_id, body.description)
+    if document is None:
+        raise errors.ApiError(404, errors.PROJECT_NOT_FOUND, project_id=project_id)
+    return document
+
+
 @app.get("/drivers")
 def get_drivers() -> dict:
-    return {"drivers": db.list_drivers(database)}
+    return {
+        "drivers": [
+            _driver_view(user, with_username=False) for user in db.list_drivers(database)
+        ]
+    }
 
 
 @app.get("/drivers/{uid}")
 def get_driver(uid: str) -> dict:
-    document = db.find_driver(database, uid)
-    if document is None:
+    user = db.find_driver(database, uid)
+    if user is None:
         raise errors.ApiError(404, errors.DRIVER_NOT_FOUND, uid=uid)
-    return document
+    return _driver_view(user, with_username=True)
 
 
 @app.get("/drivers/{uid}/discounts")
@@ -592,11 +726,69 @@ def get_discounts_of_driver(uid: str) -> dict:
     return {"uid": uid, "discounts": db.find_discounts_of_driver(database, uid)}
 
 
+class DiscountToCreate(BaseModel):
+    """How much of the price a driver's link takes off.
+
+    `1..100` is what a percentage is. **How much webtools is willing to give away is
+    not checked here**: that is a commercial policy, it belongs to whoever offers the
+    link, and it is read from that subsystem's own configuration. Anagraphics stores
+    and does not decide — the same division by which it stores `review.preset` without
+    applying the rule that sets it.
+    """
+
+    percentage: int = Field(ge=1, le=100)
+
+
+@app.post("/drivers/{uid}/discounts", status_code=201)
+def create_discount_for_driver(uid: str, body: DiscountToCreate) -> dict:
+    """A new discount code for this driver. `404 DRIVER_NOT_FOUND` if there is no such driver.
+
+    The code is born here, where it is stored, like `project_id`: the caller cannot
+    choose it, so it cannot collide with one that already exists.
+
+    The driver's name is copied here too, out of the user who is that driver, and never
+    taken from the body — `_driver_copy` works the same way, and for the same reason:
+    the drivers live in this subsystem, and a caller that could write the name inside a
+    code could write a name that is not theirs.
+    """
+    user = db.find_driver(database, uid)
+    if user is None:
+        raise errors.ApiError(404, errors.DRIVER_NOT_FOUND, uid=uid)
+    discount = {
+        "discount_code": str(uuid4()),
+        # The same duplicated copy every discount carries: whoever reads a code does
+        # not read the driver again.
+        "driver": {"uid": user["driver"]["driver_uid"], "screen_name": user["screen_name"]},
+        "percentage": body.percentage,
+    }
+    db.insert_discount(database, discount)
+    return discount
+
+
 @app.get("/discounts/{discount_code}")
 def get_discount(discount_code: str) -> dict:
     document = db.find_discount(database, discount_code)
     if document is None:
         raise errors.ApiError(404, errors.DISCOUNT_NOT_FOUND, discount_code=discount_code)
+    return document
+
+
+@app.get("/users")
+def get_user_by_uid(uid: str) -> dict:
+    """The user read by uid, without the `credential` block.
+
+    A project keeps `owner_uid` and no copy of the person who owns it, so whoever has
+    something to say to that client has a uid and not an address. This is where the
+    two are joined.
+
+    It is a query and not `/users/{uid}`, because that position already names a user by
+    their username: the same place meaning two things would be told apart by what the
+    value looks like, which is a guess. `DELETE /sessions?uid=` is written this way for
+    the same reason.
+    """
+    document = db.find_user_by_uid(database, uid)
+    if document is None:
+        raise errors.ApiError(404, errors.USER_NOT_FOUND, uid=uid)
     return document
 
 

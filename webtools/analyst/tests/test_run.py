@@ -26,6 +26,10 @@ from webtools_analyst.settings import settings_from  # noqa: E402
 
 PROJECT = "1f251606-bdba-40c4-bbee-bfedc6e57f70"
 DRIVER = {"uid": "8ff93901-673e-44ba-b05b-56011395dcba", "screen_name": "Ada", "username": "ada@example.org"}
+# Whoever asked for the tool. The project keeps only their uid, so the run reads them
+# from anagraphics when it has something to say to them.
+OWNER_UID = "c6d0f3a2-1f0e-4b7c-9d33-0b9a7c2e5511"
+OWNER = {"uid": OWNER_UID, "screen_name": "Anna", "username": "anna@example.org"}
 
 
 class Measurements(list):
@@ -73,11 +77,26 @@ JUDGEMENT = door(
         "reason": "The request is small and clear.",
     }
 )
-POINTS = door(output={"language": "it", "points": [{"id": "p1", "text": "Registri un intervento"}]})
+POINTS = door(
+    output={
+        "language": "it",
+        "points": [{"id": "p1", "text": "Registri un intervento"}],
+        "description": "Gli interventi di manutenzione del condominio",
+    }
+)
+# The same door, having come back without a description: it is the case the run must
+# carry on through, because the points are what was paid for.
+POINTS_WITHOUT_DESCRIPTION = door(
+    output={"language": "it", "points": [{"id": "p1", "text": "Registri un intervento"}]}
+)
 
 
-def project(state="PREANALYSIS", steps=None):
-    return {"project_id": PROJECT, "pipeline": {"state": state, "steps": steps or []}}
+def project(state="PREANALYSIS", steps=None, owner_uid=OWNER_UID):
+    return {
+        "project_id": PROJECT,
+        "owner_uid": owner_uid,
+        "pipeline": {"state": state, "steps": steps or []},
+    }
 
 
 @pytest.fixture
@@ -85,6 +104,8 @@ def written(monkeypatch, settings):
     """Everything the run writes, recorded; everything it reads, answered."""
     steps = []
     stored_documents = []
+    descriptions = []
+    said = []
 
     def append_step(_settings, project_id, *, step, result, state, data, reason=None):
         steps.append({"step": step, "result": result, "state": state, "data": data, "reason": reason})
@@ -100,6 +121,12 @@ def written(monkeypatch, settings):
         return Answer(ok=True, data={"project_id": project_id, "kind": kind, "version": 1})
 
     monkeypatch.setattr(run.workspaces, "store_document", store_document)
+
+    def set_description(_settings, project_id, description):
+        descriptions.append(description)
+        return Answer(ok=True, data={"project_id": project_id, "description": description})
+
+    monkeypatch.setattr(run.anagraphics, "set_description", set_description)
     monkeypatch.setattr(run.drivers_pool, "choose_driver", lambda *_: Answer(ok=True, data=DRIVER["uid"]))
     monkeypatch.setattr(
         run.anagraphics,
@@ -107,10 +134,22 @@ def written(monkeypatch, settings):
         lambda *_a, **_k: Answer(ok=True, data={"review": {"driver": DRIVER}}),
     )
     monkeypatch.setattr(run.comm_center, "analysis_ready", lambda *_a, **_k: Answer(ok=True))
+    monkeypatch.setattr(run.anagraphics, "find_user", lambda *_a, **_k: Answer(ok=True, data=OWNER))
+
+    def project_stopped(_settings, project_id, client):
+        said.append({"project_id": project_id, "client": client})
+        return Answer(ok=True)
+
+    monkeypatch.setattr(run.comm_center, "project_stopped", project_stopped)
     monkeypatch.setattr(run, "analyse", lambda *_a, **_k: ANALYSIS)
     monkeypatch.setattr(run, "judge", lambda *_a, **_k: JUDGEMENT)
     monkeypatch.setattr(run, "write_points", lambda *_a, **_k: POINTS)
-    return {"steps": steps, "documents": stored_documents}
+    return {
+        "steps": steps,
+        "documents": stored_documents,
+        "descriptions": descriptions,
+        "said": said,
+    }
 
 
 # --------------------------------------------------------------- what is read
@@ -195,6 +234,16 @@ def test_a_project_that_is_not_there_and_an_anagraphics_that_is_not_answering(mo
 # --------------------------------------------------------------- the whole run
 
 
+def analysis_step(written):
+    """The step that says how the analysis went.
+
+    It is no longer the last one: once a driver is on the project the run opens the
+    gate after this one, and that open step comes after. Asked for by name, so that a
+    step added tomorrow does not make these tests read the wrong row.
+    """
+    return [one for one in written["steps"] if one["step"] == "analysis"][-1]
+
+
 def test_the_run_writes_the_decision_the_points_and_the_two_documents(settings, written):
     run.perform(settings, project())
 
@@ -202,7 +251,7 @@ def test_the_run_writes_the_decision_the_points_and_the_two_documents(settings, 
     assert kinds == ["analysis", "proposal"]
     assert "Registri un intervento" in written["documents"][1]["text"]
 
-    decided = written["steps"][-1]
+    decided = analysis_step(written)
     assert decided["result"] == "passed"
     assert decided["state"] == "DRIVER_VALIDATION"
     data = decided["data"]
@@ -214,6 +263,53 @@ def test_the_run_writes_the_decision_the_points_and_the_two_documents(settings, 
     # One entry per door, so what the project consumed is on the project and not only
     # in metrics: the money at the demo is not taken from metrics.
     assert set(data["interactions"]) == {"technical", "judgement", "points"}
+
+
+def test_the_description_is_written_before_the_step_that_says_the_analysis_passed(settings, written):
+    """A project whose step says the analysis passed carries the description that step
+    produced, and not one that arrives a moment later."""
+    run.perform(settings, project())
+    assert written["descriptions"] == ["Gli interventi di manutenzione del condominio"]
+
+
+def test_a_run_whose_door_gave_no_description_writes_none_and_goes_on(
+    monkeypatch, settings, written
+):
+    """Fifty-nine valid points are not thrown away because one sentence came back
+    blank. Nothing is written in its place: absent is absent."""
+    monkeypatch.setattr(run, "write_points", lambda *_a, **_k: POINTS_WITHOUT_DESCRIPTION)
+    run.perform(settings, project())
+
+    assert written["descriptions"] == []
+    decided = analysis_step(written)
+    assert (decided["result"], decided["state"]) == ("passed", "DRIVER_VALIDATION")
+    assert [one["kind"] for one in written["documents"]] == ["analysis", "proposal"]
+
+
+def test_a_description_anagraphics_would_not_take_does_not_stop_the_run(
+    monkeypatch, settings, written
+):
+    """The analysis is written, stored and paid for: it is not thrown away over a
+    subtitle. The step is written all the same."""
+    monkeypatch.setattr(
+        run.anagraphics,
+        "set_description",
+        lambda *_a, **_k: Answer(ok=False, reason="unavailable", code="DATABASE_UNAVAILABLE"),
+    )
+    run.perform(settings, project())
+
+    decided = analysis_step(written)
+    assert (decided["result"], decided["state"]) == ("passed", "DRIVER_VALIDATION")
+
+
+def test_a_run_that_failed_before_the_points_describes_nothing(monkeypatch, settings, written):
+    """There is nothing to describe about a tool that was never analysed, and a sentence
+    invented from the pre-specification would be a claim nobody made."""
+    monkeypatch.setattr(
+        run, "analyse", lambda *_a, **_k: door(ok=False, ended="no_answer", failure="timed_out")
+    )
+    run.perform(settings, project())
+    assert written["descriptions"] == []
 
 
 def test_a_door_that_failed_leaves_the_project_in_failed(monkeypatch, settings, written):
@@ -329,7 +425,7 @@ def test_a_driver_who_is_no_longer_there_is_a_reason_to_ask_again(monkeypatch, s
     assert settings.metrics.of("driver.handover")[0]["amounts"] == {"attempts": 2}
 
 
-def test_nobody_enabled_is_an_answer_and_is_not_asked_twice(monkeypatch, settings, written):
+def test_nobody_supervising_is_an_answer_and_is_not_asked_twice(monkeypatch, settings, written):
     """Asking again buys the same answer. The project is left maimed, and that is said
     out loud and counted — nothing else in the system notices."""
     asked = []
@@ -341,14 +437,16 @@ def test_nobody_enabled_is_an_answer_and_is_not_asked_twice(monkeypatch, setting
     monkeypatch.setattr(run.drivers_pool, "choose_driver", choose)
     run.perform(settings, project())
     assert len(asked) == 1
-    assert settings.metrics.of("driver.handover")[0]["dims"] == {"outcome": "nobody_enabled"}
+    assert settings.metrics.of("driver.handover")[0]["dims"] == {"outcome": "nobody_supervising"}
     # The analysis passed and is on the project — that step is not undone — and a
     # second step says the handover did not, so the project does not sit in
     # DRIVER_VALIDATION looking as though somebody were reading it.
+    # Still the last two: the gate after this one is not opened for a project nobody was
+    # given, which is the whole point of `FAILED_NO_DRIVERS`.
     passed, no_driver = written["steps"][-2], written["steps"][-1]
     assert (passed["result"], passed["state"]) == ("passed", "DRIVER_VALIDATION")
     assert (no_driver["result"], no_driver["state"]) == ("failed", "FAILED_NO_DRIVERS")
-    assert no_driver["data"] == {"failed_at": "handover", "outcome": "nobody_enabled", "attempts": 1}
+    assert no_driver["data"] == {"failed_at": "handover", "outcome": "nobody_supervising", "attempts": 1}
 
 
 def test_a_pool_that_keeps_naming_ghosts_is_given_up_on(monkeypatch, settings, written):
@@ -364,10 +462,148 @@ def test_a_pool_that_keeps_naming_ghosts_is_given_up_on(monkeypatch, settings, w
     assert written["steps"][-1]["state"] == "FAILED_NO_DRIVERS"
 
 
+def test_the_gate_after_this_one_is_opened_once_there_is_a_driver(settings, written):
+    """The step the driver's decision will close.
+
+    It is opened so that the wait has somewhere to be counted: `gate.duration` is
+    reported by whoever closes an open step, and with nothing open the longest wait in
+    the pipeline after the rounds of questions would belong to nobody.
+    """
+    run.perform(settings, project())
+    opened = written["steps"][-1]
+    assert opened["step"] == "driver_validation"
+    assert (opened["result"], opened["state"]) == ("open", "DRIVER_VALIDATION")
+    assert opened["data"] == {}
+    # It decides nothing, so it carries no refusal's name.
+    assert opened["reason"] is None
+
+
+def test_a_project_nobody_was_given_has_no_gate_opened_on_it(monkeypatch, settings, written):
+    """An open step would say somebody is reading it while nobody is, which is the one
+    shape `FAILED_NO_DRIVERS` exists to avoid."""
+    monkeypatch.setattr(
+        run.drivers_pool,
+        "choose_driver",
+        lambda *_: Answer(ok=False, reason="rejected", code="NO_DRIVER_AVAILABLE"),
+    )
+    run.perform(settings, project())
+    assert [one["step"] for one in written["steps"]].count("driver_validation") == 0
+
+
+def test_a_gate_that_could_not_be_opened_does_not_spoil_the_run(monkeypatch, settings, written):
+    """What is lost is one duration. The analysis is written, the driver is on the
+    project, and the decision still closes — reporting no duration, which is the truth
+    about that project."""
+    real = run.anagraphics.append_step
+
+    def refuse_the_gate(settings_, project_id, *, step, **rest):
+        if step == "driver_validation":
+            return Answer(ok=False, reason="unavailable")
+        return real(settings_, project_id, step=step, **rest)
+
+    monkeypatch.setattr(run.anagraphics, "append_step", refuse_the_gate)
+    run.perform(settings, project())
+    assert analysis_step(written)["state"] == "DRIVER_VALIDATION"
+    assert settings.metrics.of("driver.handover")[0]["dims"] == {"outcome": "assigned"}
+
+
 def test_a_notice_that_did_not_go_out_leaves_the_project_whole(monkeypatch, settings, written):
     monkeypatch.setattr(
         run.comm_center, "analysis_ready", lambda *_a, **_k: Answer(ok=False, reason="unavailable")
     )
     run.perform(settings, project())
-    assert written["steps"][-1]["result"] == "passed"
+    assert analysis_step(written)["result"] == "passed"
     assert settings.metrics.of("driver.handover")[0]["dims"] == {"outcome": "assigned"}
+
+
+# ------------------------------------------------- what the client is told about it
+
+
+def test_a_run_that_failed_is_said_to_the_client(monkeypatch, settings, written):
+    """Nobody is in front of a screen when a run fails: a project that stops with
+    nothing said is one the client finds out about by going to look."""
+    monkeypatch.setattr(
+        run, "judge", lambda *_a, **_k: door(ok=False, ended="no_answer", failure="timed_out")
+    )
+    run.perform(settings, project())
+
+    assert written["steps"][-1]["state"] == "FAILED"
+    assert written["said"] == [{"project_id": PROJECT, "client": OWNER}]
+
+
+def test_an_analysis_nobody_can_be_given_is_said_to_the_client_too(monkeypatch, settings, written):
+    """The two endings are one fact for the person waiting — it stopped. Which of them
+    it was stays on the step, where whoever repairs it looks."""
+    monkeypatch.setattr(
+        run.drivers_pool,
+        "choose_driver",
+        lambda *_a, **_k: Answer(ok=False, reason="rejected", code="NOBODY_SUPERVISING"),
+    )
+    run.perform(settings, project())
+
+    assert written["steps"][-1]["state"] == "FAILED_NO_DRIVERS"
+    assert written["said"] == [{"project_id": PROJECT, "client": OWNER}]
+
+
+def test_a_run_that_ended_well_says_nothing_to_the_client(settings, written):
+    """This communication is about a project that stopped. One that did not stop is
+    the driver's to look at, and the client is told nothing by this subsystem."""
+    run.perform(settings, project())
+    assert written["said"] == []
+
+
+def test_a_failure_that_was_not_recorded_is_not_announced(monkeypatch, settings, written):
+    """The state is what makes it true that the project stopped. Before it is written
+    the system still says `ANALYSIS`, and a message saying otherwise would be a claim
+    nothing here can stand behind."""
+    monkeypatch.setattr(
+        run, "judge", lambda *_a, **_k: door(ok=False, ended="no_answer", failure="timed_out")
+    )
+    monkeypatch.setattr(
+        run.anagraphics, "append_step", lambda *_a, **_k: Answer(ok=False, reason="unavailable")
+    )
+    run.perform(settings, project())
+    assert written["said"] == []
+
+
+def test_a_project_with_no_owner_stops_without_anybody_being_told(monkeypatch, settings, written):
+    """Absent is absent: there is nobody to write to, and nothing is put in their
+    place. The project is left in `FAILED` exactly as it would have been."""
+    monkeypatch.setattr(
+        run, "judge", lambda *_a, **_k: door(ok=False, ended="no_answer", failure="timed_out")
+    )
+    run.perform(settings, project(owner_uid=None))
+
+    assert written["steps"][-1]["state"] == "FAILED"
+    assert written["said"] == []
+
+
+def test_a_client_who_cannot_be_read_does_not_change_what_the_project_says(
+    monkeypatch, settings, written
+):
+    monkeypatch.setattr(
+        run, "judge", lambda *_a, **_k: door(ok=False, ended="no_answer", failure="timed_out")
+    )
+    monkeypatch.setattr(
+        run.anagraphics, "find_user", lambda *_a, **_k: Answer(ok=False, reason="unavailable")
+    )
+    run.perform(settings, project())
+
+    assert written["steps"][-1]["state"] == "FAILED"
+    assert written["said"] == []
+
+
+def test_a_notice_that_did_not_go_out_leaves_the_failure_where_it_was(
+    monkeypatch, settings, written
+):
+    """The same rule as the driver's notice: the telling is what is missing, and
+    undoing any of the rest would be worse than saying so."""
+    monkeypatch.setattr(
+        run, "judge", lambda *_a, **_k: door(ok=False, ended="no_answer", failure="timed_out")
+    )
+    monkeypatch.setattr(
+        run.comm_center, "project_stopped", lambda *_a, **_k: Answer(ok=False, reason="unavailable")
+    )
+    run.perform(settings, project())
+
+    assert written["steps"][-1]["state"] == "FAILED"

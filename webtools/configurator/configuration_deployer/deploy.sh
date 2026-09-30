@@ -108,8 +108,17 @@ deploy_comm_center() {
   cp "$SOURCE/configuration_client.py" "$commons/configuration_client.py"
 }
 
+deploy_projects_hub() {
+  local commons="$WEBTOOLS/projects-hub/src/commons"
+  echo "→ projects-hub"
+
+  mkdir -p "$commons"
+  cp "$SOURCE/configuration_client.js" "$commons/configuration_client.js"
+}
+
 deploy_analyst
 deploy_drivers_pool
 deploy_comm_center
+deploy_projects_hub
 
 echo "Configuration client distributed."

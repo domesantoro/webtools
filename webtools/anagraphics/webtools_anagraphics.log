@@ -2228,3 +2228,275 @@ INFO:     127.0.0.1:52022 - "GET /projects/c0816dd0-e147-4cd1-8134-82f42b5ba678 
 INFO:     127.0.0.1:52027 - "GET /projects/c0816dd0-e147-4cd1-8134-82f42b5ba678 HTTP/1.1" 200 OK
 INFO:     127.0.0.1:52032 - "GET /projects/c0816dd0-e147-4cd1-8134-82f42b5ba678 HTTP/1.1" 200 OK
 INFO:     127.0.0.1:52045 - "GET /projects/c0816dd0-e147-4cd1-8134-82f42b5ba678 HTTP/1.1" 200 OK
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [39751]
+=== start 2026-09-29 21:47:22 ===
+INFO:     Started server process [9285]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:9100 (Press CTRL+C to quit)
+INFO:     127.0.0.1:51448 - "GET /configuration/metrics HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51455 - "GET /configuration/sso HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51458 - "GET /configuration/drivers-pool HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51460 - "GET /configuration/preanalyst HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51462 - "GET /drivers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51464 - "GET /drivers/7633be3d-e701-42ca-9fea-6c6d1bb4b7d1 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51465 - "GET /drivers/8ff93901-673e-44ba-b05b-56011395dcba HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:51467 - "GET /drivers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51472 - "GET /drivers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51474 - "GET /drivers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51476 - "GET /drivers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51478 - "GET /drivers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51480 - "GET /drivers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51481 - "GET /drivers/f234b930-e5d0-4e10-8a4f-1a8a13814370/discounts HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51482 - "GET /users/policy.test%40example.com HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51492 - "POST /sessions HTTP/1.1" 201 Created
+INFO:     127.0.0.1:51495 - "GET /sessions/bY4fSe4AvgPkYw7mwFh0HvnPcUDEYHplYiFA6TkbhMQ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51500 - "GET /sessions/bY4fSe4AvgPkYw7mwFh0HvnPcUDEYHplYiFA6TkbhMQ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51511 - "GET /drivers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51514 - "GET /discounts/91165eb1-65d6-43a9-ade8-681ec3ebef8d HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51511 - "GET /drivers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51514 - "GET /discounts/91165eb1-65d6-43a9-ade8-681ec3ebef8d HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51522 - "GET /drivers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51525 - "GET /discounts/e8013cf2-34eb-4bc3-8a34-b08fb24a1bf3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51532 - "GET /drivers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51535 - "GET /discounts/91165eb1-65d6-43a9-ade8-681ec3ebef8d HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51544 - "POST /sessions HTTP/1.1" 201 Created
+INFO:     127.0.0.1:51548 - "GET /sessions/aGhoY8v12Hlxy6jDtbtKfHeAecO1Z-tTJn1NlAivRSg HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51552 - "GET /drivers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51554 - "GET /discounts/e8013cf2-34eb-4bc3-8a34-b08fb24a1bf3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51548 - "GET /sessions/aGhoY8v12Hlxy6jDtbtKfHeAecO1Z-tTJn1NlAivRSg HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51552 - "GET /drivers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51554 - "GET /discounts/e8013cf2-34eb-4bc3-8a34-b08fb24a1bf3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51565 - "GET /drivers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51578 - "DELETE /sessions/bY4fSe4AvgPkYw7mwFh0HvnPcUDEYHplYiFA6TkbhMQ HTTP/1.1" 204 No Content
+INFO:     127.0.0.1:51580 - "DELETE /sessions/aGhoY8v12Hlxy6jDtbtKfHeAecO1Z-tTJn1NlAivRSg HTTP/1.1" 204 No Content
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [9285]
+=== start 2026-09-29 21:53:47 ===
+INFO:     Started server process [10232]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:9100 (Press CTRL+C to quit)
+INFO:     127.0.0.1:52476 - "GET /drivers HTTP/1.1" 200 OK
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [10232]
+=== start 2026-09-30 11:20:53 ===
+INFO:     Started server process [19695]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:9100 (Press CTRL+C to quit)
+INFO:     127.0.0.1:55002 - "GET /configuration/metrics HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55009 - "GET /configuration/sso HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55013 - "GET /configuration/workspaces HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55015 - "GET /configuration/preanalyst HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55017 - "GET /configuration/drivers-pool HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55019 - "GET /configuration/comm-center HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55021 - "GET /configuration/analyst HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55023 - "GET /configuration/projects-hub HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55025 - "GET /configuration/front-gate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55027 - "GET /configuration/configurator-fe HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55029 - "GET /configuration/metrics-fe HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55042 - "GET /projects/8bf6975d-7eef-4900-ac14-fa668d18c219 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55054 - "GET /projects?owner_uid=8ff93901-673e-44ba-b05b-56011395dcba HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55056 - "GET /projects HTTP/1.1" 400 Bad Request
+INFO:     127.0.0.1:55057 - "GET /projects HTTP/1.1" 400 Bad Request
+INFO:     127.0.0.1:55058 - "GET /projects?owner_uid=x&without_driver=true HTTP/1.1" 400 Bad Request
+INFO:     127.0.0.1:55059 - "GET /projects?without_driver=true&state=NONSENSE HTTP/1.1" 400 Bad Request
+INFO:     127.0.0.1:55060 - "GET /projects?without_driver=true&state=DRIVER_VALIDATION&state=FAILED&state=FAILED_NO_DRIVERS&state=DEMO&state=PAID&state=DEVELOPMENT&state=ALPHA_TEST&state=CLIENT_VALIDATION HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55067 - "PUT /projects/8bf6975d-7eef-4900-ac14-fa668d18c219/description HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55069 - "PUT /projects/nope/description HTTP/1.1" 404 Not Found
+invalid body on /projects/8bf6975d-7eef-4900-ac14-fa668d18c219/description: [{'type': 'value_error', 'loc': ('body', 'description'), 'msg': 'Value error, the description cannot be empty', 'input': '   ', 'ctx': {'error': ValueError('the description cannot be empty')}}]
+INFO:     127.0.0.1:55070 - "PUT /projects/8bf6975d-7eef-4900-ac14-fa668d18c219/description HTTP/1.1" 400 Bad Request
+INFO:     127.0.0.1:55071 - "GET /users/dome.santoro%40gmail.com HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55077 - "POST /sessions HTTP/1.1" 201 Created
+INFO:     127.0.0.1:55081 - "GET /sessions/manualtest4dFM9k1SXXRgx3Ng-EfG4fYnrRYhhDue HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55085 - "GET /projects?owner_uid=8ff93901-673e-44ba-b05b-56011395dcba HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55092 - "GET /sessions/manualtest4dFM9k1SXXRgx3Ng-EfG4fYnrRYhhDue HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55097 - "GET /projects/8bf6975d-7eef-4900-ac14-fa668d18c219 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55092 - "GET /sessions/manualtest4dFM9k1SXXRgx3Ng-EfG4fYnrRYhhDue HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55097 - "GET /projects/8bf6975d-7eef-4900-ac14-fa668d18c219 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55092 - "GET /sessions/manualtest4dFM9k1SXXRgx3Ng-EfG4fYnrRYhhDue HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55097 - "GET /projects/8bf6975d-7eef-4900-ac14-fa668d18c219 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55092 - "GET /sessions/manualtest4dFM9k1SXXRgx3Ng-EfG4fYnrRYhhDue HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55109 - "GET /sessions/manualtest4dFM9k1SXXRgx3Ng-EfG4fYnrRYhhDue HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55114 - "GET /projects?driver_uid=7633be3d-e701-42ca-9fea-6c6d1bb4b7d1&state=DRIVER_VALIDATION&state=FAILED&state=FAILED_NO_DRIVERS HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55109 - "GET /sessions/manualtest4dFM9k1SXXRgx3Ng-EfG4fYnrRYhhDue HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55114 - "GET /projects?driver_uid=7633be3d-e701-42ca-9fea-6c6d1bb4b7d1&state=DRIVER_VALIDATION&state=FAILED&state=FAILED_NO_DRIVERS HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55109 - "GET /sessions/manualtest4dFM9k1SXXRgx3Ng-EfG4fYnrRYhhDue HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55114 - "GET /drivers/7633be3d-e701-42ca-9fea-6c6d1bb4b7d1/discounts HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55123 - "POST /drivers/7633be3d-e701-42ca-9fea-6c6d1bb4b7d1/discounts HTTP/1.1" 201 Created
+INFO:     127.0.0.1:55114 - "GET /projects?driver_uid=7633be3d-e701-42ca-9fea-6c6d1bb4b7d1&state=DRIVER_VALIDATION&state=FAILED&state=FAILED_NO_DRIVERS HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55179 - "GET /sessions/manualtest4dFM9k1SXXRgx3Ng-EfG4fYnrRYhhDue HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55184 - "GET /drivers/7633be3d-e701-42ca-9fea-6c6d1bb4b7d1/discounts HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55186 - "GET /projects?driver_uid=7633be3d-e701-42ca-9fea-6c6d1bb4b7d1&state=DRIVER_VALIDATION&state=FAILED&state=FAILED_NO_DRIVERS HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55179 - "GET /sessions/manualtest4dFM9k1SXXRgx3Ng-EfG4fYnrRYhhDue HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55184 - "GET /drivers/7633be3d-e701-42ca-9fea-6c6d1bb4b7d1/discounts HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55186 - "GET /projects?driver_uid=7633be3d-e701-42ca-9fea-6c6d1bb4b7d1&state=DRIVER_VALIDATION&state=FAILED&state=FAILED_NO_DRIVERS HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55179 - "GET /sessions/manualtest4dFM9k1SXXRgx3Ng-EfG4fYnrRYhhDue HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55184 - "GET /projects?driver_uid=7633be3d-e701-42ca-9fea-6c6d1bb4b7d1&state=DRIVER_VALIDATION&state=FAILED&state=FAILED_NO_DRIVERS HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55193 - "GET /drivers/7633be3d-e701-42ca-9fea-6c6d1bb4b7d1/discounts HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55275 - "POST /sessions HTTP/1.1" 201 Created
+INFO:     127.0.0.1:55279 - "GET /sessions/manualtest2GXH2ixDEYNLtTOzw_n9ZMGuLRBOsRH1Q HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55283 - "GET /projects?without_driver=true&state=DRIVER_VALIDATION&state=CLIENT_VALIDATION&state=DEVELOPMENT&state=ALPHA_TEST&state=DEMO&state=PAID&state=FAILED&state=FAILED_NO_DRIVERS HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55279 - "GET /sessions/manualtest2GXH2ixDEYNLtTOzw_n9ZMGuLRBOsRH1Q HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55283 - "GET /projects?without_driver=true&state=DRIVER_VALIDATION&state=CLIENT_VALIDATION&state=DEVELOPMENT&state=ALPHA_TEST&state=DEMO&state=PAID&state=FAILED&state=FAILED_NO_DRIVERS HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55290 - "GET /projects?driver_uid=7633be3d-e701-42ca-9fea-6c6d1bb4b7d1 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55305 - "GET /sessions/manualtest2GXH2ixDEYNLtTOzw_n9ZMGuLRBOsRH1Q HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55310 - "GET /projects?without_driver=true&state=DRIVER_VALIDATION&state=CLIENT_VALIDATION&state=DEVELOPMENT&state=ALPHA_TEST&state=DEMO&state=PAID&state=FAILED&state=FAILED_NO_DRIVERS HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55324 - "GET /sessions/manualtest2GXH2ixDEYNLtTOzw_n9ZMGuLRBOsRH1Q HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55329 - "GET /projects?without_driver=true&state=DRIVER_VALIDATION&state=CLIENT_VALIDATION&state=DEVELOPMENT&state=ALPHA_TEST&state=DEMO&state=PAID&state=FAILED&state=FAILED_NO_DRIVERS HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55385 - "DELETE /sessions/manualtest4dFM9k1SXXRgx3Ng-EfG4fYnrRYhhDue HTTP/1.1" 204 No Content
+INFO:     127.0.0.1:55387 - "DELETE /sessions/manualtest2GXH2ixDEYNLtTOzw_n9ZMGuLRBOsRH1Q HTTP/1.1" 204 No Content
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [19695]
+=== start 2026-09-30 11:49:22 ===
+INFO:     Started server process [24781]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:9100 (Press CTRL+C to quit)
+INFO:     127.0.0.1:56800 - "GET /configuration/metrics HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56807 - "GET /configuration/sso HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56810 - "GET /configuration/workspaces HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56812 - "GET /configuration/preanalyst HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56814 - "GET /configuration/drivers-pool HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56816 - "GET /configuration/comm-center HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56818 - "GET /configuration/analyst HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56820 - "GET /configuration/projects-hub HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56822 - "GET /configuration/front-gate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56824 - "GET /configuration/configurator-fe HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56826 - "GET /configuration/metrics-fe HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56834 - "GET /projects/8bf6975d-7eef-4900-ac14-fa668d18c219 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56838 - "POST /projects/8bf6975d-7eef-4900-ac14-fa668d18c219/pipeline/steps HTTP/1.1" 201 Created
+INFO:     127.0.0.1:57043 - "PUT /projects/8bf6975d-7eef-4900-ac14-fa668d18c219/description HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57045 - "POST /projects/8bf6975d-7eef-4900-ac14-fa668d18c219/pipeline/steps HTTP/1.1" 201 Created
+INFO:     127.0.0.1:57047 - "GET /drivers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57049 - "PUT /projects/8bf6975d-7eef-4900-ac14-fa668d18c219/review/driver HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57058 - "GET /projects/8bf6975d-7eef-4900-ac14-fa668d18c219 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57084 - "POST /sessions HTTP/1.1" 201 Created
+INFO:     127.0.0.1:57088 - "GET /sessions/realrunTNfR8eLANqnHTThy3b8ZRTbqrSe9gVO6 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57092 - "GET /projects?owner_uid=8ff93901-673e-44ba-b05b-56011395dcba HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57099 - "GET /sessions/realrunTNfR8eLANqnHTThy3b8ZRTbqrSe9gVO6 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57104 - "GET /projects/8bf6975d-7eef-4900-ac14-fa668d18c219 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57110 - "GET /projects/8bf6975d-7eef-4900-ac14-fa668d18c219 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57111 - "DELETE /sessions/realrunTNfR8eLANqnHTThy3b8ZRTbqrSe9gVO6 HTTP/1.1" 204 No Content
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [24781]
+=== start 2026-09-30 12:01:07 ===
+INFO:     Started server process [27130]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:9100 (Press CTRL+C to quit)
+INFO:     127.0.0.1:57181 - "GET /configuration/metrics HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57188 - "GET /configuration/sso HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57191 - "GET /configuration/workspaces HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57194 - "GET /configuration/preanalyst HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57196 - "GET /configuration/drivers-pool HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57198 - "GET /configuration/comm-center HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57200 - "GET /configuration/analyst HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57202 - "GET /configuration/projects-hub HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57204 - "GET /configuration/front-gate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57206 - "GET /configuration/configurator-fe HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57208 - "GET /configuration/metrics-fe HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57844 - "GET / HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:57857 - "GET /configuration HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57885 - "GET /projects/count?from=2026-08-02&to=2026-08-31 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57884 - "GET /projects/count?from=2026-09-01&to=2026-09-30 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57994 - "GET /projects/count?from=2026-08-02&to=2026-08-31 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57993 - "GET /projects/count?from=2026-09-01&to=2026-09-30 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58007 - "GET /users/dome.santoro%40gmail.com HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58010 - "GET /users/dome.santoro%40gmail.com/credential HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58007 - "POST /sessions HTTP/1.1" 201 Created
+INFO:     127.0.0.1:58010 - "POST /tickets HTTP/1.1" 201 Created
+INFO:     127.0.0.1:58007 - "DELETE /tickets/9OjrDaACoZpSUwlGMrqKiLmoCFY1BiviMyNB-h9uIvY HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58010 - "GET /sessions/65IW3Y9l_FjZR4Xh1BKydM6-XOpHSY9VhjI7jgosGqY HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58007 - "GET /sessions/65IW3Y9l_FjZR4Xh1BKydM6-XOpHSY9VhjI7jgosGqY HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58016 - "GET /projects?owner_uid=8ff93901-673e-44ba-b05b-56011395dcba HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58024 - "GET /sessions/65IW3Y9l_FjZR4Xh1BKydM6-XOpHSY9VhjI7jgosGqY HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58029 - "GET /projects?driver_uid=7633be3d-e701-42ca-9fea-6c6d1bb4b7d1&state=DRIVER_VALIDATION&state=FAILED&state=FAILED_NO_DRIVERS HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58040 - "GET /sessions/65IW3Y9l_FjZR4Xh1BKydM6-XOpHSY9VhjI7jgosGqY HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58045 - "GET /projects/c0816dd0-e147-4cd1-8134-82f42b5ba678 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58058 - "GET /sessions/65IW3Y9l_FjZR4Xh1BKydM6-XOpHSY9VhjI7jgosGqY HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58063 - "GET /projects?owner_uid=8ff93901-673e-44ba-b05b-56011395dcba HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58076 - "GET /sessions/65IW3Y9l_FjZR4Xh1BKydM6-XOpHSY9VhjI7jgosGqY HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58081 - "GET /projects?driver_uid=7633be3d-e701-42ca-9fea-6c6d1bb4b7d1&state=DRIVER_VALIDATION&state=FAILED&state=FAILED_NO_DRIVERS HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58093 - "GET /sessions/65IW3Y9l_FjZR4Xh1BKydM6-XOpHSY9VhjI7jgosGqY HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58098 - "GET /projects/c0816dd0-e147-4cd1-8134-82f42b5ba678 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58107 - "GET /sessions/65IW3Y9l_FjZR4Xh1BKydM6-XOpHSY9VhjI7jgosGqY HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58112 - "GET /projects?owner_uid=8ff93901-673e-44ba-b05b-56011395dcba HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58136 - "GET /sessions/65IW3Y9l_FjZR4Xh1BKydM6-XOpHSY9VhjI7jgosGqY HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58141 - "GET /projects?driver_uid=7633be3d-e701-42ca-9fea-6c6d1bb4b7d1&state=DRIVER_VALIDATION&state=FAILED&state=FAILED_NO_DRIVERS HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58136 - "GET /sessions/65IW3Y9l_FjZR4Xh1BKydM6-XOpHSY9VhjI7jgosGqY HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58141 - "GET /projects?owner_uid=8ff93901-673e-44ba-b05b-56011395dcba HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58253 - "GET /sessions/65IW3Y9l_FjZR4Xh1BKydM6-XOpHSY9VhjI7jgosGqY HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58258 - "GET /projects?driver_uid=7633be3d-e701-42ca-9fea-6c6d1bb4b7d1&state=DRIVER_VALIDATION&state=FAILED&state=FAILED_NO_DRIVERS HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60348 - "GET /configuration/projects-hub HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60351 - "POST /sessions HTTP/1.1" 201 Created
+INFO:     127.0.0.1:60354 - "GET /sessions/lookQQmug_DsWSrQMTWFAmWbEPIwGZCdIUX1 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60348 - "GET /projects?owner_uid=8ff93901-673e-44ba-b05b-56011395dcba HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60370 - "GET /sessions/lookQQmug_DsWSrQMTWFAmWbEPIwGZCdIUX1 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60375 - "GET /projects?driver_uid=7633be3d-e701-42ca-9fea-6c6d1bb4b7d1&state=DRIVER_VALIDATION&state=FAILED&state=FAILED_NO_DRIVERS HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60384 - "GET /sessions/lookQQmug_DsWSrQMTWFAmWbEPIwGZCdIUX1 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60389 - "GET /projects?driver_uid=7633be3d-e701-42ca-9fea-6c6d1bb4b7d1&state=DRIVER_VALIDATION&state=FAILED&state=FAILED_NO_DRIVERS HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60384 - "GET /sessions/lookQQmug_DsWSrQMTWFAmWbEPIwGZCdIUX1 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60389 - "GET /drivers/7633be3d-e701-42ca-9fea-6c6d1bb4b7d1/discounts HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60394 - "POST /drivers/7633be3d-e701-42ca-9fea-6c6d1bb4b7d1/discounts HTTP/1.1" 201 Created
+INFO:     127.0.0.1:60389 - "GET /projects?driver_uid=7633be3d-e701-42ca-9fea-6c6d1bb4b7d1&state=DRIVER_VALIDATION&state=FAILED&state=FAILED_NO_DRIVERS HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61553 - "DELETE /sessions/lookQQmug_DsWSrQMTWFAmWbEPIwGZCdIUX1 HTTP/1.1" 204 No Content
+INFO:     127.0.0.1:61596 - "GET /sessions/65IW3Y9l_FjZR4Xh1BKydM6-XOpHSY9VhjI7jgosGqY HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61601 - "GET /projects?driver_uid=7633be3d-e701-42ca-9fea-6c6d1bb4b7d1&state=DRIVER_VALIDATION&state=FAILED&state=FAILED_NO_DRIVERS HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61609 - "GET /sessions/65IW3Y9l_FjZR4Xh1BKydM6-XOpHSY9VhjI7jgosGqY HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61613 - "GET /projects?owner_uid=8ff93901-673e-44ba-b05b-56011395dcba HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61627 - "GET /sessions/65IW3Y9l_FjZR4Xh1BKydM6-XOpHSY9VhjI7jgosGqY HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61631 - "GET /projects?driver_uid=7633be3d-e701-42ca-9fea-6c6d1bb4b7d1&state=DRIVER_VALIDATION&state=FAILED&state=FAILED_NO_DRIVERS HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61667 - "GET /configuration/projects-hub HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61676 - "POST /sessions HTTP/1.1" 201 Created
+INFO:     127.0.0.1:61680 - "GET /sessions/toneRnsDd85pQITc3IgY4Nq_9lmK HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61684 - "GET /projects?owner_uid=8ff93901-673e-44ba-b05b-56011395dcba HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61689 - "DELETE /sessions/toneRnsDd85pQITc3IgY4Nq_9lmK HTTP/1.1" 204 No Content
+INFO:     127.0.0.1:65493 - "GET /sessions/65IW3Y9l_FjZR4Xh1BKydM6-XOpHSY9VhjI7jgosGqY HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65498 - "GET /projects?driver_uid=7633be3d-e701-42ca-9fea-6c6d1bb4b7d1&state=DRIVER_VALIDATION&state=FAILED&state=FAILED_NO_DRIVERS HTTP/1.1" 200 OK
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [27130]
+=== start 2026-09-30 13:50:21 ===
+INFO:     Started server process [49921]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:9100 (Press CTRL+C to quit)
+INFO:     127.0.0.1:49153 - "GET /configuration/metrics HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49160 - "GET /configuration/sso HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49163 - "GET /configuration/workspaces HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49165 - "GET /configuration/preanalyst HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49167 - "GET /configuration/drivers-pool HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49169 - "GET /configuration/comm-center HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49171 - "GET /configuration/analyst HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49174 - "GET /configuration/projects-hub HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49177 - "GET /configuration/front-gate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49179 - "GET /configuration/configurator-fe HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49183 - "GET /configuration/metrics-fe HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49205 - "GET /sessions/65IW3Y9l_FjZR4Xh1BKydM6-XOpHSY9VhjI7jgosGqY HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49210 - "GET /projects?driver_uid=7633be3d-e701-42ca-9fea-6c6d1bb4b7d1&state=DRIVER_VALIDATION&state=FAILED&state=FAILED_NO_DRIVERS HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49205 - "GET /sessions/65IW3Y9l_FjZR4Xh1BKydM6-XOpHSY9VhjI7jgosGqY HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49210 - "GET /projects/c0816dd0-e147-4cd1-8134-82f42b5ba678 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49221 - "GET /sessions/65IW3Y9l_FjZR4Xh1BKydM6-XOpHSY9VhjI7jgosGqY HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49226 - "GET /projects?driver_uid=7633be3d-e701-42ca-9fea-6c6d1bb4b7d1&state=DRIVER_VALIDATION&state=FAILED&state=FAILED_NO_DRIVERS HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49221 - "GET /sessions/65IW3Y9l_FjZR4Xh1BKydM6-XOpHSY9VhjI7jgosGqY HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49226 - "GET /projects/c0816dd0-e147-4cd1-8134-82f42b5ba678 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49221 - "GET /sessions/65IW3Y9l_FjZR4Xh1BKydM6-XOpHSY9VhjI7jgosGqY HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49226 - "GET /projects?driver_uid=7633be3d-e701-42ca-9fea-6c6d1bb4b7d1&state=DRIVER_VALIDATION&state=FAILED&state=FAILED_NO_DRIVERS HTTP/1.1" 200 OK
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [49921]

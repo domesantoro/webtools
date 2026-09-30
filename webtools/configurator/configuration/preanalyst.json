@@ -23,6 +23,10 @@
     },
     "front_gate": {
       "url": "http://127.0.0.1:9000"
+    },
+    "comm_center": {
+      "url": "http://127.0.0.1:9002",
+      "timeout_ms": 5000
     }
   },
   "session": {

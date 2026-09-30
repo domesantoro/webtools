@@ -2,9 +2,9 @@
 
 Same contract as the other clients. One outcome of this one is worth naming, because
 it is the whole reason the pool answers instead of the analyst choosing: **`rejected`
-with `NO_DRIVER_AVAILABLE` is an answer**, not a failure. It says nobody has been
-enabled — a real state of the system — and it has to be told apart from the pool being
-down, which is `unavailable`. What the run does about it differs: there is no point
+with `NO_DRIVER_AVAILABLE` is an answer**, not a failure. It says there is nobody who
+may supervise — a real state of the system — and it has to be told apart from the pool
+being down, which is `unavailable`. What the run does about it differs: there is no point
 asking again for somebody who does not exist.
 
 The pool writes nothing. Putting the chosen driver onto the project is ours, because
@@ -76,7 +76,7 @@ def choose_driver(settings, project_id: str) -> Answer:
 
     _log(f"POST {path}: HTTP {response.status_code} {code or '?'}")
     if response.status_code == 409:
-        # Nobody is enabled. The pool answered; it is we who have nobody to give the
+        # Nobody may supervise. The pool answered; it is we who have nobody to give the
         # project to.
         report("ok")
         return Answer(ok=False, reason="rejected", code=code)
