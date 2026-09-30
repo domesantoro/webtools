@@ -1,0 +1,41 @@
+;; What a build of the developer may do while it is being checked: read the machine,
+;; write inside the builds root, and reach nothing.
+;;
+;; This file is configuration and not code: it says what the system considers
+;; acceptable to execute. It is named by `sandbox.profiles.closed.wrapper` in the
+;; developer's configuration, and it is read by `sandbox-exec`, never by us — which
+;; is why no copy of it is deployed into the subsystem.
+;;
+;; Two parameters, passed by that same wrapper with `-D`:
+;;
+;;   BUILDS    the root under which every build directory lives
+;;   SECRETS   the directory holding the keys, which nothing executed here may read
+;;
+;; Reading the rest of the machine is allowed on purpose: an interpreter, its standard
+;; library and the modules the preparation installed all have to be readable, and
+;; listing where a runtime keeps its files would be a list of runtimes in a place that
+;; must not have one.
+(version 1)
+(deny default)
+
+;; Nothing reaches out. This is the whole reason there are two profiles.
+(deny network*)
+
+(allow process-exec)
+(allow process-fork)
+(allow signal (target self))
+(allow sysctl-read)
+(allow mach-lookup)
+(allow file-read-metadata)
+
+(allow file-read*)
+;; The keys are on this machine and the code being checked was written by a model.
+(deny file-read* (subpath (param "SECRETS")))
+
+(allow file-write* (subpath (param "BUILDS")))
+;; Where a toolchain puts its temporary files. Without these, a runtime that writes a
+;; cache entry dies for a reason that has nothing to do with the code being checked.
+(allow file-write* (subpath "/private/tmp"))
+(allow file-write* (subpath "/private/var/folders"))
+(allow file-write-data (literal "/dev/null") (literal "/dev/zero"))
+(allow file-ioctl (literal "/dev/dtracehelper"))

@@ -1,0 +1,21 @@
+=== start 2026-09-30 20:28:33 ===
+INFO:     Started server process [9941]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+ERROR:    [Errno 48] error while attempting to bind on address ('127.0.0.1', 9100): [errno 48] address already in use
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+[developer] this kernel does not apply these ceilings, and nothing else does either: memory: every build will fail on its first command
+=== start 2026-09-30 20:29:24 ===
+INFO:     Started server process [10089]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:9101 (Press CTRL+C to quit)
+[developer] this kernel does not apply these ceilings, so builds run without them: memory
+INFO:     127.0.0.1:53483 - "POST /projects/a-project-that-does-not-exist/development HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:53491 - "POST /builds HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:53542 - "POST /projects/x/development HTTP/1.1" 404 Not Found
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [10089]

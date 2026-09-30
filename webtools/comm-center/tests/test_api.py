@@ -108,6 +108,43 @@ def test_the_logger_is_actually_switched_on():
     assert logging.getLogger("webtools_comm_center").isEnabledFor(logging.INFO)
 
 
+ALPHA_TEST = "/communications/alpha-test-ready"
+
+
+def test_a_built_webtool_waiting_to_be_tried_is_taken(client):
+    """Its own form and not one of `analysis-ready`: what is waiting is a tool that
+    runs, not a document to read."""
+    response = client.post(
+        ALPHA_TEST, json={"project_id": PROJECT, "driver": DRIVER, "documented": True}
+    )
+    assert response.status_code == 202
+    assert response.json() == {"taken": True}
+
+
+def test_the_driver_is_told_when_a_build_came_without_its_readme(client, caplog):
+    """A build is not thrown away over a README that did not come back, and the driver
+    is the one person who can ask for it before the demo."""
+    with caplog.at_level(logging.INFO, logger="webtools_comm_center"):
+        client.post(
+            ALPHA_TEST, json={"project_id": PROJECT, "driver": DRIVER, "documented": False}
+        )
+    assert "with no README" in caplog.text
+
+
+@pytest.mark.parametrize(
+    "incomplete",
+    [
+        {"project_id": PROJECT, "driver": DRIVER},
+        {"project_id": PROJECT, "documented": True},
+        {"driver": DRIVER, "documented": True},
+    ],
+)
+def test_a_built_webtool_communication_missing_something_is_refused(client, incomplete):
+    response = client.post(ALPHA_TEST, json=incomplete)
+    assert response.status_code == 400
+    assert response.json() == {"error": "INVALID_BODY"}
+
+
 CLIENT = {"uid": "bbbb", "screen_name": "Anna", "username": "anna@example.test"}
 
 STOPPED = "/communications/project-stopped"

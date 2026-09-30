@@ -29,7 +29,7 @@ from dataclasses import dataclass, field
 # copy of the same fact.
 SUBSYSTEMS = frozenset(
     {"front-gate", "preanalyst", "sso", "workspaces", "anagraphics", "configurator-fe", "metrics",
-     "analyst", "drivers-pool", "comm-center", "projects-hub"}
+     "analyst", "drivers-pool", "comm-center", "projects-hub", "developer"}
 )
 
 # The phases that consume: the same words the pipeline uses, plus the two calls of
@@ -45,6 +45,14 @@ PHASES = frozenset(
         "analysis_technical",
         "analysis_sustainability",
         "analysis_points",
+        # One name per door of the developer, for the same reason: what the plan
+        # cost, what writing the files cost and what repairing them cost are three
+        # different questions, and a build that spends everything on repairs looks
+        # exactly like one that does not under a single name.
+        "development_plan",
+        "development_file",
+        "development_repair",
+        "development_readme",
         "development",
         "alpha_test",
         "demo",
@@ -199,6 +207,96 @@ METRICS: dict[str, Metric] = {
     "points.written": Metric(
         required={"language": None, "described": BOOLEANS},
         values=frozenset({"amounts"}),
+        project=True,
+    ),
+    # -------------------------------------------------------------------- the build
+    # What the plan came out as: which stack was chosen, and how many files it says
+    # the webtool is made of. `stack` is open — which stacks exist is a line of the
+    # developer's configuration, and a list of them here would be a second place to
+    # keep in step. It carries no tokens: what the plan call cost is on `ai.call`
+    # under `development_plan`.
+    "build.planned": Metric(
+        required={"stack": None},
+        values=frozenset({"amounts"}),
+        project=True,
+    ),
+    # Installing what the webtool depends on, which is the one step of a build that
+    # reaches the network and the one that fails for reasons outside this machine.
+    # A stack with no preparation command reports nothing here: absent is absent, and
+    # a build that had nothing to prepare is not a build that prepared instantly.
+    "build.prepared": Metric(
+        required={"stack": None, "outcome": frozenset({"ok", "failed", "timed_out"})},
+        values=frozenset({"duration_ms"}),
+        project=True,
+    ),
+    # One file of the plan, written to the build. `kind` is the plan's own word for
+    # what sort of file it is and is open, for the same reason as `stack`.
+    "build.file_written": Metric(
+        required={"kind": None},
+        values=frozenset({"bytes"}),
+        project=True,
+    ),
+    # One check, run on what was written, and what it said. `check` is the name the
+    # configuration gives that check — a kind of file, the whole project, the start —
+    # and it is open: the checks a stack has are configured, not listed in code.
+    "build.verified": Metric(
+        required={"check": None, "outcome": frozenset({"passed", "failed", "timed_out"})},
+        values=frozenset({"duration_ms"}),
+        project=True,
+    ),
+    # A file whose kind this stack has no check for. It is its own metric and not an
+    # outcome of `build.verified`, because nothing ran: an unchecked file and a file
+    # that passed are the opposite of each other, and under one name the second would
+    # quietly absorb the first. It is the number that says how much of a build nobody
+    # verified.
+    "build.unchecked": Metric(
+        required={"kind": None},
+        project=True,
+    ),
+    # One file that failed its checks and went back to the repair door, and how it
+    # ended. `amounts.attempts` is how many times it was asked again — the ceiling is
+    # ours and configured, so the number is a fact about a decision we made.
+    "build.repaired": Metric(
+        required={"check": None, "outcome": frozenset({"fixed", "gave_up"})},
+        values=frozenset({"amounts"}),
+        project=True,
+    ),
+    # The document whoever installs the tool reads. `language` is the client's, carried
+    # from the analysis and never guessed. No tokens: they are on `ai.call` under
+    # `development_readme`.
+    "readme.written": Metric(
+        required={"language": None},
+        values=frozenset({"bytes"}),
+        project=True,
+    ),
+    # How a build ended, and it is the number the price model rests on: how many builds
+    # reach the end at all. `outcome` is closed, because each value is a different
+    # thing to do about it — a stack whose preparation fails is somebody else's
+    # service, a file nobody could repair is the model, a ceiling reached is our
+    # configuration, and `broken` is our bug. `documented` says whether the README got
+    # written: a build is not thrown away over it, so without this dimension a tool
+    # delivered without instructions is a silence.
+    "build.finished": Metric(
+        required={
+            "stack": None,
+            "outcome": frozenset(
+                {
+                    "built",
+                    "no_plan",
+                    "too_many_files",
+                    "preparation_failed",
+                    "file_not_written",
+                    "file_not_repaired",
+                    "whole_check_failed",
+                    "start_failed",
+                    "attempts_exhausted",
+                    "timed_out",
+                    "broken",
+                }
+            ),
+            "documented": BOOLEANS,
+        },
+        values=frozenset({"duration_ms", "amounts"}),
         project=True,
     ),
     # ----------------------------------------------------------------- the drivers

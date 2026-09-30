@@ -134,6 +134,39 @@ def analysis_ready(communication: AnalysisReady) -> dict:
     return {"taken": True}
 
 
+class AlphaTestReady(BaseModel):
+    """A project has been built and a driver has it to try.
+
+    Its own form and not one of `analysis-ready`: what is waiting is a tool that runs,
+    not a document to read, and what the driver does about it is a different piece of
+    work. `documented` says whether the build managed to write the project's README —
+    a build is not thrown away over it, so the driver is told, because they are the one
+    who can ask for it before the demo.
+    """
+
+    project_id: str = Field(min_length=1)
+    driver: Driver
+    documented: bool
+
+
+@app.post("/communications/alpha-test-ready", status_code=202)
+def alpha_test_ready(communication: AlphaTestReady) -> dict:
+    """`202`: it has been taken, not delivered. Nothing is delivered yet."""
+    logger.info(
+        "alpha-test-ready → %s <%s> about project %s (%s)",
+        communication.driver.screen_name,
+        communication.driver.username,
+        communication.project_id,
+        "documented" if communication.documented else "with no README",
+    )
+    settings.metrics.measure(
+        "communication.sent",
+        dims={"kind": "alpha_test_ready", "channel": "log"},
+        project_id=communication.project_id,
+    )
+    return {"taken": True}
+
+
 class Client(BaseModel):
     """The person who owns the project, as whoever calls has just read them.
 

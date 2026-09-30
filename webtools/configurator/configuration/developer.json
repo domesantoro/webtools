@@ -1,0 +1,172 @@
+{
+  "listen": {
+    "host": "127.0.0.1",
+    "port": 9101
+  },
+  "access": {
+    "allowed_ips": [
+      "127.0.0.1",
+      "::1"
+    ]
+  },
+  "limits": {
+    "body_max_bytes": 8192
+  },
+  "subsystems_infos": {
+    "anagraphics": {
+      "timeout_ms": 5000
+    },
+    "workspaces": {
+      "url": "http://127.0.0.1:9400",
+      "timeout_ms": 5000
+    },
+    "comm_center": {
+      "url": "http://127.0.0.1:9002",
+      "timeout_ms": 5000
+    },
+    "metrics": {
+      "url": "http://127.0.0.1:9600",
+      "timeout_ms": 2000
+    }
+  },
+  "metrics": {
+    "log_failures": false,
+    "pending_max": 1000
+  },
+  "build": {
+    "root": "/Users/domenico/webtools-builds",
+    "limits": {
+      "files_max": 60,
+      "file_max_bytes": 262144,
+      "attempts_per_file_max": 3,
+      "attempts_total_max": 60,
+      "duration_max_ms": 10800000
+    }
+  },
+  "sandbox": {
+    "path": "/usr/local/bin:/usr/bin:/bin",
+    "timeout_ms": 300000,
+    "address_space_max_bytes": 6442450944,
+    "cpu_seconds_max": 240,
+    "file_size_max_bytes": 268435456,
+    "output_max_bytes": 65536,
+    "profiles": {
+      "closed": {
+        "wrapper": [
+          "/usr/bin/sandbox-exec",
+          "-D",
+          "BUILDS=/Users/domenico/webtools-builds",
+          "-D",
+          "SECRETS=/Users/domenico/workspaces/webtools/webtools/configurator/secrets",
+          "-f",
+          "/Users/domenico/workspaces/webtools/webtools/configurator/sandbox/closed-v1.sb"
+        ]
+      },
+      "preparation": {
+        "wrapper": [
+          "/usr/bin/sandbox-exec",
+          "-D",
+          "BUILDS=/Users/domenico/webtools-builds",
+          "-D",
+          "SECRETS=/Users/domenico/workspaces/webtools/webtools/configurator/secrets",
+          "-f",
+          "/Users/domenico/workspaces/webtools/webtools/configurator/sandbox/preparation-v1.sb"
+        ]
+      }
+    }
+  },
+  "stacks": {
+    "web": {
+      "prepare": [
+        "/usr/local/bin/npm",
+        "install",
+        "--no-audit",
+        "--no-fund"
+      ],
+      "checks": {
+        "javascript": [
+          "/usr/local/bin/node",
+          "--check"
+        ],
+        "json": [
+          "/usr/bin/python3",
+          "-c",
+          "import json,sys; json.load(open(sys.argv[1]))"
+        ]
+      },
+      "whole": [
+        "/usr/local/bin/npm",
+        "test",
+        "--silent"
+      ],
+      "start": {
+        "command": [
+          "/usr/local/bin/npm",
+          "start"
+        ],
+        "settle_ms": 4000
+      }
+    },
+    "page": {
+      "checks": {
+        "json": [
+          "/usr/bin/python3",
+          "-c",
+          "import json,sys; json.load(open(sys.argv[1]))"
+        ]
+      }
+    }
+  },
+  "plan": {
+    "provider": "anthropic",
+    "timeout_ms": 2400000,
+    "max_attempts": 3,
+    "providers": {
+      "anthropic": {
+        "model": "claude-opus-5-5",
+        "max_tokens": 64000,
+        "effort": "high"
+      }
+    },
+    "policy": "build-plan-v1"
+  },
+  "write": {
+    "provider": "anthropic",
+    "timeout_ms": 2400000,
+    "max_attempts": 3,
+    "providers": {
+      "anthropic": {
+        "model": "claude-opus-5-5",
+        "max_tokens": 64000,
+        "effort": "high"
+      }
+    },
+    "policy": "write-file-v1"
+  },
+  "repair": {
+    "provider": "anthropic",
+    "timeout_ms": 2400000,
+    "max_attempts": 3,
+    "providers": {
+      "anthropic": {
+        "model": "claude-opus-5-5",
+        "max_tokens": 64000,
+        "effort": "high"
+      }
+    },
+    "policy": "repair-file-v1"
+  },
+  "readme": {
+    "provider": "anthropic",
+    "timeout_ms": 2400000,
+    "max_attempts": 3,
+    "providers": {
+      "anthropic": {
+        "model": "claude-opus-5-5",
+        "max_tokens": 32000,
+        "effort": "medium"
+      }
+    },
+    "policy": "build-readme-v1"
+  }
+}

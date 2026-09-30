@@ -110,6 +110,14 @@ deploy_anagraphics() {
   cp "$SOURCE/webtools_metrics_client.py" "$commons/webtools_metrics_client.py"
 }
 
+deploy_developer() {
+  local commons="$WEBTOOLS/developer/webtools_developer/commons"
+  echo "→ developer"
+
+  mkdir -p "$commons"
+  cp "$SOURCE/webtools_metrics_client.py" "$commons/webtools_metrics_client.py"
+}
+
 deploy_projects_hub() {
   local commons="$WEBTOOLS/projects-hub/src/commons"
   echo "→ projects-hub"
@@ -123,5 +131,6 @@ deploy_drivers_pool
 deploy_comm_center
 deploy_anagraphics
 deploy_projects_hub
+deploy_developer
 
 echo "Metrics client distributed."

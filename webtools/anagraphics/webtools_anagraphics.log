@@ -2500,3 +2500,16 @@ INFO:     Shutting down
 INFO:     Waiting for application shutdown.
 INFO:     Application shutdown complete.
 INFO:     Finished server process [49921]
+=== start 2026-09-30 20:28:08 ===
+INFO:     Started server process [9860]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:9100 (Press CTRL+C to quit)
+INFO:     127.0.0.1:53452 - "GET /configuration/developer HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53478 - "GET /configuration/developer HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53484 - "GET /projects/a-project-that-does-not-exist HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:53543 - "GET /projects/x HTTP/1.1" 404 Not Found
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [9860]

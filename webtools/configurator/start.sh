@@ -22,6 +22,12 @@
 # preanalyst, at the end of the rounds of questions. Starting it after means that
 # when the button exists there is something on the other side of it.
 #
+# The developer comes after the analyst, for the same kind of reason and not because it
+# calls it: it reads the analysis out of workspaces and the agreed points off the
+# project. What it needs up are anagraphics, workspaces and comm-center, all of which
+# are above it. Nothing calls it yet either — the client's validation gate is where the
+# trigger belongs — so nothing waits for it.
+#
 # projects-hub comes after the analyst because it is where its work is looked at: it
 # lists projects from anagraphics and hands over the two documents the analyst wrote into
 # workspaces. Nothing calls it, so nothing waits for it; starting it after the analyst
@@ -72,6 +78,7 @@ SERVICES=(
   "drivers-pool:$WEBTOOLS/drivers-pool/webtools_drivers_pool.sh"
   "comm-center:$WEBTOOLS/comm-center/webtools_comm_center.sh"
   "analyst:$WEBTOOLS/analyst/webtools_analyst.sh"
+  "developer:$WEBTOOLS/developer/webtools_developer.sh"
   "projects-hub:$WEBTOOLS/projects-hub/webtools_projects_hub.sh"
   "front-gate:$WEBTOOLS/front-gate/webtools_front_gate.sh"
   "configurator-fe:$WEBTOOLS/configurator-fe/webtools_configurator_fe.sh"
